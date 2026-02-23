@@ -385,7 +385,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_44`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: front/back text was re-checked and `GAME_RULES.md` mission-44 copy updated for exact communication rule and setup/flow wording cleanup).
 - [x] `mission_45`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title normalized to 'My Thread, My Battle!'; front/back setup/rule text confirmed.`).
 - [x] `mission_46`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to "Secret Agent"; all setup/back text confirmed from front/back images.`).
-- [ ] `mission_47`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_47`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed; source front/back verified and matches existing GAME_RULES.md text.`).
 - [ ] `mission_48`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_49`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_50`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
