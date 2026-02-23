@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 function getCommitId() {
   const envCommit =
@@ -20,26 +22,21 @@ function getCommitId() {
   }
 }
 
-function getCommitDatetime() {
-  const envCommitDatetime =
-    process.env.VITE_APP_COMMIT_DATETIME ||
-    process.env.CF_PAGES_COMMIT_TIMESTAMP;
-
-  if (envCommitDatetime) {
-    return envCommitDatetime;
-  }
-
+function getAppVersion() {
   try {
-    return execSync("git show -s --format=%cI HEAD").toString().trim();
+    const rootPkg = JSON.parse(
+      readFileSync(resolve(__dirname, "../../package.json"), "utf8"),
+    );
+    return rootPkg.version;
   } catch {
-    return "unknown";
+    return "0.0.0";
   }
 }
 
 export default defineConfig({
   define: {
     __APP_COMMIT_ID__: JSON.stringify(getCommitId()),
-    __APP_COMMIT_DATETIME__: JSON.stringify(getCommitDatetime()),
+    __APP_VERSION__: JSON.stringify(getAppVersion()),
   },
   plugins: [react(), tailwindcss()],
   server: {

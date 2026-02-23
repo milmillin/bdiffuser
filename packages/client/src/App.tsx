@@ -18,7 +18,7 @@ export default function App() {
         data-testid="app-version"
         className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
       >
-        {`commit ${__APP_COMMIT_ID__} | ${__APP_COMMIT_DATETIME__}`}
+        {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
       </div>
     </>
   );
