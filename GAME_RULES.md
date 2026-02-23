@@ -1642,6 +1642,10 @@ Baseline assumption used in this section:
 
 - You must cut only wires 4 to 9.
 
+### Constraint F
+
+- You cannot cut wires 4 to 9.
+
 ## Challenge Cards
 
 ### Challenge 1
