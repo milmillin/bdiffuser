@@ -10,6 +10,8 @@ export function getWirePoolCount(spec: WirePoolSpec): number {
       return spec.keep;
     case "fixed":
       return spec.values.length;
+    case "exact_same_value":
+      return spec.count;
   }
 }
 
@@ -23,5 +25,7 @@ export function describeWirePoolSpec(spec: WirePoolSpec): string {
       return `${spec.keep} out of ${spec.draw}`;
     case "fixed":
       return `fixed ${spec.values.length}`;
+    case "exact_same_value":
+      return `${spec.count} same value`;
   }
 }

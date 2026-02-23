@@ -106,6 +106,16 @@ function createRedTiles(
         markers: createMarkers("red", drawn, true),
       };
     }
+    case "exact_same_value": {
+      const candidates = [...(spec.candidates ?? RED_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const value = candidates[0];
+      const repeated = Array.from({ length: spec.count }, () => value);
+      return {
+        tiles: createColorTiles("red", repeated),
+        markers: createMarkers("red", [value]),
+      };
+    }
   }
 }
 
@@ -138,6 +148,16 @@ function createYellowTiles(
       return {
         tiles: createColorTiles("yellow", selected),
         markers: createMarkers("yellow", drawn, true),
+      };
+    }
+    case "exact_same_value": {
+      const candidates = [...(spec.candidates ?? YELLOW_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const value = candidates[0];
+      const repeated = Array.from({ length: spec.count }, () => value);
+      return {
+        tiles: createColorTiles("yellow", repeated),
+        markers: createMarkers("yellow", [value]),
       };
     }
   }

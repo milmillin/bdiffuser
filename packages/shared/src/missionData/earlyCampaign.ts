@@ -66,7 +66,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(12, {
-    name: "Equipment out of Reach",
+    name: "Wrapped in Red Tape",
     setup: {
       ...defaultSetup(),
       red: exact(1),

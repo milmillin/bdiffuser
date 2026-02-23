@@ -76,22 +76,24 @@ export default function App() {
   }, [roomId]);
 
   return (
-    <>
-      {!roomId
-        ? <JoinScreen
-            onJoin={handleJoin}
-            initialRoom={getRoomFromPath() ?? ""}
-            initialName={initialSession?.playerName ?? ""}
-          />
-        : <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />
-      }
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1">
+        {!roomId
+          ? <JoinScreen
+              onJoin={handleJoin}
+              initialRoom={getRoomFromPath() ?? ""}
+              initialName={initialSession?.playerName ?? ""}
+            />
+          : <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />
+        }
+      </div>
       <div
         data-testid="app-version"
-        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
+        className="p-3 text-xs font-mono text-gray-500 select-none"
       >
         {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -119,7 +121,7 @@ function JoinScreen({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" data-testid="join-screen">
+    <div className="flex items-center justify-center p-4 h-full" data-testid="join-screen">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight">
@@ -211,7 +213,7 @@ function GameRoom({
 
   if (!connected) {
     return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="connecting-state">
+      <div className="flex items-center justify-center h-full" data-testid="connecting-state">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-400">Connecting to room {roomId}...</p>
@@ -221,7 +223,7 @@ function GameRoom({
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col h-full">
       {error && (
         <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
           {error}

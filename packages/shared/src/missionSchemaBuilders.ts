@@ -28,6 +28,11 @@ export const outOf = (keep: number, draw: number, candidates?: readonly number[]
   ...(candidates ? { candidates } : {}),
 });
 export const fixed = (values: readonly number[]): WirePoolSpec => ({ kind: "fixed", values });
+export const exactSameValue = (count: number, candidates?: readonly number[]): WirePoolSpec => ({
+  kind: "exact_same_value",
+  count,
+  ...(candidates ? { candidates } : {}),
+});
 
 export const blueRange = (minValue: number, maxValue: number): BlueWireSpec => ({
   minValue,

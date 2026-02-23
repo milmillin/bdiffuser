@@ -21,6 +21,12 @@ export type WirePoolSpec =
   | {
       kind: "fixed";
       values: readonly number[];
+    }
+  | {
+      /** Pick 1 random candidate value, create `count` tiles all with that same value. */
+      kind: "exact_same_value";
+      count: number;
+      candidates?: readonly number[];
     };
 
 export interface BlueWireSpec {

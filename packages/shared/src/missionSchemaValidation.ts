@@ -78,6 +78,16 @@ function validatePoolSpec(missionId: MissionId, color: "red" | "yellow", spec: W
       }
       return;
     }
+    case "exact_same_value": {
+      if (!Number.isInteger(spec.count) || spec.count < 1) {
+        throw new Error(`Mission ${missionId}: ${color} exact_same_value count must be a positive integer`);
+      }
+      const candidates = spec.candidates ?? defaultCandidates;
+      if (candidates.length === 0) {
+        throw new Error(`Mission ${missionId}: ${color} exact_same_value has no candidates`);
+      }
+      return;
+    }
   }
 }
 

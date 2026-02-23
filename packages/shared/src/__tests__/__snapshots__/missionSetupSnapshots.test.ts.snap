@@ -190,7 +190,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       },
       "equipment": {
         "excludedUnlockValues": [
-          11,
+          2,
           12,
         ],
         "mode": "default",
@@ -221,7 +221,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       },
       "equipment": {
         "excludedUnlockValues": [
-          11,
+          2,
           12,
         ],
         "mode": "default",
@@ -252,7 +252,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       },
       "equipment": {
         "excludedUnlockValues": [
-          11,
+          2,
           12,
         ],
         "mode": "default",
@@ -283,7 +283,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       },
       "equipment": {
         "excludedUnlockValues": [
-          11,
+          2,
           12,
         ],
         "mode": "default",
@@ -488,7 +488,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact",
+        "kind": "exact_same_value",
       },
     },
     "3": {
@@ -505,7 +505,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact",
+        "kind": "exact_same_value",
       },
     },
     "4": {
@@ -522,7 +522,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact",
+        "kind": "exact_same_value",
       },
     },
     "5": {
@@ -539,7 +539,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact",
+        "kind": "exact_same_value",
       },
     },
   },
@@ -949,7 +949,7 @@ exports[`resolved mission setup snapshots > mission 11 1`] = `
 exports[`resolved mission setup snapshots > mission 12 1`] = `
 {
   "missionId": 12,
-  "name": "Equipment out of Reach",
+  "name": "Wrapped in Red Tape",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
