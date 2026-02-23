@@ -653,6 +653,20 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error).toBeNull();
   });
 
+  it("mission 58: rejects Post-it because info tokens are disabled", () => {
+    const state = buildStateForEquipmentMatrix("post_it");
+    state.mission = 58;
+
+    expectLegalityCode(state, "actor", "post_it", "MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 58: rejects Label cards because info tokens are disabled", () => {
+    const state = buildStateForEquipmentMatrix("label_eq");
+    state.mission = 58;
+
+    expectLegalityCode(state, "actor", "label_eq", "MISSION_RULE_VIOLATION");
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {

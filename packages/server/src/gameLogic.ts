@@ -379,18 +379,24 @@ export function executeDualCut(
       state.board.detonatorPosition++;
     }
 
-    // Place info token showing the actual value of the incorrectly guessed tile
-    target.infoTokens.push({
-      value: typeof targetTile.gameValue === "number" ? targetTile.gameValue : 0,
-      position: targetTileIndex,
-      isYellow: targetTile.color === "yellow",
-    });
+    // Mission 58 disables all info-token placement.
+    const suppressInfoTokens = state.mission === 58;
+    if (!suppressInfoTokens) {
+      // Place info token showing the actual value of the incorrectly guessed tile.
+      target.infoTokens.push({
+        value: typeof targetTile.gameValue === "number" ? targetTile.gameValue : 0,
+        position: targetTileIndex,
+        isYellow: targetTile.color === "yellow",
+      });
+    }
 
     addLog(
       state,
       actorId,
       "dualCut",
-      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}`,
+      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗` +
+        `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
+        `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
     );
 
     // Check detonator loss
@@ -601,14 +607,17 @@ export function executeDualCutDoubleDetector(
     infoTokenTile = tile1;
   }
 
-  target.infoTokens.push({
-    value:
-      typeof infoTokenTile.gameValue === "number"
-        ? infoTokenTile.gameValue
-        : 0,
-    position: infoTokenTileIndex,
-    isYellow: infoTokenTile.color === "yellow",
-  });
+  const suppressInfoTokens = state.mission === 58;
+  if (!suppressInfoTokens) {
+    target.infoTokens.push({
+      value:
+        typeof infoTokenTile.gameValue === "number"
+          ? infoTokenTile.gameValue
+          : 0,
+      position: infoTokenTileIndex,
+      isYellow: infoTokenTile.color === "yellow",
+    });
+  }
 
   updateMarkerConfirmations(state);
 
@@ -616,7 +625,8 @@ export function executeDualCutDoubleDetector(
     state,
     actorId,
     "dualCutDoubleDetector",
-    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} ✗`,
+    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} ✗` +
+      `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
   );
 
   if (checkDetonatorLoss(state)) {
@@ -632,7 +642,7 @@ export function executeDualCutDoubleDetector(
       guessValue,
       outcome: "none_match",
       detonatorAdvanced: true,
-      infoTokenPlacedIndex: infoTokenTileIndex,
+      ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
     };
   }
 
@@ -647,7 +657,7 @@ export function executeDualCutDoubleDetector(
     guessValue,
     outcome: "none_match",
     detonatorAdvanced: true,
-    infoTokenPlacedIndex: infoTokenTileIndex,
+    ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
   };
 }
 

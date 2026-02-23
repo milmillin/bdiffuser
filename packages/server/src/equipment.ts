@@ -209,6 +209,12 @@ export function validateUseEquipment(
       }
       return null;
     case "post_it": {
+      if (state.mission === 58) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Mission 58 does not allow placing info tokens",
+        );
+      }
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) {
@@ -227,6 +233,12 @@ export function validateUseEquipment(
     }
     case "label_eq":
     case "label_neq": {
+      if (state.mission === 58) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Mission 58 does not allow placing info tokens",
+        );
+      }
       const tileA = getTileByFlatIndex(actor, payload.tileIndexA);
       const tileB = getTileByFlatIndex(actor, payload.tileIndexB);
       if (!tileA || !tileB) {

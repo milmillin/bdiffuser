@@ -179,6 +179,10 @@ Dependency: blocked by Phase 0C.
   - False-information
   - Absent-value
   - No-token missions
+  - [x] Mission 58 no-token mode:
+    - [x] Setup token count is zero for all players.
+    - [x] Failed Dual Cut / Double Detector attempts no longer place info tokens.
+    - [x] Token-placing equipment (Post-it, Label cards) is blocked.
 - [ ] Implement mission-specific token placement legality.
 - [ ] Implement remaining mission-specific setup token flows (random draw, captain skip, multi-token placement).
 

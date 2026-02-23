@@ -183,6 +183,33 @@ describe("mission complexity tier representative coverage", () => {
     expect(state.phase).toBe("finished");
   });
 
+  it("system-d tier (mission 58): failed dual cut does not place info token", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t3", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 58,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "actor", "target", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(target.infoTokens).toHaveLength(0);
+  });
+
   it("equipment-lock tier (mission 12): secondary lock blocks then allows use", () => {
     const actor = makePlayer({
       id: "actor",

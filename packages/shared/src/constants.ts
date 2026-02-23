@@ -42,7 +42,7 @@ export const YELLOW_INFO_TOKENS = 2;
 // ── Setup Info Token Mission Rules ──────────────────────────
 
 /** Missions where no player places a setup info token. */
-export const NO_SETUP_TOKEN_MISSIONS = new Set<number>([18]);
+export const NO_SETUP_TOKEN_MISSIONS = new Set<number>([18, 58]);
 
 /** Missions where the 2-player captain skips setup info token placement. */
 export const TWO_PLAYER_CAPTAIN_SKIP_MISSIONS = new Set<number>([11, 13, 27, 29]);
