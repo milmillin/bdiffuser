@@ -12,14 +12,17 @@ export function GameBoard({
   send,
   playerId,
   chatMessages,
+  onPlayAgain,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
   chatMessages: ChatMessage[];
+  onPlayAgain?: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  const isMyTurn = currentPlayer?.id === playerId;
+  const isFinished = gameState.phase === "finished";
+  const isMyTurn = !isFinished && currentPlayer?.id === playerId;
   const me = gameState.players.find((p) => p.id === playerId);
   const opponents = gameState.players.filter((p) => p.id !== playerId);
 
@@ -28,6 +31,9 @@ export function GameBoard({
     playerId: string;
     tileIndex: number;
   } | null>(null);
+
+  // Dual cut guess wire selection (on my stand)
+  const [selectedGuessTile, setSelectedGuessTile] = useState<number | null>(null);
 
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
@@ -79,13 +85,27 @@ export function GameBoard({
                 onTileClick={
                   isSetup && isMyTurn
                     ? (tileIndex) => setSelectedInfoTile(tileIndex)
-                    : undefined
+                    : selectedTarget && isMyTurn && gameState.phase === "playing"
+                      ? (tileIndex) => {
+                          const tile = me.hand[tileIndex];
+                          if (!tile || tile.cut || tile.color === "red") return;
+                          setSelectedGuessTile(tileIndex);
+                        }
+                      : undefined
                 }
-                selectedTileIndex={isSetup ? (selectedInfoTile ?? undefined) : undefined}
+                selectedTileIndex={
+                  isSetup
+                    ? (selectedInfoTile ?? undefined)
+                    : selectedTarget && isMyTurn && gameState.phase === "playing"
+                      ? (selectedGuessTile ?? undefined)
+                      : undefined
+                }
                 tileSelectableFilter={
                   isSetup && isMyTurn
                     ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
-                    : undefined
+                    : selectedTarget && isMyTurn && gameState.phase === "playing"
+                      ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                      : undefined
                 }
               />
             )}
@@ -113,7 +133,9 @@ export function GameBoard({
                 send={send}
                 playerId={playerId}
                 selectedTarget={selectedTarget}
-                onClearTarget={() => setSelectedTarget(null)}
+                selectedGuessTile={selectedGuessTile}
+                onClearTarget={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
+                onCutConfirmed={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
               />
             )}
 
@@ -129,12 +151,35 @@ export function GameBoard({
                 )}
               </div>
             )}
+
+            {/* Game over banner */}
+            {isFinished && (
+              <div className="rounded-xl p-4 text-center space-y-3" data-testid="game-over-banner">
+                <div className={`text-2xl font-black ${gameState.result === "win" ? "text-green-400" : "text-red-500"}`}>
+                  {gameState.result === "win" ? "MISSION COMPLETE!" : "BOOM!"}
+                </div>
+                <p className="text-sm text-gray-300">
+                  {gameState.result === "win" && "All wires have been safely cut!"}
+                  {gameState.result === "loss_red_wire" && "A red wire was cut and the bomb exploded!"}
+                  {gameState.result === "loss_detonator" && "The detonator reached the end!"}
+                </p>
+                {onPlayAgain && (
+                  <button
+                    onClick={onPlayAgain}
+                    data-testid="play-again"
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-sm transition-colors"
+                  >
+                    Play Again
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Sidebar: action log + chat */}
         <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 self-stretch">
-          <ActionLog log={gameState.log} players={gameState.players} />
+          <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
           <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
         </div>
       </div>

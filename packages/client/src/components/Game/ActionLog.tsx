@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react";
-import type { GameLogEntry, ClientPlayer } from "@bomb-busters/shared";
+import type { GameLogEntry, ClientPlayer, GameResult } from "@bomb-busters/shared";
 
 export function ActionLog({
   log,
   players,
+  result,
 }: {
   log: GameLogEntry[];
   players: ClientPlayer[];
+  result?: GameResult | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -14,7 +16,7 @@ export function ActionLog({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [log.length]);
+  }, [log.length, result]);
 
   const playerName = (id: string) =>
     players.find((p) => p.id === id)?.name ?? id;
@@ -38,6 +40,13 @@ export function ActionLog({
             <FormattedDetail detail={entry.detail} />
           </div>
         ))}
+        {result && (
+          <div className={`text-xs font-bold mt-1 pt-1 border-t border-gray-700 ${result === "win" ? "text-green-400" : "text-red-400"}`}>
+            {result === "win" && "MISSION COMPLETE — all wires safely cut!"}
+            {result === "loss_red_wire" && "BOOM — a red wire was cut!"}
+            {result === "loss_detonator" && "BOOM — detonator reached the end!"}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -138,12 +138,8 @@ function GameRoom({
         </div>
       )}
 
-      {gameState?.phase === "finished" && (
-        <EndScreen gameState={gameState} onPlayAgain={onLeave} />
-      )}
-
-      {gameState && gameState.phase !== "finished" && (
-        <GameBoard gameState={gameState} send={send} playerId={playerId!} chatMessages={chatMessages} />
+      {gameState && (
+        <GameBoard gameState={gameState} send={send} playerId={playerId!} chatMessages={chatMessages} onPlayAgain={onLeave} />
       )}
 
       {lobbyState && !gameState && (

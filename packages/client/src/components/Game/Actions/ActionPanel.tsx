@@ -1,30 +1,25 @@
-import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
+import { wireLabel } from "@bomb-busters/shared";
 
 export function ActionPanel({
   gameState,
   send,
   playerId,
   selectedTarget,
+  selectedGuessTile,
   onClearTarget,
+  onCutConfirmed,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
   selectedTarget: { playerId: string; tileIndex: number } | null;
+  selectedGuessTile: number | null;
   onClearTarget: () => void;
+  onCutConfirmed: () => void;
 }) {
-  const [guessValue, setGuessValue] = useState<string>("");
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
-
-  // Get values the player has (for dual cut)
-  const myValues = new Set<string>();
-  for (const tile of me.hand) {
-    if (!tile.cut && tile.gameValue != null) {
-      myValues.add(String(tile.gameValue));
-    }
-  }
 
   // Check if solo cut is available (all remaining copies in my hand)
   const soloValues = getSoloCutValues(gameState, playerId);
@@ -32,17 +27,17 @@ export function ActionPanel({
   // Check if reveal reds is available
   const canRevealReds = checkCanRevealReds(gameState, playerId);
 
+  const guessValue = selectedGuessTile != null ? me.hand[selectedGuessTile]?.gameValue : null;
+
   const handleDualCut = () => {
-    if (!selectedTarget || !guessValue) return;
-    const value = guessValue === "YELLOW" ? "YELLOW" : Number(guessValue);
+    if (!selectedTarget || guessValue == null) return;
     send({
       type: "dualCut",
       targetPlayerId: selectedTarget.playerId,
       targetTileIndex: selectedTarget.tileIndex,
-      guessValue: value as number | "YELLOW",
+      guessValue: guessValue as number | "YELLOW",
     });
-    onClearTarget();
-    setGuessValue("");
+    onCutConfirmed();
   };
 
   return (
@@ -54,12 +49,12 @@ export function ActionPanel({
         <div className="text-xs font-bold text-gray-400 uppercase">Dual Cut</div>
         {!selectedTarget ? (
           <p className="text-sm text-gray-400">
-            Click a tile on an opponent's stand to target it
+            Click a wire on an opponent's stand to target it
           </p>
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-300" data-testid="dual-cut-target">
-              Targeting {gameState.players.find((p) => p.id === selectedTarget.playerId)?.name}'s tile #{selectedTarget.tileIndex + 1}
+              Targeting {gameState.players.find((p) => p.id === selectedTarget.playerId)?.name}'s wire {wireLabel(selectedTarget.tileIndex)}
             </span>
             <button
               onClick={onClearTarget}
@@ -68,38 +63,18 @@ export function ActionPanel({
             >
               Cancel
             </button>
-
-            <div className="flex gap-1 flex-wrap">
-              {Array.from(myValues)
-                .sort((a, b) => {
-                  if (a === "YELLOW") return 1;
-                  if (b === "YELLOW") return -1;
-                  return Number(a) - Number(b);
-                })
-                .map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setGuessValue(v)}
-                    data-testid={`dual-guess-${v.toLowerCase()}`}
-                    className={`px-2 py-1 rounded text-xs font-bold transition-colors ${
-                      guessValue === v
-                        ? "bg-yellow-500 text-black"
-                        : "bg-[var(--color-bomb-dark)] hover:bg-gray-700 text-white"
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
-            </div>
-
-            {guessValue && (
+            {guessValue != null ? (
               <button
                 onClick={handleDualCut}
                 data-testid="dual-cut-submit"
                 className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded font-bold text-sm transition-colors"
               >
-                Cut! (Guess: {guessValue})
+                Cut! (Guess: {String(guessValue)})
               </button>
+            ) : (
+              <span className="text-sm text-gray-400">
+                — click one of your wires below to guess its value
+              </span>
             )}
           </div>
         )}
