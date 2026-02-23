@@ -116,6 +116,94 @@ export function validateDualCut(
   )?.message ?? null;
 }
 
+export interface SimultaneousCutTarget {
+  targetPlayerId: string;
+  targetTileIndex: number;
+  guessValue: number | "YELLOW";
+}
+
+function formatGuessValue(value: number | "YELLOW"): string {
+  return typeof value === "number" ? String(value) : "YELLOW";
+}
+
+/** Check if a simultaneous multi-wire cut action is valid (base rules only). */
+export function validateSimultaneousCutLegality(
+  state: GameState,
+  actorId: string,
+  cuts: readonly SimultaneousCutTarget[],
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  if (cuts.length < 2) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Simultaneous cut requires at least 2 target wires",
+    );
+  }
+
+  const seenTargets = new Set<string>();
+  const requiredByGuess = new Map<number | "YELLOW", number>();
+
+  for (const cut of cuts) {
+    const target = state.players.find((p) => p.id === cut.targetPlayerId);
+    if (!target) {
+      return legalityError("TARGET_PLAYER_NOT_FOUND", "Target player not found");
+    }
+
+    if (actorId === cut.targetPlayerId) {
+      return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
+    }
+
+    const targetKey = `${cut.targetPlayerId}:${cut.targetTileIndex}`;
+    if (seenTargets.has(targetKey)) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Cannot target the same wire twice in one simultaneous cut",
+      );
+    }
+    seenTargets.add(targetKey);
+
+    const targetTile = getTileByFlatIndex(target, cut.targetTileIndex);
+    if (!targetTile) {
+      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+    }
+    if (targetTile.cut) {
+      return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+    }
+
+    requiredByGuess.set(
+      cut.guessValue,
+      (requiredByGuess.get(cut.guessValue) ?? 0) + 1,
+    );
+  }
+
+  const availableByGuess = new Map<number | "YELLOW", number>();
+  for (const tile of getUncutTiles(actor)) {
+    if (tile.gameValue === "RED") continue;
+    availableByGuess.set(
+      tile.gameValue,
+      (availableByGuess.get(tile.gameValue) ?? 0) + 1,
+    );
+  }
+
+  for (const [guessValue, required] of requiredByGuess) {
+    const available = availableByGuess.get(guessValue) ?? 0;
+    if (available < required) {
+      return legalityError(
+        "GUESS_VALUE_NOT_IN_HAND",
+        `You need ${required} uncut wire(s) of value ${formatGuessValue(guessValue)} for this simultaneous cut`,
+      );
+    }
+  }
+
+  return null;
+}
+
 /** Check if a dual cut double detector action is valid (base rules only). */
 export function validateDualCutDoubleDetectorLegality(
   state: GameState,
@@ -361,6 +449,11 @@ export type ValidatableAction =
       guessValue: number;
     }
   | {
+      type: "simultaneousCut";
+      actorId: string;
+      cuts: readonly SimultaneousCutTarget[];
+    }
+  | {
       type: "soloCut";
       actorId: string;
       value: number | "YELLOW";
@@ -419,6 +512,15 @@ export function validateActionWithHooks(
       if (baseError) return baseError;
       break;
     }
+    case "simultaneousCut": {
+      const baseError = validateSimultaneousCutLegality(
+        state,
+        action.actorId,
+        action.cuts,
+      );
+      if (baseError) return baseError;
+      break;
+    }
     case "soloCut": {
       const baseError = validateSoloCutLegality(
         state,
@@ -436,7 +538,8 @@ export function validateActionWithHooks(
   }
 
   // Double Detector validation is mission-agnostic at the moment.
-  // Hook validation currently accepts core turn actions only.
+  // Mission hook validation currently applies to core turn actions
+  // (including simultaneous multi-wire cut declarations).
   if (action.type === "dualCutDoubleDetector") {
     return null;
   }
@@ -502,5 +605,17 @@ export function validateDualCutDoubleDetectorWithHooks(
     tileIndex1,
     tileIndex2,
     guessValue,
+  });
+}
+
+export function validateSimultaneousCutWithHooks(
+  state: GameState,
+  actorId: string,
+  cuts: readonly SimultaneousCutTarget[],
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, {
+    type: "simultaneousCut",
+    actorId,
+    cuts,
   });
 }

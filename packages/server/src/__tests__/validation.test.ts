@@ -7,6 +7,7 @@ import {
   validateDualCutDoubleDetectorLegality,
   validateDualCutLegality,
   validateRevealRedsLegality,
+  validateSimultaneousCutLegality,
   validateSoloCutLegality,
 } from "../validation";
 
@@ -104,6 +105,112 @@ describe("structured legality errors", () => {
     const error = validateRevealRedsLegality(state, "actor");
     expect(error).not.toBeNull();
     expect(error!.code).toBe("REVEAL_REDS_REQUIRES_ALL_RED");
+  });
+});
+
+describe("validateSimultaneousCutLegality", () => {
+  it("allows a valid multi-wire cut with enough matching values in hand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const targetA = makePlayer({
+      id: "target-a",
+      hand: [makeTile({ id: "ta1", gameValue: 1 })],
+    });
+    const targetB = makePlayer({
+      id: "target-b",
+      hand: [makeTile({ id: "tb1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      players: [actor, targetA, targetB],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousCutLegality(state, "actor", [
+      { targetPlayerId: "target-a", targetTileIndex: 0, guessValue: 5 },
+      { targetPlayerId: "target-b", targetTileIndex: 0, guessValue: 5 },
+    ]);
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects fewer than 2 targets", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 1 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousCutLegality(state, "actor", [
+      { targetPlayerId: "target", targetTileIndex: 0, guessValue: 5 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("rejects duplicated wire targets inside the same action", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 1 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousCutLegality(state, "actor", [
+      { targetPlayerId: "target", targetTileIndex: 0, guessValue: 5 },
+      { targetPlayerId: "target", targetTileIndex: 0, guessValue: 5 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("rejects when actor lacks enough matching values for all guesses", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const targetA = makePlayer({
+      id: "target-a",
+      hand: [makeTile({ id: "ta1", gameValue: 1 })],
+    });
+    const targetB = makePlayer({
+      id: "target-b",
+      hand: [makeTile({ id: "tb1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      players: [actor, targetA, targetB],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousCutLegality(state, "actor", [
+      { targetPlayerId: "target-a", targetTileIndex: 0, guessValue: 5 },
+      { targetPlayerId: "target-b", targetTileIndex: 0, guessValue: 5 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("GUESS_VALUE_NOT_IN_HAND");
   });
 });
 

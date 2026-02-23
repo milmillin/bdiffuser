@@ -211,7 +211,7 @@ export interface ValidateHookContext {
   point: "validate";
   state: Readonly<GameState>;
   action: {
-    type: "dualCut" | "soloCut" | "revealReds";
+    type: "dualCut" | "simultaneousCut" | "soloCut" | "revealReds";
     actorId: string;
     [key: string]: unknown;
   };
