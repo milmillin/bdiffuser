@@ -49,14 +49,22 @@ export class BombBustersServer extends Server<Env> {
   };
 
   async onStart() {
-    const stored = await this.ctx.storage.get<unknown>("room");
-    if (stored) {
-      this.room = normalizeRoomState(stored, this.name);
+    try {
+      const stored = await this.ctx.storage.get<unknown>("room");
+      if (stored) {
+        this.room = normalizeRoomState(stored, this.name);
+      }
+    } catch (e) {
+      console.error("Failed to load room state from storage:", e);
     }
   }
 
   async saveState() {
-    await this.ctx.storage.put("room", this.room);
+    try {
+      await this.ctx.storage.put("room", this.room);
+    } catch (e) {
+      console.error("Failed to save room state to storage:", e);
+    }
   }
 
   onConnect(connection: Connection) {
@@ -91,7 +99,8 @@ export class BombBustersServer extends Server<Env> {
     let msg: ClientMessage;
     try {
       msg = JSON.parse(raw);
-    } catch {
+    } catch (e) {
+      console.error("Failed to parse client message:", e);
       this.sendMsg(connection, { type: "error", message: "Invalid message format" });
       return;
     }
@@ -543,12 +552,18 @@ export class BombBustersServer extends Server<Env> {
 
     const currentPlayer = state.players[state.currentPlayerIndex];
     if (currentPlayer?.isBot) {
-      this.ctx.storage.setAlarm(Date.now() + 1500);
+      this.ctx.storage.setAlarm(Date.now() + 1500).catch((e) => {
+        console.error("Failed to schedule bot turn alarm:", e);
+      });
     }
   }
 
   async onAlarm() {
-    await this.executeBotTurn();
+    try {
+      await this.executeBotTurn();
+    } catch (e) {
+      console.error("Bot turn execution failed:", e);
+    }
   }
 
   async executeBotTurn() {

@@ -51,8 +51,18 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
       setConnected(false);
     });
 
+    socket.addEventListener("error", (event) => {
+      console.error("WebSocket error:", event);
+    });
+
     socket.addEventListener("message", (event) => {
-      const msg: ServerMessage = JSON.parse(event.data);
+      let msg: ServerMessage;
+      try {
+        msg = JSON.parse(event.data);
+      } catch (e) {
+        console.error("Failed to parse server message:", e);
+        return;
+      }
 
       switch (msg.type) {
         case "lobby":

@@ -33,7 +33,7 @@ export function Lobby({
               {roomId}
             </code>
             <button
-              onClick={() => navigator.clipboard.writeText(roomId)}
+              onClick={() => navigator.clipboard.writeText(roomId).catch((e) => console.error("Clipboard write failed:", e))}
               data-testid="copy-room-code"
               className="text-gray-400 hover:text-white text-sm"
               title="Copy room code"
