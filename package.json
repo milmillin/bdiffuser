@@ -1,6 +1,6 @@
 {
   "name": "bomb-busters",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "private": true,
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -20,6 +20,7 @@
     "mission:summary": "node scripts/generate-mission-summary.mjs",
     "build": "pnpm --filter shared build && pnpm --filter client build",
     "test": "vitest run",
+    "test:m2": "vitest run packages/server/src/__tests__/m2RolloutGate.test.ts packages/server/src/__tests__/missionTierCoverage.test.ts",
     "schema:check": "vitest run --dir packages/shared --testNamePattern 'mission ID|override validity|equipment reference|image asset'",
     "test:shared": "vitest run --dir packages/shared",
     "test:server": "vitest run --dir packages/server",

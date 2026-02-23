@@ -32,5 +32,8 @@ jobs:
       - name: Schema completeness & consistency
         run: pnpm schema:check
 
+      - name: M2 rollout gate
+        run: pnpm test:m2
+
       - name: Run tests
         run: pnpm test
