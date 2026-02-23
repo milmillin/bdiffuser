@@ -1635,6 +1635,10 @@ Baseline assumption used in this section:
 
 - Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).
 
+### Challenge 4
+
+- The sum of the first 3 validation tokens used equals 18.
+
 ---
 
 ## Source
