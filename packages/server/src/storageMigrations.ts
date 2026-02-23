@@ -252,6 +252,7 @@ function normalizeEquipment(raw: unknown): EquipmentCard[] {
         Number.isFinite(entry.secondaryLockCutsRequired)
           ? entry.secondaryLockCutsRequired
           : undefined;
+      const faceDown = toBool(entry.faceDown, false);
 
       return {
         id,
@@ -266,6 +267,7 @@ function normalizeEquipment(raw: unknown): EquipmentCard[] {
           : {}),
         unlocked: toBool(entry.unlocked, false),
         used: toBool(entry.used, false),
+        ...(faceDown ? { faceDown: true } : {}),
         image,
       };
     })

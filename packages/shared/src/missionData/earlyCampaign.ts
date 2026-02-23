@@ -130,7 +130,9 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
         red: outOf(2, 3),
       },
     },
-    behaviorHooks: ["mission_15_face_down_equipment_unlock_via_number_deck"],
+    hookRules: [
+      { kind: "number_deck_equipment_reveal" },
+    ],
   });
 
   setMission(16, {

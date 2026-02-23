@@ -100,6 +100,14 @@ export interface EquipmentDoubleLockRuleDef {
 }
 
 /**
+ * Mission 15: Equipment starts face-down and is revealed/unlocked when
+ * number-card objectives are completed.
+ */
+export interface NumberDeckEquipmentRevealRuleDef {
+  kind: "number_deck_equipment_reveal";
+}
+
+/**
  * Mission 9: Sequence card priority (face A).
  * Three visible number cards define an ordered gating:
  * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
@@ -124,6 +132,7 @@ export type MissionHookRuleDef =
   | DynamicTurnOrderRuleDef
   | BlueAsRedRuleDef
   | EquipmentDoubleLockRuleDef
+  | NumberDeckEquipmentRevealRuleDef
   | SequencePriorityRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────

@@ -238,6 +238,9 @@ function EquipmentRow({
 
   const getStatus = (eq: BoardState["equipment"][number]) => {
     if (eq.used) return { label: "Used", className: "bg-black/70 text-gray-200" };
+    if (eq.faceDown && !eq.unlocked) {
+      return { label: "Face Down", className: "bg-black/70 text-slate-200" };
+    }
     if (eq.unlocked && eq.secondaryLockValue !== undefined) {
       return {
         label: `2nd Lock ${eq.secondaryLockValue}x${eq.secondaryLockCutsRequired ?? 2}`,
@@ -400,13 +403,17 @@ function EquipmentRow({
                 <div className="h-full overflow-y-auto px-2.5 py-2.5 pt-7 space-y-2">
                   <div className="space-y-0.5">
                     <div className="text-[10px] uppercase tracking-wide text-gray-400">
-                      Equipment {eq.unlockValue}
+                      {eq.faceDown && !eq.unlocked
+                        ? "Face-down equipment"
+                        : `Equipment ${eq.unlockValue}`}
                     </div>
                     <div className="text-sm font-bold text-white leading-tight">
                       {eq.name}
                     </div>
                     <div className="text-[10px] text-gray-400">
-                      Unlocks after 2 cuts of value {eq.unlockValue}
+                      {eq.faceDown && !eq.unlocked
+                        ? "This card will be revealed by mission progression"
+                        : `Unlocks after 2 cuts of value ${eq.unlockValue}`}
                     </div>
                   </div>
 

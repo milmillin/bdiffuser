@@ -5,6 +5,7 @@ import {
   makeTile,
   makeBoardState,
   makeEquipmentCard,
+  makeNumberCard,
 } from "@bomb-busters/shared/testing";
 import {
   dispatchHooks,
@@ -65,6 +66,12 @@ describe("missionHooks dispatcher", () => {
       expect(rules.length).toBe(1);
       expect(rules[0].kind).toBe("equipment_double_lock");
     });
+
+    it("returns hookRules for mission 15", () => {
+      const rules = getHookRules(15);
+      expect(rules.length).toBe(1);
+      expect(rules[0].kind).toBe("number_deck_equipment_reveal");
+    });
   });
 
   describe("handler registry", () => {
@@ -74,6 +81,7 @@ describe("missionHooks dispatcher", () => {
       expect(hasHandler("dynamic_turn_order")).toBe(true);
       expect(hasHandler("blue_value_treated_as_red")).toBe(true);
       expect(hasHandler("equipment_double_lock")).toBe(true);
+      expect(hasHandler("number_deck_equipment_reveal")).toBe(true);
     });
   });
 
@@ -224,6 +232,33 @@ describe("missionHooks dispatcher", () => {
       expect(visibleLocks.every((c) => c.faceUp)).toBe(true);
     });
 
+    it("mission 15: initializes face-down equipment and number deck", () => {
+      const state = makeGameState({
+        mission: 15,
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({ id: "rewinder", unlockValue: 6, unlocked: true }),
+            makeEquipmentCard({ id: "stabilizer", unlockValue: 9, unlocked: true }),
+          ],
+        }),
+        log: [],
+      });
+      dispatchHooks(15, { point: "setup", state });
+
+      expect(state.board.equipment).toHaveLength(2);
+      for (const card of state.board.equipment) {
+        expect(card.faceDown).toBe(true);
+        expect(card.unlocked).toBe(false);
+      }
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards!.visible).toHaveLength(1);
+      expect(numberCards!.visible[0].faceUp).toBe(true);
+      expect(numberCards!.deck).toHaveLength(11);
+      expect(numberCards!.discard).toHaveLength(0);
+    });
+
     it("mission 9: initializes sequence cards and pointer", () => {
       const state = makeGameState({ mission: 9, log: [] });
       dispatchHooks(9, { point: "setup", state });
@@ -370,6 +405,205 @@ describe("missionHooks dispatcher", () => {
         (e) => e.action === "hookEffect" && e.detail.startsWith("sequence_priority:advance:"),
       );
       expect(effectLog).toBeDefined();
+    });
+
+    it("mission 15: disables default equipment unlock when visible number is not completed", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 6, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 15,
+        players: [actor],
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: false,
+            }),
+          ],
+        }),
+        campaign: {
+          numberCards: {
+            visible: [makeNumberCard({ id: "m15-current", value: 3, faceUp: true })],
+            deck: [makeNumberCard({ id: "m15-next", value: 4, faceUp: false })],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const result = dispatchHooks(15, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "actor", value: 6 },
+        cutValue: 6,
+        cutSuccess: true,
+      });
+
+      expect(result.overrideEquipmentUnlock).toBe(true);
+      expect(result.equipmentUnlockThreshold).toBe(Number.MAX_SAFE_INTEGER);
+      expect(state.board.equipment[0].unlocked).toBe(false);
+      expect(state.board.equipment[0].faceDown).toBe(true);
+      expect(state.campaign?.numberCards?.visible[0]?.value).toBe(3);
+    });
+
+    it("mission 15: reveals one equipment when current number value reaches 4 and skips pre-completed next values", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [
+          makeTile({ id: "a3-uncut", gameValue: 3, cut: false }),
+          makeTile({ id: "a9-cut", gameValue: 9, cut: true }),
+          makeTile({ id: "a9-cut-2", gameValue: 9, cut: true }),
+        ],
+      });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [
+          makeTile({ id: "p3-cut-1", gameValue: 3, cut: true }),
+          makeTile({ id: "p3-cut-2", gameValue: 3, cut: true }),
+          makeTile({ id: "p3-cut-3", gameValue: 3, cut: true }),
+          makeTile({ id: "p9-cut-3", gameValue: 9, cut: true }),
+          makeTile({ id: "p9-cut-4", gameValue: 9, cut: true }),
+        ],
+      });
+
+      const state = makeGameState({
+        mission: 15,
+        players: [actor, partner],
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: false,
+            }),
+            makeEquipmentCard({
+              id: "stabilizer",
+              unlockValue: 9,
+              faceDown: true,
+              unlocked: false,
+            }),
+          ],
+        }),
+        campaign: {
+          numberCards: {
+            visible: [makeNumberCard({ id: "m15-current", value: 3, faceUp: true })],
+            deck: [
+              makeNumberCard({ id: "m15-skip", value: 9, faceUp: false }),
+              makeNumberCard({ id: "m15-next", value: 4, faceUp: false }),
+            ],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(15, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "actor", value: 3 },
+        cutValue: 3,
+        cutSuccess: true,
+      });
+
+      expect(state.board.equipment[0].unlocked).toBe(true);
+      expect(state.board.equipment[0].faceDown).toBe(false);
+      expect(state.board.equipment[1].unlocked).toBe(false);
+      expect(state.board.equipment[1].faceDown).toBe(true);
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards?.discard.map((card) => card.value)).toEqual([3, 9]);
+      expect(numberCards?.visible).toHaveLength(1);
+      expect(numberCards?.visible[0].value).toBe(4);
+      expect(numberCards?.deck).toHaveLength(0);
+    });
+
+    it("mission 15: safely exhausts number deck when all next values are already completed", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [
+          makeTile({ id: "a3-uncut", gameValue: 3, cut: false }),
+          makeTile({ id: "a9-cut-1", gameValue: 9, cut: true }),
+          makeTile({ id: "a9-cut-2", gameValue: 9, cut: true }),
+        ],
+      });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [
+          makeTile({ id: "p3-cut-1", gameValue: 3, cut: true }),
+          makeTile({ id: "p3-cut-2", gameValue: 3, cut: true }),
+          makeTile({ id: "p3-cut-3", gameValue: 3, cut: true }),
+          makeTile({ id: "p9-cut-3", gameValue: 9, cut: true }),
+          makeTile({ id: "p9-cut-4", gameValue: 9, cut: true }),
+        ],
+      });
+
+      const state = makeGameState({
+        mission: 15,
+        players: [actor, partner],
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: false,
+            }),
+          ],
+        }),
+        campaign: {
+          numberCards: {
+            visible: [makeNumberCard({ id: "m15-current", value: 3, faceUp: true })],
+            deck: [makeNumberCard({ id: "m15-skip", value: 9, faceUp: false })],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(15, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "actor", value: 3 },
+        cutValue: 3,
+        cutSuccess: true,
+      });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards?.discard.map((card) => card.value)).toEqual([3, 9]);
+      expect(numberCards?.visible).toEqual([]);
+      expect(numberCards?.deck).toEqual([]);
+    });
+
+    it("mission 15: returns empty override result after all face-down equipment is revealed", () => {
+      const state = makeGameState({
+        mission: 15,
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: false,
+              unlocked: true,
+            }),
+          ],
+        }),
+      });
+
+      const result = dispatchHooks(15, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "player-1", value: 6 },
+        cutValue: 6,
+        cutSuccess: true,
+      });
+
+      expect(result.overrideEquipmentUnlock).toBeUndefined();
+      expect(result.equipmentUnlockThreshold).toBeUndefined();
     });
 
     it("mission 12: returns equipment unlock threshold override", () => {

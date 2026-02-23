@@ -73,6 +73,8 @@ export interface EquipmentCard {
   description: string;
   /** Wire value that unlocks this equipment (when 2 of this value are cut) */
   unlockValue: number;
+  /** Whether this card is still hidden face-down to players. */
+  faceDown?: boolean;
   /** Optional secondary mission lock value (e.g. mission 12 number-card lock). */
   secondaryLockValue?: number;
   /** Required cuts for `secondaryLockValue` before this card can be used. */

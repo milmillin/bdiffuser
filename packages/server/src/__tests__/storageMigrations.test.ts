@@ -197,6 +197,51 @@ describe("normalizeRoomState", () => {
     expect(card.secondaryLockCutsRequired).toBe(2);
   });
 
+  it("preserves faceDown equipment state during migration", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [
+            {
+              id: "rewinder",
+              name: "Rewinder",
+              description: "Move detonator back one notch",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: false,
+              used: false,
+              image: "equipment_back.png",
+            },
+          ],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 15,
+        result: null,
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-face-down");
+    expect(normalized.gameState).not.toBeNull();
+    const card = normalized.gameState!.board.equipment[0];
+    expect(card.faceDown).toBe(true);
+    expect(card.unlocked).toBe(false);
+  });
+
   it("preserves pending forced action state for mission 10 restore", () => {
     const legacy = {
       gameState: {

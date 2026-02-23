@@ -34,6 +34,7 @@ import type {
   ActionLegalityCode,
   GameState,
   MissionId,
+  NumberCardState,
 } from "@bomb-busters/shared";
 import {
   EQUIPMENT_DEFS,
@@ -430,7 +431,7 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-// ── Built-in Hook Handlers (Missions 9/10/11/12) ────────────
+// ── Built-in Hook Handlers (Missions 9/10/11/12/15) ─────────
 
 import type {
   SequencePriorityRuleDef,
@@ -438,6 +439,7 @@ import type {
   DynamicTurnOrderRuleDef,
   BlueAsRedRuleDef,
   EquipmentDoubleLockRuleDef,
+  NumberDeckEquipmentRevealRuleDef,
 } from "@bomb-busters/shared";
 
 const MISSION_NUMBER_VALUES = [
@@ -513,6 +515,56 @@ function getProjectedCutCountForResolve(
   }
 
   return count;
+}
+
+function getEffectiveCutCountForResolve(
+  ctx: ResolveHookContext,
+  value: number,
+): number {
+  if (ctx.cutSuccess && typeof ctx.cutValue === "number" && ctx.cutValue === value) {
+    return getProjectedCutCountForResolve(ctx, value);
+  }
+  return getCutCountForValue(ctx.state, value);
+}
+
+const DISABLE_DEFAULT_EQUIPMENT_UNLOCK_THRESHOLD = Number.MAX_SAFE_INTEGER;
+
+function buildMission15NumberCards() {
+  const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+  const firstValue = deckValues.shift();
+
+  return {
+    visible:
+      firstValue == null
+        ? []
+        : [{ id: `m15-visible-0-${firstValue}`, value: firstValue, faceUp: true }],
+    deck: deckValues.map((value, idx) => ({
+      id: `m15-deck-${idx}-${value}`,
+      value,
+      faceUp: false,
+    })),
+    discard: [] as { id: string; value: number; faceUp: boolean }[],
+  };
+}
+
+function revealMission15NextNumberCard(
+  ctx: ResolveHookContext,
+  numberCards: NumberCardState,
+): number[] {
+  const skippedValues: number[] = [];
+
+  while (numberCards.visible.length === 0 && numberCards.deck.length > 0) {
+    const next = numberCards.deck.shift()!;
+    next.faceUp = true;
+    if (getEffectiveCutCountForResolve(ctx, next.value) >= 4) {
+      numberCards.discard.push(next);
+      skippedValues.push(next.value);
+      continue;
+    }
+    numberCards.visible = [next];
+  }
+
+  return skippedValues;
 }
 
 /**
@@ -827,5 +879,112 @@ registerHookHandler<"equipment_double_lock">("equipment_double_lock", {
       overrideEquipmentUnlock: true,
       equipmentUnlockThreshold: rule.requiredCuts,
     };
+  },
+});
+
+/**
+ * Mission 15 — Face-down equipment unlocked via Number deck progression.
+ *
+ * Setup:
+ * - Equipment cards start face-down and locked.
+ * - Number deck is initialized with one visible card and a hidden draw pile.
+ *
+ * Resolve:
+ * - Default value-based equipment unlock is disabled.
+ * - When the current visible Number value reaches 4 cuts, reveal one face-down
+ *   equipment card and make it immediately available.
+ * - Then reveal the next Number card; if it is already complete, skip/discard
+ *   it and continue revealing until a non-complete value is found.
+ */
+registerHookHandler<"number_deck_equipment_reveal">("number_deck_equipment_reveal", {
+  setup(_rule: NumberDeckEquipmentRevealRuleDef, ctx: SetupHookContext): void {
+    const numberCards = buildMission15NumberCards();
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      deck: numberCards.deck,
+      discard: numberCards.discard,
+      visible: numberCards.visible,
+      // Preserve any existing hands map shape if present.
+      playerHands: ctx.state.campaign.numberCards?.playerHands ?? {},
+    };
+
+    for (const card of ctx.state.board.equipment) {
+      card.faceDown = true;
+      card.unlocked = false;
+    }
+
+    const firstVisible = ctx.state.campaign.numberCards.visible[0]?.value;
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail:
+        firstVisible == null
+          ? "m15:number_deck:init:empty"
+          : `m15:number_deck:init:${firstVisible}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(_rule: NumberDeckEquipmentRevealRuleDef, ctx: ResolveHookContext): HookResult {
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") {
+      return {};
+    }
+    if (!ctx.cutSuccess || typeof ctx.cutValue !== "number") {
+      return {};
+    }
+
+    if (!ctx.state.board.equipment.some((card) => card.faceDown)) {
+      return {};
+    }
+
+    const result: HookResult = {
+      overrideEquipmentUnlock: true,
+      equipmentUnlockThreshold: DISABLE_DEFAULT_EQUIPMENT_UNLOCK_THRESHOLD,
+    };
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    const currentCard = numberCards?.visible?.[0];
+    if (!numberCards || !currentCard) {
+      return result;
+    }
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, currentCard.value);
+    if (projectedCutCount < 4) {
+      return result;
+    }
+
+    // Current visible number is completed: reveal exactly one face-down
+    // equipment card, if any remain.
+    const revealedCard = ctx.state.board.equipment.find((card) => card.faceDown);
+    if (revealedCard) {
+      revealedCard.faceDown = false;
+      revealedCard.unlocked = true;
+    }
+
+    // Move current visible number card to discard.
+    const completed = numberCards.visible.shift()!;
+    completed.faceUp = true;
+    numberCards.discard.push(completed);
+
+    // Reveal next card and skip any already-completed values.
+    const skippedValues = revealMission15NextNumberCard(ctx, numberCards);
+    const nextVisibleValue = numberCards.visible[0]?.value;
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: [
+        `m15:number_complete:${completed.value}`,
+        `revealed_equipment:${revealedCard?.id ?? "none"}`,
+        `next:${nextVisibleValue ?? "none"}`,
+        `skipped:${skippedValues.join(",") || "none"}`,
+      ].join("|"),
+      timestamp: Date.now(),
+    });
+
+    return result;
   },
 });

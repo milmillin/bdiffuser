@@ -147,7 +147,12 @@ Dependency: blocked by Phase 0C.
 - [ ] Implement remaining alternate failure outcomes for M2/M3 mechanics.
 
 #### Equipment Runtime Parity
-- [ ] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).
+- [~] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).
+  - [x] Mission 15: face-down equipment with Number-deck progression unlock flow.
+    - [x] Added hook rule `number_deck_equipment_reveal` and Mission 15 hook wiring.
+    - [x] Mission 15 setup now initializes a Number deck (1 visible + hidden draw pile) and marks equipment face-down.
+    - [x] Mission 15 resolve now reveals one equipment card when current Number value reaches 4 cuts, then advances/skips Number cards per card rules.
+    - [x] Client view filter now redacts locked face-down equipment details until revealed.
 - [ ] Implement remaining campaign equipment behavior variants.
 
 #### Token System Parity

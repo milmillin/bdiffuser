@@ -5,6 +5,8 @@ import type {
   VisibleTile,
   Player,
   WireTile,
+  BoardState,
+  EquipmentCard,
   LobbyState,
   GameLogEntry,
 } from "@bomb-busters/shared";
@@ -23,7 +25,7 @@ export function filterStateForPlayer(
     roomId: state.roomId,
     playerId,
     players: state.players.map((p) => filterPlayer(p, playerId)),
-    board: state.board,
+    board: filterBoard(state.board),
     currentPlayerIndex: state.currentPlayerIndex,
     turnNumber: state.turnNumber,
     mission: state.mission,
@@ -40,6 +42,34 @@ export function filterStateForPlayer(
       ? { timerDeadline: state.timerDeadline }
       : {}),
   };
+}
+
+function filterBoard(board: BoardState): BoardState {
+  return {
+    ...board,
+    equipment: board.equipment.map((equipment, idx) =>
+      filterEquipmentCardForClient(equipment, idx),
+    ),
+  };
+}
+
+function filterEquipmentCardForClient(
+  equipment: EquipmentCard,
+  index: number,
+): EquipmentCard {
+  // Mission 15-style hidden cards: hide ID/ability details until revealed.
+  if (equipment.faceDown && !equipment.unlocked) {
+    return {
+      ...equipment,
+      id: `hidden_equipment_${index + 1}`,
+      name: "Face-down Equipment",
+      description: "Revealed by mission progression.",
+      unlockValue: 0,
+      image: "equipment_back.png",
+    };
+  }
+
+  return equipment;
 }
 
 function filterLog(log: GameLogEntry[]): GameLogEntry[] {

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   makeGameState,
   makePlayer,
+  makeBoardState,
+  makeEquipmentCard,
   makeCampaignState,
   makeOxygenState,
   makeProgressTracker,
@@ -104,6 +106,51 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.playerId).toBe("player-1");
     expect(filtered.board.detonatorPosition).toBe(0);
     expect(filtered.campaign!.oxygen!.pool).toBe(5);
+  });
+
+  it("redacts face-down locked equipment cards for clients", () => {
+    const state = makeGameState({
+      board: makeBoardState({
+        equipment: [
+          makeEquipmentCard({
+            id: "rewinder",
+            name: "Rewinder",
+            unlockValue: 6,
+            faceDown: true,
+            unlocked: false,
+            image: "equipment_6_rewinder.png",
+          }),
+        ],
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.board.equipment).toHaveLength(1);
+    expect(filtered.board.equipment[0].id).toBe("hidden_equipment_1");
+    expect(filtered.board.equipment[0].name).toBe("Face-down Equipment");
+    expect(filtered.board.equipment[0].unlockValue).toBe(0);
+    expect(filtered.board.equipment[0].image).toBe("equipment_back.png");
+  });
+
+  it("does not redact already-revealed face-down equipment cards", () => {
+    const state = makeGameState({
+      board: makeBoardState({
+        equipment: [
+          makeEquipmentCard({
+            id: "rewinder",
+            name: "Rewinder",
+            unlockValue: 6,
+            faceDown: false,
+            unlocked: true,
+            image: "equipment_6_rewinder.png",
+          }),
+        ],
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.board.equipment[0].id).toBe("rewinder");
+    expect(filtered.board.equipment[0].unlockValue).toBe(6);
   });
 
   it("redacts mission-11 hidden blue-as-red setup log from client view", () => {
