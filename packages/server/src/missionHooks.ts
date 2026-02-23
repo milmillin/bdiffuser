@@ -756,7 +756,7 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `sequence_priority:face_a:${visibleValues.join(",")}`,
+      detail: `sequence_priority:${rule.variant}:${visibleValues.join(",")}`,
       timestamp: Date.now(),
     });
   },
