@@ -46,6 +46,18 @@ export function PlayerStand({
         <span className="text-xs text-gray-500">
           {player.remainingTiles} tiles left
         </span>
+        {player.character && (
+          <span
+            data-testid={`character-skill-status-${player.id}`}
+            className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${
+              player.characterUsed
+                ? "bg-rose-900/70 text-rose-200"
+                : "bg-emerald-900/70 text-emerald-200"
+            }`}
+          >
+            Skill {player.characterUsed ? "Used" : "Ready"}
+          </span>
+        )}
         {isCurrentTurn && (
           <span className="text-xs bg-yellow-600 px-1.5 py-0.5 rounded text-black font-bold ml-auto">
             ACTIVE
