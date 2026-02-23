@@ -929,12 +929,13 @@ Baseline assumption used in this section:
 - Setup:
   - Red setup: `1 out of 2`.
   - Add `4` yellow wires.
-  - Shuffle 12 Number cards face down next to board.
-  - Mission includes audio-file requirement (QR/smartphone).
+  - Shuffle the `12` Number cards face down and place them as a deck next to the board.
+  - Before setup begins, play the mission audio clip (QR code/smartphone).
 - Mission rule (back):
-  - Play mission audio file before first round.
-  - Card provides fail/success narrative and progression note.
-  - On success, open `Missions 31 to 42` box.
+  - Before first turn, play the mission audio clip.
+  - Failure: the bomb does not explode; you may take one free second chance.
+    - Play the mission sound clip again and continue.
+  - Success: open the `Missions 31-42` box and continue the campaign.
 
 ### Mission 31
 
