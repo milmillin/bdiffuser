@@ -339,118 +339,118 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 
 #### Mission Cards (66)
 
-- [x] `mission_1`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [x] `mission_2`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_3`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_4`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_5`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_6`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_7`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_8`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_9`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_10`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_11`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_12`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_13`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_14`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_15`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_16`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_17`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_18`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_19`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_20`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_21`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_22`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_23`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_24`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_25`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_26`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_27`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_28`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_29`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_30`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_31`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_32`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_33`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_34`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_35`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_36`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_37`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_38`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_39`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_40`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_41`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_42`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_43`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_44`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_45`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_46`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_47`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_48`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_49`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_50`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_51`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_52`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_53`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_54`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_55`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_56`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_57`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_58`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_59`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_60`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_61`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_62`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_63`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_64`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_65`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `mission_66`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
+- [x] `mission_1`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (no changes needed — existing text already matched card images).
+- [x] `mission_2`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (changed: card title `TRAINING, 1st day` → `TRAINING, Day 2`, lesson subtitle reworded, yellow wire setup phrasing tightened, yellow cut rules rewritten to match card text — board marker/pawn and yellow-info-token sentences removed).
+- [ ] `mission_3`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_4`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_5`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_6`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_7`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_8`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_9`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_10`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_11`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_12`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_13`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_14`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_15`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_16`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_17`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_18`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_19`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_20`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_21`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_22`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_23`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_24`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_25`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_26`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_27`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_28`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_29`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_30`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_31`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_32`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_33`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_34`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_35`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_36`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_37`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_38`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_39`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_40`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_41`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_42`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_43`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_44`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_45`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_46`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_47`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_48`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_49`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_50`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_51`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_52`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_53`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_54`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_55`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_56`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_57`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_58`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_59`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_60`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_61`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_62`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_63`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_64`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_65`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `mission_66`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 
 #### Equipment Cards (18)
-- [ ] `equipment_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_11`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_12`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_22`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_33`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_99`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_1010`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_1111`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `equipment_yellow`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_11`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_12`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_22`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_33`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_99`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_1010`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_1111`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `equipment_yellow`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 
 #### Challenge Cards (10)
-- [ ] `challenge_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `challenge_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `challenge_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 
 #### Constraint Cards (12)
-- [ ] `constraint_a`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_b`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_c`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_d`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_e`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_f`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_g`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_h`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_i`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_j`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_k`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
-- [ ] `constraint_l`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_a`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_b`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_c`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_d`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_e`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_f`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_g`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_h`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_i`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_j`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_k`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [ ] `constraint_l`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 ## Definition of Done (Campaign Rules Parity)
 
 - [x] All missions have schema-accurate setup for all allowed player counts.
