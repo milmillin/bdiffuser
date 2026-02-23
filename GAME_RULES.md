@@ -1631,6 +1631,10 @@ Baseline assumption used in this section:
 
 - 4 bomb disposal experts consecutively cut EVEN numbers.
 
+### Challenge 3
+
+- Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).
+
 ---
 
 ## Source
