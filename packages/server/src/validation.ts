@@ -1,4 +1,11 @@
-import type { GameState, Player, WireTile } from "@bomb-busters/shared";
+import type {
+  ActionLegalityCode,
+  ActionLegalityError,
+  GameState,
+  Player,
+  WireTile,
+} from "@bomb-busters/shared";
+import { dispatchHooks } from "./missionHooks.js";
 
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
@@ -22,7 +29,55 @@ export function isPlayersTurn(state: GameState, playerId: string): boolean {
   return currentPlayer?.id === playerId;
 }
 
-/** Check if a dual cut action is valid */
+function legalityError(
+  code: ActionLegalityCode,
+  message: string,
+): ActionLegalityError {
+  return { code, message };
+}
+
+/** Check if a dual cut action is valid (base rules only). */
+export function validateDualCutLegality(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+  guessValue: number | "YELLOW",
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  const target = state.players.find((p) => p.id === targetPlayerId);
+  if (!target) {
+    return legalityError("TARGET_PLAYER_NOT_FOUND", "Target player not found");
+  }
+
+  if (actorId === targetPlayerId) {
+    return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
+  }
+
+  const targetTile = getTileByFlatIndex(target, targetTileIndex);
+  if (!targetTile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+  if (targetTile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+
+  // Actor must have an uncut tile with the guessed value
+  const actorUncut = getUncutTiles(actor);
+  const actorHasValue = actorUncut.some((t) => t.gameValue === guessValue);
+  if (!actorHasValue) {
+    return legalityError(
+      "GUESS_VALUE_NOT_IN_HAND",
+      "You don't have a wire with that value",
+    );
+  }
+
+  return null;
+}
+
+/** Compatibility wrapper returning just the message string. */
 export function validateDualCut(
   state: GameState,
   actorId: string,
@@ -30,43 +85,37 @@ export function validateDualCut(
   targetTileIndex: number,
   guessValue: number | "YELLOW",
 ): string | null {
-  if (!isPlayersTurn(state, actorId)) return "Not your turn";
-
-  const actor = state.players.find((p) => p.id === actorId);
-  if (!actor) return "Actor not found";
-
-  const target = state.players.find((p) => p.id === targetPlayerId);
-  if (!target) return "Target player not found";
-
-  if (actorId === targetPlayerId) return "Cannot target yourself";
-
-  const targetTile = getTileByFlatIndex(target, targetTileIndex);
-  if (!targetTile) return "Invalid tile index";
-  if (targetTile.cut) return "Tile already cut";
-
-  // Actor must have an uncut tile with the guessed value
-  const actorUncut = getUncutTiles(actor);
-  const actorHasValue = actorUncut.some((t) => t.gameValue === guessValue);
-  if (!actorHasValue) return "You don't have a wire with that value";
-
-  return null;
+  return validateDualCutLegality(
+    state,
+    actorId,
+    targetPlayerId,
+    targetTileIndex,
+    guessValue,
+  )?.message ?? null;
 }
 
-/** Check if a solo cut action is valid */
-export function validateSoloCut(
+/** Check if a solo cut action is valid (base rules only). */
+export function validateSoloCutLegality(
   state: GameState,
   actorId: string,
   value: number | "YELLOW",
-): string | null {
-  if (!isPlayersTurn(state, actorId)) return "Not your turn";
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
 
   const actor = state.players.find((p) => p.id === actorId);
-  if (!actor) return "Actor not found";
+  if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
 
   const actorUncut = getUncutTiles(actor);
   const matchingTiles = actorUncut.filter((t) => t.gameValue === value);
 
-  if (matchingTiles.length === 0) return "You don't have any wires with that value";
+  if (matchingTiles.length === 0) {
+    return legalityError(
+      "NO_MATCHING_WIRES_IN_HAND",
+      "You don't have any wires with that value",
+    );
+  }
 
   // Solo cut: all remaining copies of this value in the game must be in actor's hand
   // Count total uncut tiles with this value across ALL players
@@ -74,46 +123,180 @@ export function validateSoloCut(
     return sum + getUncutTiles(p).filter((t) => t.gameValue === value).length;
   }, 0);
 
-  // Count how many have been cut already (for blue wires, 4 copies total)
   if (typeof value === "number") {
-    // Blue wire: need either all 4 or the remaining 2 (if 2 already cut)
-    const totalCut = state.players.reduce((sum, p) => {
-      return sum + getAllTiles(p).filter((t) => t.gameValue === value && t.cut).length;
-    }, 0);
-
     if (totalRemaining !== matchingTiles.length) {
-      return "Not all remaining wires of this value are in your hand";
+      return legalityError(
+        "SOLO_NOT_ALL_REMAINING_IN_HAND",
+        "Not all remaining wires of this value are in your hand",
+      );
     }
 
     // Must be either 2 or 4 remaining (pairs)
     if (matchingTiles.length !== 2 && matchingTiles.length !== 4) {
-      return "Solo cut requires exactly 2 or 4 matching wires";
+      return legalityError(
+        "SOLO_REQUIRES_TWO_OR_FOUR",
+        "Solo cut requires exactly 2 or 4 matching wires",
+      );
     }
   } else {
     // Yellow wire: ALL remaining yellow wires must be in actor's hand
     if (totalRemaining !== matchingTiles.length) {
-      return "Not all remaining yellow wires are in your hand";
+      return legalityError(
+        "SOLO_NOT_ALL_REMAINING_IN_HAND",
+        "Not all remaining yellow wires are in your hand",
+      );
     }
   }
 
   return null;
 }
 
-/** Check if reveal reds action is valid */
+/** Compatibility wrapper returning just the message string. */
+export function validateSoloCut(
+  state: GameState,
+  actorId: string,
+  value: number | "YELLOW",
+): string | null {
+  return validateSoloCutLegality(state, actorId, value)?.message ?? null;
+}
+
+/** Check if reveal reds action is valid (base rules only). */
+export function validateRevealRedsLegality(
+  state: GameState,
+  actorId: string,
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  const uncutTiles = getUncutTiles(actor);
+  if (uncutTiles.length === 0) {
+    return legalityError("NO_WIRES_TO_REVEAL", "No wires to reveal");
+  }
+
+  const allRed = uncutTiles.every((t) => t.color === "red");
+  if (!allRed) {
+    return legalityError(
+      "REVEAL_REDS_REQUIRES_ALL_RED",
+      "Not all remaining wires are red",
+    );
+  }
+
+  return null;
+}
+
+/** Compatibility wrapper returning just the message string. */
 export function validateRevealReds(
   state: GameState,
   actorId: string,
 ): string | null {
-  if (!isPlayersTurn(state, actorId)) return "Not your turn";
+  return validateRevealRedsLegality(state, actorId)?.message ?? null;
+}
 
-  const actor = state.players.find((p) => p.id === actorId);
-  if (!actor) return "Actor not found";
+export type ValidatableAction =
+  | {
+      type: "dualCut";
+      actorId: string;
+      targetPlayerId: string;
+      targetTileIndex: number;
+      guessValue: number | "YELLOW";
+    }
+  | {
+      type: "soloCut";
+      actorId: string;
+      value: number | "YELLOW";
+    }
+  | {
+      type: "revealReds";
+      actorId: string;
+    };
 
-  const uncutTiles = getUncutTiles(actor);
-  if (uncutTiles.length === 0) return "No wires to reveal";
+/** Validate an action with both base rules and mission hook validation. */
+export function validateActionWithHooks(
+  state: GameState,
+  action: ValidatableAction,
+): ActionLegalityError | null {
+  // Block all cut actions while a forced action is pending
+  if (state.pendingForcedAction) {
+    return legalityError(
+      "FORCED_ACTION_PENDING",
+      "A forced action must be resolved before you can act",
+    );
+  }
 
-  const allRed = uncutTiles.every((t) => t.color === "red");
-  if (!allRed) return "Not all remaining wires are red";
+  switch (action.type) {
+    case "dualCut": {
+      const baseError = validateDualCutLegality(
+        state,
+        action.actorId,
+        action.targetPlayerId,
+        action.targetTileIndex,
+        action.guessValue,
+      );
+      if (baseError) return baseError;
+      break;
+    }
+    case "soloCut": {
+      const baseError = validateSoloCutLegality(
+        state,
+        action.actorId,
+        action.value,
+      );
+      if (baseError) return baseError;
+      break;
+    }
+    case "revealReds": {
+      const baseError = validateRevealRedsLegality(state, action.actorId);
+      if (baseError) return baseError;
+      break;
+    }
+  }
+
+  const hookResult = dispatchHooks(state.mission, {
+    point: "validate",
+    state,
+    action,
+  });
+  if (hookResult.validationError) {
+    return legalityError(
+      hookResult.validationCode ?? "MISSION_RULE_VIOLATION",
+      hookResult.validationError,
+    );
+  }
 
   return null;
+}
+
+export function validateDualCutWithHooks(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+  guessValue: number | "YELLOW",
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, {
+    type: "dualCut",
+    actorId,
+    targetPlayerId,
+    targetTileIndex,
+    guessValue,
+  });
+}
+
+export function validateSoloCutWithHooks(
+  state: GameState,
+  actorId: string,
+  value: number | "YELLOW",
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, { type: "soloCut", actorId, value });
+}
+
+export function validateRevealRedsWithHooks(
+  state: GameState,
+  actorId: string,
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, { type: "revealReds", actorId });
 }
