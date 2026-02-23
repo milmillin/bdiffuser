@@ -440,6 +440,33 @@ export function validateRevealReds(
   return validateRevealRedsLegality(state, actorId)?.message ?? null;
 }
 
+/** Check if a simultaneous red cut action is valid (base rules only). */
+export function validateSimultaneousRedCutLegality(
+  state: GameState,
+  actorId: string,
+): ActionLegalityError | null {
+  if (state.mission !== 13) {
+    return legalityError(
+      "SIMULTANEOUS_RED_CUT_WRONG_MISSION",
+      "Simultaneous red cut is only available in mission 13",
+    );
+  }
+
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  // Check if any player has uncut red wires
+  const anyUncutRed = state.players.some((p) =>
+    p.hand.some((t) => !t.cut && t.color === "red"),
+  );
+  if (!anyUncutRed) {
+    return legalityError("NO_UNCUT_RED_WIRES", "No player has uncut red wires");
+  }
+
+  return null;
+}
+
 export type ValidatableAction =
   | {
       type: "dualCut";
@@ -469,6 +496,10 @@ export type ValidatableAction =
   | {
       type: "revealReds";
       actorId: string;
+    }
+  | {
+      type: "simultaneousRedCut";
+      actorId: string;
     };
 
 /** Validate an action with both base rules and mission hook validation. */
@@ -489,7 +520,7 @@ export function validateActionWithHooks(
     return legalityError("ACTOR_NOT_FOUND", "Actor not found");
   }
 
-  if (action.type !== "revealReds" && isRevealRedsForced(state, actor)) {
+  if (action.type !== "revealReds" && action.type !== "simultaneousRedCut" && isRevealRedsForced(state, actor)) {
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
@@ -540,6 +571,11 @@ export function validateActionWithHooks(
     }
     case "revealReds": {
       const baseError = validateRevealRedsLegality(state, action.actorId);
+      if (baseError) return baseError;
+      break;
+    }
+    case "simultaneousRedCut": {
+      const baseError = validateSimultaneousRedCutLegality(state, action.actorId);
       if (baseError) return baseError;
       break;
     }
@@ -626,4 +662,11 @@ export function validateSimultaneousCutWithHooks(
     actorId,
     cuts,
   });
+}
+
+export function validateSimultaneousRedCutWithHooks(
+  state: GameState,
+  actorId: string,
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, { type: "simultaneousRedCut", actorId });
 }

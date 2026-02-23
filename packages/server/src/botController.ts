@@ -6,6 +6,7 @@ import {
   validateDualCutWithHooks,
   validateSoloCutWithHooks,
   validateRevealRedsWithHooks,
+  validateSimultaneousRedCutWithHooks,
   getUncutTiles,
 } from "./validation.js";
 import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
@@ -141,6 +142,7 @@ export type BotAction =
     }
   | { action: "soloCut"; value: number | "YELLOW" }
   | { action: "revealReds" }
+  | { action: "simultaneousRedCut" }
   | { action: "chooseNextPlayer"; targetPlayerId: string };
 
 export interface BotActionResult {
@@ -253,6 +255,10 @@ function parseLLMAction(
     return { action: "revealReds" };
   }
 
+  if (action === "simultaneousRedCut") {
+    return { action: "simultaneousRedCut" };
+  }
+
   if (action === "chooseNextPlayer") {
     const targetPlayerId = result.targetPlayerId as string;
     if (!targetPlayerId) return null;
@@ -282,6 +288,8 @@ function validateBotAction(
       return validateSoloCutWithHooks(state, botId, action.value)?.message ?? null;
     case "revealReds":
       return validateRevealRedsWithHooks(state, botId)?.message ?? null;
+    case "simultaneousRedCut":
+      return validateSimultaneousRedCutWithHooks(state, botId)?.message ?? null;
     case "chooseNextPlayer": {
       const forced = state.pendingForcedAction;
       if (!forced || forced.kind !== "chooseNextPlayer") {
@@ -380,6 +388,11 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   // 1. revealReds when legal (supports mission-specific reveal constraints).
   if (!validateRevealRedsWithHooks(state, botId)) {
     return { action: "revealReds" };
+  }
+
+  // 1b. simultaneousRedCut when legal (mission 13 only).
+  if (!validateSimultaneousRedCutWithHooks(state, botId)) {
+    return { action: "simultaneousRedCut" };
   }
 
   // 2. soloCut for any legal value the bot holds.

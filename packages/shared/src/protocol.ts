@@ -28,6 +28,7 @@ export type ClientMessage =
   | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number; actorTileIndex?: number }
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
+  | { type: "simultaneousRedCut" }
   | { type: "useEquipment"; equipmentId: BaseEquipmentId; payload: UseEquipmentPayload }
   | { type: "chooseNextPlayer"; targetPlayerId: string }
   | { type: "addBot" }
@@ -92,6 +93,12 @@ export type GameAction =
       detonatorAdvanced?: boolean;
       explosion?: boolean;
       infoTokenPlacedIndex?: number;
+    }
+  | {
+      type: "simultaneousRedCutResult";
+      actorId: string;
+      cuts: Array<{ playerId: string; tileIndex: number }>;
+      totalCut: number;
     }
   | {
       type: "gameOver";

@@ -20,12 +20,14 @@ import {
   validateDualCutDoubleDetectorWithHooks,
   validateSoloCutWithHooks,
   validateRevealRedsWithHooks,
+  validateSimultaneousRedCutWithHooks,
 } from "./validation.js";
 import {
   executeDualCut,
   executeDualCutDoubleDetector,
   executeSoloCut,
   executeRevealReds,
+  executeSimultaneousRedCut,
 } from "./gameLogic.js";
 import { executeUseEquipment, validateUseEquipment } from "./equipment.js";
 import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
@@ -197,6 +199,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "revealReds":
         this.handleRevealReds(connection);
+        break;
+      case "simultaneousRedCut":
+        this.handleSimultaneousRedCut(connection);
         break;
       case "useEquipment":
         this.handleUseEquipment(connection, msg.equipmentId, msg.payload);
@@ -634,6 +639,30 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleSimultaneousRedCut(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const error = validateSimultaneousRedCutWithHooks(state, conn.id);
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const action = executeSimultaneousRedCut(state, conn.id);
+    this.maybeRecordMissionFailure(previousResult, state);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   handleUseEquipment(
     conn: Connection,
     equipmentId: BaseEquipmentId,
@@ -1042,6 +1071,15 @@ export class BombBustersServer extends Server<Env> {
           return;
         }
         action = executeRevealReds(state, botId);
+        break;
+      }
+      case "simultaneousRedCut": {
+        const error = validateSimultaneousRedCutWithHooks(state, botId);
+        if (error) {
+          console.log(`Bot ${botId} simultaneousRedCut validation failed [${error.code}]: ${error.message}`);
+          return;
+        }
+        action = executeSimultaneousRedCut(state, botId);
         break;
       }
     }

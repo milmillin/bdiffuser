@@ -862,6 +862,49 @@ export function executeSoloCut(
   };
 }
 
+/** Execute simultaneous red cut: cut one uncut red wire from each player who has one. */
+export function executeSimultaneousRedCut(
+  state: GameState,
+  actorId: string,
+): GameAction {
+  const cuts: Array<{ playerId: string; tileIndex: number }> = [];
+
+  for (const player of state.players) {
+    for (let i = 0; i < player.hand.length; i++) {
+      const tile = player.hand[i];
+      if (!tile.cut && tile.color === "red") {
+        tile.cut = true;
+        cuts.push({ playerId: player.id, tileIndex: i });
+        break; // one per player
+      }
+    }
+  }
+
+  updateMarkerConfirmations(state);
+
+  addLog(
+    state,
+    actorId,
+    "simultaneousRedCut",
+    `initiated simultaneous red cut — ${cuts.length} red wire(s) cut across ${cuts.length} player(s)`,
+  );
+
+  if (checkWin(state)) {
+    state.result = "win";
+    state.phase = "finished";
+    return { type: "gameOver", result: "win" };
+  }
+
+  advanceTurn(state);
+
+  return {
+    type: "simultaneousRedCutResult",
+    actorId,
+    cuts,
+    totalCut: cuts.length,
+  };
+}
+
 /** Execute reveal reds action */
 export function executeRevealReds(
   state: GameState,
