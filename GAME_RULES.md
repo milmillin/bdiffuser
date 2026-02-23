@@ -939,7 +939,7 @@ Baseline assumption used in this section:
 
 ### Mission 31
 
-- Card title: `Everyone has their own constraints`
+- Card title: `With One Hand Tied (Behind My Back...)`
 - Setup:
   - Red setup: `2 out of 3`.
   - Use Constraint cards `A-E` face up on table.
@@ -948,7 +948,7 @@ Baseline assumption used in this section:
   - 2-player advice on card:
     - avoid choosing pairs `A+B` or `C+D`.
 - Mission rule (back):
-  - Everyone must apply their own constraint.
+  - Each player must apply their constraint.
   - When player can no longer apply their constraint at start of turn, they flip it and then play normally for rest of mission.
 
 > **FAQ:** Once a constraint card is flipped, the player plays normally even if they later recover a matching wire via Walkie-Talkies (Equipment `2`).
