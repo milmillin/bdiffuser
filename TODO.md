@@ -423,7 +423,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_33`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `No text changes needed; source front image OCR confirmed card text already matches current GAME_RULES.md entry.`).
 - [x] `equipment_99`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Verified front card OCR; existing `GAME_RULES.md` text for `equipment_99` is already correct; no changes needed.`).
 - [x] `equipment_1010`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `OCR-clean front image matches Disintegrator card; GAME_RULES wording updated to mirror "draw random Info token and resolve all matching remaining wires.`).
-- [ ] `equipment_1111`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `equipment_1111`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to "Grappling Hook"; setup/reminder wording aligned to source image text.`).
 - [ ] `equipment_yellow`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 
 #### Challenge Cards (10)

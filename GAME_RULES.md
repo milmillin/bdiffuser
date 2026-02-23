@@ -302,9 +302,9 @@ Additional card text extracted from later-mission equipment cards:
 - Equipment `10-10` (`Disintegrator`)
   - Timing: immediate effect.
   - Effect: take a random Info token from the supply, reveal its number (`1`-`12`), and all bomb disposal experts cut any remaining wires matching that value.
-- Equipment `11-11` (`Grapple`)
+- Equipment `11-11` (`Grappling Hook`)
   - Timing: can be used at any time.
-  - Effect: designate a teammate's wire, take it without revealing it, and file it into your own hand.
+  - Effect: point at a teammate's wire, take it without revealing it, and put it in your hand.
   - Card reminder: everyone sees where the wire is taken from and where it is placed.
   > **FAQ:** If the receiving player has 2 stands, they choose which stand to place the wire on.
 
