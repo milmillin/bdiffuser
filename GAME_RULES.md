@@ -1651,6 +1651,10 @@ Baseline assumption used in this section:
 
 - 3 bomb disposal experts consecutively cut sequential values (either up or down): examples: 8-9-10 or 5-4-3.
 
+### Challenge 8
+
+- The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
+
 ---
 
 ## Source
