@@ -410,7 +410,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back OCR checked against source image (no text changes needed); no updates to GAME_RULES.md`).
 - [x] `equipment_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `No text changes needed; source OCR confirms existing GAME_RULES wording for Talkies-Walkies and swap procedure. OCR artifacts were limited to spacing/character noise and did not alter card meaning.`)
 - [x] `equipment_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to "Triple Detector"; front image text verified against OCR (no artifacts affecting rule text).`).
-- [ ] `equipment_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `equipment_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back clean; no text changes needed`).
 - [ ] `equipment_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
