@@ -204,3 +204,19 @@ Missions control the mix of wire types drawn from the pool, scaling difficulty f
 
 - **Server**: Deploy via `partykit deploy` (serverless, room data persists via PartyKit storage)
 - **Client**: Standard Vite static build, host anywhere (Vercel, Netlify, etc.)
+
+## TODO Automation (Codex)
+
+Run one TODO task per Codex execution using the shared prompt file:
+
+```bash
+for i in {1..100}; do
+  codex exec \
+    --dangerously-bypass-approvals-and-sandbox \
+    -m gpt-5.3-codex-spark \
+    -c 'model_reasoning_effort="xhigh"' \
+    - < PROMPT_TODO.md
+done
+```
+
+Cleanup note: once every TODO task is complete, remove this section, delete `TODO.md`, and delete `PROMPT_TODO.md`.
