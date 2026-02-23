@@ -167,6 +167,7 @@ Dependency: blocked by Phase 0C.
     - [x] Setup clears Sergio/captain character card (no personal equipment).
     - [x] Enforced mission-aware equipment validation rule (`MISSION_RULE_VIOLATION`) for mission 17 captain actor.
     - [x] Enforced mission-aware validation rule blocking Sergio from Double Detector personal equipment.
+    - [x] Failed Dual Cut targeting Sergio now places a false token with the announced value.
     - [x] Added coverage that non-captains can still use equipment effects that involve the captain (Talkies-Walkies).
   - [x] Mission 58: Double Detector is unlimited-use.
     - [x] Validation now allows reuse even when `characterUsed` is already set in mission 58.

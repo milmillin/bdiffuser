@@ -382,11 +382,25 @@ export function executeDualCut(
     // Mission 58 disables all info-token placement.
     const suppressInfoTokens = state.mission === 58;
     if (!suppressInfoTokens) {
-      // Place info token showing the actual value of the incorrectly guessed tile.
+      const mission17FalseToken = state.mission === 17 && target.isCaptain;
+      const tokenValue =
+        mission17FalseToken
+          ? typeof guessValue === "number"
+            ? guessValue
+            : 0
+          : typeof targetTile.gameValue === "number"
+            ? targetTile.gameValue
+            : 0;
+      const tokenIsYellow =
+        mission17FalseToken
+          ? guessValue === "YELLOW"
+          : targetTile.color === "yellow";
+
+      // Place mission-specific failure info token (actual value by default).
       target.infoTokens.push({
-        value: typeof targetTile.gameValue === "number" ? targetTile.gameValue : 0,
+        value: tokenValue,
         position: targetTileIndex,
-        isYellow: targetTile.color === "yellow",
+        isYellow: tokenIsYellow,
       });
     }
 
