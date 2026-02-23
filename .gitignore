@@ -8,3 +8,5 @@ game_references
 .wrangler
 packages/server/.partykit
 output
+.pnpm-store/
+tmp/
