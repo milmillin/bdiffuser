@@ -581,6 +581,24 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("rejects reused Double Detector outside mission 58", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.players[0].characterUsed = true;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("CHARACTER_ABILITY_ALREADY_USED");
+  });
+
+  it("allows reused Double Detector in mission 58", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.mission = 58;
+    state.players[0].characterUsed = true;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
   it("rejects actor with null character", () => {
     const actor = makePlayer({
       id: "actor",

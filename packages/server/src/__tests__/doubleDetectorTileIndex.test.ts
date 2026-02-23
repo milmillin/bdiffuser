@@ -8,6 +8,58 @@ import {
 import { executeDualCutDoubleDetector } from "../gameLogic";
 
 describe("executeDualCutDoubleDetector actorTileIndex", () => {
+  it("consumes Double Detector outside mission 58", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      characterUsed: false,
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      mission: 1,
+    });
+
+    executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(state.players[0].characterUsed).toBe(true);
+  });
+
+  it("does not consume Double Detector in mission 58", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      characterUsed: false,
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      mission: 58,
+    });
+
+    executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(state.players[0].characterUsed).toBe(false);
+  });
+
   it("selects the correct blue tile when actorTileIndex is provided (both match)", () => {
     const actor = makePlayer({
       id: "actor",

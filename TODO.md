@@ -160,6 +160,10 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 17: Sergio (captain) cannot activate equipment cards.
     - [x] Enforced mission-aware equipment validation rule (`MISSION_RULE_VIOLATION`) for mission 17 captain actor.
     - [x] Added coverage that non-captains can still use equipment effects that involve the captain (Talkies-Walkies).
+  - [x] Mission 58: Double Detector is unlimited-use.
+    - [x] Validation now allows reuse even when `characterUsed` is already set in mission 58.
+    - [x] Resolver no longer consumes `characterUsed` when mission 58 is active.
+    - [x] Added validation/execution tests for mission-58 unlimited-use behavior.
 
 #### Token System Parity
 - [ ] Implement token variants:

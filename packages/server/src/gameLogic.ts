@@ -416,8 +416,10 @@ export function executeDualCutDoubleDetector(
   const tile1 = getTileByFlatIndex(target, tileIndex1)!;
   const tile2 = getTileByFlatIndex(target, tileIndex2)!;
 
-  // Always mark ability as used
-  actor.characterUsed = true;
+  // Mission 58 grants unlimited uses of Double Detector.
+  if (state.mission !== 58) {
+    actor.characterUsed = true;
+  }
 
   const match1 = tile1.gameValue === guessValue;
   const match2 = tile2.gameValue === guessValue;

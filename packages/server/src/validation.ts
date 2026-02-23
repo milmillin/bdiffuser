@@ -139,7 +139,7 @@ export function validateDualCutDoubleDetectorLegality(
     );
   }
 
-  if (actor.characterUsed) {
+  if (actor.characterUsed && state.mission !== 58) {
     return legalityError(
       "CHARACTER_ABILITY_ALREADY_USED",
       "Character ability already used this mission",
