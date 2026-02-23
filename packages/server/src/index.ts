@@ -54,6 +54,7 @@ import {
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
 import { applyMission25ChatPenalty } from "./mission25.js";
+import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRules.js";
 
 interface Env {
   [key: string]: unknown;
@@ -342,7 +343,7 @@ export class BombBustersServer extends Server<Env> {
         turn: 0,
         playerId: placement.playerId,
         action: "placeInfoToken",
-        detail: `placed random info token ${placement.token.value} on wire ${wireLabel(placement.token.position)}`,
+        detail: `placed random info token ${describeInfoToken(placement.token)} on wire ${wireLabel(placement.token.position)}`,
         timestamp: Date.now(),
       });
     }
@@ -405,17 +406,18 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    player.infoTokens.push({
+    const token = applyMissionInfoTokenVariant(state, {
       value,
       position: tileIndex,
       isYellow: false,
     });
+    player.infoTokens.push(token);
 
     state.log.push({
       turn: 0,
       playerId: conn.id,
       action: "placeInfoToken",
-      detail: `placed info token ${value} on wire ${wireLabel(tileIndex)}`,
+      detail: `placed info token ${describeInfoToken(token)} on wire ${wireLabel(tileIndex)}`,
       timestamp: Date.now(),
     });
 
@@ -746,7 +748,7 @@ export class BombBustersServer extends Server<Env> {
             turn: 0,
             playerId: player.id,
             action: "placeInfoToken",
-            detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
+            detail: `placed info token ${describeInfoToken(token)} on wire ${wireLabel(token.position)}`,
             timestamp: Date.now(),
           });
         }

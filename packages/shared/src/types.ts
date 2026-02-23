@@ -54,6 +54,8 @@ export interface InfoToken {
   value: number;
   position: number; // index of the tile it points to
   isYellow: boolean;
+  /** Optional parity variant used by mission rules (e.g. mission 21). */
+  parity?: "even" | "odd";
   /** Optional relation marker for Label cards. */
   relation?: "eq" | "neq";
   /** Secondary index used by relation markers. */

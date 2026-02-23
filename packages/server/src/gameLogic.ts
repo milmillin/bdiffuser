@@ -17,6 +17,7 @@ import {
   emitMissionFailureTelemetry,
   getBlueAsRedValue,
 } from "./missionHooks.js";
+import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -398,11 +399,11 @@ export function executeDualCut(
           : targetTile.color === "yellow";
 
       // Place mission-specific failure info token (actual value by default).
-      target.infoTokens.push({
+      target.infoTokens.push(applyMissionInfoTokenVariant(state, {
         value: tokenValue,
         position: targetTileIndex,
         isYellow: tokenIsYellow,
-      });
+      }));
     }
 
     addLog(
@@ -634,11 +635,11 @@ export function executeDualCutDoubleDetector(
     const tokenIsYellow =
       mission17FalseToken ? false : infoTokenTile.color === "yellow";
 
-    target.infoTokens.push({
+    target.infoTokens.push(applyMissionInfoTokenVariant(state, {
       value: tokenValue,
       position: infoTokenTileIndex,
       isYellow: tokenIsYellow,
-    });
+    }));
   }
 
   updateMarkerConfirmations(state);

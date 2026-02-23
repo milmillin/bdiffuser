@@ -78,6 +78,17 @@ guessValue can be a number (1-12) or "YELLOW" for yellow wires.
 soloCut value can be a number (1-12) or "YELLOW".`;
 }
 
+function formatInfoToken(token: {
+  value: number;
+  isYellow: boolean;
+  parity?: "even" | "odd";
+}): string {
+  if (token.isYellow) return "YELLOW";
+  if (token.parity === "even") return "EVEN";
+  if (token.parity === "odd") return "ODD";
+  return String(token.value);
+}
+
 export function buildUserMessage(state: ClientGameState, chatContext?: string): string {
   const me = state.players.find((p) => p.id === state.playerId);
   if (!me) return "ERROR: Cannot find my player state.";
@@ -104,7 +115,7 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
     const tile = me.hand[i];
     const infoToken = me.infoTokens.find((t) => t.position === i);
     const infoStr = infoToken
-      ? ` [Info Token: ${infoToken.isYellow ? "YELLOW" : infoToken.value}]`
+      ? ` [Info Token: ${formatInfoToken(infoToken)}]`
       : "";
     if (tile.cut) {
       lines.push(`  [${i}] CUT - was ${tile.color} ${tile.gameValue}`);
@@ -122,7 +133,7 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
       const tile = opp.hand[i];
       const infoToken = opp.infoTokens.find((t) => t.position === i);
       const infoStr = infoToken
-        ? ` [Info Token: ${infoToken.isYellow ? "YELLOW" : infoToken.value}]`
+        ? ` [Info Token: ${formatInfoToken(infoToken)}]`
         : "";
       if (tile.cut) {
         lines.push(`  [${i}] CUT - was ${tile.color} ${tile.gameValue}`);

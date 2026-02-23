@@ -13,6 +13,7 @@ import {
   requiredSetupInfoTokenCount,
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
+import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 
 const BOT_NAMES = ["IRIS", "NOVA", "BOLT", "FUSE", "CHIP"];
 
@@ -76,11 +77,11 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
         for (let value = 1; value <= 12; value++) {
           const error = validateSetupInfoTokenPlacement(state, bot, value, tileIndex);
           if (error) continue;
-          bot.infoTokens.push({
+          bot.infoTokens.push(applyMissionInfoTokenVariant(state, {
             value,
             position: tileIndex,
             isYellow: false,
-          });
+          }));
           return true;
         }
       }
@@ -120,11 +121,11 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
   );
   if (!target) return;
 
-  bot.infoTokens.push({
+  bot.infoTokens.push(applyMissionInfoTokenVariant(state, {
     value: bestValue,
     position: target.index,
     isYellow: false,
-  });
+  }));
 }
 
 export type BotAction =
@@ -350,6 +351,18 @@ function collectBotGuessValues(
   return values;
 }
 
+function pickGuessValueFromParity(
+  guessValues: readonly (number | "YELLOW")[],
+  parity: "even" | "odd",
+): number | null {
+  for (const guess of guessValues) {
+    if (typeof guess !== "number") continue;
+    if (parity === "even" && guess % 2 === 0) return guess;
+    if (parity === "odd" && guess % 2 === 1) return guess;
+  }
+  return null;
+}
+
 function getFallbackAction(state: GameState, botId: string): BotAction {
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
@@ -380,7 +393,12 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
       const tile = opp.hand[token.position];
       if (!tile || tile.cut) continue;
 
-      const guessValue = token.isYellow ? ("YELLOW" as const) : token.value;
+      const guessValue = token.isYellow
+        ? ("YELLOW" as const)
+        : token.parity
+          ? pickGuessValueFromParity(guessValues, token.parity)
+          : token.value;
+      if (guessValue == null) continue;
       if (
         typeof guessValue === "number"
           ? !guessValues.includes(guessValue)

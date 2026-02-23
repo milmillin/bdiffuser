@@ -216,6 +216,7 @@ Dependency: blocked by Phase 0C.
   - False-information
   - Absent-value
   - No-token missions
+  - [x] Mission 21 even/odd token mode for setup placements, failed-cut token placement, and Post-it token placement.
   - [x] Mission 58 no-token mode:
     - [x] Setup token count is zero for all players.
     - [x] Failed Dual Cut / Double Detector attempts no longer place info tokens.

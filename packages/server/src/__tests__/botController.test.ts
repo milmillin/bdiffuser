@@ -49,6 +49,29 @@ describe("botPlaceInfoToken", () => {
       expect(validateSetupInfoTokenPlacement(state, bot, token.value, token.position)).toBeNull();
     }
   });
+
+  it("mission 21: places parity setup token", () => {
+    const bot = makePlayer({
+      id: "bot",
+      isBot: true,
+      hand: [makeTile({ id: "b-7", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t-8", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+    const state = makeGameState({
+      mission: 21,
+      phase: "setup_info_tokens",
+      players: [bot, teammate],
+    });
+
+    botPlaceInfoToken(state, "bot");
+
+    expect(bot.infoTokens).toEqual([
+      { value: 0, parity: "odd", position: 0, isYellow: false },
+    ]);
+  });
 });
 
 describe("getBotAction fallback", () => {

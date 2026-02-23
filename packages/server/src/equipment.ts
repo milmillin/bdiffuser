@@ -18,6 +18,7 @@ import {
 } from "./validation.js";
 import { executeDualCut } from "./gameLogic.js";
 import { dispatchHooks } from "./missionHooks.js";
+import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -575,11 +576,11 @@ export function executeUseEquipment(
     case "post_it": {
       const tile = getTileByFlatIndex(actor, payload.tileIndex)!;
       const value = tile.gameValue as number;
-      actor.infoTokens.push({
+      actor.infoTokens.push(applyMissionInfoTokenVariant(state, {
         value,
         position: payload.tileIndex,
         isYellow: false,
-      });
+      }));
       addLog(state, actorId, "useEquipment", `used Post-it on wire ${payload.tileIndex} with value ${value}`);
       return {
         type: "equipmentUsed",

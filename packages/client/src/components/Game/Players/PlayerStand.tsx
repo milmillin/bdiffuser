@@ -138,6 +138,8 @@ export function PlayerStand({
 
 function getInfoTokenImage(token: InfoToken): string {
   if (token.isYellow) return "info_yellow.png";
+  if (token.parity === "even") return "info_even.png";
+  if (token.parity === "odd") return "info_odd.png";
   if (token.value >= 1 && token.value <= 12) return `info_${token.value}.png`;
   return "info_no.png";
 }
@@ -160,7 +162,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
   return (
     <img
       src={`/images/${getInfoTokenImage(token)}`}
-      alt={`Info: ${token.value}`}
+      alt={`Info: ${token.isYellow ? "YELLOW" : token.parity ?? token.value}`}
       className="w-full h-auto block"
     />
   );
