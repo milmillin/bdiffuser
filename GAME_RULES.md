@@ -160,7 +160,7 @@ You may perform Solo Cut only when all remaining copies of a value that are stil
 
 > **FAQ:** Solo Cut can use wires from both of a player's stands, as long as those are the only remaining copies of that value in the game.
 
-> **FAQ:** You cannot Solo Cut 3-of-a-kind. Wires are always cut as 2 or 4-of-a-kind. If you hold 3 copies, you must wait for one to be cut via Duo Cut first.
+> **FAQ:** You cannot Solo Cut 3-of-a-kind. Wires are always cut as 2 or 4-of-a-kind. If you hold 3 copies, you must wait for one to be cut via Dual Cut first.
 
 ## 9. Reveal Your Red Wires Action
 
@@ -236,7 +236,7 @@ Card text extracted from equipment cards `1` through `12`:
   > **FAQ:** If the swapped wire has an info token, the token follows the wire to its new stand. Players cannot communicate or request a specific value during the swap, and cannot direct a 2-stand player which stand to use.
 - Equipment `3` (`Triple detector 3000`)
   - Timing: to be used in turn.
-  - Effect: during a Duo Cut action, announce one value (not yellow) and designate 3 wires from a teammate's stand.
+  - Effect: during a Dual Cut action, announce one value (not yellow) and designate 3 wires from a teammate's stand.
   - Card reminder: this works like Double Detector 2000, but with 3 wires.
   > **FAQ:** Success means at least one of the 3 wires matches the announced value; the teammate cuts one matching wire without revealing whether multiple matched. Failure means none match; the teammate places an info token on one of the 3 wires (their choice).
 - Equipment `4` (`Post-it`)
@@ -244,7 +244,7 @@ Card text extracted from equipment cards `1` through `12`:
   - Effect: place an Info token in front of one of your blue wires.
 - Equipment `5` (`Super detector`)
   - Timing: to be used in turn.
-  - Effect: during a Duo Cut action, announce one value (not yellow) and designate an entire stand of a teammate.
+  - Effect: during a Dual Cut action, announce one value (not yellow) and designate an entire stand of a teammate.
   - Card reminder: this works like Double Detector 2000, but with all wires in that stand.
   > **FAQ:** Same success/failure rules as Triple Detector: success if at least one wire matches; teammate cuts one matching wire without revealing if multiple match. Failure: teammate places info token on one wire of the stand (their choice).
 - Equipment `6` (`Rewinder`)
@@ -260,14 +260,14 @@ Card text extracted from equipment cards `1` through `12`:
   > **FAQ:** Only reveal yes/no, not location or quantity. YELLOW and RED wires have no numeric value — a 7.5 red wire does NOT count as "7".
 - Equipment `9` (`Stabilizer`)
   - Timing: to be used at the start of your turn.
-  - Effect: use before a Duo Cut. For that turn, if your Duo Cut fails:
+  - Effect: use before a Dual Cut. For that turn, if your Dual Cut fails:
     - The detonator does not advance.
     - The bomb does not explode (including red-wire failure case).
   - Card reminder: if a wrong wire was designated, the targeted player still places the usual Info token (number or yellow).
   > **FAQ:** If the chosen wire is RED, do not place an info token.
 - Equipment `10` (`X or Y ray`)
   - Timing: to be used in turn.
-  - Effect: during a Duo Cut action, by designating one wire you may announce 2 possible values (yellow included).
+  - Effect: during a Dual Cut action, by designating one wire you may announce 2 possible values (yellow included).
   - Card reminder: you must have both announced values in your own hand.
   > **FAQ:** Success if the wire matches either announced value; both that wire and your matching wire are revealed. The two announced values need not be consecutive.
 - Equipment `11` (`Coffee thermos`)
@@ -371,7 +371,7 @@ Allowed:
 
 ### 16.3 Mistake (Wrong Value Announced)
 
-> **FAQ:** If a player mistakenly announces a value that is not in their hand during a Duo Cut, cut another wire the player does have, AND advance the detonator 1 notch.
+> **FAQ:** If a player mistakenly announces a value that is not in their hand during a Dual Cut, cut another wire the player does have, AND advance the detonator 1 notch.
 
 ### 16.4 Info Token Shortage
 
@@ -429,8 +429,8 @@ Normalization note:
     - Each player takes a character card.
     - Starting with Captain, each player places one info token on one of their own blue wires with matching value.
 - Mission rule (back):
-  - On turn, use either `Duo Cut` or `Solo Cut`.
-  - Duo Cut failure:
+  - On turn, use either `Dual Cut` or `Solo Cut`.
+  - Dual Cut failure:
     - Detonator advances one space.
     - Targeted teammate places info token showing true value of targeted wire.
     - Active player does not reveal which own wire they intended to match.
@@ -448,7 +448,7 @@ Normalization note:
   - Place board markers/pawns for special wires (here, yellow values in play).
   - Yellow info token cannot be used during setup.
 - Mission rule (back):
-  - On turn, use either `Duo Cut` or `Solo Cut`.
+  - On turn, use either `Dual Cut` or `Solo Cut`.
   - Yellow wires are introduced:
     - Yellow is cut like blue (Duo/Solo), but all yellow wires are treated as one shared value.
     - To target yellow, player must call `yellow`.
@@ -518,7 +518,7 @@ Normalization note:
   - Inherits mission 4 baseline of all `48` blue wires.
 - Mission rule (back):
   - `4` yellow wires are all the same value.
-  - Usually cut by pairs with Duo Cut.
+  - Usually cut by pairs with Dual Cut.
   - Solo Cut may cut yellow by `2` or `4` if one player holds all remaining yellow wires in play.
 
 ### Mission 7
@@ -656,7 +656,7 @@ Baseline assumption used in this section:
   - 2-player override shown on card:
     - `3` red wires, `4` yellow wires.
 - Mission rule (back):
-  - If the Intern fails a Duo Cut action, the bomb explodes immediately.
+  - If the Intern fails a Dual Cut action, the bomb explodes immediately.
   - Intern cannot use Equipment `9` (`Stabilizator`).
 
 ### Mission 15
@@ -705,7 +705,7 @@ Baseline assumption used in this section:
     - `3` red wires.
 - Mission rule (back):
   - Sergio's info tokens are always false and mean: `this wire is not this value`.
-  - If a Duo Cut targeting Sergio fails, Sergio places info token of the announced value in front of targeted wire (also false information).
+  - If a Dual Cut targeting Sergio fails, Sergio places info token of the announced value in front of targeted wire (also false information).
   - Sergio cannot use equipment cards, but may participate in effects from Equipment `2` (Walkie-Talkies) and `8` (General Radar).
 
 ### Mission 18
@@ -854,7 +854,7 @@ Baseline assumption used in this section:
   - If Equipment `10` is drawn, replace it.
 - Mission rule (back):
   - On each turn, active player first flips one visible Number card face down.
-  - Then active player must perform a cut (`Duo Cut` or `Solo Cut`) on that number.
+  - Then active player must perform a cut (`Dual Cut` or `Solo Cut`) on that number.
   - Active player may only cut values whose Number cards are still visible.
   - If no Number cards are visible, turn all Number cards face up again.
   - When all 4 wires of a number are cut, remove that Number card from game.
@@ -886,7 +886,7 @@ Baseline assumption used in this section:
     - `3` red wires and `4` yellow wires.
 - Mission rule (back):
   - Captain Lazy cannot use equipment cards and has no personal equipment.
-  - If Captain Lazy fails a Duo Cut action, bomb explodes immediately.
+  - If Captain Lazy fails a Dual Cut action, bomb explodes immediately.
   - Captain Lazy can still participate in effects of Equipment `2` (Walkie-talkies) and `8` (General Radar).
 
 ### Mission 29
@@ -1359,7 +1359,7 @@ Baseline assumption used in this section:
 - Mission rule (back):
   - All info tokens in this mission are false:
     - A token means `this wire is not this value`.
-  - On Duo Cut failure, targeted player places exactly one token of the announced value in front of the designated wire (also false information).
+  - On Dual Cut failure, targeted player places exactly one token of the announced value in front of the designated wire (also false information).
 
 ### Mission 53
 
@@ -1429,7 +1429,7 @@ Baseline assumption used in this section:
 - Mission rule (back):
   - Each player must cut their own upside-down wire with normal cut action; failure explodes bomb.
   - No equipment or personal equipment may target upside-down wires.
-  - A player may still perform Duo Cut on a teammate's upside-down wire, but must advance detonator `1` step when doing so.
+  - A player may still perform Dual Cut on a teammate's upside-down wire, but must advance detonator `1` step when doing so.
 
 > **FAQ:** If a flipped (upside-down) wire is RED, reveal it via the normal "Reveal Your Red Wires" action. **ERRATUM:** Number cards are NOT used in this mission (contrary to what the setup indication may suggest).
 
@@ -1571,7 +1571,7 @@ Baseline assumption used in this section:
 - Mission rule (back):
   - Each player must cut upside-down wires with normal cut action, without equipment or Double Detector 2000.
   - Failure explodes bomb.
-  - Duo Cut on teammate's upside-down wire is allowed by choice/necessity, but detonator advances `1`.
+  - Dual Cut on teammate's upside-down wire is allowed by choice/necessity, but detonator advances `1`.
 
 > **FAQ:** With 2 stands, only 2 wires total are flipped. The lowest-value upside-down wire goes to the far-left of the 1st stand, and the highest-value goes to the far-right of the 2nd stand.
 
