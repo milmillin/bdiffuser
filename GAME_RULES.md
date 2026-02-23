@@ -769,7 +769,7 @@ Baseline assumption used in this section:
 
 ### Mission 21
 
-- Card title: `Kouign amann mortal`
+- Card title: `Death by Haggis`
 - Setup:
   - Red setup: `1 out of 2`.
   - Replace normal info tokens with even/odd tokens.
