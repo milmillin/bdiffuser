@@ -9,7 +9,7 @@
     "dev:server": "pnpm --filter server dev",
     "dev:all": "pnpm --parallel --filter client --filter server dev",
     "mission:test": "node scripts/mission-tester/run-campaign.mjs",
-    "build": "pnpm --filter shared build && pnpm --filter client build",
+    "build": "pnpm --filter client build",
     "typecheck": "pnpm -r typecheck",
     "deploy:server": "pnpm --filter server run deploy",
     "deploy:client": "pnpm --filter client exec wrangler deploy",
