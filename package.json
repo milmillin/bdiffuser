@@ -1,11 +1,17 @@
 {
   "name": "bomb-busters",
   "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+  },
   "scripts": {
     "dev": "pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",
     "dev:all": "pnpm --parallel --filter client --filter server dev",
     "build": "pnpm --filter shared build && pnpm --filter client build",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "deploy:server": "pnpm --filter server run deploy",
+    "deploy:client": "pnpm --filter client exec wrangler deploy",
+    "deploy": "pnpm run deploy:server && pnpm build && pnpm run deploy:client"
   }
 }
