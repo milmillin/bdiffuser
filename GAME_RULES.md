@@ -455,21 +455,22 @@ Normalization note:
 
 ### Mission 3
 
-- Card title: `TRAINING, 3rd day` (`Lesson 3: (NOT) cutting a RED wire`)
+- Card title: `TRAINING, Day 3` (`Lesson 3: How (NOT!) to cut a RED wire`)
 - Setup:
   - Use `40` blue wires: values `1` to `10` only.
   - Add `1` red wire, drawn from values `1.5` to `9.5`.
   - Place equipment cards by player count (randomly drawn).
-  - If equipment `11` (`Coffee Thermos`) or `12` (`Label =`) is drawn, replace it.
+  - If equipment `2` (`Walkies-Talkies`) or `12` (`Label =`) is drawn, discard it and replace it with a new card.
 - Mission rule (back):
-  - Red wire introduced: cutting red immediately explodes bomb (mission failure).
+  - `RED` wires are introduced:
+    - If a `RED` wire is ever cut, the bomb explodes immediately and the mission ends in failure.
   - New action `Reveal Your Red Wires`:
-    - If a player starts turn with only red wire(s) uncut, they reveal them.
+    - If a player starts their turn with only `RED` wires remaining in hand, they must reveal them.
     - That player's work is finished; teammates continue.
   - Equipment introduced:
-    - Not usable at game start.
+    - Equipment is not usable at game start.
     - Becomes usable once 2 wires of matching equipment value are cut.
-    - Each equipment can be used once.
+    - Each equipment card can be used once.
 
 ### Mission 4
 
