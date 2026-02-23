@@ -1655,6 +1655,10 @@ Baseline assumption used in this section:
 
 - The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
 
+### Challenge 9
+
+- A tile stand has only uncut ODD wires. (`3`, `3`, `5`, and `9` must be uncut). This must be satisfied on one tile stand with a minimum of 6 uncut wires, ignoring RED and YELLOW wires.
+
 ### Challenge 10
 
 - On a single tile stand, at least 7 wires have been cut, but the 2 wires on each end have not been cut yet.
