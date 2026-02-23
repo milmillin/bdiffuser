@@ -404,7 +404,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_63`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — source front/back verified cleanly and matches existing GAME_RULES.md entry.`).
 - [ ] `mission_64`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_65`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
-- [ ] `mission_66`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_66`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to \`The Final Countdown\`; ACTION-constraint square wording aligned from "hatched" to "striped" using source OCR.`).
 
 #### Equipment Cards (18)
 - [ ] `equipment_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

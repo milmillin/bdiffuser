@@ -1598,7 +1598,7 @@ Baseline assumption used in this section:
 
 ### Mission 66
 
-- Card title: `The final boss!`
+- Card title: `The Final Countdown`
 - Setup:
   - Add `2` red wires and `2` yellow wires.
   - Place `BUNKER` card next to board.
@@ -1609,7 +1609,7 @@ Baseline assumption used in this section:
   - After every cut action (success or failure), active player must move Bomb Busters pawn in direction of a satisfied constraint, choosing among valid options.
   - Yellow wires are cut only when instructed by mission flow.
   - Walls are impassable; if all possible moves hit walls, pawn stays in place.
-  - On hatched squares, a cut that matches `ACTION` constraint allows a mission action (explained during mission flow).
+  - On striped squares, a cut that matches `ACTION` constraint allows a mission action (explained during mission flow).
   - Solo Cut of 4 wires counts as two separate cuts for movement/action resolution.
   - Mission card also specifies:
     - succeed on an `ACTION`-constraint cut without movement,
