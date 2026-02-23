@@ -4,6 +4,7 @@ import type {
   GameState,
   Player,
 } from "@bomb-busters/shared";
+import { requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
 
 function legalityError(
   code: ActionLegalityCode,
@@ -19,11 +20,11 @@ export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
-  // Mission 11, 2-player override: captain does not place an info token.
-  if (state.mission === 11 && state.players.length === 2 && player.isCaptain) {
-    return 0;
-  }
-  return 1;
+  return requiredSetupInfoTokenCountForMission(
+    state.mission,
+    state.players.length,
+    player.isCaptain,
+  );
 }
 
 /**

@@ -231,7 +231,14 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 - [x] Add generated mission summary docs for human review.
   - [x] Added generator script `scripts/generate-mission-summary.mjs`
   - [x] Added generated artifact `packages/shared/MISSION_SUMMARY_GENERATED.md`
-- [ ] Add telemetry dashboard for mission failure reasons.
+- [x] Add telemetry dashboard for mission failure reasons.
+  - [x] Emit structured `mission_failure` telemetry events from server loss paths.
+  - [x] Add server tests for mission-failure telemetry emission paths.
+  - [x] Add aggregation/persistence for mission-failure telemetry counters.
+    - [x] Added migration-safe `failureCounters` to room snapshot persistence
+    - [x] Increment counters on new mission failures in player/bot/timer flows
+  - [x] Expose mission-failure telemetry via an endpoint/dashboard surface.
+    - [x] Added room HTTP endpoint `.../telemetry/failure-counters`
 
 ## Definition of Done (Campaign Rules Parity)
 - [ ] All missions have schema-accurate setup for all allowed player counts.

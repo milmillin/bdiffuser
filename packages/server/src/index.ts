@@ -9,6 +9,7 @@ import type {
   ChatMessage,
   UseEquipmentPayload,
   GameState,
+  GameResult,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
@@ -37,6 +38,12 @@ import {
   normalizeRoomState,
   type RoomStateSnapshot,
 } from "./storageMigrations.js";
+import {
+  incrementFailureCounter,
+  isFailureReason,
+  cloneFailureCounters,
+  ZERO_FAILURE_COUNTERS,
+} from "./failureCounters.js";
 import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
 import {
   requiredSetupInfoTokenCount,
@@ -60,6 +67,7 @@ export class BombBustersServer extends Server<Env> {
     hostId: null,
     botCount: 0,
     botLastActionTurn: {},
+    failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
   };
 
   async onStart() {
@@ -79,6 +87,12 @@ export class BombBustersServer extends Server<Env> {
     } catch (e) {
       console.error("Failed to save room state to storage:", e);
     }
+  }
+
+  private maybeRecordMissionFailure(previousResult: GameResult | null, state: GameState): void {
+    if (isFailureReason(previousResult)) return;
+    if (!isFailureReason(state.result)) return;
+    incrementFailureCounter(this.room.failureCounters, state.result);
   }
 
   onConnect(connection: Connection) {
@@ -409,7 +423,9 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    const previousResult = state.result;
     const action = executeDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue, actorTileIndex);
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastAction(action);
@@ -445,6 +461,7 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    const previousResult = state.result;
     const action = executeDualCutDoubleDetector(
       state,
       conn.id,
@@ -454,6 +471,7 @@ export class BombBustersServer extends Server<Env> {
       guessValue,
       actorTileIndex,
     );
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastAction(action);
@@ -475,7 +493,9 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    const previousResult = state.result;
     const action = executeSoloCut(state, conn.id, value);
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastAction(action);
@@ -497,7 +517,9 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    const previousResult = state.result;
     const action = executeRevealReds(state, conn.id);
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastAction(action);
@@ -523,7 +545,9 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    const previousResult = state.result;
     const action = executeUseEquipment(state, conn.id, equipmentId, payload);
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastAction(action);
@@ -729,9 +753,11 @@ export class BombBustersServer extends Server<Env> {
     try {
       // Check timer expiry first (takes priority over bot turns)
       if (state.timerDeadline != null && Date.now() >= state.timerDeadline) {
+        const previousResult = state.result;
         state.result = "loss_timer";
         state.phase = "finished";
         emitMissionFailureTelemetry(state, "loss_timer", "system");
+        this.maybeRecordMissionFailure(previousResult, state);
         state.log.push({
           turn: state.turnNumber,
           playerId: "system",
@@ -793,6 +819,7 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const botAction = botResult.action;
+    const previousResult = state.result;
     let action: import("@bomb-busters/shared").GameAction;
     switch (botAction.action) {
       case "chooseNextPlayer": {
@@ -879,6 +906,8 @@ export class BombBustersServer extends Server<Env> {
       }
     }
 
+    this.maybeRecordMissionFailure(previousResult, state);
+
     // Track this bot's last action turn for context windowing
     this.room.botLastActionTurn[botId] = state.turnNumber;
 
@@ -886,6 +915,30 @@ export class BombBustersServer extends Server<Env> {
     this.broadcastAction(action);
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
+  }
+
+  onRequest(request: Request): Response {
+    const url = new URL(request.url);
+    if (!url.pathname.endsWith("/telemetry/failure-counters")) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    if (request.method !== "GET") {
+      return new Response("Method not allowed", {
+        status: 405,
+        headers: { Allow: "GET" },
+      });
+    }
+
+    const { loss_red_wire, loss_detonator, loss_timer } = this.room.failureCounters;
+    return Response.json({
+      roomId: this.name,
+      scope: "room_lifetime",
+      currentMission: this.room.mission,
+      failureCounters: this.room.failureCounters,
+      totalFailures: loss_red_wire + loss_detonator + loss_timer,
+      queriedAt: Date.now(),
+    });
   }
 
   // -- Broadcast helpers ------------------------------------------------

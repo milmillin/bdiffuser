@@ -69,7 +69,9 @@ async function main() {
 
   const runStamp = new Date().toISOString().replace(/[:.]/g, "-");
   const outputRoot =
-    args.output ?? path.join(repoRoot, "output", "codex-mission-tests", runStamp);
+    args.output && args.output.trim()
+      ? path.resolve(args.output)
+      : path.join(repoRoot, "output", "codex-mission-tests", runStamp);
   await mkdir(outputRoot, { recursive: true });
 
   const campaignResults = [];

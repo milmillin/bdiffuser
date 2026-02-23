@@ -33,6 +33,52 @@ describe("setupTokenRules", () => {
     expect(requiredSetupInfoTokenCount(state, captain)).toBe(1);
   });
 
+  it("mission 18: all players require 0 setup info tokens", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const p2 = makePlayer({ id: "p2", infoTokens: [] });
+    const p3 = makePlayer({ id: "p3", infoTokens: [] });
+    const state = makeGameState({ mission: 18, players: [captain, p2, p3] });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(0);
+    expect(requiredSetupInfoTokenCount(state, p2)).toBe(0);
+    expect(requiredSetupInfoTokenCount(state, p3)).toBe(0);
+    expect(allSetupInfoTokensPlaced(state)).toBe(true);
+  });
+
+  it("mission 18 (2p): both captain and partner require 0 setup info tokens", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+    const state = makeGameState({ mission: 18, players: [captain, partner] });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(0);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(0);
+    expect(allSetupInfoTokensPlaced(state)).toBe(true);
+  });
+
+  it.each([13, 27, 29] as const)(
+    "mission %i (2p): captain requires 0 setup info tokens",
+    (mission) => {
+      const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+      const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+      const state = makeGameState({ mission, players: [captain, partner] });
+
+      expect(requiredSetupInfoTokenCount(state, captain)).toBe(0);
+      expect(requiredSetupInfoTokenCount(state, partner)).toBe(1);
+    },
+  );
+
+  it.each([13, 27, 29] as const)(
+    "mission %i (3p): captain still requires setup info token",
+    (mission) => {
+      const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+      const p2 = makePlayer({ id: "p2", infoTokens: [] });
+      const p3 = makePlayer({ id: "p3", infoTokens: [] });
+      const state = makeGameState({ mission, players: [captain, p2, p3] });
+
+      expect(requiredSetupInfoTokenCount(state, captain)).toBe(1);
+    },
+  );
+
   it("non-mission-11 (2p): captain requires token", () => {
     const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
     const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });

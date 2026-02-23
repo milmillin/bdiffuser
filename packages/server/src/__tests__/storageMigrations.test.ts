@@ -11,6 +11,11 @@ describe("normalizeRoomState", () => {
     expect(normalized.hostId).toBeNull();
     expect(normalized.botCount).toBe(0);
     expect(normalized.botLastActionTurn).toEqual({});
+    expect(normalized.failureCounters).toEqual({
+      loss_red_wire: 0,
+      loss_detonator: 0,
+      loss_timer: 0,
+    });
   });
 
   it("backfills missing top-level defaults from legacy room data", () => {
@@ -32,9 +37,33 @@ describe("normalizeRoomState", () => {
     expect(normalized.hostId).toBe("p1");
     expect(normalized.botCount).toBe(0);
     expect(normalized.botLastActionTurn).toEqual({});
+    expect(normalized.failureCounters).toEqual({
+      loss_red_wire: 0,
+      loss_detonator: 0,
+      loss_timer: 0,
+    });
     expect(normalized.players[0].connected).toBe(true);
     expect(normalized.players[0].isBot).toBe(false);
     expect(normalized.players[0].characterUsed).toBe(false);
+  });
+
+  it("preserves and normalizes failure counters from stored room data", () => {
+    const legacy = {
+      mission: 10,
+      players: [],
+      failureCounters: {
+        loss_red_wire: 4,
+        loss_detonator: Number.NaN,
+        loss_timer: 2,
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-b2");
+    expect(normalized.failureCounters).toEqual({
+      loss_red_wire: 4,
+      loss_detonator: 0,
+      loss_timer: 2,
+    });
   });
 
   it("normalizes legacy gameState shape with missing arrays and invalid index", () => {

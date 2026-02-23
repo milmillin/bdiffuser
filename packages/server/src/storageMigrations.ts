@@ -14,6 +14,12 @@ import {
   type ChallengeCard,
   type SpecialMarker,
 } from "@bomb-busters/shared";
+import {
+  cloneFailureCounters,
+  normalizeFailureCounters,
+  type FailureCounters,
+  ZERO_FAILURE_COUNTERS,
+} from "./failureCounters.js";
 
 export interface RoomStateSnapshot {
   gameState: GameState | null;
@@ -22,6 +28,7 @@ export interface RoomStateSnapshot {
   hostId: string | null;
   botCount: number;
   botLastActionTurn: Record<string, number>;
+  failureCounters: FailureCounters;
 }
 
 const DEFAULT_ROOM_STATE: RoomStateSnapshot = {
@@ -31,6 +38,7 @@ const DEFAULT_ROOM_STATE: RoomStateSnapshot = {
   hostId: null,
   botCount: 0,
   botLastActionTurn: {},
+  failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -408,7 +416,13 @@ function normalizeGameState(
 }
 
 export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnapshot {
-  if (!isObject(raw)) return { ...DEFAULT_ROOM_STATE };
+  if (!isObject(raw)) {
+    return {
+      ...DEFAULT_ROOM_STATE,
+      botLastActionTurn: { ...DEFAULT_ROOM_STATE.botLastActionTurn },
+      failureCounters: cloneFailureCounters(DEFAULT_ROOM_STATE.failureCounters),
+    };
+  }
 
   const roomPlayers = Array.isArray(raw.players)
     ? raw.players.map((p, i) => normalizePlayer(p, i))
@@ -439,6 +453,8 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
     }
   }
 
+  const failureCounters = normalizeFailureCounters(raw.failureCounters);
+
   return {
     gameState,
     players,
@@ -446,5 +462,6 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
     hostId,
     botCount,
     botLastActionTurn,
+    failureCounters,
   };
 }

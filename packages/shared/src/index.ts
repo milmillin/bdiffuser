@@ -8,3 +8,4 @@ export * from "./equipmentCardText.js";
 export * from "./characterCardText.js";
 export * from "./wireLabel.js";
 export * from "./visibility.js";
+export * from "./setupInfoTokenRules.js";
