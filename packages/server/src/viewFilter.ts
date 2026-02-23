@@ -41,6 +41,7 @@ function filterPlayer(player: Player, viewerId: string): ClientPlayer {
     infoTokens: player.infoTokens,
     characterUsed: player.characterUsed,
     connected: player.connected,
+    isBot: player.isBot,
     remainingTiles: player.hand.filter((t) => !t.cut).length,
   };
 }
@@ -79,6 +80,7 @@ export function createLobbyState(
       character: p.character,
       isHost: p.id === hostId,
       connected: p.connected,
+      isBot: p.isBot,
     })),
     mission: mission as any,
     hostId,

@@ -34,6 +34,9 @@ export function PlayerStand({
         )}
         <span className="font-bold text-sm">
           {player.name}
+          {player.isBot && (
+            <span className="ml-1 text-purple-400 text-xs">(AI)</span>
+          )}
           {player.isCaptain && (
             <span className="ml-1 text-yellow-500 text-xs">(Captain)</span>
           )}

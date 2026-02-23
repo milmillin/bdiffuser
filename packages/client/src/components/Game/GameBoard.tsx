@@ -105,7 +105,14 @@ export function GameBoard({
 
           {!isMyTurn && gameState.phase === "playing" && (
             <div className="text-center py-2 text-gray-400" data-testid="waiting-turn">
-              Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span>'s turn...
+              {currentPlayer?.isBot ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-purple-300 font-bold">{currentPlayer.name}</span> is thinking...
+                </span>
+              ) : (
+                <>Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span>'s turn...</>
+              )}
             </div>
           )}
         </div>

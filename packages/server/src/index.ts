@@ -19,10 +19,16 @@ import {
   executeSoloCut,
   executeRevealReds,
 } from "./gameLogic.js";
+import {
+  createBotPlayer,
+  botPlaceInfoToken,
+  getBotAction,
+} from "./botController.js";
 
 interface Env {
   [key: string]: unknown;
   BombBustersServer: DurableObjectNamespace;
+  ZHIPU_API_KEY: string;
 }
 
 interface RoomState {
@@ -30,6 +36,7 @@ interface RoomState {
   players: Player[];
   mission: MissionId;
   hostId: string | null;
+  botCount: number;
 }
 
 export class BombBustersServer extends Server<Env> {
@@ -38,6 +45,7 @@ export class BombBustersServer extends Server<Env> {
     players: [],
     mission: 1,
     hostId: null,
+    botCount: 0,
   };
 
   async onStart() {
@@ -113,6 +121,12 @@ export class BombBustersServer extends Server<Env> {
       case "revealReds":
         this.handleRevealReds(connection);
         break;
+      case "addBot":
+        this.handleAddBot(connection);
+        break;
+      case "removeBot":
+        this.handleRemoveBot(connection, msg.botId);
+        break;
       default:
         this.sendMsg(connection, { type: "error", message: "Unknown message type" });
     }
@@ -152,6 +166,7 @@ export class BombBustersServer extends Server<Env> {
         infoTokens: [],
         characterUsed: false,
         connected: true,
+        isBot: false,
       };
       this.room.players.push(player);
 
@@ -232,8 +247,12 @@ export class BombBustersServer extends Server<Env> {
       log: [],
     };
 
+    // Auto-place info tokens for bots
+    this.handleBotInfoTokens();
+
     this.saveState();
     this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   handlePlaceInfoToken(conn: Connection, value: number, tileIndex: number) {
@@ -265,6 +284,7 @@ export class BombBustersServer extends Server<Env> {
 
     this.saveState();
     this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   handleDualCut(
@@ -287,6 +307,7 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastAction(action);
     this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   handleSoloCut(conn: Connection, value: number | "YELLOW") {
@@ -304,6 +325,7 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastAction(action);
     this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   handleRevealReds(conn: Connection) {
@@ -321,6 +343,149 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastAction(action);
     this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  // -- Bot handlers -----------------------------------------------------
+
+  handleAddBot(conn: Connection) {
+    if (this.room.gameState) {
+      this.sendMsg(conn, { type: "error", message: "Cannot add bots during game" });
+      return;
+    }
+    if (conn.id !== this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Only the host can add bots" });
+      return;
+    }
+    if (this.room.players.length >= 5) {
+      this.sendMsg(conn, { type: "error", message: "Room is full (max 5 players)" });
+      return;
+    }
+
+    this.room.botCount++;
+    const botId = `bot-${this.room.botCount}`;
+    const bot = createBotPlayer(botId, this.room.botCount - 1);
+    this.room.players.push(bot);
+
+    this.saveState();
+    this.broadcastLobby();
+  }
+
+  handleRemoveBot(conn: Connection, botId: string) {
+    if (this.room.gameState) {
+      this.sendMsg(conn, { type: "error", message: "Cannot remove bots during game" });
+      return;
+    }
+    if (conn.id !== this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Only the host can remove bots" });
+      return;
+    }
+
+    const idx = this.room.players.findIndex((p) => p.id === botId && p.isBot);
+    if (idx === -1) {
+      this.sendMsg(conn, { type: "error", message: "Bot not found" });
+      return;
+    }
+
+    this.room.players.splice(idx, 1);
+    this.saveState();
+    this.broadcastLobby();
+  }
+
+  /** Auto-place info tokens for all bots during setup phase */
+  handleBotInfoTokens() {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "setup_info_tokens") return;
+
+    for (const player of state.players) {
+      if (player.isBot) {
+        botPlaceInfoToken(state, player.id);
+      }
+    }
+
+    // Check if all players have placed tokens (bots + humans who already placed)
+    const allPlaced = state.players.every((p) => p.infoTokens.length > 0);
+    if (allPlaced) {
+      state.phase = "playing";
+      state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
+      state.turnNumber = 1;
+    }
+  }
+
+  /** Schedule an alarm if it's a bot's turn */
+  scheduleBotTurnIfNeeded() {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (currentPlayer?.isBot) {
+      this.ctx.storage.setAlarm(Date.now() + 1500);
+    }
+  }
+
+  async onAlarm() {
+    await this.executeBotTurn();
+  }
+
+  async executeBotTurn() {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer?.isBot) return;
+
+    const botId = currentPlayer.id;
+    const apiKey = (this.env as Env).ZHIPU_API_KEY;
+
+    const botAction = await getBotAction(state, botId, apiKey || "");
+
+    let action: import("@bomb-busters/shared").GameAction;
+    switch (botAction.action) {
+      case "dualCut": {
+        const error = validateDualCut(
+          state,
+          botId,
+          botAction.targetPlayerId,
+          botAction.targetTileIndex,
+          botAction.guessValue,
+        );
+        if (error) {
+          console.log(`Bot ${botId} dualCut validation failed: ${error}`);
+          return;
+        }
+        action = executeDualCut(
+          state,
+          botId,
+          botAction.targetPlayerId,
+          botAction.targetTileIndex,
+          botAction.guessValue,
+        );
+        break;
+      }
+      case "soloCut": {
+        const error = validateSoloCut(state, botId, botAction.value);
+        if (error) {
+          console.log(`Bot ${botId} soloCut validation failed: ${error}`);
+          return;
+        }
+        action = executeSoloCut(state, botId, botAction.value);
+        break;
+      }
+      case "revealReds": {
+        const error = validateRevealReds(state, botId);
+        if (error) {
+          console.log(`Bot ${botId} revealReds validation failed: ${error}`);
+          return;
+        }
+        action = executeRevealReds(state, botId);
+        break;
+      }
+    }
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   // -- Broadcast helpers ------------------------------------------------

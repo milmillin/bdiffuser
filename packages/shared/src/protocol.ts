@@ -23,7 +23,9 @@ export type ClientMessage =
   | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number | "YELLOW" }
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
-  | { type: "useEquipment"; equipmentId: string };
+  | { type: "useEquipment"; equipmentId: string }
+  | { type: "addBot" }
+  | { type: "removeBot"; botId: string };
 
 // ── Server → Client Messages ───────────────────────────────
 

@@ -43,6 +43,7 @@ export interface Player {
   /** Whether this player's character ability has been used */
   characterUsed: boolean;
   connected: boolean;
+  isBot: boolean;
 }
 
 export interface InfoToken {
@@ -146,6 +147,7 @@ export interface ClientPlayer {
   infoTokens: InfoToken[];
   characterUsed: boolean;
   connected: boolean;
+  isBot: boolean;
   /** Total tile count (for UI display) */
   remainingTiles: number;
 }
@@ -165,4 +167,5 @@ export interface LobbyPlayer {
   character: CharacterId | null;
   isHost: boolean;
   connected: boolean;
+  isBot: boolean;
 }

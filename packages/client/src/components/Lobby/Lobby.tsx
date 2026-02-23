@@ -55,11 +55,22 @@ export function Lobby({
                 }`}
               >
                 <span className="font-medium flex-1">{p.name}</span>
+                {p.isBot && (
+                  <span className="text-xs bg-purple-600 px-2 py-0.5 rounded font-bold">BOT</span>
+                )}
                 {p.isHost && (
                   <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded font-bold">HOST</span>
                 )}
-                {!p.connected && (
+                {!p.connected && !p.isBot && (
                   <span className="text-xs text-red-400">Disconnected</span>
+                )}
+                {p.isBot && isHost && (
+                  <button
+                    onClick={() => send({ type: "removeBot", botId: p.id })}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
                 )}
               </div>
             ))}
@@ -116,6 +127,14 @@ export function Lobby({
           >
             Leave
           </button>
+          {isHost && lobby.players.length < 5 && (
+            <button
+              onClick={() => send({ type: "addBot" })}
+              className="px-4 py-2 bg-purple-700 hover:bg-purple-600 rounded-lg transition-colors font-bold"
+            >
+              + Bot
+            </button>
+          )}
           {isHost && (
             <button
               onClick={() => send({ type: "startGame" })}
