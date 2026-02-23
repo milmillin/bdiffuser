@@ -286,6 +286,14 @@ export function validateDualCutDoubleDetectorLegality(
     );
   }
 
+  // Mission 13: detector effects can only target blue wires.
+  if (state.mission === 13 && (tile1.color !== "blue" || tile2.color !== "blue")) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Detectors can only target blue wires in mission 13",
+    );
+  }
+
   if (typeof guessValue !== "number") {
     return legalityError(
       "DOUBLE_DETECTOR_GUESS_NOT_BLUE",

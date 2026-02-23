@@ -706,6 +706,55 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("mission 13: rejects Triple Detector targeting non-blue wires", () => {
+    const state = buildStateForEquipmentMatrix("triple_detector");
+    state.mission = 13;
+    state.players[1].hand[1] = makeRedTile({ id: "t2-red" });
+
+    const error = validateUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "teammate",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 4,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 13: rejects Super Detector when target stand has no blue wires", () => {
+    const state = buildStateForEquipmentMatrix("super_detector");
+    state.mission = 13;
+    state.players[1].hand = [
+      makeRedTile({ id: "t1-red" }),
+      makeYellowTile({ id: "t2-yellow" }),
+      makeRedTile({ id: "t3-red" }),
+    ];
+
+    const error = validateUseEquipment(state, "actor", "super_detector", {
+      kind: "super_detector",
+      targetPlayerId: "teammate",
+      guessValue: 4,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 13: rejects X or Y Ray targeting non-blue wires", () => {
+    const state = buildStateForEquipmentMatrix("x_or_y_ray");
+    state.mission = 13;
+    state.players[1].hand[1] = makeYellowTile({ id: "t2-yellow" });
+
+    const error = validateUseEquipment(state, "actor", "x_or_y_ray", {
+      kind: "x_or_y_ray",
+      targetPlayerId: "teammate",
+      targetTileIndex: 1,
+      guessValueA: 4,
+      guessValueB: 7,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {

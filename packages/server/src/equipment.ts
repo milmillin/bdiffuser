@@ -63,6 +63,13 @@ function isXMarkedWire(tile: WireTile | undefined): boolean {
   return tile?.isXMarked === true;
 }
 
+function isMission13NonBlueTarget(
+  state: Readonly<GameState>,
+  tile: WireTile | undefined,
+): boolean {
+  return state.mission === 13 && tile?.color !== "blue";
+}
+
 function countCutValue(state: GameState, value: number): number {
   let count = 0;
   for (const player of state.players) {
@@ -380,6 +387,12 @@ export function validateUseEquipment(
         const tile = getTileByFlatIndex(target, index);
         if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
         if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+        if (isMission13NonBlueTarget(state, tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "Detectors can only target blue wires in mission 13",
+          );
+        }
         if (state.mission === 20 && isXMarkedWire(tile)) {
           return legalityError(
             "MISSION_RULE_VIOLATION",
@@ -409,10 +422,18 @@ export function validateUseEquipment(
           "You don't have an uncut wire with that value",
         );
       }
-      const eligibleTiles = getUncutTiles(target).filter(
-        (tile) => !(state.mission === 20 && isXMarkedWire(tile)),
-      );
+      const eligibleTiles = getUncutTiles(target).filter((tile) => {
+        if (isMission13NonBlueTarget(state, tile)) return false;
+        if (state.mission === 20 && isXMarkedWire(tile)) return false;
+        return true;
+      });
       if (eligibleTiles.length === 0) {
+        if (state.mission === 13) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "Detectors can only target blue wires in mission 13",
+          );
+        }
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
           state.mission === 20
@@ -437,6 +458,12 @@ export function validateUseEquipment(
         return legalityError(
           "MISSION_RULE_VIOLATION",
           "X-marked wires are ignored by equipment in mission 20",
+        );
+      }
+      if (isMission13NonBlueTarget(state, tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Detectors can only target blue wires in mission 13",
         );
       }
       const { guessValueA, guessValueB } = payload;

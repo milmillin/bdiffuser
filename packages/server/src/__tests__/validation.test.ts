@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { makeTile, makePlayer, makeGameState } from "@bomb-busters/shared/testing";
+import {
+  makeTile,
+  makePlayer,
+  makeGameState,
+  makeRedTile,
+} from "@bomb-busters/shared/testing";
 import {
   isPlayersTurn,
   validateActionWithHooks,
@@ -730,6 +735,16 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     const { state } = baseDDSetup("double_detector");
     state.mission = 20;
     state.players[1].hand[0].isXMarked = true;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 13: Double Detector cannot target non-blue wires", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.mission = 13;
+    state.players[1].hand[0] = makeRedTile({ id: "t1" });
 
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
     expect(error).not.toBeNull();
