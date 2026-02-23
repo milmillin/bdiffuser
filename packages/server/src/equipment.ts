@@ -626,6 +626,15 @@ export function executeUseEquipment(
       const theirs = teammate.hand[payload.teammateTileIndex];
       actor.hand[payload.myTileIndex] = theirs;
       teammate.hand[payload.teammateTileIndex] = mine;
+
+      // Mission 24 FAQ: x1/x2/x3 count tokens on swapped wires are discarded.
+      actor.infoTokens = actor.infoTokens.filter(
+        (t) => !(t.position === payload.myTileIndex && t.countHint != null),
+      );
+      teammate.infoTokens = teammate.infoTokens.filter(
+        (t) => !(t.position === payload.teammateTileIndex && t.countHint != null),
+      );
+
       addLog(
         state,
         actorId,

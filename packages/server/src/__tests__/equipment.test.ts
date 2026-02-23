@@ -1167,6 +1167,94 @@ describe("equipment execution", () => {
     expect(state.board.equipment[0].used).toBe(true);
   });
 
+  it("mission 24: talkies-walkies discards x1/x2/x3 count tokens on swapped wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "a2", gameValue: 5, sortValue: 5 }),
+      ],
+      infoTokens: [
+        { value: 0, countHint: 2, position: 0, isYellow: false },
+        { value: 0, countHint: 1, position: 1, isYellow: false },
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [
+        makeTile({ id: "t1", gameValue: 7, sortValue: 7 }),
+        makeTile({ id: "t2", gameValue: 9, sortValue: 9 }),
+      ],
+      infoTokens: [
+        { value: 0, countHint: 3, position: 0, isYellow: false },
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+    state.mission = 24;
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies");
+    // Count token on actor position 0 should be discarded; position 1 kept
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 0, countHint: 1, position: 1, isYellow: false },
+    ]);
+    // Count token on teammate position 0 should be discarded
+    expect(state.players[1].infoTokens).toEqual([]);
+  });
+
+  it("talkies-walkies does not discard non-count info tokens on swapped wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "a2", gameValue: 5, sortValue: 5 }),
+      ],
+      infoTokens: [
+        { value: 3, position: 0, isYellow: false },
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [
+        makeTile({ id: "t1", gameValue: 7, sortValue: 7 }),
+      ],
+      infoTokens: [
+        { value: 7, position: 0, isYellow: false },
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    // Normal numeric tokens should NOT be discarded
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 3, position: 0, isYellow: false },
+    ]);
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 7, position: 0, isYellow: false },
+    ]);
+  });
+
   it("emergency batteries resets used character abilities for selected players", () => {
     const actor = makePlayer({
       id: "actor",
