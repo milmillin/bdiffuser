@@ -25,14 +25,11 @@ pnpm typecheck
 # Run tests (Vitest)
 pnpm test
 
-# Fast smoke check (typecheck + test) — runs automatically on every commit
-pnpm smoke
-
 # Build for production (builds shared first, then client)
 pnpm build
 ```
 
-A pre-commit hook runs `pnpm smoke` on every commit. It is installed automatically via the `prepare` script when you run `pnpm install`.
+A pre-commit hook runs `pnpm build` on every commit. It is installed automatically via the `prepare` script when you run `pnpm install`.
 
 ## Architecture
 
