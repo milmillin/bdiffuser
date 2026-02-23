@@ -35,10 +35,20 @@ export function ActionLog({
           <div key={i} className="text-xs text-gray-300 leading-snug">
             <span className="text-gray-500 font-mono mr-1">T{entry.turn}</span>
             <span className="text-gray-400">{playerName(entry.playerId)}:</span>{" "}
-            {entry.detail}
+            <FormattedDetail detail={entry.detail} />
           </div>
         ))}
       </div>
     </div>
   );
+}
+
+function FormattedDetail({ detail }: { detail: string }) {
+  if (detail.endsWith(" ✗")) {
+    return <>{detail.slice(0, -1)}<span className="text-red-400 font-bold">✗</span></>;
+  }
+  if (detail.endsWith(" ✓")) {
+    return <>{detail.slice(0, -1)}<span className="text-green-400 font-bold">✓</span></>;
+  }
+  return <>{detail}</>;
 }

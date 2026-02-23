@@ -56,10 +56,11 @@ export function PlayerStand({
         )}
       </div>
 
-      {/* Two-row grid: info tokens on top, wires below */}
+      {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {
         const colWidth = isOpponent ? "1.5rem" : "2rem";
         return (
+          <div className="overflow-x-auto">
           <div className={`inline-grid gap-x-1 ${isOpponent ? "mx-auto" : ""}`}
             style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
           >
@@ -97,6 +98,7 @@ export function PlayerStand({
                 {wireLabel(idx)}
               </div>
             ))}
+          </div>
           </div>
         );
       })()}
