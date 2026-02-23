@@ -783,7 +783,7 @@ Baseline assumption used in this section:
 
 ### Mission 22
 
-- Card title: `None of that in my house!`
+- Card title: `Negative Impressions`
 - Setup:
   - Add `1` red wire.
   - Add `4` yellow wires.

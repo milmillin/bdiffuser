@@ -360,7 +360,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_19`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to In the Belly of the Beast; setup and rule text confirmed against front/back source images.`).
 - [x] `mission_20`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to The Big Bad Wolf; setup and rule text confirmed against front/back source images.`).
 - [x] `mission_21`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title updated to "Death by Haggis"; setup/back-rule wording aligned to source images.`).
-- [ ] `mission_22`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_22`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to \`Negative Impressions\`; setup and back-rule text confirmed against front/back source images.`).
 - [ ] `mission_23`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_24`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_25`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
