@@ -72,6 +72,12 @@ describe("missionHooks dispatcher", () => {
       expect(rules.length).toBe(1);
       expect(rules[0].kind).toBe("number_deck_equipment_reveal");
     });
+
+    it("returns hookRules for mission 23", () => {
+      const rules = getHookRules(23);
+      expect(rules.length).toBe(1);
+      expect(rules[0].kind).toBe("hidden_equipment_pile");
+    });
   });
 
   describe("handler registry", () => {
@@ -82,6 +88,7 @@ describe("missionHooks dispatcher", () => {
       expect(hasHandler("blue_value_treated_as_red")).toBe(true);
       expect(hasHandler("equipment_double_lock")).toBe(true);
       expect(hasHandler("number_deck_equipment_reveal")).toBe(true);
+      expect(hasHandler("hidden_equipment_pile")).toBe(true);
     });
   });
 
@@ -257,6 +264,29 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.visible[0].faceUp).toBe(true);
       expect(numberCards!.deck).toHaveLength(11);
       expect(numberCards!.discard).toHaveLength(0);
+    });
+
+    it("mission 23: initializes hidden equipment pile with 7 face-down cards", () => {
+      const state = makeGameState({
+        mission: 23,
+        board: makeBoardState({ equipment: [] }),
+        log: [],
+      });
+      dispatchHooks(23, { point: "setup", state });
+
+      expect(state.board.equipment).toHaveLength(7);
+      expect(new Set(state.board.equipment.map((card) => card.id)).size).toBe(7);
+      for (const card of state.board.equipment) {
+        expect(card.faceDown).toBe(true);
+        expect(card.unlocked).toBe(false);
+        expect(card.used).toBe(false);
+      }
+
+      const setupLog = state.log.find(
+        (entry) => entry.action === "hookSetup" && entry.detail.startsWith("hidden_equipment_pile:"),
+      );
+      expect(setupLog).toBeDefined();
+      expect(setupLog?.detail).toBe("hidden_equipment_pile:7");
     });
 
     it("mission 9: initializes sequence cards and pointer", () => {

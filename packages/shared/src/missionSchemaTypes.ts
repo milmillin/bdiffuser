@@ -108,6 +108,15 @@ export interface NumberDeckEquipmentRevealRuleDef {
 }
 
 /**
+ * Mission 23: replaces normal equipment setup with a face-down pile.
+ */
+export interface HiddenEquipmentPileRuleDef {
+  kind: "hidden_equipment_pile";
+  /** Number of random equipment cards in the hidden pile. */
+  pileSize: number;
+}
+
+/**
  * Mission 9: Sequence card priority (face A).
  * Three visible number cards define an ordered gating:
  * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
@@ -133,6 +142,7 @@ export type MissionHookRuleDef =
   | BlueAsRedRuleDef
   | EquipmentDoubleLockRuleDef
   | NumberDeckEquipmentRevealRuleDef
+  | HiddenEquipmentPileRuleDef
   | SequencePriorityRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────

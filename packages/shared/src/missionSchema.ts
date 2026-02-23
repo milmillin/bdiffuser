@@ -26,6 +26,7 @@ export type {
   BlueWireSpec,
   DynamicTurnOrderRuleDef,
   EquipmentDoubleLockRuleDef,
+  HiddenEquipmentPileRuleDef,
   NumberDeckEquipmentRevealRuleDef,
   MissionDifficulty,
   MissionEquipmentSpec,

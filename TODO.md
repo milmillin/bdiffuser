@@ -153,6 +153,9 @@ Dependency: blocked by Phase 0C.
     - [x] Mission 15 setup now initializes a Number deck (1 visible + hidden draw pile) and marks equipment face-down.
     - [x] Mission 15 resolve now reveals one equipment card when current Number value reaches 4 cuts, then advances/skips Number cards per card rules.
     - [x] Client view filter now redacts locked face-down equipment details until revealed.
+  - [x] Mission 23: hidden equipment pile setup mode.
+    - [x] Added hook rule `hidden_equipment_pile` and Mission 23 hook wiring.
+    - [x] Mission 23 setup now creates a face-down pile of 7 random base equipment cards (replacing normal setup draw).
 - [ ] Implement remaining campaign equipment behavior variants.
 
 #### Token System Parity

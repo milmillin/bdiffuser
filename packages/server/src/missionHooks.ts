@@ -431,7 +431,7 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-// ── Built-in Hook Handlers (Missions 9/10/11/12/15) ─────────
+// ── Built-in Hook Handlers (Missions 9/10/11/12/15/23) ──────
 
 import type {
   SequencePriorityRuleDef,
@@ -439,6 +439,7 @@ import type {
   DynamicTurnOrderRuleDef,
   BlueAsRedRuleDef,
   EquipmentDoubleLockRuleDef,
+  HiddenEquipmentPileRuleDef,
   NumberDeckEquipmentRevealRuleDef,
 } from "@bomb-busters/shared";
 
@@ -545,6 +546,23 @@ function buildMission15NumberCards() {
     })),
     discard: [] as { id: string; value: number; faceUp: boolean }[],
   };
+}
+
+const BASE_EQUIPMENT_DEFS = EQUIPMENT_DEFS.filter((def) => def.pool === "base");
+
+function buildHiddenEquipmentPile(pileSize: number) {
+  const count = Math.max(0, Math.min(Math.floor(pileSize), BASE_EQUIPMENT_DEFS.length));
+  const selected = shuffle([...BASE_EQUIPMENT_DEFS]).slice(0, count);
+  return selected.map((def) => ({
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    unlockValue: def.unlockValue,
+    unlocked: false,
+    used: false,
+    image: def.image,
+    faceDown: true as const,
+  }));
 }
 
 function revealMission15NextNumberCard(
@@ -986,5 +1004,26 @@ registerHookHandler<"number_deck_equipment_reveal">("number_deck_equipment_revea
     });
 
     return result;
+  },
+});
+
+/**
+ * Mission 23 — Hidden equipment pile setup.
+ *
+ * Setup:
+ * - Replaces normal in-play equipment with a face-down pile of random base cards.
+ * - Cards remain locked until mission-specific progression reveals them.
+ */
+registerHookHandler<"hidden_equipment_pile">("hidden_equipment_pile", {
+  setup(rule: HiddenEquipmentPileRuleDef, ctx: SetupHookContext): void {
+    ctx.state.board.equipment = buildHiddenEquipmentPile(rule.pileSize);
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `hidden_equipment_pile:${ctx.state.board.equipment.length}`,
+      timestamp: Date.now(),
+    });
   },
 });
