@@ -133,7 +133,7 @@ export default function App() {
       {content}
       <div
         data-testid="app-version"
-        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
+        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none lg:hidden"
       >
         {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
       </div>
