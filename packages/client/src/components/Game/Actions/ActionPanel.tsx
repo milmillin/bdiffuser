@@ -165,17 +165,13 @@ function getSoloCutValues(
         values.push(value);
       }
     } else {
-      // Yellow: count total uncut yellow across all players.
-      // We can see our own + cut tiles on opponents.
-      // Any opponent uncut tile is hidden, so if opponents have any
-      // uncut tiles that could be yellow, we can't be sure.
-      // Only offer if no opponents have any uncut tiles at all,
-      // or let server validate. For safety, check if opponents
-      // have any uncut tiles with unknown values.
-      const opponentsHaveUncut = state.players.some(
-        (p) => p.id !== playerId && p.hand.some((t) => !t.cut && t.gameValue == null),
-      );
-      if (!opponentsHaveUncut && myCount >= 1) {
+      // Yellow: total yellow wires in game = number of yellow markers.
+      // Already confirmed (cut) = markers with confirmed === true.
+      // Remaining = total - confirmed. If I hold all remaining, allow solo cut.
+      const totalYellow = state.board.markers.filter((m) => m.color === "yellow").length;
+      const confirmedYellow = state.board.markers.filter((m) => m.color === "yellow" && m.confirmed).length;
+      const remainingYellow = totalYellow - confirmedYellow;
+      if (myCount >= remainingYellow && remainingYellow > 0) {
         values.push("YELLOW");
       }
     }
