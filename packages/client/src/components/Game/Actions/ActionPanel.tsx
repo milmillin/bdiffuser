@@ -33,8 +33,8 @@ function isBaseEquipmentId(id: string): id is BaseEquipmentId {
 }
 
 const DUAL_CUT_STEPS = [
-  { num: 1, label: "Target" },
-  { num: 2, label: "Guess" },
+  { num: 1, label: "Guess" },
+  { num: 2, label: "Target" },
   { num: 3, label: "Cut" },
 ] as const;
 
@@ -180,7 +180,7 @@ export function ActionPanel({
     guessValue != null &&
     isMission9BlockedCutValue(gameState, guessValue);
 
-  const dualCutStep: 1 | 2 | 3 = !selectedTarget ? 1 : guessValue == null ? 2 : 3;
+  const dualCutStep: 1 | 2 | 3 = guessValue == null ? 1 : !selectedTarget ? 2 : 3;
 
   useEffect(() => {
     if (!(gameState.mission === 9 && typeof mission9ActiveValue === "number")) {
@@ -332,7 +332,7 @@ export function ActionPanel({
               Dual Cut
             </button>
           </div>
-        ) : !selectedTarget ? (
+        ) : guessValue == null ? (
           <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-blue-300 uppercase">
@@ -341,9 +341,31 @@ export function ActionPanel({
               <DualCutStepIndicator step={1} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Select a wire on an opponent&apos;s stand</span>
+              <span className="text-sm text-gray-400">Select one of your wires as your guess</span>
               <button
                 onClick={onToggleDualCut}
+                data-testid="dual-cut-cancel"
+                className="text-xs text-red-400 hover:text-red-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : !selectedTarget ? (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-blue-300 uppercase">
+                Dual Cut
+              </div>
+              <DualCutStepIndicator step={2} />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-gray-300" data-testid="dual-cut-out-wire">
+                Guess: wire {wireLabel(selectedGuessTile!)} (value: {String(guessValue)})
+              </span>
+              <span className="text-sm text-gray-400">Select a wire on an opponent&apos;s stand</span>
+              <button
+                onClick={onClearTarget}
                 data-testid="dual-cut-cancel"
                 className="text-xs text-red-400 hover:text-red-300"
               >
@@ -357,7 +379,7 @@ export function ActionPanel({
               <div className="text-xs font-bold text-blue-300 uppercase">
                 Dual Cut
               </div>
-              <DualCutStepIndicator step={dualCutStep} />
+              <DualCutStepIndicator step={3} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-300" data-testid="dual-cut-target">
@@ -375,26 +397,20 @@ export function ActionPanel({
               >
                 Cancel
               </button>
-              {guessValue != null ? (
-                <button
-                  onClick={handleDualCut}
-                  disabled={mission9DualCutBlocked}
-                  data-testid="dual-cut-submit"
-                  className={`px-5 py-2.5 rounded-lg font-black text-base transition-colors ${
-                    mission9DualCutBlocked
-                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/50"
-                  }`}
-                >
-                  {mission9DualCutBlocked
-                    ? `Cut blocked (need ${mission9ActiveValue})`
-                    : `Cut! (Guess: ${String(guessValue)})`}
-                </button>
-              ) : (
-                <span className="text-sm text-gray-400">
-                  Now select one of your wires as your guess
-                </span>
-              )}
+              <button
+                onClick={handleDualCut}
+                disabled={mission9DualCutBlocked}
+                data-testid="dual-cut-submit"
+                className={`px-5 py-2.5 rounded-lg font-black text-base transition-colors ${
+                  mission9DualCutBlocked
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/50"
+                }`}
+              >
+                {mission9DualCutBlocked
+                  ? `Cut blocked (need ${mission9ActiveValue})`
+                  : `Cut! (Guess: ${String(guessValue)})`}
+              </button>
             </div>
           </div>
         )

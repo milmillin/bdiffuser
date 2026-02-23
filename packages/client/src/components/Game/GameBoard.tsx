@@ -268,7 +268,7 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
-    if (selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing") {
+    if (dualCutActive && isMyTurn && gameState.phase === "playing") {
       return selectedGuessTile ?? undefined;
     }
     return undefined;
@@ -307,14 +307,12 @@ export function GameBoard({
                   onTileClick={
                     equipmentMode && MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) && gameState.phase === "playing"
                       ? (tileIndex) => handleOpponentTileClick(opp.id, tileIndex)
-                      : dualCutActive && !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
+                      : dualCutActive && selectedGuessTile != null && !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
                         ? (tileIndex) => {
                             if (selectedTarget?.playerId === opp.id && selectedTarget.tileIndex === tileIndex) {
                               setSelectedTarget(null);
-                              setSelectedGuessTile(null);
                             } else {
                               setSelectedTarget({ playerId: opp.id, tileIndex });
-                              setSelectedGuessTile(null);
                             }
                           }
                         : undefined
@@ -324,7 +322,7 @@ export function GameBoard({
                   tileSelectableFilter={
                     equipmentMode && gameState.phase === "playing"
                       ? getOpponentTileSelectableFilter(opp.id)
-                      : dualCutActive && isMyTurn && gameState.phase === "playing"
+                      : dualCutActive && selectedGuessTile != null && isMyTurn && gameState.phase === "playing"
                         ? (tile: VisibleTile) => !tile.cut
                         : undefined
                   }
@@ -363,7 +361,7 @@ export function GameBoard({
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
-                        : selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing"
+                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
                               if (!tile || tile.cut || tile.color === "red") return;
@@ -384,7 +382,7 @@ export function GameBoard({
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
-                        : selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing"
+                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
                           ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
                           : undefined
                   }
