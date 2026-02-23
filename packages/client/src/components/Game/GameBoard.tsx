@@ -415,8 +415,12 @@ export function GameBoard({
                       ? (requiresSetupToken
                         ? (tile: VisibleTile) => {
                             if (tile.cut) return false;
-                            if (useFalseSetupTokenMode && gameState.mission === 52) {
-                              return tile.color === "blue" || tile.color === "red";
+                            if (useFalseSetupTokenMode) {
+                              if (gameState.mission === 52) {
+                                return tile.color === "blue" || tile.color === "red";
+                              }
+                              // Mission 17: captain false tokens can target any non-red wire.
+                              return tile.color !== "red";
                             }
                             return (
                               tile.color === "blue" &&
