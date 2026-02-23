@@ -1,5 +1,6 @@
-import type { ClientMessage, LobbyState, PlayerCount } from "@bomb-busters/shared";
-import { ALL_MISSION_IDS, MISSIONS, MISSION_IMAGES, MISSION_SCHEMAS } from "@bomb-busters/shared";
+import type { ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
+import { ALL_MISSION_IDS, MISSIONS, MISSION_SCHEMAS } from "@bomb-busters/shared";
+import { useState } from "react";
 
 export function Lobby({
   lobby,
@@ -82,50 +83,19 @@ export function Lobby({
 
         {/* Mission Selection (host only) */}
         {isHost && (
-          <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
-            <h2 className="text-sm font-bold text-gray-400 uppercase mb-3">Mission</h2>
-            <div className="grid grid-cols-3 gap-2 overflow-y-auto pr-1">
-              {ALL_MISSION_IDS.map((id) => {
-                const allowed = MISSION_SCHEMAS[id].allowedPlayerCounts;
-                const disabled = allowed != null && !allowed.includes(lobby.players.length as PlayerCount);
-                return (
-                  <button
-                    key={id}
-                    onClick={() => !disabled && send({ type: "selectMission", mission: id })}
-                    disabled={disabled}
-                    data-testid={`mission-select-${id}`}
-                    title={disabled ? `Not available for ${lobby.players.length} players` : undefined}
-                    className={`rounded-lg overflow-hidden transition-all ${
-                      disabled
-                        ? "opacity-30 cursor-not-allowed grayscale"
-                        : lobby.mission === id
-                          ? "ring-3 ring-red-400 scale-105"
-                          : "opacity-70 hover:opacity-100 hover:scale-105"
-                    }`}
-                  >
-                    <img
-                      src={`/images/${MISSION_IMAGES[id]}`}
-                      alt={`Mission ${id}: ${MISSIONS[id].name}`}
-                      className="w-full h-auto"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <MissionSelector
+            selectedMission={lobby.mission}
+            playerCount={lobby.players.length as PlayerCount}
+            onSelect={(id) => send({ type: "selectMission", mission: id })}
+          />
         )}
 
         {!isHost && (
           <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-400 uppercase mb-3 text-center">Mission</h2>
-            <div className="flex justify-center">
-              <img
-                src={`/images/${MISSION_IMAGES[lobby.mission]}`}
-                alt={`Mission ${lobby.mission}: ${MISSIONS[lobby.mission].name}`}
-                data-testid={`mission-current-${lobby.mission}`}
-                className="w-40 h-auto rounded-lg"
-              />
-            </div>
+            <p className="text-center text-lg font-bold" data-testid={`mission-current-${lobby.mission}`}>
+              #{lobby.mission} — {MISSIONS[lobby.mission].name}
+            </p>
           </div>
         )}
 
@@ -175,6 +145,129 @@ export function Lobby({
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const DIFFICULTY_ORDER = ["novice", "intermediate", "expert", "campaign"] as const;
+const DIFFICULTY_LABELS: Record<string, string> = {
+  novice: "Novice",
+  intermediate: "Intermediate",
+  expert: "Expert",
+  campaign: "Campaign",
+};
+
+function MissionSelector({
+  selectedMission,
+  playerCount,
+  onSelect,
+}: {
+  selectedMission: MissionId;
+  playerCount: PlayerCount | number;
+  onSelect: (id: MissionId) => void;
+}) {
+  const [textInput, setTextInput] = useState("");
+
+  const isMissionDisabled = (id: MissionId) => {
+    const allowed = MISSION_SCHEMAS[id].allowedPlayerCounts;
+    return allowed != null && !allowed.includes(playerCount as PlayerCount);
+  };
+
+  const handleTextSubmit = () => {
+    const num = Number(textInput);
+    if (num >= 1 && num <= 66 && ALL_MISSION_IDS.includes(num as MissionId)) {
+      const id = num as MissionId;
+      if (!isMissionDisabled(id)) {
+        onSelect(id);
+      }
+    }
+    setTextInput("");
+  };
+
+  const handleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const num = Number(e.target.value);
+    if (num && ALL_MISSION_IDS.includes(num as MissionId)) {
+      onSelect(num as MissionId);
+    }
+  };
+
+  // Group missions by difficulty
+  const grouped = DIFFICULTY_ORDER.map((diff) => ({
+    label: DIFFICULTY_LABELS[diff],
+    missions: ALL_MISSION_IDS.filter((id) => MISSION_SCHEMAS[id].difficulty === diff),
+  })).filter((g) => g.missions.length > 0);
+
+  return (
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 space-y-3">
+      <h2 className="text-sm font-bold text-gray-400 uppercase">Mission</h2>
+
+      {/* Textbox + Dropdown row */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          inputMode="numeric"
+          placeholder="Mission #"
+          value={textInput}
+          onChange={(e) => setTextInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleTextSubmit()}
+          data-testid="mission-text-input"
+          className="w-24 px-3 py-1.5 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-red-400"
+        />
+        <button
+          onClick={handleTextSubmit}
+          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold transition-colors"
+        >
+          Go
+        </button>
+        <select
+          value={selectedMission}
+          onChange={handleDropdownChange}
+          data-testid="mission-dropdown"
+          className="flex-1 px-3 py-1.5 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-red-400 appearance-none"
+        >
+          {grouped.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.missions.map((id) => {
+                const disabled = isMissionDisabled(id);
+                return (
+                  <option key={id} value={id} disabled={disabled}>
+                    #{id} — {MISSIONS[id].name}{disabled ? " (unavailable)" : ""}
+                  </option>
+                );
+              })}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      {/* Numbered button grid */}
+      <div className="grid grid-cols-11 gap-1">
+        {ALL_MISSION_IDS.map((id) => {
+          const disabled = isMissionDisabled(id);
+          return (
+            <button
+              key={id}
+              onClick={() => !disabled && onSelect(id)}
+              disabled={disabled}
+              data-testid={`mission-select-${id}`}
+              title={
+                disabled
+                  ? `Not available for ${playerCount} players`
+                  : `${MISSIONS[id].name}`
+              }
+              className={`w-full aspect-square rounded text-xs font-bold transition-all ${
+                disabled
+                  ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                  : selectedMission === id
+                    ? "bg-red-500 text-white ring-2 ring-red-300 scale-110"
+                    : "bg-[var(--color-bomb-dark)] text-gray-300 hover:bg-gray-600 hover:text-white"
+              }`}
+            >
+              {id}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
