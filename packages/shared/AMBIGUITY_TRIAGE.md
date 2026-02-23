@@ -38,7 +38,7 @@
 | missionId | rule | options | default | owner | status |
 |-----------|------|---------|---------|-------|--------|
 | 11 | `mission_11_blue_value_treated_as_red` — which blue value becomes red-like | (A) One specific blue value drawn at setup acts as hidden red; (B) Any blue above a threshold is treated as red; (C) Number card draw determines which blue is "red" | **(A) 1 random blue value secretly acts as detonator; no player knows which** | — | resolved |
-| 20 | `mission_20_x_marked_unsorted_wires` — X marking and "unsorted" semantics | (A) Some wires have no sort-value markers, X means unknown; (B) Wires exist but are shuffled without position indicators; (C) X is a visual marker on tiles whose sort value is hidden from all | Subset of wires lose sort-value visibility; X marks them | unassigned | open |
+| 20 | `mission_20_x_marked_unsorted_wires` — X marking and "unsorted" semantics | (A) Some wires have no sort-value markers, X means unknown; (B) Wires exist but are shuffled without position indicators; (C) X is a visual marker on tiles whose sort value is hidden from all | **(B) Last dealt wire per player is removed from sorted order, placed at far right, and marked with X. X wires ignore all equipment (active and personal). Walkies-Talkies excluded from equipment pool.** | — | resolved |
 | 35 | `mission_35_x_marked_blue_wires` — how many blues get X, selection method | (A) Fixed count of X-marked blues (e.g. 2); (B) Random subset; (C) Captain chooses which blues get X | Random subset of blue wires get X marker (count from card) | unassigned | open |
 | 38 | `mission_38_captain_upside_down_wire` — "upside down" mechanical meaning | (A) Captain's wire tile is flipped so they cannot see their own value; (B) Captain's wire sort value is inverted (12 becomes 1); (C) Wire is placed face-down, hidden from captain but visible to others | Captain cannot see one of their own wire values (flipped tile) | unassigned | open |
 | 56 | `mission_56_each_player_upside_down_wire` — same mechanic as M38 but per player | (A) Each player has 1 flipped wire (hidden from self, visible to others); (B) Hidden from everyone; (C) Hidden from self only | Each player has 1 wire hidden from self, visible to others | unassigned | open |
@@ -178,7 +178,7 @@ Each row links to its triage entry above via `ambiguityId` (`AMB-{missionId}-{se
 | AMB-010-1 | 10 | Timer mechanism | — | (A) Real-time 900s countdown | — | 2026-02-22 | resolved |
 | AMB-010-2 | 10 | Dynamic turn order | — | (A) Captain designates next player | — | 2026-02-22 | resolved |
 | AMB-011-1 | 11 | Blue value treated as red | — | (A) 1 random blue acts as detonator | — | 2026-02-22 | resolved |
-| AMB-020-1 | 20 | X marked unsorted wires | unassigned | — | — | — | open |
+| AMB-020-1 | 20 | X marked unsorted wires | — | (B) Last dealt wire placed unsorted at far right with X marker; all equipment ignores X wires | — | 2026-02-23 | resolved |
 | AMB-035-1 | 35 | X marked blue wires count/selection | unassigned | — | — | — | open |
 | AMB-038-1 | 38 | Captain upside down wire | unassigned | — | — | — | open |
 | AMB-056-1 | 56 | Each player upside down wire | unassigned | — | — | — | open |
@@ -254,7 +254,7 @@ Each row links to its triage entry above via `ambiguityId` (`AMB-{missionId}-{se
 Ambiguities blocking each milestone (by mission range):
 
 - **M1 (missions 1-12):** AMB-010-1, AMB-010-2, AMB-011-1, AMB-012-1 — all **resolved**.
-- **M2 (missions 13-35):** AMB-013-1, AMB-013-2, AMB-014-1, AMB-015-1, AMB-016-1, AMB-017-1, AMB-017-2, AMB-018-1, AMB-020-1, AMB-021-1, AMB-022-1, AMB-022-2, AMB-023-1, AMB-023-2, AMB-024-1, AMB-025-1, AMB-026-1, AMB-027-1, AMB-027-2, AMB-028-1, AMB-029-1, AMB-031-1, AMB-032-1, AMB-033-1, AMB-034-1, AMB-035-1 — 26 open.
+- **M2 (missions 13-35):** AMB-013-1, AMB-013-2, AMB-014-1, AMB-015-1, AMB-016-1, AMB-017-1, AMB-017-2, AMB-018-1, AMB-021-1, AMB-022-1, AMB-022-2, AMB-023-1, AMB-023-2, AMB-024-1, AMB-025-1, AMB-026-1, AMB-027-1, AMB-027-2, AMB-028-1, AMB-029-1, AMB-031-1, AMB-032-1, AMB-033-1, AMB-034-1, AMB-035-1 — 25 open.
 - **M3 (missions 36-66):** remaining 32 open + 0 blocked.
 - **Cross-cutting:** AMB-X-01 through AMB-X-10 — 9 open, 0 blocked.
 
@@ -264,7 +264,7 @@ Ambiguities blocking each milestone (by mission range):
 
 | Status | Count |
 |--------|-------|
-| open | 56 |
+| open | 55 |
 | blocked | 0 |
-| resolved | 7 |
+| resolved | 8 |
 | **Total** | **63** |
