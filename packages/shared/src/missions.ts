@@ -18,8 +18,7 @@ export interface MissionDefinition {
 }
 
 function missionImageFilename(id: MissionId, back = false): string {
-  const ext = "jpg";
-  return back ? `mission_${id}_back.${ext}` : `mission_${id}.${ext}`;
+  return back ? `mission_${id}_back.jpg` : `mission_${id}.jpg`;
 }
 
 export const MISSIONS: Record<MissionId, MissionDefinition> = Object.fromEntries(

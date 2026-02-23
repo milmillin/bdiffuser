@@ -135,9 +135,9 @@ export type MissionHookRuleDef =
 // ── Source Reference Metadata ──────────────────────────────────
 
 export interface MissionSourceRef {
-  /** Mission card front image filename (e.g. "mission_1.png"). */
+  /** Mission card front image filename (e.g. "mission_1.jpg"). */
   cardImage: string;
-  /** Mission card back image filename (e.g. "mission_1_back.png"). */
+  /** Mission card back image filename (e.g. "mission_1_back.jpg"). */
   cardImageBack: string;
   /** Section heading in GAME_RULES.md (e.g. "### Mission 1"). */
   rulesSection: string;
