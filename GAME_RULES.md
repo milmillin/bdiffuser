@@ -389,7 +389,7 @@ Win/Loss summary:
   - Quick reference says "once per game."
   - For campaign play, the detailed character-rules wording ("once per mission") is typically interpreted as authoritative unless a mission says otherwise.
 
-## 20. Mission Cards 1-8
+## 20. Mission Cards 1-66
 
 Normalization note:
 
@@ -530,8 +530,6 @@ Normalization note:
   - Campaign progression note:
     - On success, open the `Missions 9 to 19` box.
 
-## 21. Mission Cards 9-16
-
 Baseline assumption used in this section:
 
 - Where a front card does not redefine blue wire count, it continues to use all `48` blue wires from mission 4 onward.
@@ -660,8 +658,6 @@ Baseline assumption used in this section:
   - Do not cut wires matching the right Number card until all `4` wires of the middle Number card value are cut.
   - Other values can be cut at any time.
   - After all `4` wires of the left value are cut, flip/remove that Number card and shift the Sequence marker; then repeat for the next step.
-
-## 22. Mission Cards 17-24
 
 ### Mission 17
 
@@ -802,8 +798,6 @@ Baseline assumption used in this section:
   - Applies to mistake info placement and Equipment `4` (Post-it).
   - With Equipment `4`, token may be placed in front of an already cut wire.
 
-## 23. Mission Cards 25-34
-
 ### Mission 25
 
 - Card title: `It's to hear you better...`
@@ -896,6 +890,34 @@ Baseline assumption used in this section:
   - Card provides fail/success narrative and progression note.
   - On success, open `Missions 31 to 42` box.
 
+### Mission 31
+
+- Card title: `Everyone has their own constraints`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Use Constraint cards `A-E` face up on table.
+  - Before info-token placement, starting with Captain then clockwise, each player chooses one constraint card and places it face up in front of them.
+  - If fewer than 5 players, unchosen constraint cards are discarded.
+  - 2-player advice on card:
+    - avoid choosing pairs `A+B` or `C+D`.
+- Mission rule (back):
+  - Everyone must apply their own constraint.
+  - When player can no longer apply their constraint at start of turn, they flip it and then play normally for rest of mission.
+
+### Mission 32
+
+- Card title: `Prank attack!`
+- Setup:
+  - Add `2` red wires.
+  - Shuffle and stack `12` Constraint cards face down, then reveal the top one.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - All players must apply visible constraint.
+  - At start of each turn, Captain may (after consultation) replace visible constraint with next card.
+  - If active player cannot play due to constraint, they pass (no detonator movement).
+  - Constraints do not apply to `Reveal Your Red Wires`.
+
 ### Mission 33
 
 - Card title on front is French (`Ce qui se passe a Vegas...`).
@@ -940,7 +962,25 @@ Baseline assumption used in this section:
         - Reveal all character cards and enable them.
         - Weak link no longer applies constraint; mission continues normally.
 
-## 24. Mission Cards 36-43
+### Mission 35
+
+- Card title: `No ties, single thread`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Add `4` yellow wires.
+  - Use `X` marker rule:
+    - Before mixing red/yellow with blue, give each player one face-down blue wire per stand.
+    - This wire is unranked and placed far right regardless of value.
+    - Place `X` token in front of each such wire.
+    - Then mix remaining wires and deal normally.
+  - Replace Equipment `2` (Walkie-Talkies) if drawn.
+  - 2-player override shown on card:
+    - `3` red wires and `4` yellow wires.
+- Mission rule (back):
+  - `X`-marked wires can be cut normally (Duo/Solo) only after all 4 yellow wires are cut.
+  - Equipment restrictions:
+    - No equipment can be used on `X` wires.
+    - `X` wires are ignored by all equipment, including personal equipment, Equipment `5` (Super Detector), and Equipment `8` (General Radar).
 
 ### Mission 36
 
@@ -1093,8 +1133,6 @@ Baseline assumption used in this section:
   - When active player cuts wires matching Nano's current number, they take one wire from Nano, keep it hidden from others, and place it correctly into own hand (if 2 stands, choose stand).
   - Mission win requires cutting/revealing all wires including Nano's wires.
   - Equipment `11` (Coffee Thermos) does not prevent Nano from moving.
-
-## 25. Mission Cards 44-51
 
 ### Mission 44
 
@@ -1251,8 +1289,6 @@ Baseline assumption used in this section:
   - Number card is discarded once all 4 matching wires are cut; when deck is empty, reshuffle Number cards.
   - If player starts turn with only red wires remaining, they perform `Reveal Your Red Wires`.
 
-## 26. Mission Cards 52-59
-
 ### Mission 52
 
 - Card title: `All traitors!`
@@ -1392,8 +1428,6 @@ Baseline assumption used in this section:
   - When all 4 wires of a number are cut, turn that Number card face down.
   - Card note: Equipment `11` (Coffee Thermos) passes its entire turn.
 
-## 27. Mission Cards 60-66
-
 ### Mission 60
 
 - Card title: `The Return of Doctor No`
@@ -1519,56 +1553,6 @@ Baseline assumption used in this section:
     - and a printed `+1 detonator notch` effect tied to this flow (as shown on card icon line).
   - Before first round, play mission sound file.
   - Card includes final fail/success narrative text.
-
-## 28. Mission Cards 31, 32, 35
-
-### Mission 31
-
-- Card title: `Everyone has their own constraints`
-- Setup:
-  - Red setup: `2 out of 3`.
-  - Use Constraint cards `A-E` face up on table.
-  - Before info-token placement, starting with Captain then clockwise, each player chooses one constraint card and places it face up in front of them.
-  - If fewer than 5 players, unchosen constraint cards are discarded.
-  - 2-player advice on card:
-    - avoid choosing pairs `A+B` or `C+D`.
-- Mission rule (back):
-  - Everyone must apply their own constraint.
-  - When player can no longer apply their constraint at start of turn, they flip it and then play normally for rest of mission.
-
-### Mission 32
-
-- Card title: `Prank attack!`
-- Setup:
-  - Add `2` red wires.
-  - Shuffle and stack `12` Constraint cards face down, then reveal the top one.
-  - 2-player override shown on card:
-    - `3` red wires.
-- Mission rule (back):
-  - All players must apply visible constraint.
-  - At start of each turn, Captain may (after consultation) replace visible constraint with next card.
-  - If active player cannot play due to constraint, they pass (no detonator movement).
-  - Constraints do not apply to `Reveal Your Red Wires`.
-
-### Mission 35
-
-- Card title: `No ties, single thread`
-- Setup:
-  - Red setup: `2 out of 3`.
-  - Add `4` yellow wires.
-  - Use `X` marker rule:
-    - Before mixing red/yellow with blue, give each player one face-down blue wire per stand.
-    - This wire is unranked and placed far right regardless of value.
-    - Place `X` token in front of each such wire.
-    - Then mix remaining wires and deal normally.
-  - Replace Equipment `2` (Walkie-Talkies) if drawn.
-  - 2-player override shown on card:
-    - `3` red wires and `4` yellow wires.
-- Mission rule (back):
-  - `X`-marked wires can be cut normally (Duo/Solo) only after all 4 yellow wires are cut.
-  - Equipment restrictions:
-    - No equipment can be used on `X` wires.
-    - `X` wires are ignored by all equipment, including personal equipment, Equipment `5` (Super Detector), and Equipment `8` (General Radar).
 
 ---
 
