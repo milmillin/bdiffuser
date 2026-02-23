@@ -9,5 +9,6 @@ game_references
 packages/server/.partykit
 output
 .pnpm-store/
+.claude-agent-home/
 tmp/
 .dev.vars
