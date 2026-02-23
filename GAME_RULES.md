@@ -252,7 +252,7 @@ Card text extracted from equipment cards `1` through `12`:
   - Effect: move the detonator dial back 1 space.
 - Equipment `7` (`Emergency Batteries`)
   - Timing: can be used at any time.
-  - Effect: turn one or two used Character cards face up; their personal equipment becomes available again for this mission.
+  - Effect: choose one or two used Character cards and flip them face up; their personal equipment is once again usable this mission.
 - Equipment `8` (`General Radar`)
   - Timing: can be used at any time.
   - Effect: announce a number (`1`-`12`); all players (including you) answer `yes` if they have at least one uncut blue wire of that value.
