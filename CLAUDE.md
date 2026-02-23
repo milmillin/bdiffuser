@@ -17,7 +17,7 @@ pnpm dev:all
 
 # Run individually
 pnpm dev              # Client only (Vite, port 3000)
-pnpm dev:server       # PartyKit server only (port 1999)
+pnpm dev:server       # Wrangler dev server (port 1999)
 
 # Type-check all packages
 pnpm typecheck
@@ -33,13 +33,13 @@ No test framework is configured yet.
 **Monorepo with 3 pnpm workspace packages:**
 
 - **`packages/shared`** — Types, protocol messages, game constants, mission definitions. Zero runtime dependencies. All other packages import from `@bomb-busters/shared`.
-- **`packages/server`** — PartyKit WebSocket server. Authoritative game state, action validation, turn management, and per-player state filtering (information hiding).
+- **`packages/server`** — Cloudflare Worker + Durable Object (`partyserver`). Authoritative game state, action validation, turn management, and per-player state filtering (information hiding).
 - **`packages/client`** — React 19 + Vite 6 + Tailwind CSS 4 frontend. Connects to server via `partysocket`.
 
 **Server is the source of truth.** All game logic runs server-side. The client sends action messages and renders filtered state it receives. The server filters each player's view to enforce hidden information (you can't see other players' uncut tiles).
 
 **Key server modules:**
-- `index.ts` — PartyKit Server class, message routing, room state persistence
+- `index.ts` — Durable Object Server class, message routing, room state persistence
 - `setup.ts` — Game initialization, tile creation/distribution
 - `gameLogic.ts` — Action execution (dual cut, solo cut, reveal reds), turn advancement, win/loss checks
 - `validation.ts` — Action validation before execution
@@ -57,5 +57,5 @@ No test framework is configured yet.
 
 - TypeScript 5.7 (strict mode, ES2022 target, bundler module resolution)
 - React 19, Vite 6, Tailwind CSS 4
-- PartyKit 0.0.111 (serverless WebSocket rooms)
+- partyserver (Cloudflare Durable Objects for WebSocket rooms)
 - pnpm workspaces

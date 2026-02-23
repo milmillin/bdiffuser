@@ -34,6 +34,7 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
     const socket = new PartySocket({
       host: PARTYKIT_HOST,
       room: roomId,
+      party: "bomb-busters-server",
     });
 
     socketRef.current = socket;

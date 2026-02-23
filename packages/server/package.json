@@ -3,16 +3,18 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "npx partykit dev",
-    "deploy": "npx partykit deploy",
+    "dev": "npx wrangler dev --port 1999",
+    "deploy": "npx wrangler deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@bomb-busters/shared": "workspace:*",
-    "partykit": "^0.0.111",
+    "partyserver": "^0.0.62",
     "partysocket": "^1.0.3"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
   }
 }

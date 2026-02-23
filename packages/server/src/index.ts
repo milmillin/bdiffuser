@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
   ClientMessage,
   ServerMessage,
@@ -20,6 +20,11 @@ import {
   executeRevealReds,
 } from "./gameLogic.js";
 
+interface Env {
+  [key: string]: unknown;
+  BombBustersServer: DurableObjectNamespace;
+}
+
 interface RoomState {
   gameState: GameState | null;
   players: Player[];
@@ -27,7 +32,7 @@ interface RoomState {
   hostId: string | null;
 }
 
-export default class BombBustersServer implements Party.Server {
+export class BombBustersServer extends Server<Env> {
   room: RoomState = {
     gameState: null,
     players: [],
@@ -35,27 +40,25 @@ export default class BombBustersServer implements Party.Server {
     hostId: null,
   };
 
-  constructor(readonly party: Party.Party) {}
-
   async onStart() {
-    const stored = await this.party.storage.get<RoomState>("room");
+    const stored = await this.ctx.storage.get<RoomState>("room");
     if (stored) {
       this.room = stored;
     }
   }
 
   async saveState() {
-    await this.party.storage.put("room", this.room);
+    await this.ctx.storage.put("room", this.room);
   }
 
-  onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
+  onConnect(connection: Connection) {
     // Send current state to connecting player
     if (this.room.gameState) {
-      const player = this.room.players.find((p) => p.id === conn.id);
+      const player = this.room.players.find((p) => p.id === connection.id);
       if (player) {
         player.connected = true;
-        const filtered = filterStateForPlayer(this.room.gameState, conn.id);
-        this.send(conn, { type: "gameState", state: filtered });
+        const filtered = filterStateForPlayer(this.room.gameState, connection.id);
+        this.sendMsg(connection, { type: "gameState", state: filtered });
       }
     } else {
       // In lobby
@@ -63,8 +66,8 @@ export default class BombBustersServer implements Party.Server {
     }
   }
 
-  onClose(conn: Party.Connection) {
-    const player = this.room.players.find((p) => p.id === conn.id);
+  onClose(connection: Connection, _code: number, _reason: string, _wasClean: boolean) {
+    const player = this.room.players.find((p) => p.id === connection.id);
     if (player) {
       player.connected = false;
       if (this.room.gameState) {
@@ -75,46 +78,47 @@ export default class BombBustersServer implements Party.Server {
     }
   }
 
-  onMessage(message: string, sender: Party.Connection) {
+  onMessage(connection: Connection, message: string | ArrayBuffer) {
+    const raw = typeof message === "string" ? message : new TextDecoder().decode(message);
     let msg: ClientMessage;
     try {
-      msg = JSON.parse(message);
+      msg = JSON.parse(raw);
     } catch {
-      this.send(sender, { type: "error", message: "Invalid message format" });
+      this.sendMsg(connection, { type: "error", message: "Invalid message format" });
       return;
     }
 
     switch (msg.type) {
       case "join":
-        this.handleJoin(sender, msg.name);
+        this.handleJoin(connection, msg.name);
         break;
       case "selectCharacter":
-        this.handleSelectCharacter(sender, msg.character);
+        this.handleSelectCharacter(connection, msg.character);
         break;
       case "selectMission":
-        this.handleSelectMission(sender, msg.mission);
+        this.handleSelectMission(connection, msg.mission);
         break;
       case "startGame":
-        this.handleStartGame(sender);
+        this.handleStartGame(connection);
         break;
       case "placeInfoToken":
-        this.handlePlaceInfoToken(sender, msg.value, msg.tileIndex);
+        this.handlePlaceInfoToken(connection, msg.value, msg.tileIndex);
         break;
       case "dualCut":
-        this.handleDualCut(sender, msg.targetPlayerId, msg.targetTileIndex, msg.guessValue);
+        this.handleDualCut(connection, msg.targetPlayerId, msg.targetTileIndex, msg.guessValue);
         break;
       case "soloCut":
-        this.handleSoloCut(sender, msg.value);
+        this.handleSoloCut(connection, msg.value);
         break;
       case "revealReds":
-        this.handleRevealReds(sender);
+        this.handleRevealReds(connection);
         break;
       default:
-        this.send(sender, { type: "error", message: "Unknown message type" });
+        this.sendMsg(connection, { type: "error", message: "Unknown message type" });
     }
   }
 
-  handleJoin(conn: Party.Connection, name: string) {
+  handleJoin(conn: Connection, name: string) {
     if (this.room.gameState) {
       // Reconnection during game
       const existing = this.room.players.find((p) => p.id === conn.id);
@@ -123,7 +127,7 @@ export default class BombBustersServer implements Party.Server {
         existing.name = name;
         this.broadcastGameState();
       } else {
-        this.send(conn, { type: "error", message: "Game already in progress" });
+        this.sendMsg(conn, { type: "error", message: "Game already in progress" });
       }
       return;
     }
@@ -135,7 +139,7 @@ export default class BombBustersServer implements Party.Server {
       player.connected = true;
     } else {
       if (this.room.players.length >= 5) {
-        this.send(conn, { type: "error", message: "Room is full (max 5 players)" });
+        this.sendMsg(conn, { type: "error", message: "Room is full (max 5 players)" });
         return;
       }
 
@@ -161,15 +165,15 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastLobby();
   }
 
-  handleSelectCharacter(_conn: Party.Connection, _character: CharacterId) {
+  handleSelectCharacter(_conn: Connection, _character: CharacterId) {
     // Characters are assigned randomly at game start; lobby selection is disabled.
     return;
   }
 
-  handleSelectMission(conn: Party.Connection, mission: MissionId) {
+  handleSelectMission(conn: Connection, mission: MissionId) {
     if (this.room.gameState) return;
     if (conn.id !== this.room.hostId) {
-      this.send(conn, { type: "error", message: "Only the host can change the mission" });
+      this.sendMsg(conn, { type: "error", message: "Only the host can change the mission" });
       return;
     }
 
@@ -178,15 +182,15 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastLobby();
   }
 
-  handleStartGame(conn: Party.Connection) {
+  handleStartGame(conn: Connection) {
     if (this.room.gameState) return;
     if (conn.id !== this.room.hostId) {
-      this.send(conn, { type: "error", message: "Only the host can start the game" });
+      this.sendMsg(conn, { type: "error", message: "Only the host can start the game" });
       return;
     }
 
     if (this.room.players.length < 2) {
-      this.send(conn, { type: "error", message: "Need at least 2 players" });
+      this.sendMsg(conn, { type: "error", message: "Need at least 2 players" });
       return;
     }
 
@@ -218,7 +222,7 @@ export default class BombBustersServer implements Party.Server {
 
     this.room.gameState = {
       phase: "setup_info_tokens",
-      roomId: this.party.id,
+      roomId: this.name,
       players,
       board,
       currentPlayerIndex: captainIndex,
@@ -232,7 +236,7 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastGameState();
   }
 
-  handlePlaceInfoToken(conn: Party.Connection, value: number, tileIndex: number) {
+  handlePlaceInfoToken(conn: Connection, value: number, tileIndex: number) {
     const state = this.room.gameState;
     if (!state || state.phase !== "setup_info_tokens") return;
 
@@ -241,7 +245,7 @@ export default class BombBustersServer implements Party.Server {
 
     // Each player places one info token during setup
     if (player.infoTokens.length > 0) {
-      this.send(conn, { type: "error", message: "You already placed an info token" });
+      this.sendMsg(conn, { type: "error", message: "You already placed an info token" });
       return;
     }
 
@@ -264,7 +268,7 @@ export default class BombBustersServer implements Party.Server {
   }
 
   handleDualCut(
-    conn: Party.Connection,
+    conn: Connection,
     targetPlayerId: string,
     targetTileIndex: number,
     guessValue: number | "YELLOW",
@@ -274,7 +278,7 @@ export default class BombBustersServer implements Party.Server {
 
     const error = validateDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue);
     if (error) {
-      this.send(conn, { type: "error", message: error });
+      this.sendMsg(conn, { type: "error", message: error });
       return;
     }
 
@@ -285,13 +289,13 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastGameState();
   }
 
-  handleSoloCut(conn: Party.Connection, value: number | "YELLOW") {
+  handleSoloCut(conn: Connection, value: number | "YELLOW") {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
     const error = validateSoloCut(state, conn.id, value);
     if (error) {
-      this.send(conn, { type: "error", message: error });
+      this.sendMsg(conn, { type: "error", message: error });
       return;
     }
 
@@ -302,13 +306,13 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastGameState();
   }
 
-  handleRevealReds(conn: Party.Connection) {
+  handleRevealReds(conn: Connection) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
     const error = validateRevealReds(state, conn.id);
     if (error) {
-      this.send(conn, { type: "error", message: error });
+      this.sendMsg(conn, { type: "error", message: error });
       return;
     }
 
@@ -319,22 +323,22 @@ export default class BombBustersServer implements Party.Server {
     this.broadcastGameState();
   }
 
-  // ── Broadcast helpers ──────────────────────────────────────
+  // -- Broadcast helpers ------------------------------------------------
 
-  send(conn: Party.Connection, msg: ServerMessage) {
+  sendMsg(conn: Connection, msg: ServerMessage) {
     conn.send(JSON.stringify(msg));
   }
 
   broadcastLobby() {
     const lobbyState = createLobbyState(
-      this.party.id,
+      this.name,
       this.room.players,
       this.room.mission,
       this.room.hostId ?? "",
     );
     const msg: ServerMessage = { type: "lobby", state: lobbyState };
     const json = JSON.stringify(msg);
-    for (const conn of this.party.getConnections()) {
+    for (const conn of this.getConnections()) {
       conn.send(json);
     }
   }
@@ -343,19 +347,26 @@ export default class BombBustersServer implements Party.Server {
     const state = this.room.gameState;
     if (!state) return;
 
-    for (const conn of this.party.getConnections()) {
+    for (const conn of this.getConnections()) {
       const filtered = filterStateForPlayer(state, conn.id);
-      this.send(conn, { type: "gameState", state: filtered });
+      this.sendMsg(conn, { type: "gameState", state: filtered });
     }
   }
 
   broadcastAction(action: import("@bomb-busters/shared").GameAction) {
     const msg: ServerMessage = { type: "action", action };
     const json = JSON.stringify(msg);
-    for (const conn of this.party.getConnections()) {
+    for (const conn of this.getConnections()) {
       conn.send(json);
     }
   }
 }
 
-BombBustersServer satisfies Party.Worker;
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    return (
+      (await routePartykitRequest(request, env)) ??
+      new Response("Not found", { status: 404 })
+    );
+  },
+} satisfies ExportedHandler<Env>;
