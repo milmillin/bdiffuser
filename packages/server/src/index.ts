@@ -209,6 +209,9 @@ export class BombBustersServer extends Server<Env> {
       case "chooseNextPlayer":
         this.handleChooseNextPlayer(connection, msg.targetPlayerId);
         break;
+      case "designateCutter":
+        this.handleDesignateCutter(connection, msg.targetPlayerId);
+        break;
       case "addBot":
         this.handleAddBot(connection);
         break;
@@ -246,11 +249,17 @@ export class BombBustersServer extends Server<Env> {
 
       // Update pendingForcedAction references
       if (gs.pendingForcedAction) {
-        if (gs.pendingForcedAction.captainId === oldId) {
-          gs.pendingForcedAction.captainId = newId;
-        }
-        if (gs.pendingForcedAction.lastPlayerId === oldId) {
-          gs.pendingForcedAction.lastPlayerId = newId;
+        if (gs.pendingForcedAction.kind === "chooseNextPlayer") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
+          }
+          if (gs.pendingForcedAction.lastPlayerId === oldId) {
+            gs.pendingForcedAction.lastPlayerId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "designateCutter") {
+          if (gs.pendingForcedAction.designatorId === oldId) {
+            gs.pendingForcedAction.designatorId = newId;
+          }
         }
       }
     }
@@ -738,6 +747,56 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleDesignateCutter(conn: Connection, targetPlayerId: string) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "designateCutter") {
+      this.sendMsg(conn, { type: "error", message: "No pending designate-cutter action" });
+      return;
+    }
+
+    if (conn.id !== forced.designatorId) {
+      this.sendMsg(conn, { type: "error", message: "Only the active player can designate who cuts" });
+      return;
+    }
+
+    const targetIndex = state.players.findIndex((p) => p.id === targetPlayerId);
+    if (targetIndex === -1) {
+      this.sendMsg(conn, { type: "error", message: "Target player not found" });
+      return;
+    }
+
+    const target = state.players[targetIndex];
+    const uncutCount = target.hand.filter((t) => !t.cut).length;
+    if (uncutCount === 0) {
+      this.sendMsg(conn, { type: "error", message: "Target player has no remaining tiles" });
+      return;
+    }
+
+    // Store the designator's index for turn advancement after the cut
+    const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
+    state.campaign ??= {};
+    state.campaign.mission18DesignatorIndex = designatorIndex;
+
+    // Hand control to the designated cutter
+    state.currentPlayerIndex = targetIndex;
+    state.pendingForcedAction = undefined;
+
+    state.log.push({
+      turn: state.turnNumber,
+      playerId: forced.designatorId,
+      action: "designateCutter",
+      detail: `designated ${target.name} (${targetPlayerId}) to cut`,
+      timestamp: Date.now(),
+    });
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   // -- Chat handlers -----------------------------------------------------
 
   handleChat(conn: Connection, text: string) {
@@ -991,6 +1050,50 @@ export class BombBustersServer extends Server<Env> {
     const previousResult = state.result;
     let action: import("@bomb-busters/shared").GameAction;
     switch (botAction.action) {
+      case "designateCutter": {
+        const forced = state.pendingForcedAction;
+        if (!forced || forced.kind !== "designateCutter") {
+          console.log(`Bot ${botId} designateCutter ignored: no pending forced action`);
+          return;
+        }
+        if (forced.designatorId !== botId) {
+          console.log(`Bot ${botId} designateCutter rejected: bot is not designator`);
+          return;
+        }
+
+        const targetIndex = state.players.findIndex(
+          (p) => p.id === botAction.targetPlayerId,
+        );
+        if (targetIndex === -1) {
+          console.log(`Bot ${botId} designateCutter rejected: target not found`);
+          return;
+        }
+
+        const target = state.players[targetIndex];
+        if (!target.hand.some((t) => !t.cut)) {
+          console.log(`Bot ${botId} designateCutter rejected: target has no remaining tiles`);
+          return;
+        }
+
+        const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
+        state.campaign ??= {};
+        state.campaign.mission18DesignatorIndex = designatorIndex;
+        state.currentPlayerIndex = targetIndex;
+        state.pendingForcedAction = undefined;
+
+        state.log.push({
+          turn: state.turnNumber,
+          playerId: forced.designatorId,
+          action: "designateCutter",
+          detail: `designated ${target.name} (${botAction.targetPlayerId}) to cut`,
+          timestamp: Date.now(),
+        });
+
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
       case "chooseNextPlayer": {
         const forced = state.pendingForcedAction;
         if (!forced || forced.kind !== "chooseNextPlayer") {

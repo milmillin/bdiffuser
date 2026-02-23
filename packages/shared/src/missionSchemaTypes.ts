@@ -200,6 +200,25 @@ export interface SequencePriorityRuleDef {
 }
 
 /**
+ * Mission 18 — Forced General Radar flow.
+ * Each turn: reveal a Number card, auto-compute General Radar on that value,
+ * then active player designates which player performs the cut.
+ */
+export interface ForcedGeneralRadarFlowRuleDef {
+  kind: "forced_general_radar_flow";
+}
+
+/**
+ * Mission 23 — Simultaneous four-of-value cut.
+ * Active player designates 4 wires across other players' stands that should
+ * match the Number card value. If all 4 match, they are cut simultaneously
+ * and remaining hidden equipment becomes usable. If any mismatch, explosion.
+ */
+export interface SimultaneousFourCutRuleDef {
+  kind: "simultaneous_four_cut";
+}
+
+/**
  * Mission 14 — Intern (captain) failure explodes.
  * If the captain fails a Dual Cut, the bomb explodes immediately.
  * The captain is also forbidden from using specific equipment.
@@ -226,7 +245,9 @@ export type MissionHookRuleDef =
   | ChallengeRewardsRuleDef
   | BunkerFlowRuleDef
   | SequencePriorityRuleDef
-  | InternFailureExplodesRuleDef;
+  | InternFailureExplodesRuleDef
+  | ForcedGeneralRadarFlowRuleDef
+  | SimultaneousFourCutRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 

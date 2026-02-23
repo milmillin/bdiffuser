@@ -49,6 +49,12 @@ export function isRevealRedsForced(
   const uncutTiles = getUncutTiles(player);
   if (uncutTiles.length === 0) return false;
 
+  // Mission 18: during cutter sub-turn, the designated cutter is not
+  // forced to reveal reds — the designator chose them to cut.
+  if (state.campaign?.mission18DesignatorIndex != null) {
+    return false;
+  }
+
   if (state.mission === 11) {
     const hiddenBlueAsRedValue = getBlueAsRedValue(state);
     if (hiddenBlueAsRedValue == null) return false;

@@ -31,6 +31,8 @@ export type ClientMessage =
   | { type: "simultaneousRedCut" }
   | { type: "useEquipment"; equipmentId: BaseEquipmentId; payload: UseEquipmentPayload }
   | { type: "chooseNextPlayer"; targetPlayerId: string }
+  | { type: "designateCutter"; targetPlayerId: string }
+  | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
   | { type: "chat"; text: string };
@@ -99,6 +101,13 @@ export type GameAction =
       actorId: string;
       cuts: Array<{ playerId: string; tileIndex: number }>;
       totalCut: number;
+    }
+  | {
+      type: "simultaneousFourCutResult";
+      actorId: string;
+      targetValue: number;
+      cuts: Array<{ playerId: string; tileIndex: number }>;
+      success: boolean;
     }
   | {
       type: "gameOver";

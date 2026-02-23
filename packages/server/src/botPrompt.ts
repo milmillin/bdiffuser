@@ -175,6 +175,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
       state.players.find((p) => p.id === forcedAction.captainId)
         ?.name ?? forcedAction.captainId;
     lines.push(`  Forced action pending: Captain ${captain} must choose next player`);
+  } else if (forcedAction?.kind === "designateCutter") {
+    const designator =
+      state.players.find((p) => p.id === forcedAction.designatorId)
+        ?.name ?? forcedAction.designatorId;
+    lines.push(`  Forced action pending: ${designator} must designate who cuts (number card: ${forcedAction.value})`);
   }
 
   const validated = Object.entries(state.board.validationTrack)

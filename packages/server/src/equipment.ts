@@ -183,6 +183,22 @@ export function validateUseEquipment(
     );
   }
 
+  // Mission 18: General Radar is used automatically; block manual use.
+  if (state.mission === 18 && equipmentId === "general_radar") {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "General Radar is used automatically in mission 18",
+    );
+  }
+
+  // Mission 18: during cutter sub-turn, no equipment can be used.
+  if (state.campaign?.mission18DesignatorIndex != null) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Equipment cannot be used during the designated cut action",
+    );
+  }
+
   const card = state.board.equipment.find((eq) => eq.id === equipmentId);
   if (!card) {
     return legalityError("EQUIPMENT_NOT_FOUND", "Equipment card not found");

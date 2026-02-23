@@ -27,6 +27,7 @@ export type {
   DynamicTurnOrderRuleDef,
   EquipmentDoubleLockRuleDef,
   ChallengeRewardsRuleDef,
+  ForcedGeneralRadarFlowRuleDef,
   HiddenEquipmentPileRuleDef,
   InternFailureExplodesRuleDef,
   BunkerFlowRuleDef,

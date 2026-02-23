@@ -335,6 +335,10 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     campaign.specialMarkers = normalizeSpecialMarkers(raw.specialMarkers);
   }
 
+  if (hasOwn(raw, "mission18DesignatorIndex") && typeof raw.mission18DesignatorIndex === "number") {
+    campaign.mission18DesignatorIndex = raw.mission18DesignatorIndex;
+  }
+
   return Object.keys(campaign).length > 0 ? campaign : undefined;
 }
 
@@ -377,21 +381,37 @@ function normalizeGameState(
 
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
-  // Current forced-action migration only supports mission-10 chooseNextPlayer.
-  // Extend this branch if new forced action kinds are introduced.
-  const pendingForcedAction = isObject(obj.pendingForcedAction)
-    && obj.pendingForcedAction.kind === "chooseNextPlayer"
-    && typeof obj.pendingForcedAction.captainId === "string"
-    && obj.pendingForcedAction.captainId
-      ? {
-          kind: "chooseNextPlayer" as const,
-          captainId: obj.pendingForcedAction.captainId,
-          ...(typeof obj.pendingForcedAction.lastPlayerId === "string"
-            && obj.pendingForcedAction.lastPlayerId
-            ? { lastPlayerId: obj.pendingForcedAction.lastPlayerId }
-            : {}),
-        }
-      : undefined;
+  // Forced-action migration: supports chooseNextPlayer and designateCutter.
+  let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
+  if (isObject(obj.pendingForcedAction)) {
+    if (
+      obj.pendingForcedAction.kind === "chooseNextPlayer"
+      && typeof obj.pendingForcedAction.captainId === "string"
+      && obj.pendingForcedAction.captainId
+    ) {
+      pendingForcedAction = {
+        kind: "chooseNextPlayer" as const,
+        captainId: obj.pendingForcedAction.captainId,
+        ...(typeof obj.pendingForcedAction.lastPlayerId === "string"
+          && obj.pendingForcedAction.lastPlayerId
+          ? { lastPlayerId: obj.pendingForcedAction.lastPlayerId }
+          : {}),
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "designateCutter"
+      && typeof obj.pendingForcedAction.designatorId === "string"
+      && obj.pendingForcedAction.designatorId
+      && typeof obj.pendingForcedAction.value === "number"
+      && isObject(obj.pendingForcedAction.radarResults)
+    ) {
+      pendingForcedAction = {
+        kind: "designateCutter" as const,
+        designatorId: obj.pendingForcedAction.designatorId,
+        value: obj.pendingForcedAction.value,
+        radarResults: obj.pendingForcedAction.radarResults as Record<string, boolean>,
+      };
+    }
+  }
 
   return {
     phase,

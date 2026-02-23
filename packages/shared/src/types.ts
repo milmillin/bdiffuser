@@ -256,6 +256,10 @@ export interface CampaignState {
   nanoTracker?: ProgressTracker;
   bunkerTracker?: ProgressTracker;
   specialMarkers?: SpecialMarker[];
+  /** Mission 18: index of the designator (active player) during a cutter sub-turn. */
+  mission18DesignatorIndex?: number;
+  /** Mission 23: whether the simultaneous four-of-value cut has been completed. */
+  mission23SpecialActionDone?: boolean;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────
@@ -300,13 +304,23 @@ export interface ChatMessage {
 // ── Forced Actions ───────────────────────────────────────
 
 /** A forced action that must be resolved before normal play resumes. */
-export type ForcedAction = {
-  kind: "chooseNextPlayer";
-  /** The player who must resolve this forced action (typically the captain). */
-  captainId: string;
-  /** The player who took the previous turn (used by mission-10 no-consecutive rule). */
-  lastPlayerId?: string;
-};
+export type ForcedAction =
+  | {
+      kind: "chooseNextPlayer";
+      /** The player who must resolve this forced action (typically the captain). */
+      captainId: string;
+      /** The player who took the previous turn (used by mission-10 no-consecutive rule). */
+      lastPlayerId?: string;
+    }
+  | {
+      kind: "designateCutter";
+      /** The player who must designate who cuts (the active player). */
+      designatorId: string;
+      /** The Number card value drawn this turn. */
+      value: number;
+      /** General Radar results: per-player boolean (true = has at least one uncut wire of this value). */
+      radarResults: Record<string, boolean>;
+    };
 
 export interface TurnEffects {
   /** Stabilizer protection for the specified player's current turn. */
@@ -346,7 +360,10 @@ export type ActionLegalityCode =
   | "DOUBLE_DETECTOR_INVALID_TILES"
   | "DOUBLE_DETECTOR_GUESS_NOT_BLUE"
   | "SIMULTANEOUS_RED_CUT_WRONG_MISSION"
-  | "NO_UNCUT_RED_WIRES";
+  | "NO_UNCUT_RED_WIRES"
+  | "SIMULTANEOUS_FOUR_CUT_WRONG_MISSION"
+  | "SIMULTANEOUS_FOUR_CUT_INVALID_TARGETS"
+  | "SIMULTANEOUS_FOUR_CUT_ALREADY_DONE";
 
 export interface ActionLegalityError {
   code: ActionLegalityCode;

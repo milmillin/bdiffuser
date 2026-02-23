@@ -143,7 +143,8 @@ export type BotAction =
   | { action: "soloCut"; value: number | "YELLOW" }
   | { action: "revealReds" }
   | { action: "simultaneousRedCut" }
-  | { action: "chooseNextPlayer"; targetPlayerId: string };
+  | { action: "chooseNextPlayer"; targetPlayerId: string }
+  | { action: "designateCutter"; targetPlayerId: string };
 
 export interface BotActionResult {
   action: BotAction;
@@ -158,8 +159,12 @@ export async function getBotAction(
   apiKey: string,
   chatContext: string,
 ): Promise<BotActionResult> {
-  // Mission-specific forced action: captain must designate next player.
-  // Handle deterministically and bypass LLM for this branch.
+  // Mission-specific forced actions: handle deterministically and bypass LLM.
+  const forcedDesignateCutterAction = getForcedDesignateCutterAction(state, botId);
+  if (forcedDesignateCutterAction) {
+    return { action: forcedDesignateCutterAction, reasoning: null };
+  }
+
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
     return { action: forcedChooseAction, reasoning: null };
@@ -265,6 +270,12 @@ function parseLLMAction(
     return { action: "chooseNextPlayer", targetPlayerId };
   }
 
+  if (action === "designateCutter") {
+    const targetPlayerId = result.targetPlayerId as string;
+    if (!targetPlayerId) return null;
+    return { action: "designateCutter", targetPlayerId };
+  }
+
   return null;
 }
 
@@ -316,7 +327,56 @@ function validateBotAction(
       }
       return null;
     }
+    case "designateCutter": {
+      const forced = state.pendingForcedAction;
+      if (!forced || forced.kind !== "designateCutter") {
+        return "No pending designate-cutter action";
+      }
+      if (forced.designatorId !== botId) {
+        return "Only the active player can designate who cuts";
+      }
+
+      const target = state.players.find((p) => p.id === action.targetPlayerId);
+      if (!target) return "Target player not found";
+      if (!target.hand.some((t) => !t.cut)) {
+        return "Target player has no remaining tiles";
+      }
+      return null;
+    }
   }
+}
+
+function getForcedDesignateCutterAction(
+  state: GameState,
+  botId: string,
+): BotAction | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "designateCutter") return null;
+  if (forced.designatorId !== botId) return null;
+
+  // Prefer players with radar "yes" (has uncut wire of the drawn value)
+  const designatorIndex = state.players.findIndex((p) => p.id === botId);
+  const playerCount = state.players.length;
+
+  // First pass: find clockwise player with radar yes and uncut tiles
+  for (let i = 1; i <= playerCount; i++) {
+    const idx = (designatorIndex + i) % playerCount;
+    const player = state.players[idx];
+    if (!player.hand.some((t) => !t.cut)) continue;
+    if (forced.radarResults[player.id]) {
+      return { action: "designateCutter", targetPlayerId: player.id };
+    }
+  }
+
+  // Second pass: any clockwise player with uncut tiles
+  for (let i = 1; i <= playerCount; i++) {
+    const idx = (designatorIndex + i) % playerCount;
+    const player = state.players[idx];
+    if (!player.hand.some((t) => !t.cut)) continue;
+    return { action: "designateCutter", targetPlayerId: player.id };
+  }
+
+  return null;
 }
 
 function getForcedChooseNextAction(
@@ -376,6 +436,11 @@ function pickGuessValueFromParity(
 }
 
 function getFallbackAction(state: GameState, botId: string): BotAction {
+  const forcedDesignateCutterAction = getForcedDesignateCutterAction(state, botId);
+  if (forcedDesignateCutterAction) {
+    return forcedDesignateCutterAction;
+  }
+
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
     return forcedChooseAction;

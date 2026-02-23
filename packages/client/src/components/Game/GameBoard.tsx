@@ -6,6 +6,7 @@ import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
+import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
 import { ActionLog } from "./ActionLog.js";
@@ -30,8 +31,10 @@ type UnknownForcedAction = {
 };
 
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
+const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
+  FORCED_ACTION_DESIGNATE_CUTTER,
 ]);
 
 function getUnknownForcedAction(gameState: ClientGameState): UnknownForcedAction | null {
@@ -160,18 +163,23 @@ export function GameBoard({
   const useFalseSetupTokenMode =
     !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
-  const previousPlayerName =
-    gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
-    gameState.pendingForcedAction.lastPlayerId
-      ? gameState.players.find((p) => p.id === gameState.pendingForcedAction?.lastPlayerId)?.name
-      : undefined;
+  const previousPlayerName = (() => {
+    const fa = gameState.pendingForcedAction;
+    if (fa?.kind !== FORCED_ACTION_CHOOSE_NEXT_PLAYER || !fa.lastPlayerId) return undefined;
+    return gameState.players.find((p) => p.id === fa.lastPlayerId)?.name;
+  })();
   const pendingForcedAction = gameState.pendingForcedAction;
   const unknownForcedAction = getUnknownForcedAction(gameState);
   const isUnknownForcedActionCaptain =
     unknownForcedAction?.captainId != null &&
     unknownForcedAction.captainId === playerId;
   const forcedActionCaptainId =
-    unknownForcedAction?.captainId ?? pendingForcedAction?.captainId;
+    unknownForcedAction?.captainId ??
+    (pendingForcedAction?.kind === "chooseNextPlayer"
+      ? pendingForcedAction.captainId
+      : pendingForcedAction?.kind === "designateCutter"
+        ? pendingForcedAction.designatorId
+        : undefined);
   const forcedActionCaptainName =
     forcedActionCaptainId
       ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
@@ -531,6 +539,36 @@ export function GameBoard({
                     {forcedActionCaptainName ?? "the Captain"}
                   </span>{" "}
                   to choose the next player...
+                </div>
+              )}
+
+              {/* Playing phase: forced action (designate cutter - mission 18) */}
+              {gameState.phase === "playing" &&
+                gameState.pendingForcedAction?.kind === FORCED_ACTION_DESIGNATE_CUTTER &&
+                gameState.pendingForcedAction.designatorId === playerId &&
+                me && (
+                <DesignateCutterPanel
+                  gameState={gameState}
+                  send={send}
+                  playerId={playerId}
+                />
+              )}
+
+              {/* Playing phase: waiting for designator (non-designator view - mission 18) */}
+              {gameState.phase === "playing" &&
+                gameState.pendingForcedAction?.kind === FORCED_ACTION_DESIGNATE_CUTTER &&
+                gameState.pendingForcedAction.designatorId !== playerId && (
+                <div className="text-center py-2 text-gray-400" data-testid="waiting-designator">
+                  Waiting for{" "}
+                  <span className="text-yellow-400 font-bold">
+                    {forcedActionCaptainName ?? "the active player"}
+                  </span>{" "}
+                  to designate who cuts...
+                  {gameState.pendingForcedAction.value && (
+                    <span className="block text-xs text-gray-500 mt-1">
+                      Number card: <span className="text-white font-bold">{gameState.pendingForcedAction.value}</span>
+                    </span>
+                  )}
                 </div>
               )}
 

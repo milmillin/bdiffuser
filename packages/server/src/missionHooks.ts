@@ -436,6 +436,7 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
 import type {
   BunkerFlowRuleDef,
   ChallengeRewardsRuleDef,
+  ForcedGeneralRadarFlowRuleDef,
   InternFailureExplodesRuleDef,
   SequencePriorityRuleDef,
   TimerRuleDef,
@@ -446,6 +447,7 @@ import type {
   NanoProgressionRuleDef,
   NumberDeckEquipmentRevealRuleDef,
   OxygenProgressionRuleDef,
+  SimultaneousFourCutRuleDef,
 } from "@bomb-busters/shared";
 
 const MISSION_NUMBER_VALUES = [
@@ -1461,5 +1463,298 @@ registerHookHandler<"intern_failure_explodes">("intern_failure_explodes", {
     // Equipment blocking is handled separately in equipment.ts validation.
     // This handler exists so the hook rule is registered and doesn't throw
     // UnknownHookError in strict mode.
+  },
+});
+
+// ── Mission 18 — Forced General Radar Flow ──────────────────
+
+/**
+ * Compute General Radar results for a given value: for each player,
+ * returns true if they have at least one uncut wire of that value.
+ */
+export function computeMission18RadarResults(
+  state: Readonly<GameState>,
+  value: number,
+): Record<string, boolean> {
+  const results: Record<string, boolean> = {};
+  for (const player of state.players) {
+    results[player.id] = player.hand.some(
+      (t) => !t.cut && typeof t.gameValue === "number" && t.gameValue === value,
+    );
+  }
+  return results;
+}
+
+/**
+ * Check if all 4 wires of a given value have been cut across all players.
+ */
+function isValueFullyCut(state: Readonly<GameState>, value: number): boolean {
+  return getCutCountForValue(state, value) >= 4;
+}
+
+/**
+ * Check if the active player has only red wires remaining (uncut).
+ */
+function playerHasOnlyReds(player: Readonly<import("@bomb-busters/shared").Player>): boolean {
+  const uncut = player.hand.filter((t) => !t.cut);
+  return uncut.length > 0 && uncut.every((t) => t.color === "red");
+}
+
+/**
+ * Draw the next Number card for mission 18. Skips values that are fully cut.
+ * Reshuffles discard into deck if deck is empty. Returns the drawn value,
+ * or null if no valid cards remain.
+ */
+export function drawMission18NumberCard(state: GameState): number | null {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return null;
+
+  // Reshuffle discard into deck if deck is empty
+  if (numberCards.deck.length === 0 && numberCards.discard.length > 0) {
+    numberCards.deck = shuffle([...numberCards.discard]);
+    numberCards.discard = [];
+  }
+
+  // Draw cards, skipping fully-cut values
+  while (numberCards.deck.length > 0) {
+    const card = numberCards.deck.shift()!;
+    if (isValueFullyCut(state, card.value)) {
+      // Permanently remove — don't add to discard
+      continue;
+    }
+    card.faceUp = true;
+    numberCards.visible = [card];
+    return card.value;
+  }
+
+  // No valid cards — all values fully cut (game should be won)
+  numberCards.visible = [];
+  return null;
+}
+
+/**
+ * Handle the Number card after a cut: if all 4 wires of the value are cut,
+ * permanently remove it; otherwise move to discard.
+ */
+function handleMission18PostCutCard(state: GameState): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  const currentCard = numberCards.visible.shift();
+  if (!currentCard) return;
+
+  if (isValueFullyCut(state, currentCard.value)) {
+    // Permanently removed — don't add anywhere
+  } else {
+    currentCard.faceUp = false;
+    numberCards.discard.push(currentCard);
+  }
+}
+
+/**
+ * Set up the designateCutter forced action for the given active player.
+ * Draws a Number card, computes radar results, and sets pendingForcedAction.
+ */
+function setupMission18ForcedAction(state: GameState, activePlayer: import("@bomb-busters/shared").Player): void {
+  const drawnValue = drawMission18NumberCard(state);
+  if (drawnValue == null) return; // No cards — game should be finishing
+
+  const radarResults = computeMission18RadarResults(state, drawnValue);
+
+  state.pendingForcedAction = {
+    kind: "designateCutter",
+    designatorId: activePlayer.id,
+    value: drawnValue,
+    radarResults,
+  };
+
+  state.log.push({
+    turn: state.turnNumber,
+    playerId: "system",
+    action: "hookEffect",
+    detail: `m18:number_card:${drawnValue}|radar:${Object.entries(radarResults).map(([id, has]) => `${id}=${has}`).join(",")}`,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Mission 18 — Forced General Radar Flow.
+ *
+ * Setup:
+ * - Initialize shuffled 1-12 Number card deck.
+ * - Unlock General Radar equipment.
+ * - Draw first card and set up forced action for captain.
+ *
+ * Validate:
+ * - During cutter sub-turn: only allow dualCut/soloCut (block equipment, revealReds).
+ * - Block manual use of general_radar equipment.
+ *
+ * EndTurn:
+ * - Handle Number card disposition after cut.
+ * - Override next player to designator's left (not cutter's left).
+ * - Draw next card and set up forced action.
+ */
+registerHookHandler<"forced_general_radar_flow">("forced_general_radar_flow", {
+  setup(_rule: ForcedGeneralRadarFlowRuleDef, ctx: SetupHookContext): void {
+    const { state } = ctx;
+
+    // Initialize Number card deck (1-12, shuffled)
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    state.campaign ??= {};
+    state.campaign.numberCards = {
+      deck: deckValues.map((value, idx) => ({
+        id: `m18-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      visible: [],
+      playerHands: {},
+    };
+
+    // Unlock General Radar
+    for (const eq of state.board.equipment) {
+      if (eq.id === "general_radar") {
+        eq.unlocked = true;
+      }
+    }
+
+    state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "forced_general_radar_flow:init",
+      timestamp: Date.now(),
+    });
+
+    // Captain is the first active player; set up first forced action if they don't have only reds
+    const captain = state.players.find((p) => p.isCaptain);
+    if (captain && !playerHasOnlyReds(captain)) {
+      setupMission18ForcedAction(state, captain);
+    }
+  },
+
+  validate(_rule: ForcedGeneralRadarFlowRuleDef, ctx: ValidateHookContext): HookResult | void {
+    const { state, action } = ctx;
+
+    // Block manual use of general_radar equipment during mission 18
+    if (action.type === "dualCut" || action.type === "soloCut") {
+      // During cutter sub-turn (mission18DesignatorIndex is set):
+      // block revealReds (handled below) but allow cuts — no action needed here
+    }
+
+    // When in cutter sub-turn, block useEquipment and revealReds
+    if (state.campaign?.mission18DesignatorIndex != null) {
+      if (action.type === "revealReds") {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: "During mission 18 designated cut, you must perform a cut action",
+        };
+      }
+    }
+  },
+
+  endTurn(_rule: ForcedGeneralRadarFlowRuleDef, ctx: EndTurnHookContext): HookResult | void {
+    const { state } = ctx;
+    if (state.phase === "finished") return;
+
+    const designatorIndex = state.campaign?.mission18DesignatorIndex;
+
+    if (designatorIndex != null) {
+      // Coming from a cutter's cut — handle Number card and compute next turn
+      handleMission18PostCutCard(state);
+
+      // Clear the designator marker
+      state.campaign!.mission18DesignatorIndex = undefined;
+
+      // Next player = designator's left (clockwise), skipping empty stands
+      const playerCount = state.players.length;
+      let nextIndex = (designatorIndex + 1) % playerCount;
+      let attempts = 0;
+      while (attempts < playerCount) {
+        const player = state.players[nextIndex];
+        if (player.hand.some((t) => !t.cut)) break;
+        nextIndex = (nextIndex + 1) % playerCount;
+        attempts++;
+      }
+
+      if (attempts >= playerCount) {
+        // All stands empty — should already be won
+        return;
+      }
+
+      const nextPlayer = state.players[nextIndex];
+
+      // If next player has only reds, they'll reveal reds normally (no forced action)
+      if (!playerHasOnlyReds(nextPlayer)) {
+        setupMission18ForcedAction(state, nextPlayer);
+      }
+
+      return { nextPlayerIndex: nextIndex };
+    }
+
+    // Coming from a reveal reds (no designator marker) — default advancement already happened
+    // Set up forced action for the new active player if needed
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (currentPlayer && !playerHasOnlyReds(currentPlayer)) {
+      setupMission18ForcedAction(state, currentPlayer);
+    }
+  },
+});
+
+// ── Mission 23 — Simultaneous Four-of-Value Cut ─────────────
+
+/**
+ * Mission 23 — Simultaneous four-of-value cut.
+ *
+ * Setup:
+ * - Place 1 random Number card face-up (the target value for the special action).
+ *
+ * EndTurn:
+ * - Before Captain's turn each round (except round 1), discard 1 face-down
+ *   equipment card from the hidden pile until the special action succeeds.
+ */
+registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
+  setup(_rule: SimultaneousFourCutRuleDef, ctx: SetupHookContext): void {
+    const value = MISSION_NUMBER_VALUES[Math.floor(Math.random() * MISSION_NUMBER_VALUES.length)];
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [{ id: `m23-number-${value}`, value, faceUp: true }],
+      deck: [],
+      discard: [],
+      playerHands: {},
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `m23:number_card:init:${value}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  endTurn(_rule: SimultaneousFourCutRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    if (ctx.state.campaign?.mission23SpecialActionDone) return;
+
+    // Discard happens when Captain (index 0) is about to play and it's not the first round
+    if (ctx.state.currentPlayerIndex !== 0) return;
+    if (ctx.state.turnNumber <= 1) return;
+
+    // Find first face-down equipment card and remove it
+    const eqIndex = ctx.state.board.equipment.findIndex((card) => card.faceDown);
+    if (eqIndex === -1) return;
+
+    const discarded = ctx.state.board.equipment.splice(eqIndex, 1)[0];
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail: `m23:equipment_discard:${discarded.id}|remaining=${ctx.state.board.equipment.length}`,
+      timestamp: Date.now(),
+    });
   },
 });

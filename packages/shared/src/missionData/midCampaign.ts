@@ -28,6 +28,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       2: { red: exact(3) },
     },
     behaviorHooks: ["mission_18_forced_general_radar_flow"],
+    hookRules: [{ kind: "forced_general_radar_flow" }],
     notes: ["FAQ: Active player designates only WHO cuts, not which wire or stand. Next turn goes to player on active player's left."],
   });
 

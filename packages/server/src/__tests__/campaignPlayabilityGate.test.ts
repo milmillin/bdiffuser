@@ -178,7 +178,50 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
 
 function resolveForcedAction(state: GameState): boolean {
   const forced = state.pendingForcedAction;
-  if (!forced || forced.kind !== "chooseNextPlayer") return false;
+  if (!forced) return false;
+
+  if (forced.kind === "designateCutter") {
+    // Pick a target: prefer players with radar "yes", then any with uncut tiles
+    const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
+    const playerCount = state.players.length;
+    let targetIndex: number | null = null;
+
+    // First pass: player with radar yes
+    for (let i = 1; i <= playerCount; i++) {
+      const idx = (designatorIndex + i) % playerCount;
+      const player = state.players[idx];
+      if (!player.hand.some((t) => !t.cut)) continue;
+      if (forced.radarResults[player.id]) {
+        targetIndex = idx;
+        break;
+      }
+    }
+
+    // Second pass: any player with uncut tiles
+    if (targetIndex === null) {
+      for (let i = 1; i <= playerCount; i++) {
+        const idx = (designatorIndex + i) % playerCount;
+        const player = state.players[idx];
+        if (!player.hand.some((t) => !t.cut)) continue;
+        targetIndex = idx;
+        break;
+      }
+    }
+
+    if (targetIndex === null) {
+      throw new Error(
+        `Mission ${state.mission}: designateCutter has no valid target (turn=${state.turnNumber})`,
+      );
+    }
+
+    state.campaign ??= {};
+    state.campaign.mission18DesignatorIndex = designatorIndex;
+    state.currentPlayerIndex = targetIndex;
+    state.pendingForcedAction = undefined;
+    return true;
+  }
+
+  if (forced.kind !== "chooseNextPlayer") return false;
 
   const candidates = state.players
     .map((player, index) => ({ player, index }))
