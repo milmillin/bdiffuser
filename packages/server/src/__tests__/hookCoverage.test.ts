@@ -46,4 +46,27 @@ describe("mission hook coverage", () => {
       setStrictUnknownHooks(previousStrict);
     }
   });
+
+  it("does not depend on behaviorHooks descriptors when hookRules are absent", () => {
+    const previousStrict = getStrictUnknownHooks();
+    setStrictUnknownHooks(true);
+
+    try {
+      const descriptorOnlyMissions = ALL_MISSION_IDS.filter((missionId) => {
+        const schema = MISSION_SCHEMAS[missionId];
+        return (schema.behaviorHooks?.length ?? 0) > 0 && (schema.hookRules?.length ?? 0) === 0;
+      });
+
+      // Safety check so this test cannot pass vacuously.
+      expect(descriptorOnlyMissions.length).toBeGreaterThan(0);
+
+      for (const missionId of descriptorOnlyMissions) {
+        const state = makeGameState({ mission: missionId });
+        const result = dispatchHooks(missionId, { point: "setup", state });
+        expect(result).toEqual({});
+      }
+    } finally {
+      setStrictUnknownHooks(previousStrict);
+    }
+  });
 });

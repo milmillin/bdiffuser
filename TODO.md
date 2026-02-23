@@ -333,5 +333,5 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 - [ ] All missions have schema-accurate setup for all allowed player counts.
 - [x] All hooks referenced in schema are implemented and tested.
 - [x] Shared/server/client typecheck and mission test suites pass.
-- [ ] No mission depends on placeholder behavior hooks.
+- [x] No mission depends on placeholder behavior hooks.
 - [ ] Campaign missions are playable end-to-end with parity to mission cards.
