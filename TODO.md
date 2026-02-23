@@ -346,7 +346,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_5`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title fixed to TRAINING: Second Day in the Field, subtitle added, and back rule aligned to 2-out-of-3 yellow constraints + reminder line.`).
 - [x] `mission_6`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: source cards match current text in `GAME_RULES.md`; no update needed).
 - [x] `mission_7`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — front/back text already matches current GAME_RULES.md entry`).
-- [ ] `mission_8`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_8`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — existing text already matches source card images (front/back).`).
 - [ ] `mission_9`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_10`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_11`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
