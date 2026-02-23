@@ -382,7 +382,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_41`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — source front/back confirmed, and mission text already matches `GAME_RULES.md` (front and marker-style back).`).
 - [x] `mission_42`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back aligned to source: setup is red 1/3 + four yellow wires; back clarifies pre-play show-setup, mission sound playback, and success/open-box wording.`).
 - [x] `mission_43`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back verified and card title corrected to \`Nano the Robot\`; mission win condition wording normalized to card phrasing`).
-- [ ] `mission_44`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_44`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: front/back text was re-checked and `GAME_RULES.md` mission-44 copy updated for exact communication rule and setup/flow wording cleanup).
 - [ ] `mission_45`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_46`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_47`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

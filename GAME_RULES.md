@@ -1204,13 +1204,12 @@ Baseline assumption used in this section:
     - Wires `1-4`: spend `1` token.
     - Wires `5-8`: spend `2` tokens.
     - Wires `9-12`: spend `3` tokens.
-  - After each round, Captain starts turn by returning all spent tokens to reserve.
+  - At the start of each captain turn, return all spent tokens to reserve.
   - If player cannot act due to insufficient oxygen, they pass and detonator advances `1`.
   - Communication restriction:
     - No speaking.
-    - One gesture allowed: raise thumb up/down to indicate oxygen need.
+    - One sign is allowed: give a thumbs up if you need more oxygen.
 
-> **FAQ:** The Stabilizer (Equipment `9`) can be used to pretend-cut zone 1 when everything is already cut. If a player doesn't want to play (to save oxygen), they skip and the detonator advances +1. The Stabilizer can negate the detonator movement when passing.
 
 ### Mission 45
 
