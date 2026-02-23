@@ -474,7 +474,7 @@ Normalization note:
 
 ### Mission 4
 
-- Card title: `TRAINING, 1st day of training` (`After theory, it's time for practice!`)
+- Card title: `TRAINING: First Day in the Field` (`Time to put theory into practice!`)
 - Setup:
   - From this mission onward, always include all `48` blue wires.
   - Add `1` red wire.
