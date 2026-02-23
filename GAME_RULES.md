@@ -1310,7 +1310,7 @@ Baseline assumption used in this section:
 
 ### Mission 50
 
-- Card title: `The Black Sea`
+- Card title: `The Blackest Sea`
 - Setup:
   - Add `2` red wires and `2` yellow wires.
   - Return validation tokens and red/yellow board markers to box; they are not used in this mission.
