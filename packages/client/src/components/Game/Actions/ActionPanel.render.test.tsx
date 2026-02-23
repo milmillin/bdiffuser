@@ -18,6 +18,8 @@ function renderPanel(
     playerId = "actor",
     selectedTarget = null,
     selectedGuessTile = null,
+    dualCutActive = false,
+    onToggleDualCut = vi.fn(),
     currentPlayerName = "Actor",
     isCurrentPlayerBot = false,
     character = null,
@@ -27,6 +29,8 @@ function renderPanel(
     playerId?: string;
     selectedTarget?: { playerId: string; tileIndex: number } | null;
     selectedGuessTile?: number | null;
+    dualCutActive?: boolean;
+    onToggleDualCut?: () => void;
     currentPlayerName?: string;
     isCurrentPlayerBot?: boolean;
     character?: import("@bomb-busters/shared").CharacterId | null;
@@ -42,6 +46,8 @@ function renderPanel(
       isMyTurn={true}
       selectedTarget={selectedTarget}
       selectedGuessTile={selectedGuessTile}
+      dualCutActive={dualCutActive}
+      onToggleDualCut={onToggleDualCut}
       onClearTarget={vi.fn()}
       onCutConfirmed={vi.fn()}
       onEnterEquipmentMode={vi.fn()}
@@ -89,6 +95,7 @@ describe("ActionPanel mission render behavior", () => {
     state.board.validationTrack[5] = 2;
 
     const html = renderPanel(state, {
+      dualCutActive: true,
       selectedTarget: { playerId: "target", tileIndex: 0 },
       selectedGuessTile: 0,
     });

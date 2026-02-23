@@ -26,6 +26,8 @@ function renderPanel(
       isMyTurn={overrides.isMyTurn ?? true}
       selectedTarget={overrides.selectedTarget ?? null}
       selectedGuessTile={overrides.selectedGuessTile ?? null}
+      dualCutActive={false}
+      onToggleDualCut={vi.fn()}
       onClearTarget={vi.fn()}
       onCutConfirmed={vi.fn()}
       onEnterEquipmentMode={vi.fn()}

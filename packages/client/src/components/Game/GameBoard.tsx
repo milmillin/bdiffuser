@@ -103,6 +103,9 @@ export function GameBoard({
   // Dual cut guess wire selection (on my stand)
   const [selectedGuessTile, setSelectedGuessTile] = useState<number | null>(null);
 
+  // Whether the "Dual Cut" action has been activated from the ActionPanel
+  const [dualCutActive, setDualCutActive] = useState(false);
+
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
@@ -219,9 +222,12 @@ export function GameBoard({
     );
   }, [unknownForcedAction?.kind]);
 
-  // Cancel equipment mode when turn or phase changes
+  // Cancel equipment mode and dual cut when turn or phase changes
   useEffect(() => {
     setEquipmentMode(null);
+    setDualCutActive(false);
+    setSelectedTarget(null);
+    setSelectedGuessTile(null);
   }, [gameState.turnNumber, gameState.phase]);
 
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
@@ -262,7 +268,7 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
-    if (selectedTarget && isMyTurn && gameState.phase === "playing") {
+    if (selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing") {
       return selectedGuessTile ?? undefined;
     }
     return undefined;
@@ -301,9 +307,16 @@ export function GameBoard({
                   onTileClick={
                     equipmentMode && MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) && gameState.phase === "playing"
                       ? (tileIndex) => handleOpponentTileClick(opp.id, tileIndex)
-                      : !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
-                        ? (tileIndex) =>
-                            setSelectedTarget({ playerId: opp.id, tileIndex })
+                      : dualCutActive && !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
+                        ? (tileIndex) => {
+                            if (selectedTarget?.playerId === opp.id && selectedTarget.tileIndex === tileIndex) {
+                              setSelectedTarget(null);
+                              setSelectedGuessTile(null);
+                            } else {
+                              setSelectedTarget({ playerId: opp.id, tileIndex });
+                              setSelectedGuessTile(null);
+                            }
+                          }
                         : undefined
                   }
                   selectedTileIndex={getOpponentSelectedTileIndex(opp.id)}
@@ -311,7 +324,9 @@ export function GameBoard({
                   tileSelectableFilter={
                     equipmentMode && gameState.phase === "playing"
                       ? getOpponentTileSelectableFilter(opp.id)
-                      : undefined
+                      : dualCutActive && isMyTurn && gameState.phase === "playing"
+                        ? (tile: VisibleTile) => !tile.cut
+                        : undefined
                   }
                 />
               ))}
@@ -348,11 +363,15 @@ export function GameBoard({
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
-                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                        : selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing"
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
                               if (!tile || tile.cut || tile.color === "red") return;
-                              setSelectedGuessTile(tileIndex);
+                              if (selectedGuessTile === tileIndex) {
+                                setSelectedGuessTile(null);
+                              } else {
+                                setSelectedGuessTile(tileIndex);
+                              }
                             }
                           : undefined
                   }
@@ -365,7 +384,7 @@ export function GameBoard({
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
-                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                        : selectedTarget && dualCutActive && isMyTurn && gameState.phase === "playing"
                           ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
                           : undefined
                   }
@@ -516,10 +535,21 @@ export function GameBoard({
                   isMyTurn={isMyTurn}
                   selectedTarget={selectedTarget}
                   selectedGuessTile={selectedGuessTile}
-                  onClearTarget={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
-                  onCutConfirmed={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
+                  dualCutActive={dualCutActive}
+                  onToggleDualCut={() => {
+                    if (dualCutActive) {
+                      setDualCutActive(false);
+                      setSelectedTarget(null);
+                      setSelectedGuessTile(null);
+                    } else {
+                      setDualCutActive(true);
+                    }
+                  }}
+                  onClearTarget={() => { setDualCutActive(false); setSelectedTarget(null); setSelectedGuessTile(null); }}
+                  onCutConfirmed={() => { setDualCutActive(false); setSelectedTarget(null); setSelectedGuessTile(null); }}
                   onEnterEquipmentMode={(mode) => {
                     setEquipmentMode(mode);
+                    setDualCutActive(false);
                     setSelectedTarget(null);
                     setSelectedGuessTile(null);
                   }}
@@ -536,6 +566,7 @@ export function GameBoard({
                             selectedTiles: [],
                             guessTileIndex: null,
                           });
+                          setDualCutActive(false);
                           setSelectedTarget(null);
                           setSelectedGuessTile(null);
                         }
@@ -676,6 +707,7 @@ export function GameBoard({
                     selectedTiles: [],
                     guessTileIndex: null,
                   });
+                  setDualCutActive(false);
                   setSelectedTarget(null);
                   setSelectedGuessTile(null);
                 }

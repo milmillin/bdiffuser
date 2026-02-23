@@ -78,6 +78,8 @@ export function ActionPanel({
   isMyTurn,
   selectedTarget,
   selectedGuessTile,
+  dualCutActive,
+  onToggleDualCut,
   onClearTarget,
   onCutConfirmed,
   onEnterEquipmentMode,
@@ -93,6 +95,8 @@ export function ActionPanel({
   isMyTurn: boolean;
   selectedTarget: { playerId: string; tileIndex: number } | null;
   selectedGuessTile: number | null;
+  dualCutActive: boolean;
+  onToggleDualCut: () => void;
   onClearTarget: () => void;
   onCutConfirmed: () => void;
   onEnterEquipmentMode: (mode: EquipmentMode) => void;
@@ -313,12 +317,39 @@ export function ActionPanel({
         </div>
       )}
 
-      {/* Dual Cut — Improvement #2: Collapse to single line in step 1 */}
+      {/* Dual Cut — Action-first flow with toggle */}
       {isMyTurn && !forceRevealReds && (
-        dualCutStep === 1 ? (
-          <div className="flex items-center gap-2 text-sm text-blue-300 py-1" data-testid="dual-cut-compact">
-            <span className="text-xs font-bold uppercase">Dual Cut</span>
-            <span className="text-gray-400">&mdash; Select a wire on an opponent&apos;s stand</span>
+        !dualCutActive ? (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+            <div className="text-xs font-bold text-blue-300 uppercase">
+              Dual Cut
+            </div>
+            <button
+              onClick={onToggleDualCut}
+              data-testid="dual-cut-activate"
+              className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            >
+              Dual Cut
+            </button>
+          </div>
+        ) : !selectedTarget ? (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-blue-300 uppercase">
+                Dual Cut
+              </div>
+              <DualCutStepIndicator step={1} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Select a wire on an opponent&apos;s stand</span>
+              <button
+                onClick={onToggleDualCut}
+                data-testid="dual-cut-cancel"
+                className="text-xs text-red-400 hover:text-red-300"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
           <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
@@ -332,10 +363,10 @@ export function ActionPanel({
               <span className="text-sm text-gray-300" data-testid="dual-cut-target">
                 Targeting{" "}
                 {
-                  gameState.players.find((p) => p.id === selectedTarget!.playerId)
+                  gameState.players.find((p) => p.id === selectedTarget.playerId)
                     ?.name
                 }
-                &apos;s wire {wireLabel(selectedTarget!.tileIndex)}
+                &apos;s wire {wireLabel(selectedTarget.tileIndex)}
               </span>
               <button
                 onClick={onClearTarget}
