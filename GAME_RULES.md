@@ -285,10 +285,10 @@ Card text extracted from equipment cards `1` through `12`:
 
 Additional card text extracted from later-mission equipment cards:
 
-- Yellow equipment - `Double fond`
-  - Timing: immediate effect.
-  - Effect: draw 2 Equipment cards and put them into play with the others.
-  - Card reminder: depending on values already cut, those new equipment cards may be immediately usable.
+- Yellow equipment - `False Bottom`
+  - Timing: Instant effect.
+  - Effect: Take 2 Equipment cards and put them in the game with the others.
+  - Card reminder: Depending on the wire values already cut; it is possible for these cards to be used immediately.
 - Equipment `22` (`Single thread label`)
   - Timing: can be used at any time.
   - Effect: place a token right in front of one of your blue wires (cut or not).
