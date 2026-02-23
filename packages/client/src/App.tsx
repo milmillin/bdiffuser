@@ -8,11 +8,20 @@ export default function App() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState("");
 
-  if (!roomId) {
-    return <JoinScreen onJoin={(room, name) => { setRoomId(room); setPlayerName(name); }} />;
-  }
-
-  return <GameRoom roomId={roomId} playerName={playerName} onLeave={() => setRoomId(null)} />;
+  return (
+    <>
+      {!roomId
+        ? <JoinScreen onJoin={(room, name) => { setRoomId(room); setPlayerName(name); }} />
+        : <GameRoom roomId={roomId} playerName={playerName} onLeave={() => setRoomId(null)} />
+      }
+      <div
+        data-testid="app-version"
+        className="fixed bottom-3 right-3 text-xs font-mono text-gray-500 select-none"
+      >
+        {`commit ${__APP_COMMIT_ID__} | ${__APP_COMMIT_DATETIME__}`}
+      </div>
+    </>
+  );
 }
 
 function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void }) {
@@ -89,12 +98,6 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
             </button>
           </div>
         </div>
-      </div>
-      <div
-        data-testid="app-version"
-        className="fixed bottom-3 right-3 text-xs font-mono text-gray-500 select-none"
-      >
-        {`commit ${__APP_COMMIT_ID__} | ${__APP_COMMIT_DATETIME__}`}
       </div>
     </div>
   );
