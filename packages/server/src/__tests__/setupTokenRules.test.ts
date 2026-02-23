@@ -77,7 +77,7 @@ describe("setupTokenRules", () => {
     expect(allSetupInfoTokensPlaced(state)).toBe(true);
   });
 
-  it.each([13, 27, 29] as const)(
+  it.each([13, 27, 29, 46] as const)(
     "mission %i (2p): captain requires 0 setup info tokens",
     (mission) => {
       const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
@@ -89,7 +89,7 @@ describe("setupTokenRules", () => {
     },
   );
 
-  it.each([13, 27, 29] as const)(
+  it.each([13, 27, 29, 46] as const)(
     "mission %i (3p): captain still requires setup info token",
     (mission) => {
       const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });

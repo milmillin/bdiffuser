@@ -227,6 +227,9 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 17 captain false setup-token flow:
     - [x] Captain now requires 2 setup tokens (instead of 1).
     - [x] Captain setup token placement enforces false-value semantics and bans red-wire targets.
+  - [x] Mission 46 captain skip setup-token flow (2-player):
+    - [x] 2-player captain now requires 0 setup tokens in mission 46.
+    - [x] Added shared/server setup-token requirement coverage for mission 46.
 
 ## Phase 2 - Product Integration (P1)
 

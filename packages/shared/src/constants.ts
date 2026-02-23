@@ -45,4 +45,4 @@ export const YELLOW_INFO_TOKENS = 2;
 export const NO_SETUP_TOKEN_MISSIONS = new Set<number>([18, 58]);
 
 /** Missions where the 2-player captain skips setup info token placement. */
-export const TWO_PLAYER_CAPTAIN_SKIP_MISSIONS = new Set<number>([11, 13, 27, 29]);
+export const TWO_PLAYER_CAPTAIN_SKIP_MISSIONS = new Set<number>([11, 13, 27, 29, 46]);
