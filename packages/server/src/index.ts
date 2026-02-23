@@ -21,6 +21,7 @@ import {
   validateSoloCutWithHooks,
   validateRevealRedsWithHooks,
   validateSimultaneousRedCutWithHooks,
+  validateSimultaneousFourCutWithHooks,
 } from "./validation.js";
 import {
   executeDualCut,
@@ -28,6 +29,7 @@ import {
   executeSoloCut,
   executeRevealReds,
   executeSimultaneousRedCut,
+  executeSimultaneousFourCut,
 } from "./gameLogic.js";
 import { executeUseEquipment, validateUseEquipment } from "./equipment.js";
 import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
@@ -202,6 +204,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "simultaneousRedCut":
         this.handleSimultaneousRedCut(connection);
+        break;
+      case "simultaneousFourCut":
+        this.handleSimultaneousFourCut(connection, msg.targets);
         break;
       case "useEquipment":
         this.handleUseEquipment(connection, msg.equipmentId, msg.payload);
@@ -664,6 +669,33 @@ export class BombBustersServer extends Server<Env> {
 
     const previousResult = state.result;
     const action = executeSimultaneousRedCut(state, conn.id);
+    this.maybeRecordMissionFailure(previousResult, state);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleSimultaneousFourCut(
+    conn: Connection,
+    targets: Array<{ playerId: string; tileIndex: number }>,
+  ) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const error = validateSimultaneousFourCutWithHooks(state, conn.id, targets);
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const action = executeSimultaneousFourCut(state, conn.id, targets);
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();

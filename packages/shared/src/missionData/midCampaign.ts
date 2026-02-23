@@ -94,6 +94,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
     behaviorHooks: ["mission_23_hidden_equipment_pile", "mission_23_simultaneous_four_of_value_action"],
     hookRules: [
       { kind: "hidden_equipment_pile", pileSize: 7 },
+      { kind: "simultaneous_four_cut" },
     ],
   });
 

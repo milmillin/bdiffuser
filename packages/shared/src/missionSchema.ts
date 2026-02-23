@@ -43,6 +43,7 @@ export type {
   PlayerCount,
   ResolvedMissionSetup,
   SequencePriorityRuleDef,
+  SimultaneousFourCutRuleDef,
   TimerRuleDef,
   WirePoolSpec,
 } from "./missionSchemaTypes.js";

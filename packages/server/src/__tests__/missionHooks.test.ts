@@ -75,8 +75,9 @@ describe("missionHooks dispatcher", () => {
 
     it("returns hookRules for mission 23", () => {
       const rules = getHookRules(23);
-      expect(rules.length).toBe(1);
+      expect(rules.length).toBe(2);
       expect(rules[0].kind).toBe("hidden_equipment_pile");
+      expect(rules[1].kind).toBe("simultaneous_four_cut");
     });
   });
 
@@ -89,6 +90,7 @@ describe("missionHooks dispatcher", () => {
       expect(hasHandler("equipment_double_lock")).toBe(true);
       expect(hasHandler("number_deck_equipment_reveal")).toBe(true);
       expect(hasHandler("hidden_equipment_pile")).toBe(true);
+      expect(hasHandler("simultaneous_four_cut")).toBe(true);
     });
   });
 

@@ -473,6 +473,73 @@ export function validateSimultaneousRedCutLegality(
   return null;
 }
 
+/** Check if a simultaneous four-of-value cut action is valid. */
+export function validateSimultaneousFourCutLegality(
+  state: GameState,
+  actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
+): ActionLegalityError | null {
+  if (state.mission !== 23 && state.mission !== 39) {
+    return legalityError(
+      "SIMULTANEOUS_FOUR_CUT_WRONG_MISSION",
+      "Simultaneous four-of-value cut is only available in mission 23 or 39",
+    );
+  }
+
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  if (state.campaign?.mission23SpecialActionDone) {
+    return legalityError(
+      "SIMULTANEOUS_FOUR_CUT_ALREADY_DONE",
+      "The simultaneous four-of-value cut has already been completed",
+    );
+  }
+
+  const numberCard = state.campaign?.numberCards?.visible?.[0];
+  if (!numberCard) {
+    return legalityError(
+      "SIMULTANEOUS_FOUR_CUT_INVALID_TARGETS",
+      "No Number card is in play",
+    );
+  }
+
+  if (targets.length !== 4) {
+    return legalityError(
+      "SIMULTANEOUS_FOUR_CUT_INVALID_TARGETS",
+      "Must designate exactly 4 wires",
+    );
+  }
+
+  const seenTargets = new Set<string>();
+  for (const target of targets) {
+    const player = state.players.find((p) => p.id === target.playerId);
+    if (!player) {
+      return legalityError("TARGET_PLAYER_NOT_FOUND", `Target player ${target.playerId} not found`);
+    }
+
+    const targetKey = `${target.playerId}:${target.tileIndex}`;
+    if (seenTargets.has(targetKey)) {
+      return legalityError(
+        "SIMULTANEOUS_FOUR_CUT_INVALID_TARGETS",
+        "Cannot target the same wire twice",
+      );
+    }
+    seenTargets.add(targetKey);
+
+    const tile = getTileByFlatIndex(player, target.tileIndex);
+    if (!tile) {
+      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+    }
+    if (tile.cut) {
+      return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+    }
+  }
+
+  return null;
+}
+
 export type ValidatableAction =
   | {
       type: "dualCut";
@@ -506,6 +573,11 @@ export type ValidatableAction =
   | {
       type: "simultaneousRedCut";
       actorId: string;
+    }
+  | {
+      type: "simultaneousFourCut";
+      actorId: string;
+      targets: Array<{ playerId: string; tileIndex: number }>;
     };
 
 /** Validate an action with both base rules and mission hook validation. */
@@ -582,6 +654,15 @@ export function validateActionWithHooks(
     }
     case "simultaneousRedCut": {
       const baseError = validateSimultaneousRedCutLegality(state, action.actorId);
+      if (baseError) return baseError;
+      break;
+    }
+    case "simultaneousFourCut": {
+      const baseError = validateSimultaneousFourCutLegality(
+        state,
+        action.actorId,
+        action.targets,
+      );
       if (baseError) return baseError;
       break;
     }
@@ -675,4 +756,16 @@ export function validateSimultaneousRedCutWithHooks(
   actorId: string,
 ): ActionLegalityError | null {
   return validateActionWithHooks(state, { type: "simultaneousRedCut", actorId });
+}
+
+export function validateSimultaneousFourCutWithHooks(
+  state: GameState,
+  actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, {
+    type: "simultaneousFourCut",
+    actorId,
+    targets,
+  });
 }

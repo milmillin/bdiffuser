@@ -905,6 +905,97 @@ export function executeSimultaneousRedCut(
   };
 }
 
+/** Execute simultaneous four-of-value cut action (mission 23). */
+export function executeSimultaneousFourCut(
+  state: GameState,
+  actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
+): GameAction {
+  const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  if (targetValue == null) {
+    // Should never happen if validation passed, but guard against it
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
+    return { type: "gameOver", result: "loss_red_wire" };
+  }
+
+  // Check all target tiles
+  let allMatch = true;
+  for (const target of targets) {
+    const player = state.players.find((p) => p.id === target.playerId)!;
+    const tile = getTileByFlatIndex(player, target.tileIndex)!;
+    if (tile.gameValue !== targetValue) {
+      allMatch = false;
+      break;
+    }
+  }
+
+  if (allMatch) {
+    // Success: cut all 4 tiles
+    const cuts: Array<{ playerId: string; tileIndex: number }> = [];
+    for (const target of targets) {
+      const player = state.players.find((p) => p.id === target.playerId)!;
+      const tile = getTileByFlatIndex(player, target.tileIndex)!;
+      tile.cut = true;
+      cuts.push({ playerId: target.playerId, tileIndex: target.tileIndex });
+    }
+
+    // Mark special action as done
+    state.campaign ??= {};
+    state.campaign.mission23SpecialActionDone = true;
+
+    // Unlock all remaining face-down equipment
+    for (const card of state.board.equipment) {
+      if (card.faceDown) {
+        card.faceDown = false;
+        card.unlocked = true;
+      }
+    }
+
+    updateMarkerConfirmations(state);
+    checkValidation(state, targetValue);
+    checkEquipmentUnlock(state, targetValue);
+
+    addLog(
+      state,
+      actorId,
+      "simultaneousFourCut",
+      `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
+    );
+
+    if (checkWin(state)) {
+      state.result = "win";
+      state.phase = "finished";
+      return { type: "gameOver", result: "win" };
+    }
+
+    advanceTurn(state);
+
+    return {
+      type: "simultaneousFourCutResult",
+      actorId,
+      targetValue,
+      cuts,
+      success: true,
+    };
+  } else {
+    // Failure: explosion
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
+
+    addLog(
+      state,
+      actorId,
+      "simultaneousFourCut",
+      `designated 4 wires of value ${targetValue} — mismatch! BOOM!`,
+    );
+
+    return { type: "gameOver", result: "loss_red_wire" };
+  }
+}
+
 /** Execute reveal reds action */
 export function executeRevealReds(
   state: GameState,
