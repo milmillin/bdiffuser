@@ -298,6 +298,152 @@ Win/Loss summary:
   - Quick reference says "once per game."
   - For campaign play, the detailed character-rules wording ("once per mission") is typically interpreted as authoritative unless a mission says otherwise.
 
+## 20. Mission Cards 1-8 (Processed from Images)
+
+Source images:
+
+- Fronts: `packages/client/public/images/mission_1.png` through `packages/client/public/images/mission_8.png`
+- Backs: `packages/client/public/images/mission_1_back.png` through `packages/client/public/images/mission_8_back.png`
+
+Normalization note:
+
+- Card text uses mixed wording ("thread", "wire", "Minesweeper"). This section normalizes terms to `wire` and `player` while preserving rule meaning.
+
+### Mission 1
+
+- Card title: `TRAINING, 1st day` (`Lesson 1: How to cut a wire?`)
+- Setup:
+  - Use `24` blue wires only: values `1` to `6` (4 copies each).
+  - Do not place equipment cards.
+  - Still do standard setup items listed on the card:
+    - Set detonator by player count.
+    - Each player takes a character card.
+    - Starting with Captain, each player places one info token on one of their own blue wires with matching value.
+- Mission rule (back):
+  - On turn, use either `Duo Cut` or `Solo Cut`.
+  - Duo Cut failure:
+    - Detonator advances one space.
+    - Targeted teammate places info token showing true value of targeted wire.
+    - Active player does not reveal which own wire they intended to match.
+  - Solo Cut:
+    - Cut all remaining wires of one value in your hand.
+    - Either all `4`, or the remaining `2` if the other `2` were already cut.
+
+### Mission 2
+
+- Card title: `TRAINING, 2nd day` (`Lesson 2: Cutting a YELLOW wire`)
+- Setup:
+  - Use `32` blue wires: values `1` to `8` only.
+  - Add `2` yellow wires, drawn from values `1.1` to `7.1`.
+  - Do not place equipment cards (training exception).
+  - Place board markers/pawns for special wires (here, yellow values in play).
+  - Yellow info token cannot be used during setup.
+- Mission rule (back):
+  - On turn, use either `Duo Cut` or `Solo Cut`.
+  - Yellow wires are introduced:
+    - Yellow is cut like blue (Duo/Solo), but all yellow wires are treated as one shared value.
+    - To target yellow, player must call `yellow`.
+    - If a yellow is misidentified during a cut, use the yellow info token to reveal.
+
+### Mission 3
+
+- Card title: `TRAINING, 3rd day` (`Lesson 3: (NOT) cutting a RED wire`)
+- Setup:
+  - Use `40` blue wires: values `1` to `10` only.
+  - Add `1` red wire, drawn from values `1.5` to `9.5`.
+  - Place equipment cards by player count (randomly drawn).
+  - If equipment `11` (`Coffee Thermos`) or `12` (`Label =`) is drawn, replace it.
+- Mission rule (back):
+  - Red wire introduced: cutting red immediately explodes bomb (mission failure).
+  - New action `Reveal Your Red Wires`:
+    - If a player starts turn with only red wire(s) uncut, they reveal them.
+    - That player's work is finished; teammates continue.
+  - Equipment introduced:
+    - Not usable at game start.
+    - Becomes usable once 2 wires of matching equipment value are cut.
+    - Each equipment can be used once.
+
+### Mission 4
+
+- Card title: `TRAINING, 1st day of training` (`After theory, it's time for practice!`)
+- Setup:
+  - From this mission onward, always include all `48` blue wires.
+  - Add `1` red wire.
+  - Add `2` yellow wires.
+  - 2-player override shown on card:
+    - `48` blue, `1` red, `4` yellow.
+- Mission rule (back):
+  - Consolidation mission of learned systems:
+    - Equipment unlocks when 2 matching-value wires are cut.
+    - Yellow wires are cut together (2-player game uses 4 yellows, cut in pairs).
+    - Red wire must not be cut; it is revealed when it is the only wire left in a player's hand.
+
+### Mission 5
+
+- Card title: `TRAINING: 2nd day of training`
+- Setup:
+  - Additional special wires on card:
+    - `1` red wire.
+    - `2 out of 3` yellow wires.
+  - `2 out of 3` yellow procedure:
+    - Take 3 yellow tiles.
+    - Place 3 `?` markers on matching yellow values.
+    - Shuffle these 3 yellow tiles face down, add 2 to the game, set 1 aside unrevealed.
+  - 2-player override shown on card:
+    - `2` red wires.
+    - `2 out of 3` yellow wires.
+  - Inherits mission 4 baseline of all `48` blue wires.
+- Mission rule (back):
+  - Emphasizes `2 of 3` yellow uncertainty (two yellow wires in play, values known only among three candidates).
+
+### Mission 6
+
+- Card title: `TRAINING: 3rd day of training`
+- Setup:
+  - Additional special wires on card:
+    - `1` red wire.
+    - `4` yellow wires.
+  - 2-player override shown on card:
+    - `2` red wires.
+    - `4` yellow wires.
+  - Inherits mission 4 baseline of all `48` blue wires.
+- Mission rule (back):
+  - `4` yellow wires are all the same value.
+  - Usually cut by pairs with Duo Cut.
+  - Solo Cut may cut yellow by `2` or `4` if one player holds all remaining yellow wires in play.
+
+### Mission 7
+
+- Card title: `TRAINING: last day of training`
+- Setup:
+  - Red setup is `1 out of 2`.
+  - Procedure on card:
+    - Take 2 red tiles.
+    - Place `?` markers on those 2 possible red values.
+    - Shuffle and include 1 red tile in play; set the other aside unrevealed.
+  - 2-player override shown on card:
+    - `1 out of 3` red.
+  - Inherits mission 4 baseline of all `48` blue wires.
+- Mission rule (back):
+  - Confirms `1 out of 2` red uncertainty:
+    - Exactly 1 red in play.
+    - Its value is known among 2 possibilities (among 3 possibilities with 2 players).
+
+### Mission 8
+
+- Card title: `FINAL EXAM`
+- Setup:
+  - Red setup: `1 out of 2`.
+  - Yellow setup: `2 out of 3`.
+  - 2-player override shown on card:
+    - Red: `1 out of 3`.
+    - Yellow: `4` yellow wires.
+  - Inherits mission 4 baseline of all `48` blue wires.
+- Mission rule (back):
+  - No special mission rule; apply everything learned in training.
+  - Campaign progression note:
+    - On success, open the `Missions 9 to 19` box.
+
 ---
 
 ## Source

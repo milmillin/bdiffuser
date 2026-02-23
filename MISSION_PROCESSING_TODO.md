@@ -16,14 +16,14 @@ and add per-mission setup/special rules into `GAME_RULES.md`.
 
 ## Mission Queue
 
-- [ ] Mission 1: front `packages/client/public/images/mission_1.png`, back `packages/client/public/images/mission_1_back.png`
-- [ ] Mission 2: front `packages/client/public/images/mission_2.png`, back `packages/client/public/images/mission_2_back.png`
-- [ ] Mission 3: front `packages/client/public/images/mission_3.png`, back `packages/client/public/images/mission_3_back.png`
-- [ ] Mission 4: front `packages/client/public/images/mission_4.png`, back `packages/client/public/images/mission_4_back.png`
-- [ ] Mission 5: front `packages/client/public/images/mission_5.png`, back `packages/client/public/images/mission_5_back.png`
-- [ ] Mission 6: front `packages/client/public/images/mission_6.png`, back `packages/client/public/images/mission_6_back.png`
-- [ ] Mission 7: front `packages/client/public/images/mission_7.png`, back `packages/client/public/images/mission_7_back.png`
-- [ ] Mission 8: front `packages/client/public/images/mission_8.png`, back `packages/client/public/images/mission_8_back.png`
+- [x] Mission 1: front `packages/client/public/images/mission_1.png`, back `packages/client/public/images/mission_1_back.png`
+- [x] Mission 2: front `packages/client/public/images/mission_2.png`, back `packages/client/public/images/mission_2_back.png`
+- [x] Mission 3: front `packages/client/public/images/mission_3.png`, back `packages/client/public/images/mission_3_back.png`
+- [x] Mission 4: front `packages/client/public/images/mission_4.png`, back `packages/client/public/images/mission_4_back.png`
+- [x] Mission 5: front `packages/client/public/images/mission_5.png`, back `packages/client/public/images/mission_5_back.png`
+- [x] Mission 6: front `packages/client/public/images/mission_6.png`, back `packages/client/public/images/mission_6_back.png`
+- [x] Mission 7: front `packages/client/public/images/mission_7.png`, back `packages/client/public/images/mission_7_back.png`
+- [x] Mission 8: front `packages/client/public/images/mission_8.png`, back `packages/client/public/images/mission_8_back.png`
 - [ ] Mission 9: front `packages/client/public/images/mission_9.png`, back `packages/client/public/images/mission_9_back.png`
 - [ ] Mission 10: front `packages/client/public/images/mission_10.png`, back `packages/client/public/images/mission_10_back.png`
 - [ ] Mission 11: front `packages/client/public/images/mission_11.png`, back `packages/client/public/images/mission_11_back.png`
