@@ -1634,6 +1634,10 @@ Baseline assumption used in this section:
 
 - You must cut only wires 1 to 6.
 
+### Constraint D
+
+- You must cut only wires 7 to 12.
+
 ## Challenge Cards
 
 ### Challenge 1
