@@ -439,7 +439,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `challenge_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `On a single tile stand, at least 7 wires have been cut while both end wires remain uncut.`).
 
 #### Constraint Cards (12)
-- [ ] `constraint_a`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `constraint_a`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front image OCR reads "You must cut only even wires"; back image has no readable text; GAME_RULES.md constraint section updated with Constraint A entry`).
 - [ ] `constraint_b`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `constraint_c`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `constraint_d`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

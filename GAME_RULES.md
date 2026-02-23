@@ -1620,6 +1620,12 @@ Baseline assumption used in this section:
 
 > **FAQ:** The standee must move after every cut (success or failure). On hash-marked squares, you must perform a SUCCESSFUL cut matching the ACTION constraint to trigger the action; regardless of success, do not move on hash squares.
 
+## Constraint Cards
+
+### Constraint A
+
+- You must cut only even wires.
+
 ## Challenge Cards
 
 ### Challenge 1
