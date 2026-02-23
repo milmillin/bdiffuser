@@ -275,6 +275,8 @@ export function GameBoard({
                 board={gameState.board}
                 missionId={gameState.mission}
                 playerCount={gameState.players.length}
+                character={me?.character}
+                characterUsed={me?.characterUsed}
               />
             </div>
 

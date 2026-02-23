@@ -1,10 +1,16 @@
+import { useState } from "react";
 import {
   EQUIPMENT_DEFS,
   getEquipmentCardText,
   resolveMissionSetup,
+  CHARACTER_CARD_TEXT,
+  CHARACTER_IMAGES,
   type BoardState,
+  type CharacterId,
   type MissionId,
 } from "@bomb-busters/shared";
+
+const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
 
 function getBlueRangeForMission(
   missionId: MissionId,
@@ -22,10 +28,14 @@ export function BoardArea({
   board,
   missionId,
   playerCount,
+  character,
+  characterUsed,
 }: {
   board: BoardState;
   missionId: MissionId;
   playerCount: number;
+  character?: CharacterId | null;
+  characterUsed?: boolean;
 }) {
   const blueRange = getBlueRangeForMission(missionId, playerCount);
 
@@ -42,8 +52,12 @@ export function BoardArea({
           blueRange={blueRange}
         />
       </div>
-      {board.equipment.length > 0 && (
-        <EquipmentRow equipment={board.equipment} />
+      {(board.equipment.length > 0 || character) && (
+        <EquipmentRow
+          equipment={board.equipment}
+          character={character ?? null}
+          characterUsed={characterUsed ?? false}
+        />
       )}
     </div>
   );
@@ -206,10 +220,21 @@ function MarkerIndicator({
 
 function EquipmentRow({
   equipment,
+  character,
+  characterUsed,
 }: {
   equipment: BoardState["equipment"];
+  character: CharacterId | null;
+  characterUsed: boolean;
 }) {
-  const defsById = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+  const toggleCard = (key: string) => {
+    setFlippedCards((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   const getStatus = (eq: BoardState["equipment"][number]) => {
     if (eq.used) return { label: "Used", className: "bg-black/70 text-gray-200" };
@@ -225,39 +250,68 @@ function EquipmentRow({
     return { label: `Lock ${eq.unlockValue}x2`, className: "bg-black/70 text-yellow-200" };
   };
 
+  const charText = character ? CHARACTER_CARD_TEXT[character] : null;
+  const charImage = character ? CHARACTER_IMAGES[character] : null;
+  const showPersonalImage = character ? flippedCards.has(`personal-${character}`) : false;
+
   return (
     <div>
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Equipment</div>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {equipment.map((eq) => {
-          const def = defsById.get(eq.id);
-          const rulesText = getEquipmentCardText(eq.id, def);
-          const status = getStatus(eq);
-
-          return (
+        {/* Personal equipment card */}
+        {character && charText && (
+          <button
+            type="button"
+            onClick={() => toggleCard(`personal-${character}`)}
+            className={`relative flex-shrink-0 w-64 rounded-lg border shadow-md h-72 text-left overflow-hidden ${
+              characterUsed
+                ? "border-gray-700 opacity-60 bg-gray-900"
+                : "border-violet-500 bg-violet-950/80"
+            }`}
+          >
+            {/* Status badge */}
             <div
-              key={eq.id}
-              className={`relative flex-shrink-0 w-64 rounded-lg border shadow-md h-72 ${
-                eq.used
-                  ? "border-gray-700 opacity-60 bg-gray-900"
-                  : eq.unlocked
-                    ? "border-green-500 bg-slate-900"
-                    : "border-gray-700 bg-slate-950"
+              className={`absolute left-1 top-1 z-10 px-1 py-0.5 rounded text-[10px] font-bold ${
+                characterUsed
+                  ? "bg-rose-700/80 text-white"
+                  : "bg-emerald-700/80 text-white"
               }`}
             >
-              <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${status.className}`}>
-                {status.label}
+              {characterUsed ? "Skill Used" : "Skill Ready"}
+            </div>
+
+            {/* Personal label */}
+            <div className="absolute right-1 top-1 z-10 px-1 py-0.5 rounded bg-violet-700/80 text-[10px] font-bold text-violet-100">
+              Personal
+            </div>
+
+            {showPersonalImage && charImage ? (
+              <div className="relative h-full w-full">
+                <img
+                  src={`/images/${charImage}`}
+                  alt={charText.name}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
+                  <div className="text-sm font-bold text-white leading-tight">
+                    {charText.name}
+                  </div>
+                  <div className="text-[10px] text-violet-200">
+                    {charText.abilityName}
+                  </div>
+                </div>
               </div>
+            ) : (
               <div className="h-full overflow-y-auto px-2.5 py-2.5 pt-7 space-y-2">
                 <div className="space-y-0.5">
-                  <div className="text-[10px] uppercase tracking-wide text-gray-400">
-                    Equipment {eq.unlockValue}
+                  <div className="text-[10px] uppercase tracking-wide text-violet-300">
+                    Personal Equipment
                   </div>
                   <div className="text-sm font-bold text-white leading-tight">
-                    {eq.name}
+                    {charText.abilityName}
                   </div>
-                  <div className="text-[10px] text-gray-400">
-                    Unlocks after 2 cuts of value {eq.unlockValue}
+                  <div className="text-[10px] text-violet-300/80">
+                    {charText.name}
                   </div>
                 </div>
 
@@ -266,7 +320,7 @@ function EquipmentRow({
                     Timing
                   </div>
                   <p className="text-[11px] leading-snug text-gray-100">
-                    {rulesText.timing}
+                    {charText.timing}
                   </p>
                 </div>
 
@@ -275,17 +329,17 @@ function EquipmentRow({
                     Effect
                   </div>
                   <p className="text-[11px] leading-snug text-gray-100">
-                    {rulesText.effect}
+                    {charText.effect}
                   </p>
                 </div>
 
-                {rulesText.reminders.length > 0 && (
+                {charText.reminders.length > 0 && (
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wide text-fuchsia-300">
                       Reminder
                     </div>
                     <ul className="space-y-1">
-                      {rulesText.reminders.map((reminder) => (
+                      {charText.reminders.map((reminder) => (
                         <li
                           key={reminder}
                           className="text-[11px] leading-snug text-gray-300"
@@ -297,7 +351,99 @@ function EquipmentRow({
                   </div>
                 )}
               </div>
-            </div>
+            )}
+          </button>
+        )}
+
+        {/* Regular equipment cards */}
+        {equipment.map((eq) => {
+          const def = EQUIPMENT_DEFS_BY_ID.get(eq.id);
+          const rulesText = getEquipmentCardText(eq.id, def);
+          const status = getStatus(eq);
+          const showImage = flippedCards.has(eq.id);
+
+          return (
+            <button
+              type="button"
+              key={eq.id}
+              onClick={() => toggleCard(eq.id)}
+              className={`relative flex-shrink-0 w-64 rounded-lg border shadow-md h-72 text-left overflow-hidden ${
+                eq.used
+                  ? "border-gray-700 opacity-60 bg-gray-900"
+                  : eq.unlocked
+                    ? "border-green-500 bg-slate-900"
+                    : "border-gray-700 bg-slate-950"
+              }`}
+            >
+              <div className={`absolute left-1 top-1 z-10 px-1 py-0.5 rounded text-[10px] font-bold ${status.className}`}>
+                {status.label}
+              </div>
+
+              {showImage ? (
+                <div className="relative h-full w-full">
+                  <img
+                    src={`/images/${eq.image}`}
+                    alt={eq.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
+                    <div className="text-sm font-bold text-white leading-tight">
+                      {eq.name}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto px-2.5 py-2.5 pt-7 space-y-2">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                      Equipment {eq.unlockValue}
+                    </div>
+                    <div className="text-sm font-bold text-white leading-tight">
+                      {eq.name}
+                    </div>
+                    <div className="text-[10px] text-gray-400">
+                      Unlocks after 2 cuts of value {eq.unlockValue}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
+                      Timing
+                    </div>
+                    <p className="text-[11px] leading-snug text-gray-100">
+                      {rulesText.timing}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                      Effect
+                    </div>
+                    <p className="text-[11px] leading-snug text-gray-100">
+                      {rulesText.effect}
+                    </p>
+                  </div>
+
+                  {rulesText.reminders.length > 0 && (
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wide text-fuchsia-300">
+                        Reminder
+                      </div>
+                      <ul className="space-y-1">
+                        {rulesText.reminders.map((reminder) => (
+                          <li
+                            key={reminder}
+                            className="text-[11px] leading-snug text-gray-300"
+                          >
+                            - {reminder}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </button>
           );
         })}
       </div>
