@@ -301,7 +301,7 @@ Additional card text extracted from later-mission equipment cards:
   - Effect: when performing a Solo Cut action, cut 2 identical wires even if they are not the last remaining ones of that value.
 - Equipment `10-10` (`Disintegrator`)
   - Timing: immediate effect.
-  - Effect: draw a random numbered Info token (`1`-`12`); all players cut their possible remaining wires of that value.
+  - Effect: take a random Info token from the supply, reveal its number (`1`-`12`), and all bomb disposal experts cut any remaining wires matching that value.
 - Equipment `11-11` (`Grapple`)
   - Timing: can be used at any time.
   - Effect: designate a teammate's wire, take it without revealing it, and file it into your own hand.
