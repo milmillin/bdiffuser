@@ -18,7 +18,7 @@ export function Lobby({
   const canStart = lobby.players.length >= 2 && isHost;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" data-testid="lobby-screen">
       <div className="max-w-lg w-full space-y-6">
         <div className="text-center">
           <h1 className="text-4xl font-black">
@@ -31,6 +31,7 @@ export function Lobby({
             </code>
             <button
               onClick={() => navigator.clipboard.writeText(roomId)}
+              data-testid="copy-room-code"
               className="text-gray-400 hover:text-white text-sm"
               title="Copy room code"
             >
@@ -48,6 +49,7 @@ export function Lobby({
             {lobby.players.map((p) => (
               <div
                 key={p.id}
+                data-testid={`lobby-player-${p.id}`}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
                   p.id === playerId ? "bg-blue-900/30 border border-blue-700" : "bg-[var(--color-bomb-dark)]"
                 }`}
@@ -73,6 +75,7 @@ export function Lobby({
                 <button
                   key={id}
                   onClick={() => send({ type: "selectMission", mission: id })}
+                  data-testid={`mission-select-${id}`}
                   className={`rounded-lg overflow-hidden transition-all ${
                     lobby.mission === id
                       ? "ring-3 ring-red-400 scale-105"
@@ -97,6 +100,7 @@ export function Lobby({
               <img
                 src={`/images/${MISSION_IMAGES[lobby.mission]}`}
                 alt={`Mission ${lobby.mission}: ${MISSIONS[lobby.mission].name}`}
+                data-testid={`mission-current-${lobby.mission}`}
                 className="w-40 h-auto rounded-lg"
               />
             </div>
@@ -107,6 +111,7 @@ export function Lobby({
         <div className="flex gap-3">
           <button
             onClick={onLeave}
+            data-testid="leave-room"
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
           >
             Leave
@@ -115,6 +120,7 @@ export function Lobby({
             <button
               onClick={() => send({ type: "startGame" })}
               disabled={!canStart}
+              data-testid="start-game"
               className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
             >
               {lobby.players.length < 2 ? "Need 2+ players" : "Start Game"}

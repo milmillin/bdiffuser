@@ -31,7 +31,7 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" data-testid="join-screen">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight">
@@ -49,6 +49,7 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
               maxLength={20}
+              data-testid="name-input"
               className="w-full px-4 py-2 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
             />
           </div>
@@ -56,6 +57,7 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
           <button
             onClick={handleCreate}
             disabled={!name.trim()}
+            data-testid="create-room"
             className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
           >
             Create New Room
@@ -74,11 +76,13 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
               onChange={(e) => setRoom(e.target.value)}
               placeholder="Room code"
               maxLength={10}
+              data-testid="room-code-input"
               className="flex-1 px-4 py-2 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
             <button
               onClick={handleJoin}
               disabled={!name.trim() || !room.trim()}
+              data-testid="join-room"
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold transition-colors"
             >
               Join
@@ -111,7 +115,7 @@ function GameRoom({
 
   if (!connected) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" data-testid="connecting-state">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-400">Connecting to room {roomId}...</p>
@@ -123,7 +127,7 @@ function GameRoom({
   return (
     <div className="min-h-screen flex flex-col">
       {error && (
-        <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
+        <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
           {error}
         </div>
       )}

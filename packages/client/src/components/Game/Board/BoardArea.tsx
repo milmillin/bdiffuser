@@ -2,7 +2,7 @@ import type { BoardState } from "@bomb-busters/shared";
 
 export function BoardArea({ board }: { board: BoardState }) {
   return (
-    <div className="bg-[var(--color-bomb-surface)] rounded-xl px-3 py-2 flex items-center gap-3">
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl px-3 py-2 flex items-center gap-3" data-testid="board-area">
       <DetonatorDial
         position={board.detonatorPosition}
         max={board.detonatorMax}
@@ -29,7 +29,7 @@ function DetonatorDial({
   const isDanger = position >= max - 1;
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[80px]">
+    <div className="flex flex-col items-center gap-1 min-w-[80px]" data-testid="detonator-dial">
       <div className={`text-xs font-bold uppercase ${isDanger ? "text-red-400" : "text-gray-400"}`}>
         Detonator
       </div>
@@ -55,7 +55,7 @@ function DetonatorDial({
           );
         })}
       </div>
-      <div className={`text-[10px] font-bold ${isDead ? "text-red-400" : isDanger ? "text-red-400" : "text-gray-500"}`}>
+      <div className={`text-[10px] font-bold ${isDead ? "text-red-400" : isDanger ? "text-red-400" : "text-gray-500"}`} data-testid="detonator-position">
         {position}/{max} wrong
       </div>
     </div>
@@ -81,6 +81,7 @@ function ValidationTrack({
           return (
             <div
               key={value}
+              data-testid={`validation-slot-${value}`}
               className="flex-1 flex flex-col items-center gap-0.5 relative"
             >
               <span className={`text-[10px] font-bold ${validated ? "text-green-400" : "text-gray-400"}`}>

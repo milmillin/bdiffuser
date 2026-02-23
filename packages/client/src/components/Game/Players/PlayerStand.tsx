@@ -16,6 +16,7 @@ export function PlayerStand({
 }) {
   return (
     <div
+      data-testid={`player-stand-${player.id}`}
       className={`rounded-xl p-3 ${
         isCurrentTurn
           ? "bg-yellow-900/20 border-2 border-yellow-600"
@@ -81,6 +82,7 @@ export function PlayerStand({
                 isSmall={isOpponent}
                 isSelectable={!!onTileClick && !tile.cut}
                 isSelected={selectedTileIndex === idx}
+                testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}
               />
             ))}
@@ -103,6 +105,7 @@ function WireTileView({
   isSmall,
   isSelectable,
   isSelected,
+  testId,
   onClick,
 }: {
   tile: VisibleTile;
@@ -110,6 +113,7 @@ function WireTileView({
   isSmall: boolean;
   isSelectable: boolean;
   isSelected: boolean;
+  testId: string;
   onClick: () => void;
 }) {
   const showFront = tile.color != null;
@@ -120,6 +124,7 @@ function WireTileView({
       <button
         onClick={onClick}
         disabled={!isSelectable || isCut}
+        data-testid={testId}
         className={`w-full rounded-md overflow-hidden transition-all ${
           isSelected ? "ring-2 ring-white scale-105" : ""
         } ${

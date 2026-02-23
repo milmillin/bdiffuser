@@ -10,7 +10,7 @@ export function EndScreen({
   const isWin = gameState.result === "win";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" data-testid="end-screen">
       <div className="max-w-md w-full text-center space-y-6">
         <div
           className={`text-8xl ${isWin ? "animate-bounce" : "animate-pulse"}`}
@@ -19,6 +19,7 @@ export function EndScreen({
         </div>
 
         <h1
+          data-testid="result-title"
           className={`text-4xl font-black ${
             isWin ? "text-green-400" : "text-red-500"
           }`}
@@ -80,6 +81,7 @@ export function EndScreen({
 
         <button
           onClick={onPlayAgain}
+          data-testid="play-again"
           className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-lg transition-colors"
         >
           Play Again

@@ -14,7 +14,7 @@ export function InfoTokenSetup({
 
   if (alreadyPlaced) {
     return (
-      <div className="text-center py-4">
+      <div className="text-center py-4" data-testid="info-token-placed">
         <div className="text-green-400 text-lg font-bold">Info token placed!</div>
         <p className="text-gray-400 text-sm mt-1">Waiting for other players...</p>
       </div>
@@ -42,12 +42,13 @@ export function InfoTokenSetup({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="info-token-setup">
       <div className="flex gap-2 flex-wrap justify-center">
         {blueTiles.map((bt) => (
           <button
             key={bt.flatIndex}
             onClick={() => setSelectedTile(bt.flatIndex)}
+            data-testid={`info-tile-${bt.flatIndex}`}
             className={`w-14 h-20 rounded-lg border-2 flex items-center justify-center font-bold text-lg transition-all ${
               selectedTile === bt.flatIndex
                 ? "border-yellow-400 bg-blue-800 scale-110"
@@ -62,6 +63,7 @@ export function InfoTokenSetup({
       {selectedTile != null && (
         <button
           onClick={handlePlace}
+          data-testid="place-info-token"
           className="mx-auto block px-6 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-bold transition-colors"
         >
           Place Info Token ({blueTiles.find((t) => t.flatIndex === selectedTile)?.value})

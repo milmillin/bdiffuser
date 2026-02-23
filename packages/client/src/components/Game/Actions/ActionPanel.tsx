@@ -46,7 +46,7 @@ export function ActionPanel({
   };
 
   return (
-    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3">
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3" data-testid="action-panel">
       <div className="text-sm font-bold text-yellow-400">Your Turn - Choose an Action</div>
 
       {/* Dual Cut */}
@@ -58,11 +58,12 @@ export function ActionPanel({
           </p>
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-gray-300">
+            <span className="text-sm text-gray-300" data-testid="dual-cut-target">
               Targeting {gameState.players.find((p) => p.id === selectedTarget.playerId)?.name}'s tile #{selectedTarget.tileIndex + 1}
             </span>
             <button
               onClick={onClearTarget}
+              data-testid="dual-cut-cancel"
               className="text-xs text-red-400 hover:text-red-300"
             >
               Cancel
@@ -79,6 +80,7 @@ export function ActionPanel({
                   <button
                     key={v}
                     onClick={() => setGuessValue(v)}
+                    data-testid={`dual-guess-${v.toLowerCase()}`}
                     className={`px-2 py-1 rounded text-xs font-bold transition-colors ${
                       guessValue === v
                         ? "bg-yellow-500 text-black"
@@ -93,6 +95,7 @@ export function ActionPanel({
             {guessValue && (
               <button
                 onClick={handleDualCut}
+                data-testid="dual-cut-submit"
                 className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded font-bold text-sm transition-colors"
               >
                 Cut! (Guess: {guessValue})
@@ -111,6 +114,7 @@ export function ActionPanel({
               <button
                 key={String(v)}
                 onClick={() => send({ type: "soloCut", value: v })}
+                data-testid={`solo-cut-${String(v).toLowerCase()}`}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded font-bold text-sm transition-colors"
               >
                 Solo Cut {String(v)}
@@ -125,6 +129,7 @@ export function ActionPanel({
         <div>
           <button
             onClick={() => send({ type: "revealReds" })}
+            data-testid="reveal-reds"
             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-bold text-sm transition-colors"
           >
             Reveal All Red Wires
