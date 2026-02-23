@@ -1325,7 +1325,7 @@ Baseline assumption used in this section:
 
 ### Mission 51
 
-- Card title: `Unlucky day`
+- Card title: `Unlucky Day`
 - Setup:
   - Add `1` red wire.
   - Shuffle and stack 12 Number cards face down.
@@ -1336,11 +1336,11 @@ Baseline assumption used in this section:
     - `2` red wires.
     - Captain does not place info token at setup.
 - Mission rule (back):
-  - Active player becomes `the boss` each turn:
-    - Reveal top Number card.
-    - Choose (without consultation) which player must perform cut on that value.
-    - Designated player says `Leader, yes, leader` and executes cut.
-    - Then leadership passes left to next player.
+  - On their turn, the active bomb disposal expert becomes `Sir` or `Ma'am`.
+    - Reveal the top Number card.
+    - Choose (without consultation) which player must perform a cut on that value.
+    - The chosen player says `Yes, Sir` or `Yes, Ma'am` and executes the cut.
+    - Then the player to the left of the current `Sir`/`Ma'am` becomes the new `Sir`/`Ma'am`.
   - If designated player lacks the value:
     - They place info token of choice.
     - Detonator advances `1`.
