@@ -1175,7 +1175,7 @@ Baseline assumption used in this section:
 
 ### Mission 43
 
-- Card title: `Nano and robot`
+- Card title: `Nano the Robot`
 - Setup:
   - Add `3` red wires.
   - Place Nano robot standee on board space `1`.
@@ -1188,7 +1188,7 @@ Baseline assumption used in this section:
 - Mission rule (back):
   - At end of each player's turn, Nano moves forward one space; after `12`, Nano turns around and moves backward (`11`, etc.).
   - When active player cuts wires matching Nano's current number, they take one wire from Nano, keep it hidden from others, and place it correctly into own hand (if 2 stands, choose stand).
-  - Mission win requires cutting/revealing all wires including Nano's wires.
+  - To defuse the bomb and win, all wires must be cut (or RED wires revealed); even Nano's.
   - Equipment `11` (Coffee Thermos) does not prevent Nano from moving.
 
 ### Mission 44
