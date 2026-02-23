@@ -225,7 +225,7 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 52 setup token legality:
     - [x] Setup tokens may target only blue/red wires.
     - [x] Setup tokens on blue wires must be false (non-matching value).
-- [ ] Implement remaining mission-specific setup token flows (random draw, captain skip, multi-token placement).
+- [x] Implement remaining mission-specific setup token flows (random draw, captain skip, multi-token placement).
   - [x] Mission 13 random setup-token draw flow:
     - [x] Setup now auto-places one random valid info token for each required player.
     - [x] 2-player captain skip remains enforced during random setup flow.
