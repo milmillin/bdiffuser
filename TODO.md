@@ -336,7 +336,7 @@ Dependency: starts after refreshed card image artifacts are available.
 ### Task Set A - Refresh OCR Text Extractions with LLM (one row = one card)
 
 #### Mission Cards (66)
-- [ ] `mission_1` (`mission_1.jpg` + `mission_1_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [x] `mission_1` (`mission_1.jpg` + `mission_1_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_2` (`mission_2.jpg` + `mission_2_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_3` (`mission_3.jpg` + `mission_3_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_4` (`mission_4.jpg` + `mission_4_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
