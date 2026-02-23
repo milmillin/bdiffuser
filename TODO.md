@@ -436,7 +436,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `challenge_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Added challenge card 7 entry: 3 experts consecutively cut sequential values (up or down), e.g. 8-9-10 or 5-4-3.`).
 - [x] `challenge_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: source front read: "The first 2 Validation tokens are put on these numbers: Put 2 faceup Number cards HERE.").
 - [ ] `challenge_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
-- [ ] `challenge_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `challenge_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `On a single tile stand, at least 7 wires have been cut while both end wires remain uncut.`).
 
 #### Constraint Cards (12)
 - [ ] `constraint_a`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

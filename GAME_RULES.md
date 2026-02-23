@@ -1655,6 +1655,10 @@ Baseline assumption used in this section:
 
 - The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
 
+### Challenge 10
+
+- On a single tile stand, at least 7 wires have been cut, but the 2 wires on each end have not been cut yet.
+
 ---
 
 ## Source
