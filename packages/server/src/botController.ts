@@ -100,6 +100,7 @@ export async function getBotAction(
       ]);
 
       const reasoning = typeof result.reasoning === "string" ? result.reasoning : null;
+      console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, reasoning: ${reasoning ? `"${reasoning.slice(0, 80)}"` : "null"}`);
       const parsed = parseLLMAction(result);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);

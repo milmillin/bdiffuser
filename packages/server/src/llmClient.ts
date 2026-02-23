@@ -1,5 +1,5 @@
 const API_URL = "https://api.z.ai/api/coding/paas/v4/chat/completions";
-const MODEL = "glm-4-flash";
+const MODEL = "glm-4.7-flash";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
