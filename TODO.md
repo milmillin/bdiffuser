@@ -157,6 +157,9 @@ Dependency: blocked by Phase 0C.
     - [x] Added hook rule `hidden_equipment_pile` and Mission 23 hook wiring.
     - [x] Mission 23 setup now creates a face-down pile of 7 random base equipment cards (replacing normal setup draw).
 - [ ] Implement remaining campaign equipment behavior variants.
+  - [x] Mission 17: Sergio (captain) cannot activate equipment cards.
+    - [x] Enforced mission-aware equipment validation rule (`MISSION_RULE_VIOLATION`) for mission 17 captain actor.
+    - [x] Added coverage that non-captains can still use equipment effects that involve the captain (Talkies-Walkies).
 
 #### Token System Parity
 - [ ] Implement token variants:

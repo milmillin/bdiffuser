@@ -147,6 +147,14 @@ export function validateUseEquipment(
     );
   }
 
+  // Mission 17: Sergio (captain) cannot activate equipment cards.
+  if (state.mission === 17 && actor.isCaptain) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Sergio cannot use equipment cards in mission 17",
+    );
+  }
+
   const card = state.board.equipment.find((eq) => eq.id === equipmentId);
   if (!card) {
     return legalityError("EQUIPMENT_NOT_FOUND", "Equipment card not found");
