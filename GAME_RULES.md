@@ -1349,7 +1349,7 @@ Baseline assumption used in this section:
 
 ### Mission 52
 
-- Card title: `All traitors!`
+- Card title: `Dirty Double-crossers`
 - Setup:
   - Add `3` red wires.
   - Replace Equipment `1` (Label) and `12` (Label =) if drawn.
