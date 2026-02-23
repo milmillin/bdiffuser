@@ -1366,7 +1366,7 @@ Baseline assumption used in this section:
 
 ### Mission 53
 
-- Card title: `Nano is back`
+- Card title: `The Fourth Law of Robotics: Sometimes a robot will buck convention and do whatever it wants`
 - Setup:
   - Add `2` red wires.
   - Place Nano just before square `1` on the board track.
