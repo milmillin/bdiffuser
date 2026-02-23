@@ -1,5 +1,24 @@
 import type { ClientGameState } from "@bomb-busters/shared";
 
+type EquipmentSecondaryLock = {
+  secondaryLockValue?: number;
+  secondaryLockCutsRequired?: number;
+};
+
+function getSecondaryLock(
+  equipment: ClientGameState["board"]["equipment"][number],
+): { value: number; required: number } | null {
+  const maybeLock = equipment as EquipmentSecondaryLock;
+  if (typeof maybeLock.secondaryLockValue !== "number") return null;
+  return {
+    value: maybeLock.secondaryLockValue,
+    required:
+      typeof maybeLock.secondaryLockCutsRequired === "number"
+        ? maybeLock.secondaryLockCutsRequired
+        : 2,
+  };
+}
+
 function countCutValue(state: ClientGameState, value: number): number {
   let count = 0;
   for (const player of state.players) {
@@ -57,9 +76,12 @@ function EquipmentSecondaryLocksHint({
 }: {
   gameState: ClientGameState;
 }) {
-  const locked = gameState.board.equipment.filter(
-    (eq) => eq.secondaryLockValue !== undefined,
-  );
+  const locked = gameState.board.equipment.flatMap((equipment) => {
+    const lock = getSecondaryLock(equipment);
+    if (!lock) return [];
+    return [{ equipment, ...lock }];
+  });
+
   if (locked.length === 0) return null;
 
   return (
@@ -68,17 +90,15 @@ function EquipmentSecondaryLocksHint({
         Equipment Number Locks
       </div>
       <div className="space-y-1.5">
-        {locked.map((eq) => {
-          const required = eq.secondaryLockCutsRequired ?? 2;
-          const value = eq.secondaryLockValue as number;
+        {locked.map(({ equipment, required, value }) => {
           const progress = countCutValue(gameState, value);
           const done = progress >= required;
           return (
             <div
-              key={eq.id}
+              key={equipment.id}
               className="flex items-center justify-between rounded-md bg-black/30 px-2 py-1"
             >
-              <span className="text-xs text-gray-200 truncate mr-2">{eq.name}</span>
+              <span className="text-xs text-gray-200 truncate mr-2">{equipment.name}</span>
               <span
                 className={`text-xs font-bold ${done ? "text-emerald-300" : "text-amber-300"}`}
               >
