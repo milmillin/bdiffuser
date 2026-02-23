@@ -92,6 +92,8 @@ export async function getBotAction(
   const systemPrompt = buildSystemPrompt();
   const userMessage = buildUserMessage(filtered, chatContext || undefined);
 
+  let lastReasoning: string | null = null;
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await callLLM(apiKey, [
@@ -100,22 +102,44 @@ export async function getBotAction(
       ]);
 
       const reasoning = typeof result.reasoning === "string" ? result.reasoning : null;
+      if (reasoning) lastReasoning = reasoning;
       console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, reasoning: ${reasoning ? `"${reasoning.slice(0, 80)}"` : "null"}`);
-      const parsed = parseLLMAction(result);
+
+      // Some models return an array — unwrap to find the action object
+      const actionObj = extractActionObject(result);
+      const parsed = parseLLMAction(actionObj);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
-        if (!error) return { action: parsed, reasoning };
+        if (!error) return { action: parsed, reasoning: lastReasoning };
         console.log(`Bot action validation failed (attempt ${attempt + 1}): ${error}`);
       } else {
-        console.log(`Bot action parse failed (attempt ${attempt + 1}):`, result);
+        console.log(`Bot action parse failed (attempt ${attempt + 1}):`, JSON.stringify(result));
       }
     } catch (e) {
       console.log(`Bot LLM call failed (attempt ${attempt + 1}):`, e);
     }
   }
 
-  // Fallback heuristic
-  return { action: getFallbackAction(state, botId), reasoning: null };
+  // Fallback heuristic — still include reasoning from LLM if we got any
+  return { action: getFallbackAction(state, botId), reasoning: lastReasoning };
+}
+
+/** If the LLM returned an array, find the first element with an `action` key. */
+function extractActionObject(
+  result: Record<string, unknown>,
+): Record<string, unknown> {
+  // Already a proper action object
+  if (typeof result.action === "string") return result;
+
+  // Array-like: keys are "0", "1", … — scan values for an object with `action`
+  for (const key of Object.keys(result)) {
+    const val = result[key];
+    if (val && typeof val === "object" && "action" in (val as Record<string, unknown>)) {
+      return val as Record<string, unknown>;
+    }
+  }
+
+  return result;
 }
 
 function parseLLMAction(
