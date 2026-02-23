@@ -737,14 +737,15 @@ Baseline assumption used in this section:
 
 ### Mission 19
 
-- Card title: `In the villain's lair...`
+- Card title: `In the Belly of the Beast`
 - Setup:
   - Add `1` red wire.
   - Add `2 out of 3` yellow wires.
   - Mission includes an external audio-file prompt (QR code/smartphone icon).
 - Mission rule (back):
-  - Play mission audio file from QR code (or fallback URL from rulebook).
-  - Card mostly provides fail/success narrative and campaign progression text.
+  - Play the mission audio file from the card.
+  - Failure text: `But wait! Maybe there's another grotto on the horizon? Play the sound file again and don't make the same mistakes twice!`.
+  - Success text: `Great job! ... New adventures await your team of bomb disposal experts—`.
   - On success, open the `Missions 20 to 30` box.
 
 ### Mission 20

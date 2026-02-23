@@ -1,6 +1,6 @@
 {
   "name": "bomb-busters",
-  "version": "1.0.75",
+  "version": "1.0.76",
   "private": true,
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -35,5 +35,10 @@
   "packageManager": "pnpm@10.30.1",
   "devDependencies": {
     "vitest": "^4.0.18"
-  }
+  },
+  "description": "A cooperative multiplayer wire-cutting board game. Players work together to defuse a bomb by cutting wires — but you can't see your teammates' tiles, so communication and strategy are key.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
