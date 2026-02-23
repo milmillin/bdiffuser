@@ -9,6 +9,7 @@
     "./testing": "./src/testing/index.ts"
   },
   "scripts": {
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
