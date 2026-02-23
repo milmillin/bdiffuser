@@ -1522,7 +1522,7 @@ Baseline assumption used in this section:
 
 ### Mission 62
 
-- Card title: `Armageddon Dumpling`
+- Card title: `Armageddon Roulette`
 - Setup:
   - Add `2` red wires.
   - Draw random Number cards equal to player count and place face up on table.
@@ -1530,7 +1530,7 @@ Baseline assumption used in this section:
   - 2-player override shown on card:
     - `3` red wires.
 - Mission rule (back):
-  - Each time all 4 wires of one visible Number card are cut, move detonator back `1`.
+  - Each time 4 wires whose value matches a faceup Number card are cut, move the detonator back `1` space.
 
 ### Mission 63
 
