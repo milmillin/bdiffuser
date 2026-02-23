@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --color-bomb-red: #e53e3e;
+  --color-bomb-blue: #3182ce;
+  --color-bomb-yellow: #ecc94b;
+  --color-bomb-dark: #1a1a2e;
+  --color-bomb-surface: #2d2d44;
+  --color-bomb-accent: #e94560;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bomb-dark);
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Wire tile flip animation */
+.tile-flip {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.tile-flip.flipped {
+  transform: rotateY(180deg);
+}
+
+.tile-front,
+.tile-back {
+  backface-visibility: hidden;
+  position: absolute;
+  inset: 0;
+}
+
+.tile-back {
+  transform: rotateY(180deg);
+}

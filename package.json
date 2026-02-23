@@ -1,0 +1,11 @@
+{
+  "name": "bomb-busters",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter client dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:all": "pnpm --parallel --filter client --filter server dev",
+    "build": "pnpm --filter shared build && pnpm --filter client build",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

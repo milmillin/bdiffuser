@@ -1,0 +1,132 @@
+import type { ClientMessage, LobbyState, MissionId } from "@bomb-busters/shared";
+import { MISSIONS, MISSION_IMAGES } from "@bomb-busters/shared";
+
+export function Lobby({
+  lobby,
+  send,
+  playerId,
+  roomId,
+  onLeave,
+}: {
+  lobby: LobbyState;
+  send: (msg: ClientMessage) => void;
+  playerId: string;
+  roomId: string;
+  onLeave: () => void;
+}) {
+  const isHost = playerId === lobby.hostId;
+  const canStart = lobby.players.length >= 2 && isHost;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-lg w-full space-y-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-black">
+            BOMB<span className="text-red-500">BUSTERS</span>
+          </h1>
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <span className="text-gray-400">Room:</span>
+            <code className="bg-[var(--color-bomb-surface)] px-3 py-1 rounded text-lg font-mono font-bold text-yellow-400">
+              {roomId}
+            </code>
+            <button
+              onClick={() => navigator.clipboard.writeText(roomId)}
+              className="text-gray-400 hover:text-white text-sm"
+              title="Copy room code"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
+        {/* Players */}
+        <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
+          <h2 className="text-sm font-bold text-gray-400 uppercase mb-3">
+            Players ({lobby.players.length}/5)
+          </h2>
+          <div className="space-y-2">
+            {lobby.players.map((p) => (
+              <div
+                key={p.id}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                  p.id === playerId ? "bg-blue-900/30 border border-blue-700" : "bg-[var(--color-bomb-dark)]"
+                }`}
+              >
+                <span className="font-medium flex-1">{p.name}</span>
+                {p.isHost && (
+                  <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded font-bold">HOST</span>
+                )}
+                {!p.connected && (
+                  <span className="text-xs text-red-400">Disconnected</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mission Selection (host only) */}
+        {isHost && (
+          <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
+            <h2 className="text-sm font-bold text-gray-400 uppercase mb-3">Mission</h2>
+            <div className="grid grid-cols-4 gap-2">
+              {([1, 2, 3, 4, 5, 6, 7, 8] as MissionId[]).map((id) => (
+                <button
+                  key={id}
+                  onClick={() => send({ type: "selectMission", mission: id })}
+                  className={`rounded-lg overflow-hidden transition-all ${
+                    lobby.mission === id
+                      ? "ring-3 ring-red-400 scale-105"
+                      : "opacity-70 hover:opacity-100 hover:scale-105"
+                  }`}
+                >
+                  <img
+                    src={`/images/${MISSION_IMAGES[id]}`}
+                    alt={`Mission ${id}: ${MISSIONS[id].name}`}
+                    className="w-full h-auto"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!isHost && (
+          <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
+            <h2 className="text-sm font-bold text-gray-400 uppercase mb-3 text-center">Mission</h2>
+            <div className="flex justify-center">
+              <img
+                src={`/images/${MISSION_IMAGES[lobby.mission]}`}
+                alt={`Mission ${lobby.mission}: ${MISSIONS[lobby.mission].name}`}
+                className="w-40 h-auto rounded-lg"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={onLeave}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+          >
+            Leave
+          </button>
+          {isHost && (
+            <button
+              onClick={() => send({ type: "startGame" })}
+              disabled={!canStart}
+              className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+            >
+              {lobby.players.length < 2 ? "Need 2+ players" : "Start Game"}
+            </button>
+          )}
+          {!isHost && (
+            <div className="flex-1 py-3 text-center text-gray-400 bg-[var(--color-bomb-surface)] rounded-lg">
+              Waiting for host to start...
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
