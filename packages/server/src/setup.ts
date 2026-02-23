@@ -5,16 +5,15 @@ import {
   YELLOW_WIRE_SORT_VALUES,
   PLAYER_COUNT_CONFIG,
   EQUIPMENT_DEFS,
-  MISSIONS,
   getWireImage,
+  resolveMissionSetup,
+  type MissionEquipmentSpec,
+  type WirePoolSpec,
 } from "@bomb-busters/shared";
 import type {
   WireTile,
-  WireColor,
-  WireValue,
   Player,
   BoardState,
-  GameState,
   EquipmentCard,
   BoardMarker,
   MissionId,
@@ -26,9 +25,10 @@ function createTileId(): string {
   return `tile_${++tileIdCounter}`;
 }
 
-function createBlueTiles(): WireTile[] {
+function createBlueTiles(minValue: number, maxValue: number): WireTile[] {
   const tiles: WireTile[] = [];
   for (const value of BLUE_WIRE_VALUES) {
+    if (value < minValue || value > maxValue) continue;
     for (let copy = 0; copy < BLUE_COPIES_PER_VALUE; copy++) {
       tiles.push({
         id: createTileId(),
@@ -43,77 +43,98 @@ function createBlueTiles(): WireTile[] {
   return tiles;
 }
 
-function createRedTiles(count: number): { tiles: WireTile[]; markers: BoardMarker[] } {
-  // Draw 'count' random red tiles from the full set of 11
-  const allRedValues = [...RED_WIRE_SORT_VALUES];
-  shuffle(allRedValues);
-  const selectedValues = allRedValues.slice(0, count);
-  const markers: BoardMarker[] = selectedValues.map((sv) => ({
-    value: Math.floor(sv), // 1.5 → 1, 2.5 → 2, etc. Actually, markers go on matching board slots
-    color: "red" as const,
-  }));
-
-  const tiles: WireTile[] = selectedValues.map((sv) => ({
+function createColorTiles(
+  color: "red" | "yellow",
+  selectedSortValues: readonly number[],
+): WireTile[] {
+  return selectedSortValues.map((sortValue) => ({
     id: createTileId(),
-    color: "red" as const,
-    sortValue: sv,
-    gameValue: "RED" as const,
-    image: getWireImage("red", sv),
+    color,
+    sortValue,
+    gameValue: color === "red" ? "RED" : "YELLOW",
+    image: getWireImage(color, sortValue),
     cut: false,
   }));
-
-  return { tiles, markers };
 }
 
-function createYellowTiles(count: number): { tiles: WireTile[]; markers: BoardMarker[] } {
-  const allYellowValues = [...YELLOW_WIRE_SORT_VALUES];
-  shuffle(allYellowValues);
-  const selectedValues = allYellowValues.slice(0, count);
-  const markers: BoardMarker[] = selectedValues.map((sv) => ({
-    value: Math.floor(sv),
-    color: "yellow" as const,
+function createMarkers(
+  color: "red" | "yellow",
+  sortValues: readonly number[],
+  possible = false,
+): BoardMarker[] {
+  return sortValues.map((sortValue) => ({
+    value: Math.floor(sortValue),
+    color,
+    ...(possible ? { possible: true } : {}),
   }));
-
-  const tiles: WireTile[] = selectedValues.map((sv) => ({
-    id: createTileId(),
-    color: "yellow" as const,
-    sortValue: sv,
-    gameValue: "YELLOW" as const,
-    image: getWireImage("yellow", sv),
-    cut: false,
-  }));
-
-  return { tiles, markers };
 }
 
-function createYellowTilesOutOf(
-  keep: number,
-  draw: number,
+function createRedTiles(
+  spec: WirePoolSpec,
 ): { tiles: WireTile[]; markers: BoardMarker[] } {
-  const allYellowValues = [...YELLOW_WIRE_SORT_VALUES];
-  shuffle(allYellowValues);
-  const drawnValues = allYellowValues.slice(0, draw);
+  switch (spec.kind) {
+    case "none":
+      return { tiles: [], markers: [] };
+    case "fixed":
+      return {
+        tiles: createColorTiles("red", spec.values),
+        markers: createMarkers("red", spec.values),
+      };
+    case "exact": {
+      const candidates = [...(spec.candidates ?? RED_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const selected = candidates.slice(0, spec.count);
+      return {
+        tiles: createColorTiles("red", selected),
+        markers: createMarkers("red", selected),
+      };
+    }
+    case "out_of": {
+      const candidates = [...(spec.candidates ?? RED_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const drawn = candidates.slice(0, spec.draw);
+      shuffle(drawn);
+      const selected = drawn.slice(0, spec.keep);
+      return {
+        tiles: createColorTiles("red", selected),
+        markers: createMarkers("red", drawn, true),
+      };
+    }
+  }
+}
 
-  // All drawn values get markers (players know these MIGHT be in play)
-  const markers: BoardMarker[] = drawnValues.map((sv) => ({
-    value: Math.floor(sv),
-    color: "yellow" as const,
-  }));
-
-  // Only keep some, discard the rest without revealing
-  shuffle(drawnValues);
-  const keptValues = drawnValues.slice(0, keep);
-
-  const tiles: WireTile[] = keptValues.map((sv) => ({
-    id: createTileId(),
-    color: "yellow" as const,
-    sortValue: sv,
-    gameValue: "YELLOW" as const,
-    image: getWireImage("yellow", sv),
-    cut: false,
-  }));
-
-  return { tiles, markers };
+function createYellowTiles(
+  spec: WirePoolSpec,
+): { tiles: WireTile[]; markers: BoardMarker[] } {
+  switch (spec.kind) {
+    case "none":
+      return { tiles: [], markers: [] };
+    case "fixed":
+      return {
+        tiles: createColorTiles("yellow", spec.values),
+        markers: createMarkers("yellow", spec.values),
+      };
+    case "exact": {
+      const candidates = [...(spec.candidates ?? YELLOW_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const selected = candidates.slice(0, spec.count);
+      return {
+        tiles: createColorTiles("yellow", selected),
+        markers: createMarkers("yellow", selected),
+      };
+    }
+    case "out_of": {
+      const candidates = [...(spec.candidates ?? YELLOW_WIRE_SORT_VALUES)];
+      shuffle(candidates);
+      const drawn = candidates.slice(0, spec.draw);
+      shuffle(drawn);
+      const selected = drawn.slice(0, spec.keep);
+      return {
+        tiles: createColorTiles("yellow", selected),
+        markers: createMarkers("yellow", drawn, true),
+      };
+    }
+  }
 }
 
 export function shuffle<T>(array: T[]): T[] {
@@ -124,10 +145,29 @@ export function shuffle<T>(array: T[]): T[] {
   return array;
 }
 
-function createEquipmentCards(count: number): EquipmentCard[] {
-  // Take the first N equipment cards (sorted by unlock value)
-  const sorted = [...EQUIPMENT_DEFS].sort((a, b) => a.unlockValue - b.unlockValue);
-  return sorted.slice(0, count).map((def) => ({
+function createEquipmentCards(
+  count: number,
+  spec: MissionEquipmentSpec,
+): EquipmentCard[] {
+  if (spec.mode === "none") {
+    return [];
+  }
+
+  let candidateDefs = [...EQUIPMENT_DEFS];
+
+  if (spec.excludedUnlockValues?.length) {
+    const excluded = new Set(spec.excludedUnlockValues);
+    candidateDefs = candidateDefs.filter((def) => !excluded.has(def.unlockValue));
+  }
+
+  if (spec.mode === "fixed_pool") {
+    const fixedSet = new Set(spec.fixedEquipmentIds ?? []);
+    candidateDefs = candidateDefs.filter((def) => fixedSet.has(def.id));
+  } else {
+    shuffle(candidateDefs);
+  }
+
+  return candidateDefs.slice(0, count).map((def) => ({
     id: def.id,
     name: def.name,
     description: def.description,
@@ -141,12 +181,10 @@ function createEquipmentCards(count: number): EquipmentCard[] {
 function distributeTiles(tiles: WireTile[], players: Player[]): void {
   shuffle(tiles);
 
-  // Deal tiles round-robin directly into each player's hand
   for (let i = 0; i < tiles.length; i++) {
     players[i % players.length].hand.push(tiles[i]);
   }
 
-  // Sort each player's hand by sortValue ascending
   for (const player of players) {
     player.hand.sort((a, b) => a.sortValue - b.sortValue);
   }
@@ -159,55 +197,30 @@ export function setupGame(
   tileIdCounter = 0;
   const playerCount = players.length;
   const config = PLAYER_COUNT_CONFIG[playerCount];
-  const missionDef = MISSIONS[mission];
 
   if (!config) throw new Error(`Invalid player count: ${playerCount}`);
 
-  // Initialize empty hand per player
+  const { setup } = resolveMissionSetup(mission, playerCount);
+
   for (const player of players) {
     player.hand = [];
   }
 
-  // Create tiles
-  const blueTiles = createBlueTiles();
-  let allMarkers: BoardMarker[] = [];
+  const blueTiles = createBlueTiles(setup.blue.minValue, setup.blue.maxValue);
 
-  // Red tiles
-  let redTiles: WireTile[] = [];
-  if (missionDef.redWires > 0) {
-    const red = createRedTiles(missionDef.redWires);
-    redTiles = red.tiles;
-    allMarkers = allMarkers.concat(red.markers);
-  }
+  const red = createRedTiles(setup.red);
+  const yellow = createYellowTiles(setup.yellow);
+  const allMarkers = [...red.markers, ...yellow.markers];
 
-  // Yellow tiles
-  let yellowTiles: WireTile[] = [];
-  if (missionDef.yellowWires > 0) {
-    if (missionDef.yellowOutOf) {
-      const yellow = createYellowTilesOutOf(
-        missionDef.yellowOutOf.keep,
-        missionDef.yellowOutOf.draw,
-      );
-      yellowTiles = yellow.tiles;
-      allMarkers = allMarkers.concat(yellow.markers);
-    } else {
-      const yellow = createYellowTiles(missionDef.yellowWires);
-      yellowTiles = yellow.tiles;
-      allMarkers = allMarkers.concat(yellow.markers);
-    }
-  }
-
-  // Combine all tiles and distribute
-  const allTiles = [...blueTiles, ...redTiles, ...yellowTiles];
+  const allTiles = [...blueTiles, ...red.tiles, ...yellow.tiles];
   distributeTiles(allTiles, players);
 
-  // Create board
   const validationTrack: Record<number, number> = {};
   for (let i = 1; i <= 12; i++) {
     validationTrack[i] = 0;
   }
 
-  const equipment = createEquipmentCards(config.equipmentCount);
+  const equipment = createEquipmentCards(config.equipmentCount, setup.equipment);
 
   const board: BoardState = {
     detonatorPosition: config.detonatorStart,

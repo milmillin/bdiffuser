@@ -1,5 +1,9 @@
 import type { ClientGameState } from "@bomb-busters/shared";
-import { MISSIONS } from "@bomb-busters/shared";
+import {
+  MISSIONS,
+  describeWirePoolSpec,
+  resolveMissionSetup,
+} from "@bomb-busters/shared";
 
 export function buildSystemPrompt(): string {
   return `You are an AI player in Bomb Busters, a fully cooperative wire-cutting board game. 2-5 players work together to defuse a bomb. You win when all tile stands are empty. You lose if a red wire is cut or the detonator reaches the skull.
@@ -78,12 +82,15 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
 
   // Mission context
   const mission = MISSIONS[state.mission];
+  const resolvedMission = resolveMissionSetup(state.mission, state.players.length);
   lines.push(`=== YOUR TURN (Turn ${state.turnNumber}) ===`);
   lines.push(`Mission: #${state.mission} — ${mission.name} (${mission.difficulty})`);
   if (mission.specialRules) {
     lines.push(`Mission Rules: ${mission.specialRules}`);
   }
-  lines.push(`Players: ${state.players.length} | Red wires: ${mission.redWires} | Yellow wires: ${mission.yellowWires}`);
+  lines.push(
+    `Players: ${state.players.length} | Red wires: ${describeWirePoolSpec(resolvedMission.setup.red)} | Yellow wires: ${describeWirePoolSpec(resolvedMission.setup.yellow)}`,
+  );
   lines.push(`You are: ${me.name} (id: ${me.id})${me.character ? ` [Character: ${me.character}]` : ""}${me.isCaptain ? " (Captain)" : ""}`);
   lines.push("");
 

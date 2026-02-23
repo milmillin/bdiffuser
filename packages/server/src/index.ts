@@ -240,7 +240,15 @@ export class BombBustersServer extends Server<Env> {
     }
 
     // Setup the game
-    const { board, players } = setupGame(this.room.players, this.room.mission);
+    let board: import("@bomb-busters/shared").BoardState;
+    let players: Player[];
+    try {
+      ({ board, players } = setupGame(this.room.players, this.room.mission));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to setup mission";
+      this.sendMsg(conn, { type: "error", message });
+      return;
+    }
 
     this.room.gameState = {
       phase: "setup_info_tokens",

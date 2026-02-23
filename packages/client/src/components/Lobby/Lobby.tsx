@@ -1,5 +1,5 @@
-import type { ClientMessage, LobbyState, MissionId } from "@bomb-busters/shared";
-import { MISSIONS, MISSION_IMAGES } from "@bomb-busters/shared";
+import type { ClientMessage, LobbyState } from "@bomb-busters/shared";
+import { ALL_MISSION_IDS, MISSIONS, MISSION_IMAGES } from "@bomb-busters/shared";
 
 export function Lobby({
   lobby,
@@ -81,8 +81,8 @@ export function Lobby({
         {isHost && (
           <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-400 uppercase mb-3">Mission</h2>
-            <div className="grid grid-cols-4 gap-2">
-              {([1, 2, 3, 4, 5, 6, 7, 8] as MissionId[]).map((id) => (
+            <div className="grid grid-cols-6 gap-2 max-h-80 overflow-y-auto pr-1">
+              {ALL_MISSION_IDS.map((id) => (
                 <button
                   key={id}
                   onClick={() => send({ type: "selectMission", mission: id })}
