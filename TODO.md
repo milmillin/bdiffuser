@@ -393,7 +393,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_52`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back setup+rule wording confirmed; card title corrected to "Dirty Double-crossers"`).
 - [x] `mission_53`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back verified; card title aligned to source text and setup/rule mechanics already match GAME_RULES.md`).
 - [x] `mission_54`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back OCR checked and matched existing GAME_RULES.md mission-54 text; no update needed`).
-- [ ] `mission_55`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_55`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed; mission text already matches front/back source images for setup, 2-player override, and challenge-reward behavior.`).
 - [ ] `mission_56`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_57`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_58`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
