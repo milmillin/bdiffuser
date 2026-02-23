@@ -286,13 +286,15 @@ function EquipmentRow({
             </div>
 
             {showPersonalImage && charImage ? (
-              <div className="relative h-full w-full bg-slate-900">
-                <img
-                  src={`/images/${charImage}`}
-                  alt={charText.name}
-                  className="h-full w-full object-contain"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
+              <div className="flex flex-col h-full w-full bg-slate-900">
+                <div className="flex-1 min-h-0">
+                  <img
+                    src={`/images/${charImage}`}
+                    alt={charText.name}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="flex-shrink-0 px-2.5 py-1.5 bg-black/80">
                   <div className="text-sm font-bold text-white leading-tight">
                     {charText.name}
                   </div>
@@ -380,13 +382,15 @@ function EquipmentRow({
               </div>
 
               {showImage ? (
-                <div className="relative h-full w-full bg-slate-900">
-                  <img
-                    src={`/images/${eq.image}`}
-                    alt={eq.name}
-                    className="h-full w-full object-contain"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
+                <div className="flex flex-col h-full w-full bg-slate-900">
+                  <div className="flex-1 min-h-0">
+                    <img
+                      src={`/images/${eq.image}`}
+                      alt={eq.name}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-shrink-0 px-2.5 py-1.5 bg-black/80">
                     <div className="text-sm font-bold text-white leading-tight">
                       {eq.name}
                     </div>
