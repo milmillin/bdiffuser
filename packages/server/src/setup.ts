@@ -236,6 +236,14 @@ export function setupGame(
     player.hand = [];
   }
 
+  // Mission 27: no character cards are distributed this mission.
+  if (mission === 27) {
+    for (const player of players) {
+      player.character = null;
+      player.characterUsed = false;
+    }
+  }
+
   // Mission 28: Captain returns their character card to the box.
   if (mission === 28) {
     const captain = players.find((player) => player.isCaptain);

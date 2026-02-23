@@ -254,6 +254,22 @@ describe("mission complexity tier representative coverage", () => {
     expect(target.hand[0].cut).toBe(false);
   });
 
+  it("dough-threads tier (mission 27): setup removes all character cards", () => {
+    const players = createSetupPlayers(4);
+    players[0].character = "double_detector";
+    players[0].characterUsed = true;
+    players[1].character = "character_2";
+    players[2].character = "character_3";
+    players[3].character = "character_4";
+
+    const { players: dealtPlayers } = setupGame(players, 27);
+
+    for (const player of dealtPlayers) {
+      expect(player.character).toBeNull();
+      expect(player.characterUsed).toBe(false);
+    }
+  });
+
   it("captain-lazy tier (mission 28): setup removes captain character card", () => {
     const players = createSetupPlayers(3);
     players[0].character = "double_detector";

@@ -141,6 +141,7 @@ Dependency: blocked by Phase 0C.
 #### Validation Layer (mission-aware)
 - [ ] Implement support for simultaneous multi-wire cuts.
 - [ ] Implement remaining mission-specific forbidden targets/values for M2/M3 mechanics.
+  - [x] Mission 27: no character cards (all personal Double Detector abilities disabled at setup).
   - [x] Mission 28 captain-lazy restrictions:
     - [x] Setup clears captain character card (no personal equipment in this mission).
     - [x] Captain cannot use personal Double Detector ability.
