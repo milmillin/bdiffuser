@@ -1647,6 +1647,10 @@ Baseline assumption used in this section:
 
 - On a single tile stand, at least 5 uncut wires have been isolated (the adjacent wires have been cut).
 
+### Challenge 7
+
+- 3 bomb disposal experts consecutively cut sequential values (either up or down): examples: 8-9-10 or 5-4-3.
+
 ---
 
 ## Source
