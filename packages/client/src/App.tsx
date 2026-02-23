@@ -90,6 +90,12 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
           </div>
         </div>
       </div>
+      <div
+        data-testid="app-version"
+        className="fixed bottom-3 right-3 text-xs font-mono text-gray-500 select-none"
+      >
+        {`commit ${__APP_COMMIT_ID__}`}
+      </div>
     </div>
   );
 }
