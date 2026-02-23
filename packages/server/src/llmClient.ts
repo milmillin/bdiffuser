@@ -30,13 +30,28 @@ export async function callLLM(
   }
 
   const data = (await response.json()) as {
-    choices: { message: { content: string } }[];
+    choices: {
+      message: { content: string; reasoning_content?: string };
+    }[];
   };
 
-  const content = data.choices?.[0]?.message?.content;
+  const message = data.choices?.[0]?.message;
+  const content = message?.content;
   if (!content) {
     throw new Error("LLM returned empty content");
   }
 
-  return JSON.parse(content) as Record<string, unknown>;
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+
+  // ZhipuAI thinking models (glm-5 etc.) return chain-of-thought in a
+  // separate `reasoning_content` field.  Inject it so the caller can use it.
+  if (
+    typeof message.reasoning_content === "string" &&
+    message.reasoning_content &&
+    typeof parsed.reasoning !== "string"
+  ) {
+    parsed.reasoning = message.reasoning_content;
+  }
+
+  return parsed;
 }
