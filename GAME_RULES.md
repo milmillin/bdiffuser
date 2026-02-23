@@ -1643,6 +1643,10 @@ Baseline assumption used in this section:
 
 - 2 bomb disposal experts consecutively perform the SOLO Cut action.
 
+### Challenge 6
+
+- On a single tile stand, at least 5 uncut wires have been isolated (the adjacent wires have been cut).
+
 ---
 
 ## Source
