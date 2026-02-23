@@ -25,6 +25,29 @@ export function createBotPlayer(id: string, nameIndex: number): Player {
   };
 }
 
+/**
+ * Choose the next player index for a forced "captain chooses next player" action.
+ * Picks the next clockwise player with uncut tiles; can wrap back to captain.
+ */
+export function botChooseNextPlayer(
+  state: GameState,
+  captainId: string,
+): number | null {
+  const captainIndex = state.players.findIndex((p) => p.id === captainId);
+  if (captainIndex === -1) return null;
+
+  const playerCount = state.players.length;
+  for (let i = 1; i <= playerCount; i++) {
+    const idx = (captainIndex + i) % playerCount;
+    const player = state.players[idx];
+    if (player.hand.some((t) => !t.cut)) {
+      return idx;
+    }
+  }
+
+  return null;
+}
+
 /** Auto-place info token during setup. Picks the blue tile whose value appears most often in hand. */
 export function botPlaceInfoToken(state: GameState, botId: string): void {
   const bot = state.players.find((p) => p.id === botId);
