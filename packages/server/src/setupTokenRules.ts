@@ -14,17 +14,42 @@ function legalityError(
 }
 
 /**
+ * Count how many of the 13 possible wire values (1-12 + YELLOW) are NOT
+ * present in the player's uncut hand. Used to cap mission 22 setup tokens.
+ */
+function countAbsentValues(player: Readonly<Player>): number {
+  const present = new Set<number | "YELLOW">();
+  for (const tile of player.hand) {
+    if (tile.cut) continue;
+    if (tile.gameValue === "YELLOW") {
+      present.add("YELLOW");
+    } else if (typeof tile.gameValue === "number") {
+      present.add(tile.gameValue);
+    }
+  }
+  // 13 possible values: 1-12 numeric + YELLOW
+  return 13 - present.size;
+}
+
+/**
  * Number of setup info tokens this player must place for the active mission.
  */
 export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
-  return requiredSetupInfoTokenCountForMission(
+  const base = requiredSetupInfoTokenCountForMission(
     state.mission,
     state.players.length,
     player.isCaptain,
   );
+
+  // Mission 22: cap at the number of values absent from the player's hand
+  if (state.mission === 22) {
+    return Math.min(base, countAbsentValues(player));
+  }
+
+  return base;
 }
 
 /**
@@ -138,6 +163,62 @@ export function validateSetupInfoTokenPlacement(
   value: number,
   tileIndex: number,
 ): ActionLegalityError | null {
+  // Mission 22: absent-value tokens placed "next to stand" (position -1).
+  // Value 0 = yellow absent, 1-12 = numeric absent.
+  if (state.mission === 22) {
+    if (tileIndex !== -1) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 22 setup tokens must be placed next to stand (tileIndex -1)",
+      );
+    }
+
+    if (!Number.isInteger(value) || value < 0 || value > 12) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 22 setup token value must be 0 (yellow) or 1-12",
+      );
+    }
+
+    // Check the value is actually absent from player's uncut hand
+    const isYellowAbsent = value === 0;
+    if (isYellowAbsent) {
+      const hasYellow = player.hand.some(
+        (t) => !t.cut && t.gameValue === "YELLOW",
+      );
+      if (hasYellow) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Cannot declare yellow absent when you have yellow wires",
+        );
+      }
+    } else {
+      const hasValue = player.hand.some(
+        (t) => !t.cut && t.gameValue === value,
+      );
+      if (hasValue) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Cannot declare a value absent when you have wires of that value",
+        );
+      }
+    }
+
+    // No duplicate absent tokens for same value
+    const alreadyPlaced = player.infoTokens.some((t) => {
+      if (isYellowAbsent) return t.isYellow && t.position === -1;
+      return !t.isYellow && t.value === value && t.position === -1;
+    });
+    if (alreadyPlaced) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "You already placed an absent token for this value",
+      );
+    }
+
+    return null;
+  }
+
   if (!Number.isInteger(value) || value < 1 || value > 12) {
     return legalityError(
       "MISSION_RULE_VIOLATION",

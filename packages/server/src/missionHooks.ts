@@ -448,6 +448,7 @@ import type {
   NumberDeckEquipmentRevealRuleDef,
   OxygenProgressionRuleDef,
   SimultaneousFourCutRuleDef,
+  YellowTriggerTokenPassRuleDef,
 } from "@bomb-busters/shared";
 
 const MISSION_NUMBER_VALUES = [
@@ -1754,6 +1755,81 @@ registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
       playerId: "system",
       action: "hookEffect",
       detail: `m23:equipment_discard:${discarded.id}|remaining=${ctx.state.board.equipment.length}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// ── Mission 22 — Yellow-Trigger Token Pass ──────────────────
+
+/**
+ * Count cut yellow tiles across all players.
+ */
+function countCutYellowTiles(state: Readonly<GameState>): number {
+  let count = 0;
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (tile.cut && tile.color === "yellow") count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Build clockwise passing order starting from captain.
+ */
+function buildClockwisePassingOrder(state: Readonly<GameState>): number[] {
+  const captainIndex = state.players.findIndex((p) => p.isCaptain);
+  if (captainIndex === -1) return [];
+
+  const order: number[] = [];
+  const playerCount = state.players.length;
+  for (let i = 0; i < playerCount; i++) {
+    order.push((captainIndex + i) % playerCount);
+  }
+  return order;
+}
+
+/**
+ * Mission 22 — Yellow-trigger token pass.
+ *
+ * EndTurn:
+ * - After the 2nd yellow wire is cut globally, trigger token passing.
+ * - All players pass a token clockwise, starting from captain.
+ */
+registerHookHandler<"yellow_trigger_token_pass">("yellow_trigger_token_pass", {
+  endTurn(rule: YellowTriggerTokenPassRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+
+    // Skip if already triggered
+    if (ctx.state.campaign?.mission22TokenPassTriggered) return;
+
+    const yellowCount = countCutYellowTiles(ctx.state);
+    if (yellowCount < rule.triggerCount) return;
+
+    // Trigger the token pass
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.mission22TokenPassTriggered = true;
+
+    const passingOrder = buildClockwisePassingOrder(ctx.state);
+    if (passingOrder.length === 0) return;
+
+    const firstIndex = passingOrder[0];
+    const firstPlayer = ctx.state.players[firstIndex];
+
+    ctx.state.pendingForcedAction = {
+      kind: "mission22TokenPass",
+      currentChooserIndex: firstIndex,
+      currentChooserId: firstPlayer.id,
+      passingOrder,
+      completedCount: 0,
+    };
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail: `m22:yellow_trigger_token_pass:triggered|yellowCount=${yellowCount}|order=${passingOrder.join(",")}`,
       timestamp: Date.now(),
     });
   },

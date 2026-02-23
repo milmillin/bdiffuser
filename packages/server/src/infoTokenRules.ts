@@ -57,6 +57,15 @@ export function isMission40CountHintPlayer(
   return mission40TokenMode(state, player) === "count_hint";
 }
 
+/**
+ * Map a wire's game value to a numeric value that is NOT present on the tile.
+ * Uses a fixed 1↔2 mapping: value 1 → 2, everything else → 1.
+ *
+ * AMB-022-1: Both "fixed 1/2" and "value + 1 mod 12" strategies eliminate
+ * exactly one value from the recipient's perspective, so their information
+ * content is equivalent. The fixed mapping keeps the implementation simple
+ * and matches the physical game's token supply (only values 1-12 exist).
+ */
 function toAbsentNumericValue(value: WireValue): number {
   if (typeof value !== "number") return 1;
   return value === 1 ? 2 : 1;

@@ -1,18 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { BaseEquipmentId } from "@bomb-busters/shared";
+import { requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeEquipmentCard,
   makeGameState,
   makePlayer,
   makeTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import { setupGame } from "../setup";
 import { validateMissionPlayerCount } from "../startValidation";
 import { validateActionWithHooks, validateRevealRedsLegality } from "../validation";
 import { dispatchHooks } from "../missionHooks";
-import { advanceTurn, executeDualCut } from "../gameLogic";
+import { advanceTurn, executeDualCut, executeSoloCut } from "../gameLogic";
 import { validateUseEquipment } from "../equipment";
+import {
+  requiredSetupInfoTokenCount,
+  validateSetupInfoTokenPlacement,
+} from "../setupTokenRules";
 
 function createSetupPlayers(count: 2 | 3 | 4 | 5) {
   return Array.from({ length: count }, (_, idx) =>
@@ -351,6 +357,238 @@ describe("mission complexity tier representative coverage", () => {
         isYellow: false,
       },
     ]);
+  });
+
+  // ── Mission 22 setup token tests ──────────────────────────
+
+  it("mission 22: setup token count returns 2", () => {
+    expect(requiredSetupInfoTokenCountForMission(22, 4, false)).toBe(2);
+    expect(requiredSetupInfoTokenCountForMission(22, 4, true)).toBe(2);
+    expect(requiredSetupInfoTokenCountForMission(22, 2, true)).toBe(2);
+  });
+
+  it("mission 22: setup validation rejects present values, accepts absent values", () => {
+    const player = makePlayer({
+      id: "p1",
+      hand: [
+        makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeYellowTile({ id: "y1" }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [player],
+    });
+
+    // Reject: value 5 is present in hand
+    const err1 = validateSetupInfoTokenPlacement(state, player, 5, -1);
+    expect(err1?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(err1?.message).toContain("absent");
+
+    // Reject: yellow (0) is present in hand
+    const err2 = validateSetupInfoTokenPlacement(state, player, 0, -1);
+    expect(err2?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(err2?.message).toContain("yellow");
+
+    // Accept: value 3 is not present
+    const ok1 = validateSetupInfoTokenPlacement(state, player, 3, -1);
+    expect(ok1).toBeNull();
+
+    // Accept: value 0 (yellow) when no yellow wires
+    const noYellowPlayer = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const ok2 = validateSetupInfoTokenPlacement(state, noYellowPlayer, 0, -1);
+    expect(ok2).toBeNull();
+  });
+
+  it("mission 22: setup validation rejects tileIndex != -1 and duplicate absent values", () => {
+    const player = makePlayer({
+      id: "p1",
+      hand: [makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [player],
+    });
+
+    // Reject: tileIndex must be -1
+    const err1 = validateSetupInfoTokenPlacement(state, player, 3, 0);
+    expect(err1?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(err1?.message).toContain("tileIndex -1");
+
+    // Place first token, then reject duplicate
+    player.infoTokens.push({ value: 3, position: -1, isYellow: false });
+    const err2 = validateSetupInfoTokenPlacement(state, player, 3, -1);
+    expect(err2?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(err2?.message).toContain("already placed");
+  });
+
+  it("mission 22: requiredSetupInfoTokenCount caps at absent values", () => {
+    // Player with all 13 possible values — 0 absent values → 0 tokens
+    const fullHand = [
+      ...Array.from({ length: 12 }, (_, i) =>
+        makeTile({ id: `b${i + 1}`, color: "blue", gameValue: i + 1, sortValue: i + 1 }),
+      ),
+      makeYellowTile({ id: "y1" }),
+    ];
+    const fullPlayer = makePlayer({ id: "p1", hand: fullHand });
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [fullPlayer],
+    });
+    expect(requiredSetupInfoTokenCount(state, fullPlayer)).toBe(0);
+
+    // Player with only value 5 → 12 absent values → capped at 2
+    const sparsePlayer = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const state2 = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [sparsePlayer],
+    });
+    expect(requiredSetupInfoTokenCount(state2, sparsePlayer)).toBe(2);
+  });
+
+  // ── Mission 22 yellow-trigger token pass tests ──────────
+
+  it("mission 22: yellow trigger fires after 2 yellow cuts via dual cut", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeYellowTile({ id: "y1", sortValue: 1.1 }),
+        makeYellowTile({ id: "y2", sortValue: 2.1 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 22,
+      players: [captain, target],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    // First yellow cut — trigger count not yet reached
+    executeDualCut(state, "captain", "target", 0, "YELLOW");
+    expect(state.pendingForcedAction?.kind).not.toBe("mission22TokenPass");
+
+    // Second yellow cut — trigger should fire at endTurn
+    state.currentPlayerIndex = 0;
+    state.phase = "playing";
+    executeDualCut(state, "captain", "target", 1, "YELLOW");
+    expect(state.campaign?.mission22TokenPassTriggered).toBe(true);
+    expect(state.pendingForcedAction?.kind).toBe("mission22TokenPass");
+  });
+
+  it("mission 22: yellow trigger fires after solo cut of 2 yellows", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeYellowTile({ id: "y1", sortValue: 1.1 }),
+        makeYellowTile({ id: "y2", sortValue: 2.1 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      players: [captain, p2],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    // Solo cut all yellow — should trigger after turn advance
+    executeSoloCut(state, "captain", "YELLOW");
+    expect(state.campaign?.mission22TokenPassTriggered).toBe(true);
+    expect(state.pendingForcedAction?.kind).toBe("mission22TokenPass");
+  });
+
+  it("mission 22: token pass sequential choosers and correct recipient", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b3", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "b7", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      players: [captain, p2, p3],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      campaign: { mission22TokenPassTriggered: true },
+      pendingForcedAction: {
+        kind: "mission22TokenPass",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        passingOrder: [0, 1, 2],
+        completedCount: 0,
+      },
+    });
+
+    // Captain (index 0) passes to p2 (index 1)
+    const forced0 = state.pendingForcedAction!;
+    expect(forced0.kind).toBe("mission22TokenPass");
+    if (forced0.kind === "mission22TokenPass") {
+      expect(forced0.currentChooserId).toBe("captain");
+    }
+
+    // Simulate token pass: captain passes value 5 to p2 (clockwise left)
+    // p2 has a wire with value 3, so value 5 won't match → position -1
+    const recipientIdx0 = (0 + 1) % 3; // = 1 (p2)
+    expect(recipientIdx0).toBe(1);
+
+    // Advance to next chooser
+    state.pendingForcedAction = {
+      kind: "mission22TokenPass",
+      currentChooserIndex: 1,
+      currentChooserId: "p2",
+      passingOrder: [0, 1, 2],
+      completedCount: 1,
+    };
+
+    const forced1 = state.pendingForcedAction;
+    expect(forced1.currentChooserId).toBe("p2");
+
+    // p2 (index 1) passes to p3 (index 2)
+    const recipientIdx1 = (1 + 1) % 3; // = 2 (p3)
+    expect(recipientIdx1).toBe(2);
+
+    // Advance to last chooser
+    state.pendingForcedAction = {
+      kind: "mission22TokenPass",
+      currentChooserIndex: 2,
+      currentChooserId: "p3",
+      passingOrder: [0, 1, 2],
+      completedCount: 2,
+    };
+
+    // p3 (index 2) passes to captain (index 0)
+    const recipientIdx2 = (2 + 1) % 3; // = 0 (captain)
+    expect(recipientIdx2).toBe(0);
+
+    // After all pass, forced action should be cleared
+    state.pendingForcedAction = undefined;
+    expect(state.pendingForcedAction).toBeUndefined();
   });
 
   it("expert tier (mission 33): failed dual cut places even/odd token", () => {

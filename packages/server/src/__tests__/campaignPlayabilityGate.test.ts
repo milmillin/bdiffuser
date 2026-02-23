@@ -79,6 +79,17 @@ function pickSetupPlacement(
   state: GameState,
   player: Player,
 ): { value: number; tileIndex: number } | null {
+  // Mission 22: absent-value tokens use tileIndex -1 and value 0-12
+  if (state.mission === 22) {
+    for (let value = 0; value <= 12; value++) {
+      const error = validateSetupInfoTokenPlacement(state, player, value, -1);
+      if (!error) {
+        return { value, tileIndex: -1 };
+      }
+    }
+    return null;
+  }
+
   for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex++) {
     for (let value = 1; value <= 12; value++) {
       const error = validateSetupInfoTokenPlacement(state, player, value, tileIndex);
@@ -221,6 +232,28 @@ function resolveForcedAction(state: GameState): boolean {
     return true;
   }
 
+  if (forced.kind === "mission22TokenPass") {
+    // Auto-resolve: each chooser passes a random numeric value
+    const recipientIndex = (forced.currentChooserIndex + 1) % state.players.length;
+    const recipient = state.players[recipientIndex];
+    const value = Math.floor(Math.random() * 12) + 1;
+    recipient.infoTokens.push({ value, position: -1, isYellow: false });
+
+    const nextCompleted = forced.completedCount + 1;
+    if (nextCompleted >= forced.passingOrder.length) {
+      state.pendingForcedAction = undefined;
+    } else {
+      const nextChooserIndex = forced.passingOrder[nextCompleted];
+      state.pendingForcedAction = {
+        ...forced,
+        currentChooserIndex: nextChooserIndex,
+        currentChooserId: state.players[nextChooserIndex].id,
+        completedCount: nextCompleted,
+      };
+    }
+    return true;
+  }
+
   if (forced.kind !== "chooseNextPlayer") return false;
 
   const candidates = state.players
@@ -295,12 +328,13 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
           );
         }
 
+        const isYellowToken = missionId === 22 && placement.value === 0;
         const token = applyMissionInfoTokenVariant(
           state,
           {
             value: placement.value,
             position: placement.tileIndex,
-            isYellow: false,
+            isYellow: isYellowToken,
           },
           player,
         );

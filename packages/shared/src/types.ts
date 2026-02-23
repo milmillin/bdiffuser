@@ -258,6 +258,8 @@ export interface CampaignState {
   specialMarkers?: SpecialMarker[];
   /** Mission 18: index of the designator (active player) during a cutter sub-turn. */
   mission18DesignatorIndex?: number;
+  /** Mission 22: whether the yellow-trigger token pass has been triggered. */
+  mission22TokenPassTriggered?: boolean;
   /** Mission 23: whether the simultaneous four-of-value cut has been completed. */
   mission23SpecialActionDone?: boolean;
 }
@@ -320,6 +322,17 @@ export type ForcedAction =
       value: number;
       /** General Radar results: per-player boolean (true = has at least one uncut wire of this value). */
       radarResults: Record<string, boolean>;
+    }
+  | {
+      kind: "mission22TokenPass";
+      /** Index of the player who currently must choose a token value to pass. */
+      currentChooserIndex: number;
+      /** ID of the current chooser (convenience for message routing). */
+      currentChooserId: string;
+      /** Player indices in clockwise passing order, starting from captain. */
+      passingOrder: number[];
+      /** How many players have completed their token pass. */
+      completedCount: number;
     };
 
 export interface TurnEffects {

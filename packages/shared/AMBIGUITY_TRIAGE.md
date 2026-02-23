@@ -50,7 +50,7 @@
 |-----------|------|---------|---------|-------|--------|
 | 17 | `mission_17_false_info_tokens` — false token count and knowledge | (A) Fixed N tokens are false (inverted value); (B) Random subset; (C) Token owner knows theirs is false; (D) No one knows which are false | Some tokens show incorrect values; no one knows which | unassigned | open |
 | 21 | `mission_21_even_odd_tokens` — token value representation | (A) Token shows "even" or "odd" instead of exact number; (B) Token shows range parity; (C) Even/odd applies to wire value, token shows the category | Tokens show "even" or "odd" label instead of a number | unassigned | open |
-| 22 | `mission_22_absent_value_tokens` — "absent value" definition | (A) Token shows a value that is NOT on the tile; (B) Token slot is left empty (no information given); (C) Token shows a value absent from the entire game | Token indicates a value NOT present on the player's tile | unassigned | open |
+| 22 | `mission_22_absent_value_tokens` — "absent value" definition | (A) Token shows a value that is NOT on the tile; (B) Token slot is left empty (no information given); (C) Token shows a value absent from the entire game | **(A) Token indicates a value NOT present on the player's tile; fixed 1↔2 mapping (information-equivalent to value+1)** | codex | documented |
 | 24 | `mission_24_count_tokens_x1_x2_x3` — multiplier token semantics | (A) Tokens are multipliers applied to wire values; (B) Tokens indicate how many wires of a certain type exist; (C) x1/x2/x3 represent confidence levels | Tokens represent wire-count multipliers (x1=1 wire, x2=2 wires, x3=3 wires of indicated type) | unassigned | open |
 | 33 | `mission_33_even_odd_tokens` — differences from mission 21 | (A) Identical mechanic to M21; (B) Different parity rules or additional constraints | Same even/odd token mechanic as M21 | unassigned | open |
 | 40 | `mission_40_alternating_token_types` — what types alternate and trigger | (A) Tokens alternate between numeric and even/odd each round; (B) Tokens alternate between true and false each turn; (C) Token type changes per player in seating order | Token type alternates between two variants across turns | unassigned | open |
@@ -185,7 +185,7 @@ Each row links to its triage entry above via `ambiguityId` (`AMB-{missionId}-{se
 | AMB-064-1 | 64 | Two upside down wires each | unassigned | — | — | — | open |
 | AMB-017-1 | 17 | False info tokens | unassigned | — | — | — | open |
 | AMB-021-1 | 21 | Even/odd tokens | unassigned | — | — | — | open |
-| AMB-022-1 | 22 | Absent value tokens | unassigned | — | — | — | open |
+| AMB-022-1 | 22 | Absent value tokens | codex | (A) Fixed 1↔2 absent-value mapping; information-equivalent to value+1 | 2026-02-23 | 2026-02-23 | documented |
 | AMB-024-1 | 24 | Count tokens x1/x2/x3 | unassigned | — | — | — | open |
 | AMB-033-1 | 33 | Even/odd tokens (vs M21) | unassigned | — | — | — | open |
 | AMB-040-1 | 40 | Alternating token types | unassigned | — | — | — | open |
@@ -264,7 +264,8 @@ Ambiguities blocking each milestone (by mission range):
 
 | Status | Count |
 |--------|-------|
-| open | 55 |
+| open | 54 |
 | blocked | 0 |
 | resolved | 8 |
+| documented | 1 |
 | **Total** | **63** |

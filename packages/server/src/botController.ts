@@ -69,6 +69,47 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
   const requiredTokenCount = requiredSetupInfoTokenCount(state, bot);
   if (bot.infoTokens.length >= requiredTokenCount) return;
 
+  // Mission 22: absent-value tokens placed next to stand (tileIndex -1).
+  if (state.phase === "setup_info_tokens" && state.mission === 22) {
+    const presentValues = new Set<number | "YELLOW">();
+    for (const tile of bot.hand) {
+      if (tile.cut) continue;
+      if (tile.gameValue === "YELLOW") presentValues.add("YELLOW");
+      else if (typeof tile.gameValue === "number") presentValues.add(tile.gameValue);
+    }
+    const placedAbsent = new Set(
+      bot.infoTokens
+        .filter((t) => t.position === -1)
+        .map((t) => (t.isYellow ? "YELLOW" : t.value)),
+    );
+
+    // Try numeric 1-12 first, then yellow (0)
+    for (let v = 1; v <= 12; v++) {
+      if (presentValues.has(v) || placedAbsent.has(v)) continue;
+      const error = validateSetupInfoTokenPlacement(state, bot, v, -1);
+      if (error) continue;
+      bot.infoTokens.push(applyMissionInfoTokenVariant(state, {
+        value: v,
+        position: -1,
+        isYellow: false,
+      }, bot));
+      return;
+    }
+    // Yellow absent
+    if (!presentValues.has("YELLOW") && !placedAbsent.has("YELLOW")) {
+      const error = validateSetupInfoTokenPlacement(state, bot, 0, -1);
+      if (!error) {
+        bot.infoTokens.push(applyMissionInfoTokenVariant(state, {
+          value: 0,
+          position: -1,
+          isYellow: true,
+        }, bot));
+        return;
+      }
+    }
+    return;
+  }
+
   // Missions with false setup tokens (mission 52 for all players,
   // mission 17 for captain only) need non-matching numeric values.
   const requiresFalseSetupToken =

@@ -230,6 +230,17 @@ export interface InternFailureExplodesRuleDef {
 }
 
 /**
+ * Mission 22 — Yellow-trigger token pass.
+ * After `triggerCount` yellow wires have been cut globally, all players
+ * pass a token clockwise starting from the captain.
+ */
+export interface YellowTriggerTokenPassRuleDef {
+  kind: "yellow_trigger_token_pass";
+  /** Number of yellow wire cuts that triggers the token pass. */
+  triggerCount: number;
+}
+
+/**
  * Discriminated union of all resolved hook rule definitions.
  * Extend this union as more hooks are resolved in later milestones.
  */
@@ -247,7 +258,8 @@ export type MissionHookRuleDef =
   | SequencePriorityRuleDef
   | InternFailureExplodesRuleDef
   | ForcedGeneralRadarFlowRuleDef
-  | SimultaneousFourCutRuleDef;
+  | SimultaneousFourCutRuleDef
+  | YellowTriggerTokenPassRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 

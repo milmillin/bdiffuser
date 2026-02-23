@@ -1744,7 +1744,7 @@ exports[`resolved mission setup snapshots > mission 21 1`] = `
 exports[`resolved mission setup snapshots > mission 22 1`] = `
 {
   "missionId": 22,
-  "name": "None of That in My House!",
+  "name": "Negative Impressions",
   "setupsByPlayerCount": {
     "2": {
       "blue": {

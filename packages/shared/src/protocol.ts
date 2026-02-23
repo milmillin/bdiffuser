@@ -33,6 +33,7 @@ export type ClientMessage =
   | { type: "chooseNextPlayer"; targetPlayerId: string }
   | { type: "designateCutter"; targetPlayerId: string }
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
+  | { type: "mission22TokenPassChoice"; value: number }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
   | { type: "chat"; text: string };

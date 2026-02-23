@@ -46,6 +46,7 @@ export type {
   SimultaneousFourCutRuleDef,
   TimerRuleDef,
   WirePoolSpec,
+  YellowTriggerTokenPassRuleDef,
 } from "./missionSchemaTypes.js";
 export { describeWirePoolSpec, getWirePoolCount } from "./missionSchemaUtils.js";
 

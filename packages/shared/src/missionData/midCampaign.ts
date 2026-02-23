@@ -72,13 +72,14 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(22, {
-    name: "None of That in My House!",
+    name: "Negative Impressions",
     setup: {
       ...defaultSetup(),
       red: exact(1),
       yellow: exact(4),
     },
     behaviorHooks: ["mission_22_absent_value_tokens", "mission_22_yellow_trigger_token_pass"],
+    hookRules: [{ kind: "yellow_trigger_token_pass", triggerCount: 2 }],
   });
 
   setMission(23, {

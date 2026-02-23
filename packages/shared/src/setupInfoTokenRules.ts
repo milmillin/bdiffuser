@@ -17,6 +17,11 @@ export function requiredSetupInfoTokenCountForMission(
     return 2;
   }
 
+  // Mission 22: every player places 2 absent-value setup tokens.
+  if (mission === 22) {
+    return 2;
+  }
+
   // Mission 52: every player places 2 false setup tokens.
   if (mission === 52) {
     return 2;
