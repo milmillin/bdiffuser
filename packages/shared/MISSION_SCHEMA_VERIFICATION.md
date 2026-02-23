@@ -106,7 +106,7 @@ Legend:
 | 16 | A Story of Common Sense | 1-12 | exact(1) | outOf(2,3) | default | 2p: r=exact(2), y=exact(4) | OK |
 | 17 | Sergio El Mytho | 1-12 | outOf(2,3) | none | default | 2p: r=exact(3) | OK |
 | 18 | BAT-helping hand | 1-12 | exact(2) | none | fixed_pool:[general_radar] | 2p: r=exact(3) | OK |
-| 19 | In the Villain's Lair... | 1-12 | exact(1) | outOf(2,3) | default | — | OK |
+| 19 | In the Belly of the Beast | 1-12 | exact(1) | outOf(2,3) | default | — | OK |
 
 ### Missions 20-30
 

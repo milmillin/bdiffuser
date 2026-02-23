@@ -1497,7 +1497,7 @@ exports[`resolved mission setup snapshots > mission 18 1`] = `
 exports[`resolved mission setup snapshots > mission 19 1`] = `
 {
   "missionId": 19,
-  "name": "In the Villain's Lair...",
+  "name": "In the Belly of the Beast",
   "setupsByPlayerCount": {
     "2": {
       "blue": {

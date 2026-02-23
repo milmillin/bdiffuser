@@ -32,7 +32,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(19, {
-    name: "In the Villain's Lair...",
+    name: "In the Belly of the Beast",
     setup: {
       ...defaultSetup(),
       red: exact(1),

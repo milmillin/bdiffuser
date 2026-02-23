@@ -25,7 +25,7 @@ Total missions: 66
 | 16 | A Story of Common Sense | campaign | 2, 3, 4, 5 | 1 | mission_16_sequence_priority_face_b |
 | 17 | Sergio El Mytho | campaign | 2, 3, 4, 5 | 2 | mission_17_false_info_tokens, mission_17_sergio_equipment_restriction |
 | 18 | BAT-helping hand | campaign | 2, 3, 4, 5 | 1 | mission_18_forced_general_radar_flow |
-| 19 | In the Villain's Lair... | campaign | 2, 3, 4, 5 | 1 | mission_19_audio_prompt |
+| 19 | In the Belly of the Beast | campaign | 2, 3, 4, 5 | 1 | mission_19_audio_prompt |
 | 20 | The Big Bad Wolf | campaign | 2, 3, 4, 5 | 1 | mission_20_x_marked_unsorted_wires |
 | 21 | Kouign Amann Mortal | campaign | 2, 3, 4, 5 | 1 | mission_21_even_odd_tokens |
 | 22 | None of That in My House! | campaign | 2, 3, 4, 5 | 2 | mission_22_absent_value_tokens, mission_22_yellow_trigger_token_pass |
