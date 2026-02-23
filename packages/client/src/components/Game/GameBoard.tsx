@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
-import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
+import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, MISSION_IMAGES, MISSION_SCHEMAS, MISSIONS, describeWirePoolSpec, wireLabel } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
@@ -87,6 +87,7 @@ export function GameBoard({
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
+  const [missionCardShowText, setMissionCardShowText] = useState(false);
 
   // Character card overlay state
   const [viewingCharacter, setViewingCharacter] = useState<{
@@ -606,8 +607,74 @@ export function GameBoard({
             </div>
           </div>
 
-          {/* Sidebar: action log + chat */}
+          {/* Sidebar: mission card + action log + chat */}
           <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
+            <div className="flex-shrink-0 relative">
+              {missionCardShowText ? (() => {
+                const schema = MISSION_SCHEMAS[gameState.mission];
+                const def = MISSIONS[gameState.mission];
+                const playerCount = gameState.players.length;
+                const override = schema.overrides?.[playerCount as 2 | 3 | 4 | 5];
+                const setup = {
+                  blue: override?.blue ?? schema.setup.blue,
+                  red: override?.red ?? schema.setup.red,
+                  yellow: override?.yellow ?? schema.setup.yellow,
+                  equipment: override?.equipment ?? schema.setup.equipment,
+                };
+                return (
+                  <div className="rounded-lg border border-gray-700 bg-slate-950 p-3 space-y-2">
+                    <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                      Mission {gameState.mission} — {def.difficulty}
+                    </div>
+                    <div className="text-sm font-bold text-white leading-tight">{schema.name}</div>
+
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">Setup ({playerCount}p)</div>
+                      <div className="text-[11px] leading-snug text-gray-100 space-y-0.5">
+                        <div>Blue: {setup.blue.minValue}–{setup.blue.maxValue}</div>
+                        <div>Red: {describeWirePoolSpec(setup.red)}</div>
+                        <div>Yellow: {describeWirePoolSpec(setup.yellow)}</div>
+                        <div>Equipment: {setup.equipment.mode}</div>
+                      </div>
+                    </div>
+
+                    {schema.behaviorHooks && schema.behaviorHooks.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-amber-300">Special Rules</div>
+                        <ul className="text-[11px] leading-snug text-gray-100 space-y-0.5">
+                          {schema.behaviorHooks.map((hook) => (
+                            <li key={hook}>- {hook.replace(/^mission_\d+_/, "").replaceAll("_", " ")}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {schema.notes && schema.notes.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-fuchsia-300">Notes</div>
+                        <ul className="text-[11px] leading-snug text-gray-300 space-y-0.5">
+                          {schema.notes.map((note) => (
+                            <li key={note}>- {note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <img
+                  src={`/images/${MISSION_IMAGES[gameState.mission]}`}
+                  alt={`Mission ${gameState.mission}`}
+                  className="w-full h-auto rounded-lg"
+                />
+              )}
+              <button
+                onClick={() => setMissionCardShowText((v) => !v)}
+                className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[10px] text-gray-300 hover:text-white hover:bg-black/80 transition-colors"
+              >
+                {missionCardShowText ? "IMG" : "TXT"}
+              </button>
+            </div>
             <div className="flex-1 min-h-0 flex flex-col">
               <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
             </div>
