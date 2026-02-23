@@ -161,7 +161,7 @@ Dependency: blocked by Phase 0C.
 #### Validation Layer (mission-aware)
 
 - [x] Implement support for simultaneous multi-wire cuts.
-- [ ] Implement remaining mission-specific forbidden targets/values for M2/M3 mechanics.
+- [x] Implement remaining mission-specific forbidden targets/values for M2/M3 mechanics.
   - [x] Mission 13 detector-target restrictions:
     - [x] Personal Double Detector rejects red/yellow targets.
     - [x] Triple/Super/X-or-Y detector equipment paths reject non-blue targets.
