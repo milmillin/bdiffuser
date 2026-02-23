@@ -132,6 +132,14 @@ export function validateDualCutDoubleDetectorLegality(
   const actor = state.players.find((p) => p.id === actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
 
+  // Mission 17: Sergio/captain has no personal equipment.
+  if (state.mission === 17 && actor.isCaptain) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Sergio cannot use personal equipment in mission 17",
+    );
+  }
+
   // Mission 28: Captain Lazy has no personal equipment.
   if (state.mission === 28 && actor.isCaptain) {
     return legalityError(

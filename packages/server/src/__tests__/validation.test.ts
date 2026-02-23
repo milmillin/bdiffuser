@@ -609,6 +609,16 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("mission 17: captain cannot use Double Detector", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.mission = 17;
+    state.players[0].isCaptain = true;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("rejects actor with null character", () => {
     const actor = makePlayer({
       id: "actor",

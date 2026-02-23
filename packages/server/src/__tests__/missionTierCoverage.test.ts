@@ -314,6 +314,23 @@ describe("mission complexity tier representative coverage", () => {
     expect(dealtPlayers[2].character).toBe("character_3");
   });
 
+  it("sergio tier (mission 17): setup removes captain character card", () => {
+    const players = createSetupPlayers(3);
+    players[0].character = "double_detector";
+    players[0].characterUsed = true;
+    players[1].character = "character_2";
+    players[2].character = "character_3";
+
+    const { players: dealtPlayers } = setupGame(players, 17);
+    const captain = dealtPlayers.find((p) => p.isCaptain);
+
+    expect(captain).toBeDefined();
+    expect(captain?.character).toBeNull();
+    expect(captain?.characterUsed).toBe(false);
+    expect(dealtPlayers[1].character).toBe("character_2");
+    expect(dealtPlayers[2].character).toBe("character_3");
+  });
+
   it("restriction tier (mission 34): enforces allowed player counts", () => {
     const invalid = validateMissionPlayerCount(34, 2);
     expect(invalid).toContain("requires 3, 4, 5 players");

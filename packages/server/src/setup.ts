@@ -244,6 +244,15 @@ export function setupGame(
     }
   }
 
+  // Mission 17: Sergio/captain has no personal equipment.
+  if (mission === 17) {
+    const captain = players.find((player) => player.isCaptain);
+    if (captain) {
+      captain.character = null;
+      captain.characterUsed = false;
+    }
+  }
+
   // Mission 28: Captain returns their character card to the box.
   if (mission === 28) {
     const captain = players.find((player) => player.isCaptain);
