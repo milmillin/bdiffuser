@@ -1213,7 +1213,7 @@ Baseline assumption used in this section:
 
 ### Mission 45
 
-- Card title: `My thread, my battle!`
+- Card title: `My Thread, My Battle!`
 - Setup:
   - Add `2` red wires.
   - Shuffle/stack 12 Number cards face down.
