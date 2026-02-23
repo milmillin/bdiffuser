@@ -50,6 +50,7 @@ import {
   hasCompletedSetupInfoTokens,
   allSetupInfoTokensPlaced,
   advanceToNextSetupPlayer,
+  autoPlaceMission13RandomSetupInfoTokens,
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
 import { applyMission25ChatPenalty } from "./mission25.js";
@@ -334,6 +335,17 @@ export class BombBustersServer extends Server<Env> {
       point: "setup",
       state: this.room.gameState,
     });
+
+    const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(this.room.gameState);
+    for (const placement of autoPlacements) {
+      this.room.gameState.log.push({
+        turn: 0,
+        playerId: placement.playerId,
+        action: "placeInfoToken",
+        detail: `placed random info token ${placement.token.value} on wire ${wireLabel(placement.token.position)}`,
+        timestamp: Date.now(),
+      });
+    }
 
     this.advanceSetupTurnAndMaybeStart(this.room.gameState);
 

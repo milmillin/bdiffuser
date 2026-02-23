@@ -59,6 +59,71 @@ export function advanceToNextSetupPlayer(state: GameState): void {
   }
 }
 
+export interface AutoSetupInfoTokenPlacement {
+  playerId: string;
+  token: {
+    value: number;
+    position: number;
+    isYellow: false;
+  };
+}
+
+function mission13AvailableBlueValues(player: Readonly<Player>): number[] {
+  const values = new Set<number>();
+  for (const tile of player.hand) {
+    if (tile.cut) continue;
+    if (tile.color !== "blue") continue;
+    if (typeof tile.gameValue !== "number") continue;
+    values.add(tile.gameValue);
+  }
+  return [...values];
+}
+
+function mission13MatchingBlueIndices(player: Readonly<Player>, value: number): number[] {
+  const indices: number[] = [];
+  for (let i = 0; i < player.hand.length; i++) {
+    const tile = player.hand[i];
+    if (tile.cut) continue;
+    if (tile.color !== "blue") continue;
+    if (tile.gameValue !== value) continue;
+    indices.push(i);
+  }
+  return indices;
+}
+
+/**
+ * Mission 13 setup: each required player receives a random valid info token
+ * and it is automatically placed on a matching blue wire.
+ */
+export function autoPlaceMission13RandomSetupInfoTokens(
+  state: GameState,
+  rng: () => number = Math.random,
+): AutoSetupInfoTokenPlacement[] {
+  if (state.phase !== "setup_info_tokens" || state.mission !== 13) {
+    return [];
+  }
+
+  const placements: AutoSetupInfoTokenPlacement[] = [];
+  for (const player of state.players) {
+    const required = requiredSetupInfoTokenCount(state, player);
+    while (player.infoTokens.length < required) {
+      const values = mission13AvailableBlueValues(player);
+      if (values.length === 0) break;
+
+      const value = values[Math.floor(rng() * values.length)];
+      const indices = mission13MatchingBlueIndices(player, value);
+      if (indices.length === 0) break;
+
+      const position = indices[Math.floor(rng() * indices.length)];
+      const token = { value, position, isYellow: false as const };
+      player.infoTokens.push(token);
+      placements.push({ playerId: player.id, token });
+    }
+  }
+
+  return placements;
+}
+
 /**
  * Validate a setup info-token placement.
  *

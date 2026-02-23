@@ -11,6 +11,7 @@ import {
   hasCompletedSetupInfoTokens,
   allSetupInfoTokensPlaced,
   advanceToNextSetupPlayer,
+  autoPlaceMission13RandomSetupInfoTokens,
   validateSetupInfoTokenPlacement,
 } from "../setupTokenRules";
 
@@ -133,6 +134,69 @@ describe("setupTokenRules", () => {
 
     advanceToNextSetupPlayer(state);
     expect(state.currentPlayerIndex).toBe(1);
+  });
+
+  describe("autoPlaceMission13RandomSetupInfoTokens", () => {
+    it("auto-places one random valid setup token per required player in mission 13", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "c-1", color: "blue", gameValue: 2, sortValue: 2 }),
+          makeTile({ id: "c-2", color: "blue", gameValue: 6, sortValue: 6 }),
+          makeRedTile({ id: "c-r1" }),
+        ],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [
+          makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4 }),
+          makeTile({ id: "p2-2", color: "blue", gameValue: 9, sortValue: 9 }),
+        ],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [
+          makeTile({ id: "p3-1", color: "blue", gameValue: 1, sortValue: 1 }),
+          makeTile({ id: "p3-2", color: "blue", gameValue: 8, sortValue: 8 }),
+        ],
+      });
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 13,
+        players: [captain, p2, p3],
+      });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toHaveLength(3);
+      expect(captain.infoTokens).toEqual([{ value: 2, position: 0, isYellow: false }]);
+      expect(p2.infoTokens).toEqual([{ value: 4, position: 0, isYellow: false }]);
+      expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
+    });
+
+    it("preserves mission-13 two-player captain skip", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [makeTile({ color: "blue", gameValue: 5, sortValue: 5 })],
+      });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [makeTile({ color: "blue", gameValue: 7, sortValue: 7 })],
+      });
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 13,
+        players: [captain, partner],
+      });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toHaveLength(1);
+      expect(captain.infoTokens).toHaveLength(0);
+      expect(partner.infoTokens).toEqual([{ value: 7, position: 0, isYellow: false }]);
+    });
   });
 
   describe("validateSetupInfoTokenPlacement", () => {
