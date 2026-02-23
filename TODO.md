@@ -427,7 +427,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_yellow`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: front OCR reads `False Bottom`; timing confirmed as `Instant effect`; effect/reminder text aligned to source wording).
 
 #### Challenge Cards (10)
-- [ ] `challenge_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `challenge_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: added dedicated Challenge Card 1 entry describing RED teammate-cut explosion rule).
 - [ ] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

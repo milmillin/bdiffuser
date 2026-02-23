@@ -1620,6 +1620,13 @@ Baseline assumption used in this section:
 
 > **FAQ:** The standee must move after every cut (success or failure). On hash-marked squares, you must perform a SUCCESSFUL cut matching the ACTION constraint to trigger the action; regardless of success, do not move on hash squares.
 
+## Challenge Cards
+
+### Challenge 1
+
+- Instead of their action, a bomb disposal expert cuts a teammate's wire, saying `It is RED`.
+- If that wire is not RED, the bomb explodes.
+
 ---
 
 ## Source
