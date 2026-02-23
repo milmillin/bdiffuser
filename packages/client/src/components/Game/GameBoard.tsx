@@ -217,9 +217,13 @@ export function GameBoard({
         </div>
 
         {/* Sidebar: action log + chat */}
-        <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 self-stretch">
-          <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
-          <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
+        <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col">
+            <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
+          </div>
         </div>
       </div>
     </div>
