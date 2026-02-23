@@ -24,6 +24,7 @@ This file tracks all remaining work after introducing the central mission schema
 4. Phase 1 - Rules implementation (validation/game logic/equipment/tokens)
 5. Phase 2 - Product integration (UI/bot/view filtering)
 6. Phase 3 - QA hardening + rollout + cleanup
+7. Phase 4 - Card OCR refresh + `GAME_RULES.md` sync
 
 ## Milestones
 
@@ -328,6 +329,243 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
   - [x] Expose mission-failure telemetry via an endpoint/dashboard surface.
     - [x] Added room HTTP endpoint `.../telemetry/failure-counters`
 
+## Phase 4 - Card OCR Refresh + GAME_RULES Sync (P0)
+
+Dependency: starts after refreshed card image artifacts are available.
+
+### Task Set A - Refresh OCR Text Extractions with LLM (one row = one card)
+
+#### Mission Cards (66)
+- [ ] `mission_1` (`mission_1.jpg` + `mission_1_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_2` (`mission_2.jpg` + `mission_2_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_3` (`mission_3.jpg` + `mission_3_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_4` (`mission_4.jpg` + `mission_4_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_5` (`mission_5.jpg` + `mission_5_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_6` (`mission_6.jpg` + `mission_6_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_7` (`mission_7.jpg` + `mission_7_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_8` (`mission_8.jpg` + `mission_8_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_9` (`mission_9.jpg` + `mission_9_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_10` (`mission_10.jpg` + `mission_10_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_11` (`mission_11.jpg` + `mission_11_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_12` (`mission_12.jpg` + `mission_12_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_13` (`mission_13.jpg` + `mission_13_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_14` (`mission_14.jpg` + `mission_14_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_15` (`mission_15.jpg` + `mission_15_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_16` (`mission_16.jpg` + `mission_16_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_17` (`mission_17.jpg` + `mission_17_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_18` (`mission_18.jpg` + `mission_18_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_19` (`mission_19.jpg` + `mission_19_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_20` (`mission_20.jpg` + `mission_20_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_21` (`mission_21.jpg` + `mission_21_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_22` (`mission_22.jpg` + `mission_22_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_23` (`mission_23.jpg` + `mission_23_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_24` (`mission_24.jpg` + `mission_24_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_25` (`mission_25.jpg` + `mission_25_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_26` (`mission_26.jpg` + `mission_26_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_27` (`mission_27.jpg` + `mission_27_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_28` (`mission_28.jpg` + `mission_28_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_29` (`mission_29.jpg` + `mission_29_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_30` (`mission_30.jpg` + `mission_30_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_31` (`mission_31.jpg` + `mission_31_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_32` (`mission_32.jpg` + `mission_32_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_33` (`mission_33.jpg` + `mission_33_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_34` (`mission_34.jpg` + `mission_34_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_35` (`mission_35.jpg` + `mission_35_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_36` (`mission_36.jpg` + `mission_36_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_37` (`mission_37.jpg` + `mission_37_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_38` (`mission_38.jpg` + `mission_38_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_39` (`mission_39.jpg` + `mission_39_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_40` (`mission_40.jpg` + `mission_40_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_41` (`mission_41.jpg` + `mission_41_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_42` (`mission_42.jpg` + `mission_42_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_43` (`mission_43.jpg` + `mission_43_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_44` (`mission_44.jpg` + `mission_44_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_45` (`mission_45.jpg` + `mission_45_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_46` (`mission_46.jpg` + `mission_46_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_47` (`mission_47.jpg` + `mission_47_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_48` (`mission_48.jpg` + `mission_48_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_49` (`mission_49.jpg` + `mission_49_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_50` (`mission_50.jpg` + `mission_50_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_51` (`mission_51.jpg` + `mission_51_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_52` (`mission_52.jpg` + `mission_52_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_53` (`mission_53.jpg` + `mission_53_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_54` (`mission_54.jpg` + `mission_54_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_55` (`mission_55.jpg` + `mission_55_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_56` (`mission_56.jpg` + `mission_56_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_57` (`mission_57.jpg` + `mission_57_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_58` (`mission_58.jpg` + `mission_58_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_59` (`mission_59.jpg` + `mission_59_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_60` (`mission_60.jpg` + `mission_60_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_61` (`mission_61.jpg` + `mission_61_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_62` (`mission_62.jpg` + `mission_62_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_63` (`mission_63.jpg` + `mission_63_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_64` (`mission_64.jpg` + `mission_64_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_65` (`mission_65.jpg` + `mission_65_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `mission_66` (`mission_66.jpg` + `mission_66_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+
+#### Equipment Cards (18)
+- [ ] `equipment_1` (`equipment_1.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_2` (`equipment_2.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_3` (`equipment_3.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_4` (`equipment_4.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_5` (`equipment_5.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_6` (`equipment_6.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_7` (`equipment_7.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_8` (`equipment_8.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_9` (`equipment_9.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_10` (`equipment_10.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_11` (`equipment_11.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_12` (`equipment_12.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_22` (`equipment_22.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_33` (`equipment_33.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_99` (`equipment_99.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_1010` (`equipment_1010.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_1111` (`equipment_1111.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `equipment_yellow` (`equipment_yellow.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+
+#### Challenge Cards (10)
+- [ ] `challenge_1` (`challenge_1.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_2` (`challenge_2.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_3` (`challenge_3.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_4` (`challenge_4.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_5` (`challenge_5.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_6` (`challenge_6.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_7` (`challenge_7.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_8` (`challenge_8.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_9` (`challenge_9.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `challenge_10` (`challenge_10.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+
+#### Constraint Cards (12)
+- [ ] `constraint_a` (`constraint_a.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_b` (`constraint_b.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_c` (`constraint_c.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_d` (`constraint_d.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_e` (`constraint_e.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_f` (`constraint_f.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_g` (`constraint_g.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_h` (`constraint_h.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_i` (`constraint_i.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_j` (`constraint_j.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_k` (`constraint_k.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [ ] `constraint_l` (`constraint_l.png`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+
+### Task Set B - Verify and Update `GAME_RULES.md` from New OCR (one row = one card)
+
+Each row must include both the pre-existing text and the replacement text copied from OCR normalization before marking done.
+
+#### Mission Cards (66)
+- [ ] `mission_1`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_2`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_3`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_4`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_5`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_6`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_7`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_8`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_9`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_10`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_11`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_12`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_13`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_14`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_15`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_16`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_17`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_18`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_19`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_20`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_21`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_22`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_23`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_24`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_25`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_26`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_27`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_28`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_29`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_30`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_31`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_32`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_33`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_34`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_35`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_36`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_37`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_38`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_39`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_40`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_41`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_42`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_43`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_44`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_45`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_46`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_47`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_48`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_49`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_50`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_51`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_52`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_53`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_54`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_55`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_56`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_57`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_58`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_59`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_60`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_61`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_62`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_63`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_64`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_65`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `mission_66`: verify corresponding setup/rules text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+
+#### Equipment Cards (18)
+- [ ] `equipment_1`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_2`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_3`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_4`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_5`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_6`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_7`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_8`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_9`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_10`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_11`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_12`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_22`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_33`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_99`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_1010`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_1111`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `equipment_yellow`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+
+#### Challenge Cards (10)
+- [ ] `challenge_1`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_2`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_3`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_4`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_5`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_6`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_7`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_8`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_9`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `challenge_10`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+
+#### Constraint Cards (12)
+- [ ] `constraint_a`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_b`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_c`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_d`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_e`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_f`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_g`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_h`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_i`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_j`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_k`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
+- [ ] `constraint_l`: verify corresponding text in `GAME_RULES.md` and update as needed (old content: `TBD`; new content: `TBD`).
 ## Definition of Done (Campaign Rules Parity)
 
 - [x] All missions have schema-accurate setup for all allowed player counts.
