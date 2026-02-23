@@ -52,6 +52,7 @@ import {
   advanceToNextSetupPlayer,
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
+import { applyMission25ChatPenalty } from "./mission25.js";
 
 interface Env {
   [key: string]: unknown;
@@ -630,6 +631,15 @@ export class BombBustersServer extends Server<Env> {
     const sanitized = text.trim().slice(0, 500);
     if (!sanitized) return;
 
+    const previousResult = state.result;
+    const penaltyApplied = applyMission25ChatPenalty(state, sanitized);
+    if (penaltyApplied) {
+      if (state.result === "loss_detonator" && previousResult !== "loss_detonator") {
+        emitMissionFailureTelemetry(state, "loss_detonator", player.id, null);
+      }
+      this.maybeRecordMissionFailure(previousResult, state);
+    }
+
     const chatMsg: ChatMessage = {
       id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       senderId: player.id,
@@ -646,6 +656,9 @@ export class BombBustersServer extends Server<Env> {
     }
 
     this.broadcastChat(chatMsg);
+    if (penaltyApplied) {
+      this.broadcastGameState();
+    }
     this.saveState();
   }
 
