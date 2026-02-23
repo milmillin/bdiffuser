@@ -318,6 +318,51 @@ describe("mission 9 sequence-priority validation", () => {
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("rejects blocked dualCutDoubleDetector value in mission 9", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 2 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 8 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 9,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "c1", value: 2, faceUp: true },
+            { id: "c2", value: 5, faceUp: true },
+            { id: "c3", value: 8, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("rejects blocked soloCut value in mission 9", () => {
     const actor = makePlayer({
       id: "actor",

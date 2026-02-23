@@ -668,13 +668,6 @@ export function validateActionWithHooks(
     }
   }
 
-  // Double Detector validation is mission-agnostic at the moment.
-  // Mission hook validation currently applies to core turn actions
-  // (including simultaneous multi-wire cut declarations).
-  if (action.type === "dualCutDoubleDetector") {
-    return null;
-  }
-
   const hookResult = dispatchHooks(state.mission, {
     point: "validate",
     state,

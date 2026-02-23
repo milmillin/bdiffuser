@@ -15,6 +15,7 @@ import {
   getUncutTiles,
   isRevealRedsForced,
   isPlayersTurn,
+  validateDualCutWithHooks,
 } from "./validation.js";
 import { executeDualCut } from "./gameLogic.js";
 import { dispatchHooks } from "./missionHooks.js";
@@ -426,6 +427,17 @@ export function validateUseEquipment(
           );
         }
       }
+
+      const chosenTileIndex = chooseDetectorTarget(target, indices, payload.guessValue);
+      const missionHookError = validateDualCutWithHooks(
+        state,
+        actorId,
+        payload.targetPlayerId,
+        chosenTileIndex,
+        payload.guessValue,
+      );
+      if (missionHookError) return missionHookError;
+
       return null;
     }
     case "super_detector": {
@@ -467,6 +479,26 @@ export function validateUseEquipment(
             : "Target stand has no uncut wires",
         );
       }
+
+      const uncutIndices = target.hand
+        .map((tile, index) => ({ tile, index }))
+        .filter((entry) => {
+          if (entry.tile.cut) return false;
+          if (isMission13NonBlueTarget(state, entry.tile)) return false;
+          if (state.mission === 20 && isXMarkedWire(entry.tile)) return false;
+          return true;
+        })
+        .map((entry) => entry.index);
+      const chosenTileIndex = chooseDetectorTarget(target, uncutIndices, payload.guessValue);
+      const missionHookError = validateDualCutWithHooks(
+        state,
+        actorId,
+        payload.targetPlayerId,
+        chosenTileIndex,
+        payload.guessValue,
+      );
+      if (missionHookError) return missionHookError;
+
       return null;
     }
     case "x_or_y_ray": {
@@ -514,6 +546,22 @@ export function validateUseEquipment(
           "You must have both announced values in your hand",
         );
       }
+
+      const effectiveGuessValue =
+        tile.gameValue === guessValueA
+          ? guessValueA
+          : tile.gameValue === guessValueB
+            ? guessValueB
+            : guessValueA;
+      const missionHookError = validateDualCutWithHooks(
+        state,
+        actorId,
+        payload.targetPlayerId,
+        payload.targetTileIndex,
+        effectiveGuessValue,
+      );
+      if (missionHookError) return missionHookError;
+
       return null;
     }
   }

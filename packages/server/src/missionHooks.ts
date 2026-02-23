@@ -211,7 +211,14 @@ export interface ValidateHookContext {
   point: "validate";
   state: Readonly<GameState>;
   action: {
-    type: "dualCut" | "simultaneousCut" | "soloCut" | "revealReds" | "simultaneousRedCut" | "simultaneousFourCut";
+    type:
+      | "dualCut"
+      | "dualCutDoubleDetector"
+      | "simultaneousCut"
+      | "soloCut"
+      | "revealReds"
+      | "simultaneousRedCut"
+      | "simultaneousFourCut";
     actorId: string;
     [key: string]: unknown;
   };
@@ -765,10 +772,17 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
   },
 
   validate(rule: SequencePriorityRuleDef, ctx: ValidateHookContext): HookResult | void {
-    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+    if (
+      ctx.action.type !== "dualCut" &&
+      ctx.action.type !== "dualCutDoubleDetector" &&
+      ctx.action.type !== "soloCut"
+    ) {
+      return;
+    }
 
     const cutValue =
-      ctx.action.type === "dualCut"
+      ctx.action.type === "dualCut" ||
+      ctx.action.type === "dualCutDoubleDetector"
         ? ctx.action.guessValue
         : ctx.action.value;
     if (typeof cutValue !== "number") return;
