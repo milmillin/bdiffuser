@@ -339,7 +339,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 
 #### Mission Cards (66)
 
-- [ ] `mission_1`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
+- [x] `mission_1`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
 - [ ] `mission_2`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
 - [ ] `mission_3`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
 - [ ] `mission_4`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (old content: `TBD`; new content: `TBD`).
