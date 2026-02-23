@@ -343,7 +343,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_2`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (changed: card title `TRAINING, 1st day` → `TRAINING, Day 2`, lesson subtitle reworded, yellow wire setup phrasing tightened, yellow cut rules rewritten to match card text — board marker/pawn and yellow-info-token sentences removed).
 - [x] `mission_3`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: card title/lesson wording and setup + back-rule text aligned to the mission card).
 - [x] `mission_4`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title updated to mission-4 front text: "TRAINING: First Day in the Field (Time to put theory into practice!)`; wording already aligned to back rule text.`).
-- [ ] `mission_5`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_5`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title fixed to TRAINING: Second Day in the Field, subtitle added, and back rule aligned to 2-out-of-3 yellow constraints + reminder line.`).
 - [ ] `mission_6`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_7`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_8`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

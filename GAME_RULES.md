@@ -489,7 +489,7 @@ Normalization note:
 
 ### Mission 5
 
-- Card title: `TRAINING: 2nd day of training`
+- Card title: `TRAINING: Second Day in the Field` (`This is a minefield, not the yellow brick road....`)
 - Setup:
   - Additional special wires on card:
     - `1` red wire.
@@ -498,12 +498,16 @@ Normalization note:
     - Take 3 yellow tiles.
     - Place 3 `?` markers on matching yellow values.
     - Shuffle these 3 yellow tiles face down, add 2 to the game, set 1 aside unrevealed.
-  - 2-player override shown on card:
-    - `2` red wires.
-    - `2 out of 3` yellow wires.
+- 2-player override shown on card:
+  - `2` red wires.
+  - `2 out of 3` yellow wires.
   - Inherits mission 4 baseline of all `48` blue wires.
 - Mission rule (back):
-  - Emphasizes `2 of 3` yellow uncertainty (two yellow wires in play, values known only among three candidates).
+  - `2 out of 3` yellow rule:
+    - `2` yellow wires must be cut together.
+    - Those `2` yellow wires are one of `3` possible values.
+  - Reminder:
+    - As soon as you feel ready to pass the test with your team, move on to mission `#8`.
 
 ### Mission 6
 
