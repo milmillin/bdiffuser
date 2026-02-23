@@ -30,6 +30,7 @@ export function usePartySocket(
   options?: { id?: string; onIdReady?: (id: string) => void },
 ): UsePartySocketReturn {
   const socketRef = useRef<PartySocket | null>(null);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<ClientGameState | null>(null);
@@ -95,15 +96,21 @@ export function usePartySocket(
         case "error":
           setError(msg.message);
           setErrorCode(msg.code ?? null);
-          setTimeout(() => {
+          if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+          errorTimeoutRef.current = setTimeout(() => {
             setError(null);
             setErrorCode(null);
+            errorTimeoutRef.current = null;
           }, 5000);
           break;
       }
     });
 
     return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+        errorTimeoutRef.current = null;
+      }
       socket.close();
       socketRef.current = null;
     };

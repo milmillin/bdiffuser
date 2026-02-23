@@ -56,6 +56,9 @@ import {
 import { applyMission25ChatPenalty } from "./mission25.js";
 import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRules.js";
 
+/** Delay before purging storage for finished rooms (1 hour). */
+const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
+
 interface Env {
   [key: string]: unknown;
   BombBustersServer: DurableObjectNamespace;
@@ -87,9 +90,26 @@ export class BombBustersServer extends Server<Env> {
   async saveState() {
     try {
       await this.ctx.storage.put("room", this.room);
+      // Schedule storage cleanup when a game finishes for the first time
+      if (this.room.gameState?.phase === "finished" && !this.room.finishedAt) {
+        this.scheduleFinishedCleanup();
+      }
     } catch (e) {
       console.error("Failed to save room state to storage:", e);
     }
+  }
+
+  /** Record finish timestamp and schedule a cleanup alarm to purge storage. */
+  private scheduleFinishedCleanup() {
+    this.room.finishedAt = Date.now();
+    // setAlarm replaces any pending alarm (bot-turn / timer), so no separate deleteAlarm needed.
+    this.ctx.storage.setAlarm(Date.now() + FINISHED_ROOM_CLEANUP_DELAY_MS).catch((e) => {
+      console.error("Failed to schedule finished-room cleanup alarm:", e);
+    });
+    // Persist the finishedAt timestamp (fire-and-forget; saveState() already wrote the room once).
+    this.ctx.storage.put("room", this.room).catch((e) => {
+      console.error("Failed to persist finishedAt:", e);
+    });
   }
 
   private maybeRecordMissionFailure(previousResult: GameResult | null, state: GameState): void {
@@ -816,7 +836,7 @@ export class BombBustersServer extends Server<Env> {
   /** Schedule the next alarm: picks the earliest of bot turn and timer deadline. */
   scheduleNextAlarm() {
     const state = this.room.gameState;
-    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
+    if (!state || state.phase === "finished" || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
 
     let nextAlarmMs: number | null = null;
 
@@ -850,7 +870,25 @@ export class BombBustersServer extends Server<Env> {
 
   async onAlarm() {
     const state = this.room.gameState;
-    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
+
+    // Finished-room cleanup: purge storage so the DO can be evicted.
+    if (!state || state.phase === "finished") {
+      if (this.room.finishedAt) {
+        await this.ctx.storage.deleteAll();
+        this.room = {
+          gameState: null,
+          players: [],
+          mission: 1,
+          hostId: null,
+          botCount: 0,
+          botLastActionTurn: {},
+          failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
+        };
+      }
+      return;
+    }
+
+    if (state.phase !== "playing" && state.phase !== "setup_info_tokens") return;
 
     try {
       // Check timer expiry first (takes priority over bot turns)
