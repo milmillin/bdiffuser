@@ -1627,6 +1627,10 @@ Baseline assumption used in this section:
 - Instead of their action, a bomb disposal expert cuts a teammate's wire, saying `It is RED`.
 - If that wire is not RED, the bomb explodes.
 
+### Challenge 2
+
+- 4 bomb disposal experts consecutively cut EVEN numbers.
+
 ---
 
 ## Source

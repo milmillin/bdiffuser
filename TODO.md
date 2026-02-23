@@ -428,7 +428,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 
 #### Challenge Cards (10)
 - [x] `challenge_1`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: added dedicated Challenge Card 1 entry describing RED teammate-cut explosion rule).
-- [ ] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Added: 4 bomb disposal experts consecutively cut EVEN numbers.`).
 - [ ] `challenge_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
