@@ -352,6 +352,28 @@ export function executeDualCut(
       };
     }
 
+    // Mission 28: Captain Lazy fails any Dual Cut -> immediate explosion.
+    if (state.mission === 28 && actor.isCaptain) {
+      state.result = "loss_red_wire";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+      addLog(
+        state,
+        actorId,
+        "dualCut",
+        `Captain Lazy failed a Dual Cut on ${target.name}'s wire ${wireLabel(targetTileIndex)}. BOOM!`,
+      );
+      return {
+        type: "dualCutResult",
+        actorId,
+        targetId: targetPlayerId,
+        targetTileIndex,
+        guessValue,
+        success: false,
+        explosion: true,
+      };
+    }
+
     // Blue or yellow wire — wrong guess, wire stays uncut.
     if (!stabilizerActive) {
       state.board.detonatorPosition++;

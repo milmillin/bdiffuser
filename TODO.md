@@ -141,10 +141,14 @@ Dependency: blocked by Phase 0C.
 #### Validation Layer (mission-aware)
 - [ ] Implement support for simultaneous multi-wire cuts.
 - [ ] Implement remaining mission-specific forbidden targets/values for M2/M3 mechanics.
+  - [x] Mission 28 captain-lazy restrictions:
+    - [x] Captain cannot use personal Double Detector ability.
+    - [x] Captain cannot activate equipment cards.
 
 #### Game Logic Layer (mission-aware)
 - [ ] Implement mission-specific progression systems (Nano, oxygen, challenge rewards, bunker flow).
 - [ ] Implement remaining alternate failure outcomes for M2/M3 mechanics.
+  - [x] Mission 28: failed Dual Cut by captain now explodes immediately.
 
 #### Equipment Runtime Parity
 - [~] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).

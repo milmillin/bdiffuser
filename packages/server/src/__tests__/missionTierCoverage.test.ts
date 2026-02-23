@@ -223,6 +223,37 @@ describe("mission complexity tier representative coverage", () => {
     expect(allowed).toBeNull();
   });
 
+  it("captain-lazy tier (mission 28): captain failed dual cut explodes immediately", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t3", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 28,
+      players: [captain, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "captain", "target", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.explosion).toBe(true);
+    }
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
+    expect(state.board.detonatorPosition).toBe(detBefore);
+    expect(target.infoTokens).toHaveLength(0);
+    expect(target.hand[0].cut).toBe(false);
+  });
+
   it("restriction tier (mission 34): enforces allowed player counts", () => {
     const invalid = validateMissionPlayerCount(34, 2);
     expect(invalid).toContain("requires 3, 4, 5 players");

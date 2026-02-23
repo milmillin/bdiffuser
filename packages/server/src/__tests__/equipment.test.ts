@@ -630,6 +630,29 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error).toBeNull();
   });
 
+  it("mission 28: captain cannot activate equipment cards", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 28;
+    state.players[0].isCaptain = true;
+
+    expectLegalityCode(state, "actor", "rewinder", "MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 28: non-captain can use talkies-walkies targeting the captain", () => {
+    const state = buildStateForEquipmentMatrix("talkies_walkies");
+    state.mission = 28;
+    state.players[0].isCaptain = true; // captain
+    state.currentPlayerIndex = 1; // teammate's turn
+
+    const error = validateUseEquipment(state, "teammate", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "actor",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+    expect(error).toBeNull();
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {

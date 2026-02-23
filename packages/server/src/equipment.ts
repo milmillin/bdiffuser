@@ -155,6 +155,14 @@ export function validateUseEquipment(
     );
   }
 
+  // Mission 28: Captain Lazy cannot activate equipment cards.
+  if (state.mission === 28 && actor.isCaptain) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Captain Lazy cannot use equipment cards in mission 28",
+    );
+  }
+
   const card = state.board.equipment.find((eq) => eq.id === equipmentId);
   if (!card) {
     return legalityError("EQUIPMENT_NOT_FOUND", "Equipment card not found");
