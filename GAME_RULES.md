@@ -1048,6 +1048,174 @@ Note:
   - Mission win requires cutting/revealing all wires including Nano's wires.
   - Equipment `11` (Coffee Thermos) does not prevent Nano from moving.
 
+## 25. Mission Cards 44-51 (Processed from Images)
+
+Source images processed in this batch:
+
+- `mission_44(.png/_back.png)`
+- `mission_45(.png/_back.png)`
+- `mission_46(.png/_back.png)`
+- `mission_47(.png/_back.png)`
+- `mission_48(.png/_back.png)`
+- `mission_49(.png/_back.png)`
+- `mission_50(.png/_back.png)`
+- `mission_51(.png/_back.png)`
+
+### Mission 44
+
+- Card title: `Underwater pressure`
+- Setup:
+  - Red setup: `1 out of 3`.
+  - Place oxygen tokens in mission-card reserve area: `2` oxygen tokens per player.
+  - If Equipment `10` (X-ray/Y-ray) is drawn, replace it.
+  - Do not use the character equipped with X/Y Ray in this mission.
+- Mission rule (back):
+  - To perform a cut action, active player must first spend oxygen from reserve based on targeted wire value:
+    - Wires `1-4`: spend `1` token.
+    - Wires `5-8`: spend `2` tokens.
+    - Wires `9-12`: spend `3` tokens.
+  - After each round, Captain starts turn by returning all spent tokens to reserve.
+  - If player cannot act due to insufficient oxygen, they pass and detonator advances `1`.
+  - Communication restriction:
+    - No speaking.
+    - One gesture allowed: raise thumb up/down to indicate oxygen need.
+
+### Mission 45
+
+- Card title: `My thread, my battle!`
+- Setup:
+  - Add `2` red wires.
+  - Shuffle/stack 12 Number cards face down.
+  - Replace Equipment `10` (X/Y Ray) and `11` (Coffee Thermos) if drawn.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Turn order is no longer clockwise.
+  - Each turn:
+    - Captain draws one Number card.
+    - First player (including Captain) to call `Squeak!` must cut that value.
+  - Number card is discarded once all 4 matching wires are cut.
+  - When Number deck is empty, reshuffle discarded Number cards and continue.
+  - If a player calls `Squeak!` but does not have value (or gives extra indication), detonator advances `1`.
+  - If nobody volunteers, Captain designates a player; if designated player lacks value, they place info token of choice and detonator advances `1`.
+  - Player with only red wires may call `Squeak!` to perform `Reveal Your Red Wires`.
+
+### Mission 46
+
+- Card title: `Agent 007`
+- Setup:
+  - Add `4` yellow wires with required values: `5.1`, `6.1`, `7.1`, `8.1`.
+  - If Equipment `7` (Emergency Batteries) is drawn, replace it.
+  - 2-player override shown on card:
+    - Captain does not place info token during setup.
+- Mission rule (back):
+  - All `7`-value wires must be cut last.
+  - Special action:
+    - If player starts turn with only `7`s left, they must cut all four 7-wires simultaneously.
+    - Failure explodes bomb.
+  - If a 7-wire is designated earlier, resolve as normal failure (info token placement and detonator +1).
+
+### Mission 47
+
+- Card title: `L'addition SVP!`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Place all 12 Number cards face up on table.
+  - If Equipment `10` (X/Y Ray) is drawn, replace it.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - To cut a wire, player chooses two Number cards and computes target value by addition or subtraction.
+  - Chosen Number cards are discarded after use.
+  - Example on card:
+    - `3` and `9` cut `12` (`3+9`).
+    - `10` and `3` cut `7` (`10-3`).
+  - When no visible cards remain, reshuffle discard and lay out 12 cards again.
+  - If player cannot or does not want to play, they discard 2 cards of choice and detonator advances `1`.
+
+### Mission 48
+
+- Card title: `3-wire plan`
+- Setup:
+  - Add `2` red wires and `3` yellow wires.
+  - Do not mix yellow with others:
+    - Distribute yellow face down clockwise starting with Captain.
+    - With 2 players, Captain receives 2 yellows and places 1 on each stand.
+  - Then distribute remaining wires.
+  - 2-player override shown on card:
+    - `3` red wires, `3` yellow wires.
+- Mission rule (back):
+  - Yellow wires are no longer cut by normal yellow rules.
+  - Special action:
+    - Cut all 3 yellow wires simultaneously.
+    - With 4-5 players, action is allowed even if acting player has no yellow in hand.
+  - If special action fails:
+    - Put info token on each designated wire.
+    - Detonator advances only `1`.
+
+### Mission 49
+
+- Card title: `Bottles in the sea`
+- Setup:
+  - Add `2` red wires.
+  - Give oxygen tokens to each player as visible personal supply:
+    - 2 players: `7` each
+    - 3 players: `6` each
+    - 4 players: `5` each
+    - 5 players: `4` each
+  - If Equipment `10` (X/Y Ray) is drawn, replace it.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - To perform a cut action, player must first give a teammate oxygen tokens equal to the target wire value.
+  - Example on card: to attempt value `5`, give `5` tokens to one teammate (not necessarily the target's owner).
+  - If player cannot act due to insufficient oxygen, they pass and detonator advances `1`.
+  - Communication restriction:
+    - No speaking.
+    - One thumb up/down gesture allowed to indicate oxygen need.
+
+### Mission 50
+
+- Card title: `The Black Sea`
+- Setup:
+  - Add `2` red wires and `2` yellow wires.
+  - Return validation tokens and red/yellow board markers to box; they are not used in this mission.
+  - Before shuffling with blue wires, memorize which red/yellow values are in play.
+  - Instead of placing setup info token in front of stand, each player places it next to stand and points to relevant wire for teammates to memorize.
+  - 2-player override shown on card:
+    - `3` red wires, `4` yellow wires.
+- Mission rule (back):
+  - On failed cut, info token is placed next to affected stand (not in front of targeted wire).
+  - Players may not exchange the remembered information with each other.
+  - Equipment otherwise works normally.
+
+### Mission 51
+
+- Card title: `Unlucky day`
+- Setup:
+  - Add `1` red wire.
+  - Shuffle and stack 12 Number cards face down.
+  - Move detonator back one step at start.
+  - If Equipment `10` (X/Y Ray) is drawn, replace it.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `2` red wires.
+    - Captain does not place info token at setup.
+- Mission rule (back):
+  - Active player becomes `the boss` each turn:
+    - Reveal top Number card.
+    - Choose (without consultation) which player must perform cut on that value.
+    - Designated player says `Leader, yes, leader` and executes cut.
+    - Then leadership passes left to next player.
+  - If designated player lacks the value:
+    - They place info token of choice.
+    - Detonator advances `1`.
+  - Number card is discarded once all 4 matching wires are cut; when deck is empty, reshuffle Number cards.
+  - If player starts turn with only red wires remaining, they perform `Reveal Your Red Wires`.
+
 ---
 
 ## Source

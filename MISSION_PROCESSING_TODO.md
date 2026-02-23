@@ -56,14 +56,14 @@ and add per-mission setup/special rules into `GAME_RULES.md`.
 - [x] Mission 41: front `packages/client/public/images/mission_41.png`, back `packages/client/public/images/mission_41_back.png`
 - [x] Mission 42: front `packages/client/public/images/mission_42.png`, back `packages/client/public/images/mission_42_back.png`
 - [x] Mission 43: front `packages/client/public/images/mission_43.png`, back `packages/client/public/images/mission_43_back.png`
-- [ ] Mission 44: front `packages/client/public/images/mission_44.png`, back `packages/client/public/images/mission_44_back.png`
-- [ ] Mission 45: front `packages/client/public/images/mission_45.png`, back `packages/client/public/images/mission_45_back.png`
-- [ ] Mission 46: front `packages/client/public/images/mission_46.png`, back `packages/client/public/images/mission_46_back.png`
-- [ ] Mission 47: front `packages/client/public/images/mission_47.png`, back `packages/client/public/images/mission_47_back.png`
-- [ ] Mission 48: front `packages/client/public/images/mission_48.png`, back `packages/client/public/images/mission_48_back.png`
-- [ ] Mission 49: front `packages/client/public/images/mission_49.png`, back `packages/client/public/images/mission_49_back.png`
-- [ ] Mission 50: front `packages/client/public/images/mission_50.png`, back `packages/client/public/images/mission_50_back.png`
-- [ ] Mission 51: front `packages/client/public/images/mission_51.png`, back `packages/client/public/images/mission_51_back.png`
+- [x] Mission 44: front `packages/client/public/images/mission_44.png`, back `packages/client/public/images/mission_44_back.png`
+- [x] Mission 45: front `packages/client/public/images/mission_45.png`, back `packages/client/public/images/mission_45_back.png`
+- [x] Mission 46: front `packages/client/public/images/mission_46.png`, back `packages/client/public/images/mission_46_back.png`
+- [x] Mission 47: front `packages/client/public/images/mission_47.png`, back `packages/client/public/images/mission_47_back.png`
+- [x] Mission 48: front `packages/client/public/images/mission_48.png`, back `packages/client/public/images/mission_48_back.png`
+- [x] Mission 49: front `packages/client/public/images/mission_49.png`, back `packages/client/public/images/mission_49_back.png`
+- [x] Mission 50: front `packages/client/public/images/mission_50.png`, back `packages/client/public/images/mission_50_back.png`
+- [x] Mission 51: front `packages/client/public/images/mission_51.png`, back `packages/client/public/images/mission_51_back.png`
 - [ ] Mission 52: front `packages/client/public/images/mission_52.png`, back `packages/client/public/images/mission_52_back.png`
 - [ ] Mission 53: front `packages/client/public/images/mission_53.png`, back `packages/client/public/images/mission_53_back.png`
 - [ ] Mission 54: front `packages/client/public/images/mission_54.png`, back `packages/client/public/images/mission_54_back.png`
