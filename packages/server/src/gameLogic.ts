@@ -97,6 +97,30 @@ function checkEquipmentUnlock(state: GameState, value: number, threshold = 2): v
   }
 }
 
+/**
+ * Clears per-equipment secondary lock metadata once its requirement is met.
+ * This is used by mission-12 style "number card on equipment" locks.
+ */
+function clearSatisfiedSecondaryEquipmentLocks(state: GameState): void {
+  const countCutValue = (value: number): number => {
+    let count = 0;
+    for (const player of state.players) {
+      for (const tile of getAllTiles(player)) {
+        if (tile.cut && tile.gameValue === value) count++;
+      }
+    }
+    return count;
+  };
+
+  for (const card of state.board.equipment) {
+    if (card.secondaryLockValue == null) continue;
+    const requiredCuts = card.secondaryLockCutsRequired ?? 2;
+    if (countCutValue(card.secondaryLockValue) < requiredCuts) continue;
+    delete card.secondaryLockValue;
+    delete card.secondaryLockCutsRequired;
+  }
+}
+
 /** Check win: all stands empty */
 function checkWin(state: GameState): boolean {
   return state.players.every((p) => getUncutTiles(p).length === 0);
@@ -212,6 +236,7 @@ export function executeDualCut(
         checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
       }
     }
+    clearSatisfiedSecondaryEquipmentLocks(state);
     updateMarkerConfirmations(state);
 
     // Check detonator loss (hooks like blue_as_red may have advanced it)
@@ -254,7 +279,14 @@ export function executeDualCut(
     };
   } else {
     // Failure
-    if (targetTile.color === "red") {
+    const hiddenBlueAsRedValue =
+      state.mission === 11 ? getBlueAsRedValue(state) : null;
+    const isHiddenRedLikeTarget =
+      hiddenBlueAsRedValue != null &&
+      typeof targetTile.gameValue === "number" &&
+      targetTile.gameValue === hiddenBlueAsRedValue;
+
+    if (targetTile.color === "red" || isHiddenRedLikeTarget) {
       if (stabilizerActive) {
         addLog(
           state,
@@ -282,7 +314,14 @@ export function executeDualCut(
       updateMarkerConfirmations(state);
       state.result = "loss_red_wire";
       state.phase = "finished";
-      addLog(state, actorId, "dualCut", `cut a RED wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`);
+      addLog(
+        state,
+        actorId,
+        "dualCut",
+        targetTile.color === "red"
+          ? `cut a RED wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`
+          : `cut a RED-like hidden wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
+      );
 
       return {
         type: "dualCutResult",
@@ -345,6 +384,186 @@ export function executeDualCut(
   }
 }
 
+/** Execute a dual cut double detector action. Returns the action for animation. */
+export function executeDualCutDoubleDetector(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  tileIndex1: number,
+  tileIndex2: number,
+  guessValue: number,
+): GameAction {
+  const actor = state.players.find((p) => p.id === actorId)!;
+  const target = state.players.find((p) => p.id === targetPlayerId)!;
+  const tile1 = getTileByFlatIndex(target, tileIndex1)!;
+  const tile2 = getTileByFlatIndex(target, tileIndex2)!;
+
+  // Always mark ability as used
+  actor.characterUsed = true;
+
+  const match1 = tile1.gameValue === guessValue;
+  const match2 = tile2.gameValue === guessValue;
+
+  if (match1 && match2) {
+    // Both match: cut first designated tile + actor's matching tile
+    tile1.cut = true;
+
+    const actorUncut = getUncutTiles(actor);
+    const actorTile = actorUncut.find(
+      (t) => t.color === "blue" && t.gameValue === guessValue,
+    );
+    if (actorTile) actorTile.cut = true;
+
+    if (typeof guessValue === "number") {
+      checkValidation(state, guessValue);
+      checkEquipmentUnlock(state, guessValue);
+    }
+    clearSatisfiedSecondaryEquipmentLocks(state);
+    updateMarkerConfirmations(state);
+
+    addLog(
+      state,
+      actorId,
+      "dualCutDoubleDetector",
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both match! Wire ${wireLabel(tileIndex1)} cut.`,
+    );
+
+    if (checkWin(state)) {
+      state.result = "win";
+      state.phase = "finished";
+      return { type: "gameOver", result: "win" };
+    }
+
+    advanceTurn(state);
+
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "both_match",
+      cutTileIndex: tileIndex1,
+    };
+  }
+
+  if (match1 || match2) {
+    // One match: cut the matching tile + actor's matching tile
+    const matchingTileIndex = match1 ? tileIndex1 : tileIndex2;
+    const matchingTile = match1 ? tile1 : tile2;
+    matchingTile.cut = true;
+
+    const actorUncut = getUncutTiles(actor);
+    const actorTile = actorUncut.find(
+      (t) => t.color === "blue" && t.gameValue === guessValue,
+    );
+    if (actorTile) actorTile.cut = true;
+
+    if (typeof guessValue === "number") {
+      checkValidation(state, guessValue);
+      checkEquipmentUnlock(state, guessValue);
+    }
+    clearSatisfiedSecondaryEquipmentLocks(state);
+    updateMarkerConfirmations(state);
+
+    addLog(
+      state,
+      actorId,
+      "dualCutDoubleDetector",
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(matchingTileIndex)} matches and is cut.`,
+    );
+
+    if (checkWin(state)) {
+      state.result = "win";
+      state.phase = "finished";
+      return { type: "gameOver", result: "win" };
+    }
+
+    advanceTurn(state);
+
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "one_match",
+      cutTileIndex: matchingTileIndex,
+    };
+  }
+
+  // None match: detonator +1, place info token on one of the two wires
+  state.board.detonatorPosition++;
+
+  // Determine which wire gets the info token:
+  // If exactly one is red, place on the non-red wire per rule text
+  const tile1IsRed = tile1.color === "red";
+  const tile2IsRed = tile2.color === "red";
+  let infoTokenTileIndex: number;
+  let infoTokenTile: WireTile;
+  if (tile1IsRed && !tile2IsRed) {
+    infoTokenTileIndex = tileIndex2;
+    infoTokenTile = tile2;
+  } else if (!tile1IsRed && tile2IsRed) {
+    infoTokenTileIndex = tileIndex1;
+    infoTokenTile = tile1;
+  } else {
+    // Both non-red or both red: place on the first wire
+    infoTokenTileIndex = tileIndex1;
+    infoTokenTile = tile1;
+  }
+
+  target.infoTokens.push({
+    value:
+      typeof infoTokenTile.gameValue === "number"
+        ? infoTokenTile.gameValue
+        : 0,
+    position: infoTokenTileIndex,
+    isYellow: infoTokenTile.color === "yellow",
+  });
+
+  updateMarkerConfirmations(state);
+
+  addLog(
+    state,
+    actorId,
+    "dualCutDoubleDetector",
+    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — no match. Detonator +1.`,
+  );
+
+  if (checkDetonatorLoss(state)) {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "none_match",
+      detonatorAdvanced: true,
+      infoTokenPlacedIndex: infoTokenTileIndex,
+    };
+  }
+
+  advanceTurn(state);
+
+  return {
+    type: "dualCutDoubleDetectorResult",
+    actorId,
+    targetId: targetPlayerId,
+    tileIndex1,
+    tileIndex2,
+    guessValue,
+    outcome: "none_match",
+    detonatorAdvanced: true,
+    infoTokenPlacedIndex: infoTokenTileIndex,
+  };
+}
+
 /** Execute a solo cut action */
 export function executeSoloCut(
   state: GameState,
@@ -394,6 +613,7 @@ export function executeSoloCut(
       checkEquipmentUnlock(state, value, resolveResult.equipmentUnlockThreshold ?? 2);
     }
   }
+  clearSatisfiedSecondaryEquipmentLocks(state);
   updateMarkerConfirmations(state);
 
   addLog(state, actorId, "soloCut", `solo cut ${matchingTiles.length} wire(s) of value ${value}`);

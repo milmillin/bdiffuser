@@ -60,6 +60,7 @@ export function ActionPanel({
 
   // Check if reveal reds is available
   const canRevealReds = checkCanRevealReds(gameState, playerId);
+  const forceRevealReds = isMyTurn && canRevealReds;
 
   const availableEquipment = gameState.board.equipment.filter(
     (
@@ -71,6 +72,16 @@ export function ActionPanel({
       equipment.unlocked &&
       isBaseEquipmentId(equipment.id),
   );
+
+  const getCutCountForValue = (value: number): number => {
+    let count = 0;
+    for (const player of gameState.players) {
+      for (const tile of player.hand) {
+        if (tile.cut && tile.gameValue === value) count++;
+      }
+    }
+    return count;
+  };
 
   const [selectedSoloValue, setSelectedSoloValue] = useState<
     number | "YELLOW" | null
@@ -110,8 +121,14 @@ export function ActionPanel({
         {isMyTurn ? "Your Turn - Choose an Action" : "Equipment Actions"}
       </div>
 
+      {forceRevealReds && (
+        <p className="text-sm text-amber-300">
+          You must reveal your remaining red wires before taking other actions.
+        </p>
+      )}
+
       {/* Dual Cut */}
-      {isMyTurn && (
+      {isMyTurn && !forceRevealReds && (
         <div className="space-y-2">
           <div className="text-xs font-bold text-gray-400 uppercase">
             Dual Cut
@@ -156,7 +173,7 @@ export function ActionPanel({
       )}
 
       {/* Solo Cut */}
-      {isMyTurn && soloValues.length > 0 && (
+      {isMyTurn && !forceRevealReds && soloValues.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-bold text-gray-400 uppercase">
             Solo Cut
@@ -217,10 +234,21 @@ export function ActionPanel({
             {availableEquipment.map((equipment) => {
               const def = byId.get(equipment.id);
               const timing = def?.useTiming ?? "anytime";
-              const canUse =
+              const timingAllowsUse =
                 timing === "anytime" ||
                 (timing === "in_turn" && isMyTurn) ||
                 (timing === "start_of_turn" && isMyTurn);
+              const secondaryValue = equipment.secondaryLockValue;
+              const secondaryRequired = equipment.secondaryLockCutsRequired ?? 2;
+              const secondaryProgress =
+                secondaryValue !== undefined
+                  ? getCutCountForValue(secondaryValue)
+                  : secondaryRequired;
+              const secondaryLocked =
+                secondaryValue !== undefined &&
+                secondaryProgress < secondaryRequired;
+              const blockedByForcedReveal = forceRevealReds && isMyTurn;
+              const canUse = timingAllowsUse && !secondaryLocked && !blockedByForcedReveal;
 
               return (
                 <button
@@ -230,15 +258,22 @@ export function ActionPanel({
                   className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
                     canUse
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      : secondaryLocked
+                        ? "bg-amber-900/60 text-amber-200 cursor-not-allowed"
+                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
                   }`}
                   title={
-                    canUse
-                      ? `${equipment.name} (${timing})`
-                      : `${equipment.name} is only usable ${timing.replaceAll("_", " ")}`
+                    blockedByForcedReveal
+                      ? "Reveal your remaining red wires first"
+                      : secondaryLocked
+                      ? `${equipment.name} locked: ${secondaryValue} ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired}`
+                      : canUse
+                        ? `${equipment.name} (${timing})`
+                        : `${equipment.name} is only usable ${timing.replaceAll("_", " ")}`
                   }
                 >
                   Use {equipment.name}
+                  {secondaryLocked ? ` (${secondaryValue}: ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired})` : ""}
                 </button>
               );
             })}

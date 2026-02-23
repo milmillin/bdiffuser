@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ClientGameState, ClientMessage, ChatMessage, VisibleTile } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS } from "@bomb-busters/shared";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
+import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
@@ -56,6 +57,25 @@ export function GameBoard({
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
+
+  // Character card overlay state
+  const [viewingCharacter, setViewingCharacter] = useState<{
+    playerId: string;
+    characterId: CharacterId;
+  } | null>(null);
+
+  // Double Detector selection mode state
+  const [doubleDetectorMode, setDoubleDetectorMode] = useState(false);
+  const [ddSelectedTiles, setDdSelectedTiles] = useState<number[]>([]);
+  const [ddTargetPlayerId, setDdTargetPlayerId] = useState<string | null>(null);
+  const [ddGuessTile, setDdGuessTile] = useState<number | null>(null);
+
+  const cancelDoubleDetector = useCallback(() => {
+    setDoubleDetectorMode(false);
+    setDdSelectedTiles([]);
+    setDdTargetPlayerId(null);
+    setDdGuessTile(null);
+  }, []);
 
   const isSetup = gameState.phase === "setup_info_tokens";
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
@@ -124,15 +144,40 @@ export function GameBoard({
                   player={opp}
                   isOpponent={true}
                   isCurrentTurn={opp.id === currentPlayer?.id}
-                  onTileClick={
-                    !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction
-                      ? (tileIndex) =>
-                          setSelectedTarget({ playerId: opp.id, tileIndex })
+                  onCharacterClick={
+                    opp.character
+                      ? () => setViewingCharacter({ playerId: opp.id, characterId: opp.character! })
                       : undefined
                   }
+                  onTileClick={
+                    doubleDetectorMode && isMyTurn && gameState.phase === "playing"
+                      ? (tileIndex) => {
+                          // In DD mode: select up to 2 tiles on the same opponent
+                          if (ddTargetPlayerId && ddTargetPlayerId !== opp.id) return;
+                          setDdTargetPlayerId(opp.id);
+                          setDdSelectedTiles((prev) => {
+                            if (prev.includes(tileIndex)) {
+                              return prev.filter((i) => i !== tileIndex);
+                            }
+                            if (prev.length >= 2) return prev;
+                            return [...prev, tileIndex];
+                          });
+                        }
+                      : !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction
+                        ? (tileIndex) =>
+                            setSelectedTarget({ playerId: opp.id, tileIndex })
+                        : undefined
+                  }
                   selectedTileIndex={
-                    selectedTarget?.playerId === opp.id
-                      ? selectedTarget.tileIndex
+                    doubleDetectorMode && ddTargetPlayerId === opp.id
+                      ? undefined
+                      : selectedTarget?.playerId === opp.id
+                        ? selectedTarget.tileIndex
+                        : undefined
+                  }
+                  selectedTileIndices={
+                    doubleDetectorMode && ddTargetPlayerId === opp.id
+                      ? ddSelectedTiles
                       : undefined
                   }
                 />
@@ -155,30 +200,45 @@ export function GameBoard({
                   player={me}
                   isOpponent={false}
                   isCurrentTurn={me.id === currentPlayer?.id}
+                  onCharacterClick={
+                    me.character
+                      ? () => setViewingCharacter({ playerId: me.id, characterId: me.character! })
+                      : undefined
+                  }
                   onTileClick={
                     isSetup && isMyTurn
                       ? (tileIndex) => setSelectedInfoTile(tileIndex)
-                      : selectedTarget && isMyTurn && gameState.phase === "playing"
+                      : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
                         ? (tileIndex) => {
                             const tile = me.hand[tileIndex];
-                            if (!tile || tile.cut || tile.color === "red") return;
-                            setSelectedGuessTile(tileIndex);
+                            if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") return;
+                            setDdGuessTile(tileIndex);
                           }
-                        : undefined
+                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                          ? (tileIndex) => {
+                              const tile = me.hand[tileIndex];
+                              if (!tile || tile.cut || tile.color === "red") return;
+                              setSelectedGuessTile(tileIndex);
+                            }
+                          : undefined
                   }
                   selectedTileIndex={
                     isSetup
                       ? (selectedInfoTile ?? undefined)
-                      : selectedTarget && isMyTurn && gameState.phase === "playing"
-                        ? (selectedGuessTile ?? undefined)
-                        : undefined
+                      : doubleDetectorMode && isMyTurn
+                        ? (ddGuessTile ?? undefined)
+                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                          ? (selectedGuessTile ?? undefined)
+                          : undefined
                   }
                   tileSelectableFilter={
                     isSetup && isMyTurn
                       ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
-                      : selectedTarget && isMyTurn && gameState.phase === "playing"
-                        ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
-                        : undefined
+                      : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
+                        ? (tile: VisibleTile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
+                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                          : undefined
                   }
                 />
               )}
@@ -245,8 +305,62 @@ export function GameBoard({
                 </div>
               )}
 
+              {/* Double Detector mode panel */}
+              {doubleDetectorMode && isMyTurn && me && (
+                <div
+                  className="rounded-lg border border-yellow-600/60 bg-yellow-900/20 px-3 py-2 text-sm space-y-2"
+                  data-testid="dd-mode-panel"
+                >
+                  <div className="font-bold text-yellow-400 uppercase tracking-wide text-xs">
+                    Double Detector Mode
+                  </div>
+                  <div className="text-xs text-gray-300">
+                    {ddSelectedTiles.length < 2 ? (
+                      <>Select 2 tiles on one opponent's stand ({ddSelectedTiles.length}/2 selected{ddTargetPlayerId ? ` on ${opponents.find((o) => o.id === ddTargetPlayerId)?.name}` : ""}).</>
+                    ) : ddGuessTile == null ? (
+                      <>Now select one of your blue tiles as the guess value.</>
+                    ) : (
+                      <>
+                        Target: {opponents.find((o) => o.id === ddTargetPlayerId)?.name} wires {wireLabel(ddSelectedTiles[0])} & {wireLabel(ddSelectedTiles[1])}.
+                        Guess: {me.hand[ddGuessTile]?.gameValue}.
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={cancelDoubleDetector}
+                      className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    {ddSelectedTiles.length === 2 && ddGuessTile != null && ddTargetPlayerId && (
+                      <button
+                        type="button"
+                        data-testid="dd-confirm"
+                        onClick={() => {
+                          const guessValue = me.hand[ddGuessTile]?.gameValue;
+                          if (typeof guessValue !== "number" || !ddTargetPlayerId) return;
+                          send({
+                            type: "dualCutDoubleDetector",
+                            targetPlayerId: ddTargetPlayerId,
+                            tileIndex1: ddSelectedTiles[0],
+                            tileIndex2: ddSelectedTiles[1],
+                            guessValue,
+                          });
+                          cancelDoubleDetector();
+                        }}
+                        className="px-3 py-1 rounded bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold transition-colors"
+                      >
+                        Confirm Double Detector
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Playing phase: actions (including anytime equipment off-turn) */}
-              {showActionPanel && me && (
+              {showActionPanel && !doubleDetectorMode && me && (
                 <ActionPanel
                   gameState={gameState}
                   send={send}
@@ -314,6 +428,34 @@ export function GameBoard({
         isOpen={isRulesPopupOpen}
         onClose={() => setIsRulesPopupOpen(false)}
       />
+
+      {viewingCharacter && (
+        <CharacterCardOverlay
+          characterId={viewingCharacter.characterId}
+          characterUsed={
+            gameState.players.find((p) => p.id === viewingCharacter.playerId)
+              ?.characterUsed ?? false
+          }
+          isOwnCharacter={viewingCharacter.playerId === playerId}
+          isMyTurn={isMyTurn}
+          onClose={() => setViewingCharacter(null)}
+          onUseAbility={
+            viewingCharacter.playerId === playerId &&
+            viewingCharacter.characterId === "double_detector"
+              ? () => {
+                  setViewingCharacter(null);
+                  setDoubleDetectorMode(true);
+                  setDdSelectedTiles([]);
+                  setDdTargetPlayerId(null);
+                  setDdGuessTile(null);
+                  // Clear any normal dual cut selection
+                  setSelectedTarget(null);
+                  setSelectedGuessTile(null);
+                }
+              : undefined
+          }
+        />
+      )}
     </>
   );
 }

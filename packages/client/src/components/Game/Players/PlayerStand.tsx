@@ -7,14 +7,19 @@ export function PlayerStand({
   isCurrentTurn,
   onTileClick,
   selectedTileIndex,
+  selectedTileIndices,
   tileSelectableFilter,
+  onCharacterClick,
 }: {
   player: ClientPlayer;
   isOpponent: boolean;
   isCurrentTurn: boolean;
   onTileClick?: (flatIndex: number) => void;
   selectedTileIndex?: number;
+  /** Multi-select support (e.g. Double Detector mode) */
+  selectedTileIndices?: number[];
   tileSelectableFilter?: (tile: VisibleTile) => boolean;
+  onCharacterClick?: () => void;
 }) {
   return (
     <div
@@ -28,11 +33,18 @@ export function PlayerStand({
       {/* Player header */}
       <div className="flex items-center gap-2 mb-2">
         {player.character && CHARACTER_IMAGES[player.character] && (
-          <img
-            src={`/images/${CHARACTER_IMAGES[player.character]}`}
-            alt={player.character}
-            className="w-8 h-8 rounded object-cover"
-          />
+          <button
+            type="button"
+            onClick={onCharacterClick}
+            className="rounded hover:ring-2 hover:ring-yellow-400 transition-all cursor-pointer flex-shrink-0"
+            data-testid={`character-thumb-${player.id}`}
+          >
+            <img
+              src={`/images/${CHARACTER_IMAGES[player.character]}`}
+              alt={player.character}
+              className="w-8 h-8 rounded object-cover"
+            />
+          </button>
         )}
         <span className="font-bold text-sm">
           {player.name}
@@ -102,7 +114,7 @@ export function PlayerStand({
                 isOpponent={isOpponent}
                 isSmall={isOpponent}
                 isSelectable={tileSelectableFilter ? tileSelectableFilter(tile) : !!onTileClick && !tile.cut}
-                isSelected={selectedTileIndex === idx}
+                isSelected={selectedTileIndex === idx || (selectedTileIndices?.includes(idx) ?? false)}
                 testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}
               />

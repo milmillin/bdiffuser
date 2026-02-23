@@ -1,0 +1,5399 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resolved mission setup snapshots > mission 1 1`] = `
+{
+  "missionId": 1,
+  "name": "Training, Day 1",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 6,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 6,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 6,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 6,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 2 1`] = `
+{
+  "missionId": 2,
+  "name": "Training, Day 2",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 8,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "candidates": [
+          1.1,
+          2.1,
+          3.1,
+          4.1,
+          5.1,
+          6.1,
+          7.1,
+        ],
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 8,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "candidates": [
+          1.1,
+          2.1,
+          3.1,
+          4.1,
+          5.1,
+          6.1,
+          7.1,
+        ],
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 8,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "candidates": [
+          1.1,
+          2.1,
+          3.1,
+          4.1,
+          5.1,
+          6.1,
+          7.1,
+        ],
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 8,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "candidates": [
+          1.1,
+          2.1,
+          3.1,
+          4.1,
+          5.1,
+          6.1,
+          7.1,
+        ],
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 3 1`] = `
+{
+  "missionId": 3,
+  "name": "Training, Day 3",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 10,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "candidates": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+        ],
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 10,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "candidates": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+        ],
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 10,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "candidates": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+        ],
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 10,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "candidates": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+        ],
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 4 1`] = `
+{
+  "missionId": 4,
+  "name": "A Sense of Priorities",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 5 1`] = `
+{
+  "missionId": 5,
+  "name": "First Day in the Field",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 6 1`] = `
+{
+  "missionId": 6,
+  "name": "Under Pressure",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 7 1`] = `
+{
+  "missionId": 7,
+  "name": "Completing the Training",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 8 1`] = `
+{
+  "missionId": 8,
+  "name": "Final Exam",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 9 1`] = `
+{
+  "missionId": 9,
+  "name": "The Sense of Priorities",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 10 1`] = `
+{
+  "missionId": 10,
+  "name": "A Bad Quarter of an Hour",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 11 1`] = `
+{
+  "missionId": 11,
+  "name": "Blue on Red, Nothing Moves",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 12 1`] = `
+{
+  "missionId": 12,
+  "name": "Equipment out of Reach",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 13 1`] = `
+{
+  "missionId": 13,
+  "name": "Red Alert!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 14 1`] = `
+{
+  "missionId": 14,
+  "name": "High Risk Mine Clearance",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 15 1`] = `
+{
+  "missionId": 15,
+  "name": "Mission NOVOSIBIRSK CK",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 16 1`] = `
+{
+  "missionId": 16,
+  "name": "A Story of Common Sense",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 17 1`] = `
+{
+  "missionId": 17,
+  "name": "Sergio El Mytho",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 18 1`] = `
+{
+  "missionId": 18,
+  "name": "BAT-helping hand",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "fixedEquipmentIds": [
+          "general_radar",
+        ],
+        "mode": "fixed_pool",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "fixedEquipmentIds": [
+          "general_radar",
+        ],
+        "mode": "fixed_pool",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "fixedEquipmentIds": [
+          "general_radar",
+        ],
+        "mode": "fixed_pool",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "fixedEquipmentIds": [
+          "general_radar",
+        ],
+        "mode": "fixed_pool",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 19 1`] = `
+{
+  "missionId": 19,
+  "name": "In the Villain's Lair...",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 20 1`] = `
+{
+  "missionId": 20,
+  "name": "The Big Bad Wolf",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 21 1`] = `
+{
+  "missionId": 21,
+  "name": "Kouign Amann Mortal",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 22 1`] = `
+{
+  "missionId": 22,
+  "name": "None of That in My House!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 23 1`] = `
+{
+  "missionId": 23,
+  "name": "Mission in Sevenans",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 24 1`] = `
+{
+  "missionId": 24,
+  "name": "The Count Is Good!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 25 1`] = `
+{
+  "missionId": 25,
+  "name": "It's to Hear You Better...",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 26 1`] = `
+{
+  "missionId": 26,
+  "name": "When We Talk About the Wolf...",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 27 1`] = `
+{
+  "missionId": 27,
+  "name": "Dough Threads",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 28 1`] = `
+{
+  "missionId": 28,
+  "name": "Captain Lazy",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 29 1`] = `
+{
+  "missionId": 29,
+  "name": "Number Error",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 30 1`] = `
+{
+  "missionId": 30,
+  "name": "A Very Speedy Mission!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 2,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 31 1`] = `
+{
+  "missionId": 31,
+  "name": "Everyone Has Their Own Constraints",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 32 1`] = `
+{
+  "missionId": 32,
+  "name": "Prank Attack!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 33 1`] = `
+{
+  "missionId": 33,
+  "name": "Ce qui se passe a Vegas...",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 34 1`] = `
+{
+  "missionId": 34,
+  "name": "The Weak Link",
+  "setupsByPlayerCount": {
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 35 1`] = `
+{
+  "missionId": 35,
+  "name": "No Ties, Single Thread",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          2,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 36 1`] = `
+{
+  "missionId": 36,
+  "name": "Panic in the Tropics",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 37 1`] = `
+{
+  "missionId": 37,
+  "name": "The Boss of the Farce!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 38 1`] = `
+{
+  "missionId": 38,
+  "name": "One Thread Upside Down...",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 39 1`] = `
+{
+  "missionId": 39,
+  "name": "The Doctor's 4 Sons Walk",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "none",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 40 1`] = `
+{
+  "missionId": 40,
+  "name": "Christmas Trap",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 41 1`] = `
+{
+  "missionId": 41,
+  "name": "Bomba latina",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "double_fond",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "double_fond",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 3,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "double_fond",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "double_fond",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 42 1`] = `
+{
+  "missionId": 42,
+  "name": "What Is This Circus?",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 43 1`] = `
+{
+  "missionId": 43,
+  "name": "Nano and Robot",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 44 1`] = `
+{
+  "missionId": 44,
+  "name": "Underwater Pressure",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 1,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 45 1`] = `
+{
+  "missionId": 45,
+  "name": "My Thread, My Battle!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+          11,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 46 1`] = `
+{
+  "missionId": 46,
+  "name": "Agent 007",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "fixed",
+        "values": [
+          5.1,
+          6.1,
+          7.1,
+          8.1,
+        ],
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "fixed",
+        "values": [
+          5.1,
+          6.1,
+          7.1,
+          8.1,
+        ],
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "fixed",
+        "values": [
+          5.1,
+          6.1,
+          7.1,
+          8.1,
+        ],
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "none",
+      },
+      "yellow": {
+        "kind": "fixed",
+        "values": [
+          5.1,
+          6.1,
+          7.1,
+          8.1,
+        ],
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 47 1`] = `
+{
+  "missionId": 47,
+  "name": "L'addition SVP!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 48 1`] = `
+{
+  "missionId": 48,
+  "name": "3-wire Plan",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 3,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 3,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 3,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 3,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 49 1`] = `
+{
+  "missionId": 49,
+  "name": "Bottles in the Sea",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 50 1`] = `
+{
+  "missionId": 50,
+  "name": "The Black Sea",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 51 1`] = `
+{
+  "missionId": 51,
+  "name": "Unlucky Day",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 52 1`] = `
+{
+  "missionId": 52,
+  "name": "All Traitors!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          1,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 4,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          1,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          1,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          1,
+          12,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 53 1`] = `
+{
+  "missionId": 53,
+  "name": "Nano Is Back",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          6,
+          9,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          6,
+          9,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          6,
+          9,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          6,
+          9,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 54 1`] = `
+{
+  "missionId": 54,
+  "name": "The Attack of Red Rabbit",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "fixed",
+        "values": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+          10.5,
+          11.5,
+        ],
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "fixed",
+        "values": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+          10.5,
+          11.5,
+        ],
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "fixed",
+        "values": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+          10.5,
+          11.5,
+        ],
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "kind": "fixed",
+        "values": [
+          1.5,
+          2.5,
+          3.5,
+          4.5,
+          5.5,
+          6.5,
+          7.5,
+          8.5,
+          9.5,
+          10.5,
+          11.5,
+        ],
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 55 1`] = `
+{
+  "missionId": 55,
+  "name": "Doctor No's Challenge",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 56 1`] = `
+{
+  "missionId": 56,
+  "name": "The Rebel Sons",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 57 1`] = `
+{
+  "missionId": 57,
+  "name": "Mission Impossible",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "disintegrator",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "disintegrator",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "disintegrator",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedEquipmentIds": [
+          "disintegrator",
+        ],
+        "includeCampaignEquipment": true,
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 58 1`] = `
+{
+  "missionId": 58,
+  "name": "System D",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          4,
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          4,
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          4,
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          4,
+          7,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 59 1`] = `
+{
+  "missionId": 59,
+  "name": "Nano to the Rescue",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 60 1`] = `
+{
+  "missionId": 60,
+  "name": "The Return of Doctor No",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "draw": 3,
+        "keep": 2,
+        "kind": "out_of",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 61 1`] = `
+{
+  "missionId": 61,
+  "name": "Quiet, We're Filming!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 62 1`] = `
+{
+  "missionId": 62,
+  "name": "Armageddon Dumpling",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 63 1`] = `
+{
+  "missionId": 63,
+  "name": "Titanic II",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 64 1`] = `
+{
+  "missionId": 64,
+  "name": "The Return of the Rebel Sons!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 1,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 65 1`] = `
+{
+  "missionId": 65,
+  "name": "Good Thread and Not Good Thread",
+  "setupsByPlayerCount": {
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "excludedUnlockValues": [
+          10,
+        ],
+        "mode": "default",
+      },
+      "red": {
+        "count": 3,
+        "kind": "exact",
+      },
+      "yellow": {
+        "kind": "none",
+      },
+    },
+  },
+}
+`;
+
+exports[`resolved mission setup snapshots > mission 66 1`] = `
+{
+  "missionId": 66,
+  "name": "The Final Boss!",
+  "setupsByPlayerCount": {
+    "2": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "3": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "4": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+    "5": {
+      "blue": {
+        "maxValue": 12,
+        "minValue": 1,
+      },
+      "equipment": {
+        "mode": "default",
+      },
+      "red": {
+        "count": 2,
+        "kind": "exact",
+      },
+      "yellow": {
+        "count": 2,
+        "kind": "exact",
+      },
+    },
+  },
+}
+`;

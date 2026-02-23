@@ -62,6 +62,8 @@ export interface TimerRuleDef {
   kind: "timer";
   /** Timer duration in seconds. */
   durationSeconds: number;
+  /** Optional mission-specific timer overrides by player count. */
+  durationSecondsByPlayerCount?: Partial<Record<PlayerCount, number>>;
   /** Whether an audio cue accompanies the timer. */
   audioPrompt: boolean;
 }
@@ -97,6 +99,10 @@ export interface EquipmentDoubleLockRuleDef {
   kind: "equipment_double_lock";
   /** Number of matching wire cuts required to unlock equipment. */
   requiredCuts: 2;
+  /** Optional secondary lock source (mission 12: number cards on equipment). */
+  secondaryLockSource?: "number_card";
+  /** Required cuts for the secondary lock value. */
+  secondaryRequiredCuts?: number;
 }
 
 /**
@@ -376,7 +382,12 @@ setMission(10, {
   },
   behaviorHooks: ["mission_10_timer_and_dynamic_turn_order"],
   hookRules: [
-    { kind: "timer", durationSeconds: 900, audioPrompt: true },
+    {
+      kind: "timer",
+      durationSeconds: 900,
+      durationSecondsByPlayerCount: { 2: 720 },
+      audioPrompt: true,
+    },
     { kind: "dynamic_turn_order", selector: "captain" },
   ],
 });
@@ -415,7 +426,12 @@ setMission(12, {
   },
   behaviorHooks: ["mission_12_equipment_double_lock"],
   hookRules: [
-    { kind: "equipment_double_lock", requiredCuts: 2 },
+    {
+      kind: "equipment_double_lock",
+      requiredCuts: 2,
+      secondaryLockSource: "number_card",
+      secondaryRequiredCuts: 2,
+    },
   ],
 });
 

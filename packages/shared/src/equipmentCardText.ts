@@ -1,0 +1,152 @@
+import type { EquipmentDef } from "./imageMap.js";
+
+export interface EquipmentCardText {
+  timing: string;
+  effect: string;
+  reminders: string[];
+}
+
+const TIMING_FALLBACK: Record<EquipmentDef["useTiming"], string> = {
+  anytime: "Can be used at any time.",
+  in_turn: "To be used in turn.",
+  start_of_turn: "To be used at the start of your turn.",
+  immediate: "Immediate effect.",
+};
+
+/**
+ * Rule text source: GAME_RULES.md section 13.4 and 13.5.
+ * Keep wording aligned with the rulebook while we use generated text cards.
+ */
+export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
+  label_neq: {
+    timing: "Can be used at any time.",
+    effect:
+      "Place the != token in front of 2 adjacent wires of different values.",
+    reminders: [
+      "One of the 2 wires may already be cut.",
+      "Two yellow wires or two red wires are considered identical for this check.",
+    ],
+  },
+  talkies_walkies: {
+    timing: "Can be used at any time.",
+    effect:
+      "Swap 2 wires: you place one of your uncut wires face down in front of a teammate, then they do the same.",
+    reminders: [
+      "Any uncut wire color can be exchanged, including yellow and red.",
+      "Everyone sees where these wires are taken and replaced.",
+    ],
+  },
+  triple_detector: {
+    timing: "To be used in turn.",
+    effect:
+      "During a Duo Cut action, announce one value (not yellow) and designate 3 wires from a teammate stand.",
+    reminders: ["Works like Double Detector 2000, but with 3 wires."],
+  },
+  post_it: {
+    timing: "Can be used at any time.",
+    effect: "Place an Info token in front of one of your blue wires.",
+    reminders: [],
+  },
+  super_detector: {
+    timing: "To be used in turn.",
+    effect:
+      "During a Duo Cut action, announce one value (not yellow) and designate an entire teammate stand.",
+    reminders: ["Works like Double Detector 2000, but with all wires in that stand."],
+  },
+  rewinder: {
+    timing: "Can be used at any time.",
+    effect: "Move the detonator back one notch.",
+    reminders: [],
+  },
+  emergency_batteries: {
+    timing: "Can be used at any time.",
+    effect:
+      "Turn one or two used Character cards face up so their personal equipment is available again this mission.",
+    reminders: [],
+  },
+  general_radar: {
+    timing: "Can be used at any time.",
+    effect:
+      "Announce a number (1-12). All players answer yes if they have at least one uncut blue wire of that value.",
+    reminders: ["If a player has 2 stands, they answer for each stand."],
+  },
+  stabilizer: {
+    timing: "To be used at the start of your turn.",
+    effect:
+      "Use before a Duo Cut. If that Duo Cut fails this turn, the detonator does not advance and the bomb does not explode.",
+    reminders: [
+      "If a wrong wire was designated, the targeted player still places the usual Info token.",
+    ],
+  },
+  x_or_y_ray: {
+    timing: "To be used in turn.",
+    effect:
+      "During a Duo Cut action, designate one wire and announce 2 possible values (yellow included).",
+    reminders: ["You must have both announced values in your own hand."],
+  },
+  coffee_thermos: {
+    timing: "To be used in turn.",
+    effect:
+      "Pass your turn and choose the next active Minesweeper (without consultation).",
+    reminders: ["Play then continues clockwise from that designated player."],
+  },
+  label_eq: {
+    timing: "Can be used at any time.",
+    effect: "Place the = token in front of 2 adjacent wires of the same value.",
+    reminders: [
+      "One of the 2 wires may already be cut.",
+      "Two yellow wires or two red wires are considered identical for this effect.",
+    ],
+  },
+  double_fond: {
+    timing: "Immediate effect.",
+    effect: "Draw 2 Equipment cards and put them into play with the others.",
+    reminders: [
+      "Depending on already-cut values, those new cards may be immediately usable.",
+    ],
+  },
+  single_thread_label: {
+    timing: "Can be used at any time.",
+    effect:
+      "Place a token in front of one of your blue wires (cut or uncut) to indicate this value appears once on that stand.",
+    reminders: ["Includes already-cut wires when checking that stand."],
+  },
+  emergency_fund: {
+    timing: "Immediate effect.",
+    effect:
+      "Return already-used Equipment cards immediately so they become available again this mission.",
+    reminders: [],
+  },
+  thread_cutter: {
+    timing: "To be used in turn.",
+    effect:
+      "During a Solo Cut action, cut 2 identical wires even if they are not the last remaining copies of that value.",
+    reminders: [],
+  },
+  disintegrator: {
+    timing: "Immediate effect.",
+    effect:
+      "Draw a random Info token (1-12); all players cut their possible remaining wires of that value.",
+    reminders: [],
+  },
+  grapple: {
+    timing: "Can be used at any time.",
+    effect:
+      "Designate a teammate wire, take it without revealing it, and file it into your own hand.",
+    reminders: ["Everyone sees where the wire is taken from and where it is placed."],
+  },
+};
+
+export function getEquipmentCardText(
+  equipmentId: string,
+  fallback?: Pick<EquipmentDef, "useTiming" | "description">,
+): EquipmentCardText {
+  const fromRules = EQUIPMENT_CARD_TEXT[equipmentId];
+  if (fromRules) return fromRules;
+
+  return {
+    timing: fallback ? TIMING_FALLBACK[fallback.useTiming] : "Timing not specified.",
+    effect: fallback?.description ?? "Effect text unavailable.",
+    reminders: [],
+  };
+}

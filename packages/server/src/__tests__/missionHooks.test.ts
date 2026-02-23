@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   makeGameState,
   makePlayer,
@@ -108,6 +108,29 @@ describe("missionHooks dispatcher", () => {
       expect(state.timerDeadline!).toBeLessThanOrEqual(after + 900_000);
     });
 
+    it("mission 10 (2-player): applies 12-minute timer override", () => {
+      const state = makeGameState({
+        mission: 10,
+        players: [
+          makePlayer({ id: "p1", isCaptain: true }),
+          makePlayer({ id: "p2" }),
+        ],
+        log: [],
+      });
+      const before = Date.now();
+      dispatchHooks(10, { point: "setup", state });
+      const after = Date.now();
+
+      expect(state.timerDeadline).toBeDefined();
+      expect(state.timerDeadline!).toBeGreaterThanOrEqual(before + 720_000);
+      expect(state.timerDeadline!).toBeLessThanOrEqual(after + 720_000);
+
+      const timerLog = state.log.find(
+        (e) => e.action === "hookSetup" && e.detail.startsWith("timer:"),
+      );
+      expect(timerLog?.detail).toContain("720s");
+    });
+
     it("mission 10: timerDeadline is not set for non-timer missions", () => {
       const state = makeGameState({ mission: 1, log: [] });
       dispatchHooks(1, { point: "setup", state });
@@ -136,6 +159,67 @@ describe("missionHooks dispatcher", () => {
       const value = parseInt(blueAsRedLog!.detail.split(":")[1], 10);
       expect(value).toBeGreaterThanOrEqual(1);
       expect(value).toBeLessThanOrEqual(12);
+    });
+
+    it("mission 11: replaces equipment cards matching hidden red-like value", () => {
+      const spy = vi.spyOn(Math, "random").mockReturnValue(0.55); // hidden value => 7
+      try {
+        const state = makeGameState({
+          mission: 11,
+          board: makeBoardState({
+            equipment: [
+              makeEquipmentCard({
+                id: "emergency_batteries",
+                unlockValue: 7,
+                unlocked: false,
+                used: false,
+              }),
+              makeEquipmentCard({
+                id: "rewinder",
+                unlockValue: 6,
+                unlocked: false,
+                used: false,
+              }),
+            ],
+          }),
+          log: [],
+        });
+
+        dispatchHooks(11, { point: "setup", state });
+
+        expect(state.board.equipment.some((eq) => eq.unlockValue === 7)).toBe(false);
+        const replaceLog = state.log.find(
+          (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:equipment_replaced:"),
+        );
+        expect(replaceLog).toBeDefined();
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it("mission 12: assigns per-equipment secondary lock values from number cards", () => {
+      const state = makeGameState({
+        mission: 12,
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({ id: "rewinder", unlockValue: 6 }),
+            makeEquipmentCard({ id: "stabilizer", unlockValue: 9 }),
+          ],
+        }),
+        log: [],
+      });
+      dispatchHooks(12, { point: "setup", state });
+
+      expect(state.board.equipment).toHaveLength(2);
+      for (const card of state.board.equipment) {
+        expect(card.secondaryLockValue).toBeGreaterThanOrEqual(1);
+        expect(card.secondaryLockValue).toBeLessThanOrEqual(12);
+        expect(card.secondaryLockCutsRequired).toBe(2);
+      }
+
+      const visibleLocks = state.campaign?.numberCards?.visible ?? [];
+      expect(visibleLocks).toHaveLength(2);
+      expect(visibleLocks.every((c) => c.faceUp)).toBe(true);
     });
 
     it("mission 9: initializes sequence cards and pointer", () => {

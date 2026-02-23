@@ -161,6 +161,7 @@ describe("mission 11 reveal validation", () => {
     expect(error).not.toBeNull();
     expect(error!.code).toBe("REVEAL_REDS_REQUIRES_ALL_RED");
   });
+
 });
 
 describe("mission 9 sequence-priority validation", () => {
@@ -228,6 +229,87 @@ describe("validateActionWithHooks", () => {
       targetTileIndex: 0,
       guessValue: 5,
     });
+    expect(error).toBeNull();
+  });
+});
+
+describe("forced reveal reds state", () => {
+  it("blocks dualCut when actor has only red wires remaining", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 3,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
+  });
+
+  it("blocks soloCut in mission 11 when only hidden red-like value remains", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "blue", gameValue: 7 }),
+        makeTile({ id: "a2", color: "blue", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 11,
+      players: [actor],
+      currentPlayerIndex: 0,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "blue_as_red:7",
+          timestamp: 1000,
+        },
+      ],
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
+  });
+
+  it("allows revealReds while in forced reveal state", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const state = makeGameState({
+      mission: 3,
+      players: [actor],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "revealReds",
+      actorId: "actor",
+    });
+
     expect(error).toBeNull();
   });
 });

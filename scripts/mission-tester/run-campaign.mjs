@@ -21,6 +21,38 @@ const defaults = {
   model: "",
   maxTurns: 24,
   timeoutSec: 900,
+  scenario: "",
+};
+
+const SCENARIO_PRESETS = {
+  training: {
+    description: "Training smoke missions (1-8).",
+    start: 1,
+    end: 8,
+    maxTurns: 24,
+    timeoutSec: 900,
+  },
+  hooks: {
+    description: "Resolved hook missions (9-12).",
+    start: 9,
+    end: 12,
+    maxTurns: 30,
+    timeoutSec: 900,
+  },
+  m1: {
+    description: "Milestone 1 smoke (missions 1-12).",
+    start: 1,
+    end: 12,
+    maxTurns: 30,
+    timeoutSec: 1200,
+  },
+  full: {
+    description: "Full campaign smoke (missions 1-66).",
+    start: 1,
+    end: 66,
+    maxTurns: 30,
+    timeoutSec: 1200,
+  },
 };
 
 async function main() {
@@ -30,6 +62,7 @@ async function main() {
     return;
   }
 
+  applyScenarioDefaults(args);
   validateArgs(args);
   await ensureFile(schemaPath, "Result schema");
   await ensureCodexExists();
@@ -41,6 +74,10 @@ async function main() {
 
   const campaignResults = [];
   const startedAt = new Date();
+
+  if (args.scenario) {
+    console.log(`[runner] scenario=${args.scenario} (${SCENARIO_PRESETS[args.scenario].description})`);
+  }
 
   for (let mission = args.start; mission <= args.end; mission++) {
     const missionDir = path.join(outputRoot, `mission-${String(mission).padStart(2, "0")}`);
@@ -94,6 +131,7 @@ async function main() {
         startedAt: startedAt.toISOString(),
         finishedAt: finishedAt.toISOString(),
         config: {
+          scenario: args.scenario || null,
           start: args.start,
           end: args.end,
           agents: args.agents,
@@ -120,6 +158,7 @@ function parseArgs(argv) {
     output: "",
     help: false,
   };
+  const explicit = new Set();
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -128,30 +167,43 @@ function parseArgs(argv) {
         break;
       case "--start":
         parsed.start = Number(argv[++i]);
+        explicit.add("start");
         break;
       case "--end":
         parsed.end = Number(argv[++i]);
+        explicit.add("end");
         break;
       case "--agents":
         parsed.agents = Number(argv[++i]);
+        explicit.add("agents");
         break;
       case "--client-url":
         parsed.clientUrl = String(argv[++i]);
+        explicit.add("clientUrl");
         break;
       case "--sandbox":
         parsed.sandbox = String(argv[++i]);
+        explicit.add("sandbox");
         break;
       case "--model":
         parsed.model = String(argv[++i]);
+        explicit.add("model");
         break;
       case "--max-turns":
         parsed.maxTurns = Number(argv[++i]);
+        explicit.add("maxTurns");
         break;
       case "--output":
         parsed.output = String(argv[++i]);
+        explicit.add("output");
         break;
       case "--timeout-sec":
         parsed.timeoutSec = Number(argv[++i]);
+        explicit.add("timeoutSec");
+        break;
+      case "--scenario":
+        parsed.scenario = String(argv[++i]);
+        explicit.add("scenario");
         break;
       case "-h":
       case "--help":
@@ -162,10 +214,32 @@ function parseArgs(argv) {
     }
   }
 
+  parsed._explicit = explicit;
   return parsed;
 }
 
+function applyScenarioDefaults(args) {
+  if (!args.scenario) return;
+
+  const preset = SCENARIO_PRESETS[args.scenario];
+  if (!preset) {
+    throw new Error(
+      `--scenario must be one of: ${Object.keys(SCENARIO_PRESETS).join(", ")}`,
+    );
+  }
+
+  if (!args._explicit.has("start")) args.start = preset.start;
+  if (!args._explicit.has("end")) args.end = preset.end;
+  if (!args._explicit.has("maxTurns")) args.maxTurns = preset.maxTurns;
+  if (!args._explicit.has("timeoutSec")) args.timeoutSec = preset.timeoutSec;
+}
+
 function validateArgs(args) {
+  if (args.scenario && !SCENARIO_PRESETS[args.scenario]) {
+    throw new Error(
+      `--scenario must be one of: ${Object.keys(SCENARIO_PRESETS).join(", ")}`,
+    );
+  }
   if (!Number.isInteger(args.start) || args.start < 1 || args.start > 66) {
     throw new Error("--start must be an integer between 1 and 66");
   }
@@ -196,6 +270,8 @@ function printHelp() {
 Options:
   --start <n>        First mission to test (default: 1)
   --end <n>          Last mission to test (default: 8)
+  --scenario <name>  Scenario preset: training | hooks | m1 | full
+                     Applies default start/end/max-turns/timeout unless explicitly overridden.
   --agents <n>       Codex agents per mission (default: 2)
   --client-url <u>   Frontend URL (default: http://localhost:3000)
   --sandbox <mode>   Codex sandbox mode: read-only | workspace-write | danger-full-access
@@ -233,7 +309,97 @@ async function ensureCodexExists() {
   });
 }
 
+function getMissionSpecificChecks(mission) {
+  if (mission === 9) {
+    return [
+      {
+        id: "mission_9_sequence_priority",
+        text:
+          "verify sequence-priority gating: middle/right value cuts are blocked until left value is unlocked, then later values become legal.",
+      },
+    ];
+  }
+
+  if (mission === 10) {
+    return [
+      {
+        id: "mission_10_timer_enforced",
+        text:
+          "verify mission timer behavior is visible/active (countdown pressure present; if timeout occurs it must end as timer loss).",
+      },
+      {
+        id: "mission_10_dynamic_turn_order",
+        text:
+          "verify captain choose-next-player flow appears and same-player consecutive turn is blocked when alternatives exist (3+ players).",
+      },
+    ];
+  }
+
+  if (mission === 11) {
+    return [
+      {
+        id: "mission_11_hidden_blue_as_red",
+        text:
+          "verify hidden blue-as-red behavior appears (hidden value acts like red risk) and capture concrete evidence.",
+      },
+      {
+        id: "mission_11_reveal_restriction",
+        text:
+          "verify Reveal Reds is only legal when remaining hand satisfies mission-11 hidden-value reveal condition.",
+      },
+    ];
+  }
+
+  if (mission === 12) {
+    return [
+      {
+        id: "mission_12_equipment_double_lock",
+        text:
+          "verify equipment remains blocked until both primary unlock value and mission secondary lock condition are satisfied.",
+      },
+    ];
+  }
+
+  return [];
+}
+
+function renderRequiredChecks(mission) {
+  const baseChecks = [
+    {
+      id: "start_requires_two_players",
+      text: "verify game cannot start with <2 players.",
+    },
+    {
+      id: "host_mission_control",
+      text: `verify host can select mission ${mission} and non-host cannot change mission.`,
+    },
+    {
+      id: "info_token_once_per_player",
+      text:
+        "verify setup token flow is enforced (required setup placements only, duplicate placement rejected).",
+    },
+    {
+      id: "turn_order_progression",
+      text: "verify turn number/current player advance after valid actions.",
+    },
+    {
+      id: "mission_resolution_or_blocker",
+      text: "continue gameplay until mission resolves OR a blocker is reached; include outcome.",
+    },
+  ];
+
+  const checks = [...baseChecks, ...getMissionSpecificChecks(mission)];
+  return checks
+    .map((check, idx) => `${idx + 1}) id="${check.id}": ${check.text}`)
+    .join("\n");
+}
+
 function buildPrompt({ mission, agentName, args, outputRoot }) {
+  const requiredChecks = renderRequiredChecks(mission);
+  const scenarioText = args.scenario
+    ? `- Scenario preset: ${args.scenario} (${SCENARIO_PRESETS[args.scenario].description})`
+    : "";
+
   return `You are an independent QA agent named "${agentName}" for Bomb Busters.
 
 Primary objective:
@@ -250,6 +416,7 @@ Hard constraints:
 Important environment note:
 - npm cache may be permission-restricted.
 - Prefix npm/npx commands with: NPM_CONFIG_CACHE=/tmp/npm-cache
+${scenarioText}
 
 Useful selectors in UI:
 - Join/Lobby: data-testid="name-input", "create-room", "room-code-input", "join-room", "start-game", "mission-select-<id>"
@@ -257,11 +424,7 @@ Useful selectors in UI:
 - Tiles: data-testid="wire-tile-<playerId>-<index>"
 
 Required checks (include each in checks[] with id below):
-1) id="start_requires_two_players": verify game cannot start with <2 players.
-2) id="host_mission_control": verify host can select mission ${mission} and non-host cannot change mission.
-3) id="info_token_once_per_player": verify setup requires each player to place exactly one token and duplicate placement is rejected.
-4) id="turn_order_progression": verify turn number/current player advance after valid actions.
-5) id="mission_resolution_or_blocker": continue gameplay until mission resolves OR a blocker is reached; include outcome.
+${requiredChecks}
 
 Execution guidance:
 - If browser dependencies are missing, install in /tmp only.
@@ -485,6 +648,9 @@ function renderCampaignSummary({ startedAt, finishedAt, args, results, outputRoo
   lines.push(`- Started: ${startedAt.toISOString()}`);
   lines.push(`- Finished: ${finishedAt.toISOString()}`);
   lines.push(`- Missions: ${args.start}-${args.end}`);
+  if (args.scenario) {
+    lines.push(`- Scenario: ${args.scenario} (${SCENARIO_PRESETS[args.scenario].description})`);
+  }
   lines.push(`- Agents per mission: ${args.agents}`);
   lines.push(`- Client URL: ${args.clientUrl}`);
   lines.push(`- Sandbox: ${args.sandbox}`);

@@ -13,6 +13,7 @@ import { EQUIPMENT_DEFS } from "@bomb-busters/shared";
 import {
   getTileByFlatIndex,
   getUncutTiles,
+  isRevealRedsForced,
   isPlayersTurn,
 } from "./validation.js";
 import { executeDualCut } from "./gameLogic.js";
@@ -56,6 +57,16 @@ function getPlayer(state: GameState, playerId: string): Player | undefined {
 
 function hasUncutValue(player: Player, value: EquipmentGuessValue): boolean {
   return getUncutTiles(player).some((tile) => tile.gameValue === value);
+}
+
+function countCutValue(state: GameState, value: number): number {
+  let count = 0;
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (tile.cut && tile.gameValue === value) count++;
+    }
+  }
+  return count;
 }
 
 function ensureBaseEquipmentId(
@@ -129,12 +140,29 @@ export function validateUseEquipment(
   const actor = getPlayer(state, actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
 
+  if (isRevealRedsForced(state, actor)) {
+    return legalityError(
+      "FORCED_REVEAL_REDS_REQUIRED",
+      "You must reveal your remaining red-like wires before taking another action",
+    );
+  }
+
   const card = state.board.equipment.find((eq) => eq.id === equipmentId);
   if (!card) {
     return legalityError("EQUIPMENT_NOT_FOUND", "Equipment card not found");
   }
   if (!card.unlocked) {
     return legalityError("EQUIPMENT_LOCKED", "Equipment card is still locked");
+  }
+  if (card.secondaryLockValue !== undefined) {
+    const requiredCuts = card.secondaryLockCutsRequired ?? 2;
+    const cutCount = countCutValue(state, card.secondaryLockValue);
+    if (cutCount < requiredCuts) {
+      return legalityError(
+        "EQUIPMENT_LOCKED",
+        `Equipment still locked: need ${requiredCuts} cuts of value ${card.secondaryLockValue}`,
+      );
+    }
   }
   if (card.used) {
     return legalityError("EQUIPMENT_ALREADY_USED", "Equipment card is already used");

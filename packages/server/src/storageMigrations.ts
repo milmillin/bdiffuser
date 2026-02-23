@@ -9,6 +9,10 @@ import {
   type CharacterId,
   type CampaignState,
   type EquipmentCard,
+  type NumberCard,
+  type ConstraintCard,
+  type ChallengeCard,
+  type SpecialMarker,
 } from "@bomb-busters/shared";
 
 export interface RoomStateSnapshot {
@@ -31,6 +35,10 @@ const DEFAULT_ROOM_STATE: RoomStateSnapshot = {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 function toMissionId(value: unknown, fallback: MissionId): MissionId {
@@ -57,6 +65,117 @@ function toFiniteNumber(value: unknown, fallback: number): number {
 
 function toBool(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizeNumberCard(raw: unknown): NumberCard | null {
+  if (!isObject(raw)) return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (typeof raw.value !== "number" || !Number.isFinite(raw.value)) return null;
+  return {
+    id: raw.id,
+    value: raw.value,
+    faceUp: toBool(raw.faceUp, false),
+  };
+}
+
+function normalizeNumberCardArray(raw: unknown): NumberCard[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => normalizeNumberCard(entry))
+    .filter((entry): entry is NumberCard => entry !== null);
+}
+
+function normalizeConstraintCard(raw: unknown): ConstraintCard | null {
+  if (!isObject(raw)) return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (typeof raw.name !== "string") return null;
+  if (typeof raw.description !== "string") return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    description: raw.description,
+    active: toBool(raw.active, false),
+  };
+}
+
+function normalizeConstraintCardArray(raw: unknown): ConstraintCard[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => normalizeConstraintCard(entry))
+    .filter((entry): entry is ConstraintCard => entry !== null);
+}
+
+function normalizeChallengeCard(raw: unknown): ChallengeCard | null {
+  if (!isObject(raw)) return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (typeof raw.name !== "string") return null;
+  if (typeof raw.description !== "string") return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    description: raw.description,
+    completed: toBool(raw.completed, false),
+  };
+}
+
+function normalizeChallengeCardArray(raw: unknown): ChallengeCard[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => normalizeChallengeCard(entry))
+    .filter((entry): entry is ChallengeCard => entry !== null);
+}
+
+function normalizeSpecialMarker(raw: unknown): SpecialMarker | null {
+  if (!isObject(raw)) return null;
+  const kind = raw.kind;
+  // Keep this list aligned with `SpecialMarker["kind"]` in shared types.
+  if (
+    kind !== "x" &&
+    kind !== "sequence_pointer" &&
+    kind !== "action_pointer"
+  ) {
+    return null;
+  }
+  if (typeof raw.value !== "number" || !Number.isFinite(raw.value)) return null;
+  return { kind, value: raw.value };
+}
+
+function normalizeSpecialMarkers(raw: unknown): SpecialMarker[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => normalizeSpecialMarker(entry))
+    .filter((entry): entry is SpecialMarker => entry !== null);
+}
+
+function normalizeNumberCardHands(raw: unknown): Record<string, NumberCard[]> {
+  if (!isObject(raw)) return {};
+  const out: Record<string, NumberCard[]> = {};
+  for (const [playerId, value] of Object.entries(raw)) {
+    out[playerId] = normalizeNumberCardArray(value);
+  }
+  return out;
+}
+
+function normalizeConstraintPerPlayer(
+  raw: unknown,
+): Record<string, ConstraintCard[]> {
+  if (!isObject(raw)) return {};
+  const out: Record<string, ConstraintCard[]> = {};
+  for (const [playerId, value] of Object.entries(raw)) {
+    out[playerId] = normalizeConstraintCardArray(value);
+  }
+  return out;
+}
+
+function normalizePlayerOxygen(raw: unknown): Record<string, number> {
+  if (!isObject(raw)) return {};
+  const out: Record<string, number> = {};
+  for (const [playerId, value] of Object.entries(raw)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      out[playerId] = value;
+    }
+  }
+  return out;
 }
 
 function normalizePlayer(raw: unknown, index: number): Player {
@@ -115,12 +234,28 @@ function normalizeEquipment(raw: unknown): EquipmentCard[] {
         typeof entry.image === "string" && entry.image
           ? entry.image
           : (def?.image ?? "equipment_back.png");
+      const secondaryLockValue =
+        typeof entry.secondaryLockValue === "number" &&
+        Number.isFinite(entry.secondaryLockValue)
+          ? entry.secondaryLockValue
+          : undefined;
+      const secondaryLockCutsRequired =
+        typeof entry.secondaryLockCutsRequired === "number" &&
+        Number.isFinite(entry.secondaryLockCutsRequired)
+          ? entry.secondaryLockCutsRequired
+          : undefined;
 
       return {
         id,
         name,
         description,
         unlockValue,
+        ...(secondaryLockValue !== undefined
+          ? { secondaryLockValue }
+          : {}),
+        ...(secondaryLockCutsRequired !== undefined
+          ? { secondaryLockCutsRequired }
+          : {}),
         unlocked: toBool(entry.unlocked, false),
         used: toBool(entry.used, false),
         image,
@@ -134,62 +269,62 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
 
   const campaign: CampaignState = {};
 
-  if (isObject(raw.numberCards)) {
+  if (hasOwn(raw, "numberCards")) {
+    const numberCards = isObject(raw.numberCards) ? raw.numberCards : {};
     campaign.numberCards = {
-      deck: Array.isArray(raw.numberCards.deck) ? raw.numberCards.deck : [],
-      discard: Array.isArray(raw.numberCards.discard) ? raw.numberCards.discard : [],
-      visible: Array.isArray(raw.numberCards.visible) ? raw.numberCards.visible : [],
-      playerHands: isObject(raw.numberCards.playerHands)
-        ? (raw.numberCards.playerHands as Record<string, import("@bomb-busters/shared").NumberCard[]>)
-        : {},
+      deck: normalizeNumberCardArray(numberCards.deck),
+      discard: normalizeNumberCardArray(numberCards.discard),
+      visible: normalizeNumberCardArray(numberCards.visible),
+      playerHands: normalizeNumberCardHands(numberCards.playerHands),
     };
   }
 
-  if (isObject(raw.constraints)) {
+  if (hasOwn(raw, "constraints")) {
+    const constraints = isObject(raw.constraints) ? raw.constraints : {};
     campaign.constraints = {
-      global: Array.isArray(raw.constraints.global) ? raw.constraints.global : [],
-      perPlayer: isObject(raw.constraints.perPlayer)
-        ? (raw.constraints.perPlayer as Record<string, import("@bomb-busters/shared").ConstraintCard[]>)
-        : {},
+      global: normalizeConstraintCardArray(constraints.global),
+      perPlayer: normalizeConstraintPerPlayer(constraints.perPlayer),
     };
   }
 
-  if (isObject(raw.challenges)) {
+  if (hasOwn(raw, "challenges")) {
+    const challenges = isObject(raw.challenges) ? raw.challenges : {};
     campaign.challenges = {
-      deck: Array.isArray(raw.challenges.deck) ? raw.challenges.deck : [],
-      active: Array.isArray(raw.challenges.active) ? raw.challenges.active : [],
-      completed: Array.isArray(raw.challenges.completed) ? raw.challenges.completed : [],
+      deck: normalizeChallengeCardArray(challenges.deck),
+      active: normalizeChallengeCardArray(challenges.active),
+      completed: normalizeChallengeCardArray(challenges.completed),
     };
   }
 
-  if (isObject(raw.oxygen)) {
+  if (hasOwn(raw, "oxygen")) {
+    const oxygen = isObject(raw.oxygen) ? raw.oxygen : {};
     campaign.oxygen = {
-      pool: toFiniteNumber(raw.oxygen.pool, 0),
-      playerOxygen: isObject(raw.oxygen.playerOxygen)
-        ? (raw.oxygen.playerOxygen as Record<string, number>)
-        : {},
+      pool: toFiniteNumber(oxygen.pool, 0),
+      playerOxygen: normalizePlayerOxygen(oxygen.playerOxygen),
     };
   }
 
-  if (isObject(raw.nanoTracker)) {
+  if (hasOwn(raw, "nanoTracker")) {
+    const nanoTracker = isObject(raw.nanoTracker) ? raw.nanoTracker : {};
     campaign.nanoTracker = {
-      position: toFiniteNumber(raw.nanoTracker.position, 0),
-      max: toFiniteNumber(raw.nanoTracker.max, 0),
+      position: toFiniteNumber(nanoTracker.position, 0),
+      max: toFiniteNumber(nanoTracker.max, 0),
     };
   }
 
-  if (isObject(raw.bunkerTracker)) {
+  if (hasOwn(raw, "bunkerTracker")) {
+    const bunkerTracker = isObject(raw.bunkerTracker) ? raw.bunkerTracker : {};
     campaign.bunkerTracker = {
-      position: toFiniteNumber(raw.bunkerTracker.position, 0),
-      max: toFiniteNumber(raw.bunkerTracker.max, 0),
+      position: toFiniteNumber(bunkerTracker.position, 0),
+      max: toFiniteNumber(bunkerTracker.max, 0),
     };
   }
 
-  if (Array.isArray(raw.specialMarkers)) {
-    campaign.specialMarkers = raw.specialMarkers as CampaignState["specialMarkers"];
+  if (hasOwn(raw, "specialMarkers")) {
+    campaign.specialMarkers = normalizeSpecialMarkers(raw.specialMarkers);
   }
 
-  return campaign;
+  return Object.keys(campaign).length > 0 ? campaign : undefined;
 }
 
 function normalizeGameState(
@@ -231,6 +366,21 @@ function normalizeGameState(
 
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
+  // Current forced-action migration only supports mission-10 chooseNextPlayer.
+  // Extend this branch if new forced action kinds are introduced.
+  const pendingForcedAction = isObject(obj.pendingForcedAction)
+    && obj.pendingForcedAction.kind === "chooseNextPlayer"
+    && typeof obj.pendingForcedAction.captainId === "string"
+    && obj.pendingForcedAction.captainId
+      ? {
+          kind: "chooseNextPlayer" as const,
+          captainId: obj.pendingForcedAction.captainId,
+          ...(typeof obj.pendingForcedAction.lastPlayerId === "string"
+            && obj.pendingForcedAction.lastPlayerId
+            ? { lastPlayerId: obj.pendingForcedAction.lastPlayerId }
+            : {}),
+        }
+      : undefined;
 
   return {
     phase,
@@ -250,6 +400,7 @@ function normalizeGameState(
     log: Array.isArray(obj.log) ? obj.log : [],
     chat: Array.isArray(obj.chat) ? obj.chat : [],
     ...(campaign ? { campaign } : {}),
+    ...(pendingForcedAction ? { pendingForcedAction } : {}),
     ...(typeof obj.timerDeadline === "number" && Number.isFinite(obj.timerDeadline)
       ? { timerDeadline: obj.timerDeadline }
       : {}),

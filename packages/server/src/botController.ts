@@ -3,11 +3,12 @@ import { filterStateForPlayer } from "./viewFilter.js";
 import { buildSystemPrompt, buildUserMessage } from "./botPrompt.js";
 import { callLLM } from "./llmClient.js";
 import {
-  validateDualCut,
-  validateSoloCut,
-  validateRevealReds,
+  validateDualCutWithHooks,
+  validateSoloCutWithHooks,
+  validateRevealRedsWithHooks,
   getUncutTiles,
 } from "./validation.js";
+import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
 
 const BOT_NAMES = ["IRIS", "NOVA", "BOLT", "FUSE", "CHIP"];
 
@@ -102,7 +103,8 @@ export type BotAction =
       guessValue: number | "YELLOW";
     }
   | { action: "soloCut"; value: number | "YELLOW" }
-  | { action: "revealReds" };
+  | { action: "revealReds" }
+  | { action: "chooseNextPlayer"; targetPlayerId: string };
 
 export interface BotActionResult {
   action: BotAction;
@@ -117,6 +119,13 @@ export async function getBotAction(
   apiKey: string,
   chatContext: string,
 ): Promise<BotActionResult> {
+  // Mission-specific forced action: captain must designate next player.
+  // Handle deterministically and bypass LLM for this branch.
+  const forcedChooseAction = getForcedChooseNextAction(state, botId);
+  if (forcedChooseAction) {
+    return { action: forcedChooseAction, reasoning: null };
+  }
+
   const filtered = filterStateForPlayer(state, botId);
   const systemPrompt = buildSystemPrompt();
   const userMessage = buildUserMessage(filtered, chatContext || undefined);
@@ -207,6 +216,12 @@ function parseLLMAction(
     return { action: "revealReds" };
   }
 
+  if (action === "chooseNextPlayer") {
+    const targetPlayerId = result.targetPlayerId as string;
+    if (!targetPlayerId) return null;
+    return { action: "chooseNextPlayer", targetPlayerId };
+  }
+
   return null;
 }
 
@@ -217,70 +232,160 @@ function validateBotAction(
 ): string | null {
   switch (action.action) {
     case "dualCut":
-      return validateDualCut(
-        state,
-        botId,
-        action.targetPlayerId,
-        action.targetTileIndex,
-        action.guessValue,
+      return (
+        validateDualCutWithHooks(
+          state,
+          botId,
+          action.targetPlayerId,
+          action.targetTileIndex,
+          action.guessValue,
+        )?.message ?? null
       );
     case "soloCut":
-      return validateSoloCut(state, botId, action.value);
+      return validateSoloCutWithHooks(state, botId, action.value)?.message ?? null;
     case "revealReds":
-      return validateRevealReds(state, botId);
+      return validateRevealRedsWithHooks(state, botId)?.message ?? null;
+    case "chooseNextPlayer": {
+      const forced = state.pendingForcedAction;
+      if (!forced || forced.kind !== "chooseNextPlayer") {
+        return "No pending choose-next-player action";
+      }
+      if (forced.captainId !== botId) {
+        return "Only the captain can choose the next player";
+      }
+
+      const target = state.players.find((p) => p.id === action.targetPlayerId);
+      if (!target) return "Target player not found";
+      if (!target.hand.some((t) => !t.cut)) {
+        return "Target player has no remaining tiles";
+      }
+
+      if (
+        isRepeatNextPlayerSelectionDisallowed(
+          state,
+          forced.lastPlayerId,
+          action.targetPlayerId,
+        )
+      ) {
+        return "In this mission, the same player cannot act twice in a row";
+      }
+      return null;
+    }
   }
 }
 
+function getForcedChooseNextAction(
+  state: GameState,
+  botId: string,
+): BotAction | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "chooseNextPlayer") return null;
+  if (forced.captainId !== botId) return null;
+
+  const avoidPrevious =
+    state.mission === 10 && state.players.length > 2 && forced.lastPlayerId
+      ? forced.lastPlayerId
+      : undefined;
+
+  const nextIdx =
+    botChooseNextPlayer(state, botId, avoidPrevious) ??
+    botChooseNextPlayer(state, botId);
+  if (nextIdx == null) return null;
+
+  const target = state.players[nextIdx];
+  if (!target) return null;
+  return { action: "chooseNextPlayer", targetPlayerId: target.id };
+}
+
+function collectBotGuessValues(
+  uncutTiles: ReturnType<typeof getUncutTiles>,
+): (number | "YELLOW")[] {
+  const numeric = new Set<number>();
+  let hasYellow = false;
+
+  for (const tile of uncutTiles) {
+    if (tile.gameValue === "YELLOW") {
+      hasYellow = true;
+      continue;
+    }
+    if (typeof tile.gameValue === "number") {
+      numeric.add(tile.gameValue);
+    }
+  }
+
+  const values: (number | "YELLOW")[] = [...numeric].sort((a, b) => a - b);
+  if (hasYellow) values.push("YELLOW");
+  return values;
+}
+
 function getFallbackAction(state: GameState, botId: string): BotAction {
+  const forcedChooseAction = getForcedChooseNextAction(state, botId);
+  if (forcedChooseAction) {
+    return forcedChooseAction;
+  }
+
   const bot = state.players.find((p) => p.id === botId)!;
   const uncutTiles = getUncutTiles(bot);
+  const guessValues = collectBotGuessValues(uncutTiles);
 
-  // 1. revealReds if all remaining tiles are red
-  if (uncutTiles.length > 0 && uncutTiles.every((t) => t.color === "red")) {
+  // 1. revealReds when legal (supports mission-specific reveal constraints).
+  if (!validateRevealRedsWithHooks(state, botId)) {
     return { action: "revealReds" };
   }
 
-  // 2. soloCut if holding all copies of any value
-  for (const tile of uncutTiles) {
-    if (tile.color !== "blue") continue;
-    const value = tile.gameValue as number;
-    const err = validateSoloCut(state, botId, value);
-    if (!err) {
+  // 2. soloCut for any legal value the bot holds.
+  for (const value of guessValues) {
+    if (!validateSoloCutWithHooks(state, botId, value)) {
       return { action: "soloCut", value };
     }
   }
 
-  // 3. dualCut on a random opponent tile
   const opponents = state.players.filter((p) => p.id !== botId);
-  const botValues = new Set(
-    uncutTiles
-      .filter((t) => t.color === "blue")
-      .map((t) => t.gameValue as number),
-  );
 
-  // Prefer tiles with info tokens (known safe values)
+  // 3. Prefer opponent info-token targets when a legal hook-aware dual cut exists.
   for (const opp of opponents) {
     for (const token of opp.infoTokens) {
       const tile = opp.hand[token.position];
       if (!tile || tile.cut) continue;
+
       const guessValue = token.isYellow ? ("YELLOW" as const) : token.value;
       if (
         typeof guessValue === "number"
-          ? botValues.has(guessValue)
-          : uncutTiles.some((t) => t.gameValue === "YELLOW")
+          ? !guessValues.includes(guessValue)
+          : !guessValues.includes("YELLOW")
       ) {
-        const err = validateDualCut(
+        continue;
+      }
+
+      if (
+        !validateDualCutWithHooks(
           state,
           botId,
           opp.id,
           token.position,
           guessValue,
-        );
-        if (!err) {
+        )
+      ) {
+        return {
+          action: "dualCut",
+          targetPlayerId: opp.id,
+          targetTileIndex: token.position,
+          guessValue,
+        };
+      }
+    }
+  }
+
+  // 4. Scan all opponent tiles + bot guess values for first legal dual cut.
+  for (const opp of opponents) {
+    for (let i = 0; i < opp.hand.length; i++) {
+      if (opp.hand[i].cut) continue;
+      for (const guessValue of guessValues) {
+        if (!validateDualCutWithHooks(state, botId, opp.id, i, guessValue)) {
           return {
             action: "dualCut",
             targetPlayerId: opp.id,
-            targetTileIndex: token.position,
+            targetTileIndex: i,
             guessValue,
           };
         }
@@ -288,25 +393,7 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
     }
   }
 
-  // Last resort: pick a random opponent tile and guess a value the bot holds
-  for (const opp of opponents) {
-    for (let i = 0; i < opp.hand.length; i++) {
-      if (opp.hand[i].cut) continue;
-      for (const value of botValues) {
-        const err = validateDualCut(state, botId, opp.id, i, value);
-        if (!err) {
-          return {
-            action: "dualCut",
-            targetPlayerId: opp.id,
-            targetTileIndex: i,
-            guessValue: value,
-          };
-        }
-      }
-    }
-  }
-
-  // Absolute last resort (shouldn't happen) — pick first valid anything
+  // 5. Last-resort deterministic action shape (should be unreachable in valid states).
   return {
     action: "dualCut",
     targetPlayerId: opponents[0]?.id ?? "",

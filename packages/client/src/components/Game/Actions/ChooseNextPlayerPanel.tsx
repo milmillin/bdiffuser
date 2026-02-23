@@ -18,6 +18,9 @@ export function ChooseNextPlayerPanel({
     gameState.pendingForcedAction?.kind === "chooseNextPlayer"
       ? gameState.pendingForcedAction.lastPlayerId
       : undefined;
+  const previousPlayerName = restrictedRepeatPlayerId
+    ? gameState.players.find((p) => p.id === restrictedRepeatPlayerId)?.name
+    : undefined;
   const hasAlternative =
     restrictedRepeatPlayerId != null &&
     playersWithTiles.some((p) => p.id !== restrictedRepeatPlayerId);
@@ -36,6 +39,11 @@ export function ChooseNextPlayerPanel({
       <p className="text-sm text-gray-400">
         Select which player takes the next turn.
       </p>
+      {previousPlayerName && (
+        <p className="text-xs text-gray-500">
+          Previous player: <span className="text-gray-300 font-semibold">{previousPlayerName}</span>
+        </p>
+      )}
       {hasAlternative && (
         <p className="text-xs text-amber-300">
           In mission 10 (3+ players), the same player cannot act twice in a row.

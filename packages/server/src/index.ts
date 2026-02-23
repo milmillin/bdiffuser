@@ -8,6 +8,7 @@ import type {
   CharacterId,
   ChatMessage,
   UseEquipmentPayload,
+  GameState,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
@@ -15,11 +16,13 @@ import { setupGame } from "./setup.js";
 import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
 import {
   validateDualCutWithHooks,
+  validateDualCutDoubleDetectorWithHooks,
   validateSoloCutWithHooks,
   validateRevealRedsWithHooks,
 } from "./validation.js";
 import {
   executeDualCut,
+  executeDualCutDoubleDetector,
   executeSoloCut,
   executeRevealReds,
 } from "./gameLogic.js";
@@ -29,13 +32,19 @@ import {
   createBotPlayer,
   botPlaceInfoToken,
   getBotAction,
-  botChooseNextPlayer,
 } from "./botController.js";
 import {
   normalizeRoomState,
   type RoomStateSnapshot,
 } from "./storageMigrations.js";
 import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
+import {
+  requiredSetupInfoTokenCount,
+  hasCompletedSetupInfoTokens,
+  allSetupInfoTokensPlaced,
+  advanceToNextSetupPlayer,
+  validateSetupInfoTokenPlacement,
+} from "./setupTokenRules.js";
 
 interface Env {
   [key: string]: unknown;
@@ -128,6 +137,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "dualCut":
         this.handleDualCut(connection, msg.targetPlayerId, msg.targetTileIndex, msg.guessValue);
+        break;
+      case "dualCutDoubleDetector":
+        this.handleDualCutDoubleDetector(connection, msg.targetPlayerId, msg.tileIndex1, msg.tileIndex2, msg.guessValue);
         break;
       case "soloCut":
         this.handleSoloCut(connection, msg.value);
@@ -292,12 +304,25 @@ export class BombBustersServer extends Server<Env> {
       state: this.room.gameState,
     });
 
+    this.advanceSetupTurnAndMaybeStart(this.room.gameState);
+
     // Auto-place info tokens for bots
     this.handleBotInfoTokens();
 
     this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
+  }
+
+  advanceSetupTurnAndMaybeStart(state: GameState) {
+    if (state.phase !== "setup_info_tokens") return;
+
+    advanceToNextSetupPlayer(state);
+    if (allSetupInfoTokensPlaced(state)) {
+      state.phase = "playing";
+      state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
+      state.turnNumber = 1;
+    }
   }
 
   handlePlaceInfoToken(conn: Connection, value: number, tileIndex: number) {
@@ -313,9 +338,27 @@ export class BombBustersServer extends Server<Env> {
     const player = state.players.find((p) => p.id === conn.id);
     if (!player) return;
 
-    // Each player places one info token during setup
-    if (player.infoTokens.length > 0) {
-      this.sendMsg(conn, { type: "error", message: "You already placed an info token" });
+    const requiredTokenCount = requiredSetupInfoTokenCount(state, player);
+    if (requiredTokenCount === 0) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "You do not place an info token in this mission setup",
+      });
+      return;
+    }
+
+    if (hasCompletedSetupInfoTokens(state, player)) {
+      this.sendMsg(conn, { type: "error", message: "You already placed your setup info token" });
+      return;
+    }
+
+    const placementError = validateSetupInfoTokenPlacement(player, value, tileIndex);
+    if (placementError) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: placementError.message,
+        code: placementError.code,
+      });
       return;
     }
 
@@ -333,16 +376,7 @@ export class BombBustersServer extends Server<Env> {
       timestamp: Date.now(),
     });
 
-    // Advance to next player for setup
-    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
-
-    // Check if all players have placed tokens
-    const allPlaced = state.players.every((p) => p.infoTokens.length > 0);
-    if (allPlaced) {
-      state.phase = "playing";
-      state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
-      state.turnNumber = 1;
-    }
+    this.advanceSetupTurnAndMaybeStart(state);
 
     this.saveState();
     this.broadcastGameState();
@@ -375,6 +409,48 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const action = executeDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleDualCutDoubleDetector(
+    conn: Connection,
+    targetPlayerId: string,
+    tileIndex1: number,
+    tileIndex2: number,
+    guessValue: number,
+  ) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const error = validateDualCutDoubleDetectorWithHooks(
+      state,
+      conn.id,
+      targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+    );
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const action = executeDualCutDoubleDetector(
+      state,
+      conn.id,
+      targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+    );
 
     this.saveState();
     this.broadcastAction(action);
@@ -590,28 +666,22 @@ export class BombBustersServer extends Server<Env> {
     if (!state || state.phase !== "setup_info_tokens") return;
 
     for (const player of state.players) {
-      if (player.isBot) {
-        botPlaceInfoToken(state, player.id);
-        const token = player.infoTokens[player.infoTokens.length - 1];
-        if (token) {
-          state.log.push({
-            turn: 0,
-            playerId: player.id,
-            action: "placeInfoToken",
-            detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
-            timestamp: Date.now(),
-          });
-        }
+      if (!player.isBot) continue;
+      if (hasCompletedSetupInfoTokens(state, player)) continue;
+
+      botPlaceInfoToken(state, player.id);
+      const token = player.infoTokens[player.infoTokens.length - 1];
+      if (token) {
+        state.log.push({
+          turn: 0,
+          playerId: player.id,
+          action: "placeInfoToken",
+          detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
+          timestamp: Date.now(),
+        });
       }
     }
-
-    // Check if all players have placed tokens (bots + humans who already placed)
-    const allPlaced = state.players.every((p) => p.infoTokens.length > 0);
-    if (allPlaced) {
-      state.phase = "playing";
-      state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
-      state.turnNumber = 1;
-    }
+    this.advanceSetupTurnAndMaybeStart(state);
   }
 
   /** Schedule the next alarm: picks the earliest of bot turn and timer deadline. */
@@ -689,30 +759,6 @@ export class BombBustersServer extends Server<Env> {
 
     const botId = currentPlayer.id;
 
-    // Handle forced action: bot captain auto-selects next player
-    if (state.pendingForcedAction?.kind === "chooseNextPlayer") {
-      const avoidPrevious =
-        state.mission === 10 &&
-        state.players.length > 2 &&
-        state.pendingForcedAction.lastPlayerId
-          ? state.pendingForcedAction.lastPlayerId
-          : undefined;
-
-      // Prefer mission-legal choice. If no alternative exists, allow fallback
-      // to avoid deadlock when only one player has uncut tiles left.
-      const nextIdx =
-        botChooseNextPlayer(state, botId, avoidPrevious) ??
-        botChooseNextPlayer(state, botId);
-      if (nextIdx !== null) {
-        state.pendingForcedAction = undefined;
-        state.currentPlayerIndex = nextIdx;
-        this.saveState();
-        this.broadcastGameState();
-        this.scheduleBotTurnIfNeeded();
-      }
-      return;
-    }
-
     const apiKey = (this.env as Env).ZHIPU_API_KEY;
 
     // Build chat context: messages since this bot's last action
@@ -745,6 +791,49 @@ export class BombBustersServer extends Server<Env> {
     const botAction = botResult.action;
     let action: import("@bomb-busters/shared").GameAction;
     switch (botAction.action) {
+      case "chooseNextPlayer": {
+        const forced = state.pendingForcedAction;
+        if (!forced || forced.kind !== "chooseNextPlayer") {
+          console.log(`Bot ${botId} chooseNextPlayer ignored: no pending forced action`);
+          return;
+        }
+        if (forced.captainId !== botId) {
+          console.log(`Bot ${botId} chooseNextPlayer rejected: bot is not forced-action captain`);
+          return;
+        }
+
+        const targetIndex = state.players.findIndex(
+          (p) => p.id === botAction.targetPlayerId,
+        );
+        if (targetIndex === -1) {
+          console.log(`Bot ${botId} chooseNextPlayer rejected: target not found`);
+          return;
+        }
+
+        const target = state.players[targetIndex];
+        if (!target.hand.some((t) => !t.cut)) {
+          console.log(`Bot ${botId} chooseNextPlayer rejected: target has no remaining tiles`);
+          return;
+        }
+
+        if (
+          isRepeatNextPlayerSelectionDisallowed(
+            state,
+            forced.lastPlayerId,
+            botAction.targetPlayerId,
+          )
+        ) {
+          console.log(`Bot ${botId} chooseNextPlayer rejected: violates no-consecutive-turn rule`);
+          return;
+        }
+
+        state.pendingForcedAction = undefined;
+        state.currentPlayerIndex = targetIndex;
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
       case "dualCut": {
         const error = validateDualCutWithHooks(
           state,

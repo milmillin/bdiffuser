@@ -36,6 +36,27 @@ function legalityError(
   return { code, message };
 }
 
+/**
+ * Whether this player is currently forced to use Reveal Reds.
+ * - Standard missions: all remaining uncut wires are red.
+ * - Mission 11: all remaining uncut wires are the hidden blue-as-red value.
+ */
+export function isRevealRedsForced(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  const uncutTiles = getUncutTiles(player);
+  if (uncutTiles.length === 0) return false;
+
+  if (state.mission === 11) {
+    const hiddenBlueAsRedValue = getBlueAsRedValue(state);
+    if (hiddenBlueAsRedValue == null) return false;
+    return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
+  }
+
+  return uncutTiles.every((t) => t.color === "red");
+}
+
 /** Check if a dual cut action is valid (base rules only). */
 export function validateDualCutLegality(
   state: GameState,
@@ -92,6 +113,86 @@ export function validateDualCut(
     targetTileIndex,
     guessValue,
   )?.message ?? null;
+}
+
+/** Check if a dual cut double detector action is valid (base rules only). */
+export function validateDualCutDoubleDetectorLegality(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  tileIndex1: number,
+  tileIndex2: number,
+  guessValue: number,
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "Not your turn");
+  }
+
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  if (actor.character !== "double_detector") {
+    return legalityError(
+      "CHARACTER_ABILITY_WRONG_CHARACTER",
+      "Only the Double Detector character can use this ability",
+    );
+  }
+
+  if (actor.characterUsed) {
+    return legalityError(
+      "CHARACTER_ABILITY_ALREADY_USED",
+      "Character ability already used this mission",
+    );
+  }
+
+  const target = state.players.find((p) => p.id === targetPlayerId);
+  if (!target) {
+    return legalityError("TARGET_PLAYER_NOT_FOUND", "Target player not found");
+  }
+
+  if (actorId === targetPlayerId) {
+    return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
+  }
+
+  if (tileIndex1 === tileIndex2) {
+    return legalityError(
+      "DOUBLE_DETECTOR_INVALID_TILES",
+      "Must select two different tiles",
+    );
+  }
+
+  const tile1 = getTileByFlatIndex(target, tileIndex1);
+  const tile2 = getTileByFlatIndex(target, tileIndex2);
+  if (!tile1 || !tile2) {
+    return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+  }
+  if (tile1.cut) {
+    return legalityError("TILE_ALREADY_CUT", "Tile 1 already cut");
+  }
+  if (tile2.cut) {
+    return legalityError("TILE_ALREADY_CUT", "Tile 2 already cut");
+  }
+
+  if (typeof guessValue !== "number") {
+    return legalityError(
+      "DOUBLE_DETECTOR_GUESS_NOT_BLUE",
+      "Guess value must be a number (not yellow)",
+    );
+  }
+
+  // Actor must have an uncut blue tile with the guessed value
+  const actorUncut = getUncutTiles(actor);
+  const actorHasValue = actorUncut.some(
+    (t) => t.color === "blue" && t.gameValue === guessValue,
+  );
+  if (!actorHasValue) {
+    return legalityError(
+      "GUESS_VALUE_NOT_IN_HAND",
+      "You don't have an uncut blue wire with that value",
+    );
+  }
+
+  return null;
 }
 
 /** Check if a solo cut action is valid (base rules only). */
@@ -227,6 +328,14 @@ export type ValidatableAction =
       guessValue: number | "YELLOW";
     }
   | {
+      type: "dualCutDoubleDetector";
+      actorId: string;
+      targetPlayerId: string;
+      tileIndex1: number;
+      tileIndex2: number;
+      guessValue: number;
+    }
+  | {
       type: "soloCut";
       actorId: string;
       value: number | "YELLOW";
@@ -249,6 +358,18 @@ export function validateActionWithHooks(
     );
   }
 
+  const actor = state.players.find((p) => p.id === action.actorId);
+  if (!actor) {
+    return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+  }
+
+  if (action.type !== "revealReds" && isRevealRedsForced(state, actor)) {
+    return legalityError(
+      "FORCED_REVEAL_REDS_REQUIRED",
+      "You must reveal your remaining red-like wires before taking another action",
+    );
+  }
+
   switch (action.type) {
     case "dualCut": {
       const baseError = validateDualCutLegality(
@@ -256,6 +377,18 @@ export function validateActionWithHooks(
         action.actorId,
         action.targetPlayerId,
         action.targetTileIndex,
+        action.guessValue,
+      );
+      if (baseError) return baseError;
+      break;
+    }
+    case "dualCutDoubleDetector": {
+      const baseError = validateDualCutDoubleDetectorLegality(
+        state,
+        action.actorId,
+        action.targetPlayerId,
+        action.tileIndex1,
+        action.tileIndex2,
         action.guessValue,
       );
       if (baseError) return baseError;
@@ -275,6 +408,12 @@ export function validateActionWithHooks(
       if (baseError) return baseError;
       break;
     }
+  }
+
+  // Double Detector validation is mission-agnostic at the moment.
+  // Hook validation currently accepts core turn actions only.
+  if (action.type === "dualCutDoubleDetector") {
+    return null;
   }
 
   const hookResult = dispatchHooks(state.mission, {
@@ -321,4 +460,22 @@ export function validateRevealRedsWithHooks(
   actorId: string,
 ): ActionLegalityError | null {
   return validateActionWithHooks(state, { type: "revealReds", actorId });
+}
+
+export function validateDualCutDoubleDetectorWithHooks(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  tileIndex1: number,
+  tileIndex2: number,
+  guessValue: number,
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, {
+    type: "dualCutDoubleDetector",
+    actorId,
+    targetPlayerId,
+    tileIndex1,
+    tileIndex2,
+    guessValue,
+  });
 }

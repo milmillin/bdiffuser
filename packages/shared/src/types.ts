@@ -73,6 +73,10 @@ export interface EquipmentCard {
   description: string;
   /** Wire value that unlocks this equipment (when 2 of this value are cut) */
   unlockValue: number;
+  /** Optional secondary mission lock value (e.g. mission 12 number-card lock). */
+  secondaryLockValue?: number;
+  /** Required cuts for `secondaryLockValue` before this card can be used. */
+  secondaryLockCutsRequired?: number;
   unlocked: boolean;
   used: boolean;
   image: string;
@@ -325,7 +329,12 @@ export type ActionLegalityCode =
   | "EQUIPMENT_INVALID_PAYLOAD"
   | "EQUIPMENT_RULE_VIOLATION"
   | "FORCED_ACTION_PENDING"
-  | "MISSION_RULE_VIOLATION";
+  | "FORCED_REVEAL_REDS_REQUIRED"
+  | "MISSION_RULE_VIOLATION"
+  | "CHARACTER_ABILITY_ALREADY_USED"
+  | "CHARACTER_ABILITY_WRONG_CHARACTER"
+  | "DOUBLE_DETECTOR_INVALID_TILES"
+  | "DOUBLE_DETECTOR_GUESS_NOT_BLUE";
 
 export interface ActionLegalityError {
   code: ActionLegalityCode;

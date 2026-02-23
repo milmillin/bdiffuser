@@ -127,4 +127,30 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.log).toHaveLength(1);
     expect(filtered.log[0].detail).toBe("some public action");
   });
+
+  it("preserves pending forced-action state for clients", () => {
+    const state = makeGameState({
+      pendingForcedAction: {
+        kind: "chooseNextPlayer",
+        captainId: "p1",
+        lastPlayerId: "p2",
+      },
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.pendingForcedAction).toEqual({
+      kind: "chooseNextPlayer",
+      captainId: "p1",
+      lastPlayerId: "p2",
+    });
+  });
+
+  it("preserves timer deadline when mission timer is active", () => {
+    const state = makeGameState({
+      timerDeadline: 1_700_000_000_000,
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.timerDeadline).toBe(1_700_000_000_000);
+  });
 });

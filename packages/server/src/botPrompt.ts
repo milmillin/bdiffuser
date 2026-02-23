@@ -22,6 +22,7 @@ export function buildSystemPrompt(): string {
    - Wrong guess on red: GAME OVER (explosion!).
 2. **soloCut** — Cut ALL your own tiles of a specific value. Only valid if you hold ALL remaining uncut copies of that value in the entire game (e.g., all 4 blue-3s, or the remaining 2 if 2 were already cut).
 3. **revealReds** — If ALL your remaining uncut tiles are red, reveal them all (removes them safely). Free and safe — always do it when eligible.
+4. **chooseNextPlayer** — Only when a forced action is pending for the captain: choose which player takes the next turn.
 
 ## Info Tokens
 - Info tokens are placed in front of tiles to indicate their value.
@@ -69,6 +70,9 @@ For soloCut:
 
 For revealReds:
 {"reasoning": "brief explanation", "action": "revealReds"}
+
+For chooseNextPlayer:
+{"reasoning": "brief explanation", "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
 
 guessValue can be a number (1-12) or "YELLOW" for yellow wires.
 soloCut value can be a number (1-12) or "YELLOW".`;
@@ -138,6 +142,21 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
   lines.push(
     `  Detonator: ${state.board.detonatorPosition} / ${state.board.detonatorMax} (game over at max!)`,
   );
+  if (state.timerDeadline != null) {
+    const remainingSeconds = Math.max(
+      0,
+      Math.floor((state.timerDeadline - Date.now()) / 1000),
+    );
+    lines.push(`  Mission timer: ${remainingSeconds}s remaining`);
+  }
+
+  const forcedAction = state.pendingForcedAction;
+  if (forcedAction?.kind === "chooseNextPlayer") {
+    const captain =
+      state.players.find((p) => p.id === forcedAction.captainId)
+        ?.name ?? forcedAction.captainId;
+    lines.push(`  Forced action pending: Captain ${captain} must choose next player`);
+  }
 
   const validated = Object.entries(state.board.validationTrack)
     .filter(([, count]) => count > 0)
@@ -160,6 +179,128 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
     if (yellowMarkers.length > 0) {
       lines.push(`  Yellow markers: positions ${yellowMarkers.join(", ")}`);
     }
+  }
+
+  const sequenceCards = state.campaign?.numberCards?.visible ?? [];
+  const specialMarkers = state.campaign?.specialMarkers ?? [];
+  const sequencePointer = specialMarkers.find(
+    (marker) => marker.kind === "sequence_pointer",
+  );
+  const numberDeckCount = state.campaign?.numberCards?.deck.length ?? 0;
+  const numberDiscardCount = state.campaign?.numberCards?.discard.length ?? 0;
+  if (numberDeckCount > 0 || numberDiscardCount > 0) {
+    lines.push(
+      `  Number cards: deck ${numberDeckCount}, discard ${numberDiscardCount}`,
+    );
+  }
+  if (sequenceCards.length > 0) {
+    lines.push(
+      `  Visible number cards: ${sequenceCards.map((card) => card.value).join(" -> ")}`,
+    );
+    if (sequencePointer) {
+      lines.push(`  Sequence pointer index: ${sequencePointer.value}`);
+    }
+  }
+
+  const constraints = state.campaign?.constraints;
+  if (constraints) {
+    const globalConstraints = constraints.global
+      .filter((constraint) => constraint.active)
+      .map((constraint) => constraint.name || constraint.id);
+    if (globalConstraints.length > 0) {
+      lines.push(`  Constraints (global): ${globalConstraints.join(", ")}`);
+    }
+
+    const perPlayerConstraints = Object.entries(constraints.perPlayer)
+      .map(([playerId, cards]) => {
+        const activeCards = cards
+          .filter((constraint) => constraint.active)
+          .map((constraint) => constraint.name || constraint.id);
+        if (activeCards.length === 0) return null;
+        const playerName =
+          state.players.find((player) => player.id === playerId)?.name ??
+          playerId;
+        return `${playerName}: ${activeCards.join(", ")}`;
+      })
+      .filter((entry): entry is string => entry !== null);
+    if (perPlayerConstraints.length > 0) {
+      lines.push(`  Constraints (per-player): ${perPlayerConstraints.join(" | ")}`);
+    }
+  }
+
+  const challenges = state.campaign?.challenges;
+  if (challenges) {
+    if (challenges.active.length > 0) {
+      lines.push(
+        `  Challenges active: ${challenges.active.map((challenge) => challenge.name || challenge.id).join(", ")}`,
+      );
+    }
+    if (challenges.completed.length > 0) {
+      lines.push(
+        `  Challenges completed: ${challenges.completed.map((challenge) => challenge.name || challenge.id).join(", ")}`,
+      );
+    }
+    if (challenges.deck.length > 0) {
+      lines.push(`  Challenges deck remaining: ${challenges.deck.length}`);
+    }
+  }
+
+  const oxygen = state.campaign?.oxygen;
+  if (oxygen) {
+    const oxygenByPlayer = state.players
+      .map((player) => ({
+        name: player.name,
+        value: oxygen.playerOxygen[player.id] ?? 0,
+      }))
+      .filter((entry) => entry.value > 0)
+      .map((entry) => `${entry.name}:${entry.value}`)
+      .join(", ");
+    lines.push(
+      `  Oxygen: pool ${oxygen.pool}${oxygenByPlayer ? ` | ${oxygenByPlayer}` : ""}`,
+    );
+  }
+
+  if (state.campaign?.nanoTracker) {
+    lines.push(
+      `  Nano tracker: ${state.campaign.nanoTracker.position}/${state.campaign.nanoTracker.max}`,
+    );
+  }
+
+  if (state.campaign?.bunkerTracker) {
+    lines.push(
+      `  Bunker tracker: ${state.campaign.bunkerTracker.position}/${state.campaign.bunkerTracker.max}`,
+    );
+  }
+
+  const visibleSpecialMarkers = specialMarkers.filter(
+    (marker) =>
+      marker.kind !== "sequence_pointer" || sequenceCards.length === 0,
+  );
+  if (visibleSpecialMarkers.length > 0) {
+    lines.push(
+      `  Special markers: ${visibleSpecialMarkers.map((marker) => `${marker.kind}:${marker.value}`).join(", ")}`,
+    );
+  }
+
+  const equipmentLocks = state.board.equipment
+    .filter(
+      (equipment) =>
+        equipment.secondaryLockValue !== undefined &&
+        !equipment.used,
+    )
+    .map((equipment) => {
+      const value = equipment.secondaryLockValue as number;
+      const required = equipment.secondaryLockCutsRequired ?? 2;
+      let cutCount = 0;
+      for (const player of state.players) {
+        for (const tile of player.hand) {
+          if (tile.cut && tile.gameValue === value) cutCount++;
+        }
+      }
+      return `${equipment.name}: ${value} (${Math.min(cutCount, required)}/${required})`;
+    });
+  if (equipmentLocks.length > 0) {
+    lines.push(`  Equipment secondary locks: ${equipmentLocks.join(" | ")}`);
   }
   lines.push("");
 

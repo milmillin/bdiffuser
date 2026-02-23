@@ -110,24 +110,31 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 9 face-A sequence-priority gating (left→middle→right unlock flow)
   - [x] Forced action: captain chooses next player (mission 10 dynamic turn order)
   - [x] Mission 10 no-consecutive-turn enforcement (3+ players; 2-player exception)
-  - [ ] Remaining forced-pass states used in missions 1-12
-  - Mission-specific forbidden targets/values used in missions 1-12
+  - [x] Remaining forced-pass states used in missions 1-12
+  - [x] Mission-specific forbidden targets/values used in missions 1-12
   - [x] Mission 11 reveal restriction: hidden red-like value can only be revealed when it is all remaining in hand
 
 #### Game Logic Layer (mission-aware)
 - [ ] Implement mission-aware action resolvers for special actions used in missions 1-12.
 - [ ] Implement mission-specific failure outcomes used in missions 1-12.
   - [x] Mission 11 hidden blue-as-red parity: successful cut of hidden value explodes immediately (`loss_red_wire`)
+  - [x] Mission 11 hidden blue-as-red parity: wrong dual-cut guess on hidden value also explodes (`loss_red_wire`)
   - [x] Mission 10 timer enforcement: `timerDeadline` on GameState, Durable Object alarm-based timeout → `loss_timer` result.
+  - [x] Mission 10 2-player timer override: 12-minute setup timer
 - [ ] Make win/loss checks mission-aware for mission patterns used in missions 1-12.
 
 #### Equipment Runtime Parity
 - [ ] Implement full shared-equipment use/effects required by missions 1-12.
 - [ ] Implement mission-specific equipment exclusions/replacements needed by missions 1-12.
+  - [x] Mission 11 setup replacement for equipment matching hidden red-like value
+  - [x] Mission 12 per-equipment number-card secondary lock enforcement
+  - [x] Mission 12 secondary lock metadata clears when requirement is satisfied
 
 #### Token System Parity
 - [ ] Implement token variants required by missions 1-12.
-- [ ] Implement mission-specific setup token flows required by missions 1-12.
+- [~] Implement mission-specific setup token flows required by missions 1-12.
+  - [x] Mission 11 (2-player) setup override: captain skips info-token placement
+  - [x] Setup info-token legality enforcement (own blue wire + matching value + valid index)
 
 ### Advanced Rules (P1, expands to M2/M3)
 
@@ -158,30 +165,41 @@ Dependency: blocked by Phase 0C.
 Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 
 ### View Filtering and Persistence
-- [ ] Update `viewFilter.ts` for all new mission objects and visibility semantics.
-- [ ] Verify room persistence/restore across all mission object types.
+- [~] Update `viewFilter.ts` for all new mission objects and visibility semantics.
+  - [x] Mission 11 hidden blue-as-red setup value stays server-only in filtered log
+  - [x] Mission-driven client fields preserved: `pendingForcedAction`, `timerDeadline`
+- [x] Verify room persistence/restore across all mission object types.
+  - [x] Persist/restore mission-10 `pendingForcedAction` (+ `lastPlayerId`) via storage migration
+  - [x] Storage migration tests cover campaign object restore: number cards, constraints, challenges, oxygen, nano/bunker trackers, special markers, and timer deadline
 
 ### Bot Integration
-- [ ] Extend bot action schema for mission-specific actions beyond `dualCut/soloCut/revealReds`.
-- [ ] Extend bot prompt with mission objects (cards/constraints/oxygen/trackers).
-- [ ] Add bot fallback strategy for not-yet-implemented hooks.
+- [x] Extend bot action schema for mission-specific actions beyond `dualCut/soloCut/revealReds`.
+- [x] Extend bot prompt with mission objects (cards/constraints/oxygen/trackers).
+  - [x] Added mission context to bot prompt: timer, pending forced action, visible number cards, sequence pointer, equipment secondary-lock progress
+  - [x] Added mission-object summaries: constraints, challenges, oxygen economy, nano/bunker trackers, and special markers
+- [x] Add bot fallback strategy for not-yet-implemented hooks.
 
 ### Client UI
 - [ ] Add UI surfaces for mission objects (cards, constraints, oxygen, Nano/Bunker, markers).
 - [ ] Add action-panel variants for mission-specific actions.
-- [ ] Show active mission constraints/reminders in turn UI.
+  - [x] Mission 12 equipment buttons show secondary-lock progress and disable until satisfied
+- [~] Show active mission constraints/reminders in turn UI.
+  - [x] Mission 10 live timer countdown in header (`timerDeadline`)
+  - [x] Mission 9 sequence-priority hint panel (cards + active pointer)
+  - [x] Mission 12 equipment secondary-lock progress panel
 - [x] Support captain UI for mission-10 `chooseNextPlayer` forced action (ChooseNextPlayerPanel).
-- [ ] Support non-clockwise turn indicators and remaining forced-action states.
+- [~] Support non-clockwise turn indicators and remaining forced-action states.
+  - [x] Mission 10 dynamic-turn indicator + previous-player context in turn UI
 - [ ] Support mission-specific token placement interactions.
 
 ## Phase 3 - QA Hardening, Rollout, and Cleanup (P1/P2)
 Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 
 ### Test Coverage
-- [ ] Add schema validation tests for all mission IDs + overrides.
-- [ ] Add resolved setup snapshots per mission.
-- [ ] Add representative setup/validation/game-logic tests per mission complexity tier.
-- [ ] Keep `pnpm mission:test` for campaign smoke and expand scenarios.
+- [x] Add schema validation tests for all mission IDs + overrides.
+- [x] Add resolved setup snapshots per mission.
+- [x] Add representative setup/validation/game-logic tests per mission complexity tier.
+- [x] Keep `pnpm mission:test` for campaign smoke and expand scenarios.
 
 ### Rollout by Milestone
 - [ ] Ship M1 (missions 1-12) only when all M1 tests pass.

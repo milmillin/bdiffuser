@@ -121,4 +121,478 @@ describe("normalizeRoomState", () => {
     expect(normalized.gameState!.board.equipment).toHaveLength(1);
     expect(normalized.gameState!.board.equipment[0].image).toBe("equipment_6.png");
   });
+
+  it("preserves mission-specific secondary equipment lock fields", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [
+            {
+              id: "rewinder",
+              name: "Rewinder",
+              description: "Move detonator back one notch",
+              unlockValue: 6,
+              secondaryLockValue: 8,
+              secondaryLockCutsRequired: 2,
+              unlocked: true,
+              used: false,
+              image: "equipment_6.png",
+            },
+          ],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 12,
+        result: null,
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-e");
+    expect(normalized.gameState).not.toBeNull();
+    const card = normalized.gameState!.board.equipment[0];
+    expect(card.secondaryLockValue).toBe(8);
+    expect(card.secondaryLockCutsRequired).toBe(2);
+  });
+
+  it("preserves pending forced action state for mission 10 restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        mission: 10,
+        result: null,
+        pendingForcedAction: {
+          kind: "chooseNextPlayer",
+          captainId: "captain",
+          lastPlayerId: "p2",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "chooseNextPlayer",
+      captainId: "captain",
+      lastPlayerId: "p2",
+    });
+  });
+
+  it("preserves campaign mission objects and timer state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 1,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 8,
+        mission: 31,
+        result: null,
+        timerDeadline: 1735689600000,
+        campaign: {
+          numberCards: {
+            deck: [{ id: "d1", value: 11, faceUp: false }],
+            discard: [{ id: "dc1", value: 3, faceUp: true }],
+            visible: [{ id: "v1", value: 7, faceUp: true }],
+            playerHands: {
+              p1: [{ id: "h1", value: 6, faceUp: false }],
+              p2: [{ id: "h2", value: 9, faceUp: false }],
+            },
+          },
+          constraints: {
+            global: [{ id: "cg1", name: "No 7", description: "No value 7", active: true }],
+            perPlayer: {
+              p1: [{ id: "cp1", name: "No solo", description: "Cannot solo cut", active: true }],
+            },
+          },
+          challenges: {
+            deck: [{ id: "chd", name: "Hidden", description: "Deck", completed: false }],
+            active: [{ id: "cha", name: "Active", description: "A", completed: false }],
+            completed: [{ id: "chc", name: "Done", description: "C", completed: true }],
+          },
+          oxygen: {
+            pool: 5,
+            playerOxygen: { p1: 2, p2: 1 },
+          },
+          nanoTracker: {
+            position: 2,
+            max: 6,
+          },
+          bunkerTracker: {
+            position: 1,
+            max: 4,
+          },
+          specialMarkers: [
+            { kind: "x", value: 8 },
+            { kind: "sequence_pointer", value: 1 },
+          ],
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-g");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.timerDeadline).toBe(1735689600000);
+    expect(normalized.gameState!.campaign).toEqual(legacy.gameState.campaign);
+  });
+
+  it("normalizes malformed campaign object shapes to safe defaults", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 36,
+        result: null,
+        campaign: {
+          numberCards: {
+            deck: "invalid",
+            discard: null,
+            visible: [{ id: "v1", value: 5, faceUp: true }],
+            playerHands: "invalid",
+          },
+          constraints: {
+            global: "invalid",
+            perPlayer: null,
+          },
+          challenges: {
+            deck: "invalid",
+            active: null,
+            completed: [],
+          },
+          oxygen: {
+            pool: "invalid",
+            playerOxygen: "invalid",
+          },
+          nanoTracker: {
+            position: "invalid",
+          },
+          bunkerTracker: {
+            max: "invalid",
+          },
+          specialMarkers: "invalid",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-h");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign).toEqual({
+      numberCards: {
+        deck: [],
+        discard: [],
+        visible: [{ id: "v1", value: 5, faceUp: true }],
+        playerHands: {},
+      },
+      constraints: {
+        global: [],
+        perPlayer: {},
+      },
+      challenges: {
+        deck: [],
+        active: [],
+        completed: [],
+      },
+      oxygen: {
+        pool: 0,
+        playerOxygen: {},
+      },
+      nanoTracker: {
+        position: 0,
+        max: 0,
+      },
+      bunkerTracker: {
+        position: 0,
+        max: 0,
+      },
+      specialMarkers: [],
+    });
+  });
+
+  it("filters malformed entries inside campaign arrays and per-player maps", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 36,
+        result: null,
+        campaign: {
+          numberCards: {
+            deck: [
+              { id: "ok-deck", value: 8, faceUp: false },
+              { id: "bad-deck", value: "x", faceUp: false },
+            ],
+            discard: [],
+            visible: [{ id: "ok-visible", value: 4, faceUp: true }],
+            playerHands: {
+              p1: [
+                { id: "ok-hand", value: 6, faceUp: false },
+                { id: "bad-hand", value: null, faceUp: false },
+              ],
+              p2: "invalid",
+            },
+          },
+          constraints: {
+            global: [
+              { id: "ok-c", name: "No 4", description: "rule", active: true },
+              { id: "bad-c", name: 1, description: "rule", active: true },
+            ],
+            perPlayer: {
+              p1: [
+                { id: "ok-pc", name: "No solo", description: "rule", active: true },
+                { id: "bad-pc", name: "bad", description: 5, active: true },
+              ],
+              p2: "invalid",
+            },
+          },
+          challenges: {
+            deck: [
+              { id: "ok-ch", name: "Deck", description: "desc", completed: false },
+              { id: "bad-ch", name: "Bad", description: null, completed: false },
+            ],
+            active: [],
+            completed: [],
+          },
+          oxygen: {
+            pool: 3,
+            playerOxygen: {
+              p1: 2,
+              p2: "invalid",
+            },
+          },
+          specialMarkers: [
+            { kind: "x", value: 9 },
+            { kind: "unknown", value: 1 },
+            { kind: "sequence_pointer", value: "invalid" },
+          ],
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-i");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign).toEqual({
+      numberCards: {
+        deck: [{ id: "ok-deck", value: 8, faceUp: false }],
+        discard: [],
+        visible: [{ id: "ok-visible", value: 4, faceUp: true }],
+        playerHands: {
+          p1: [{ id: "ok-hand", value: 6, faceUp: false }],
+          p2: [],
+        },
+      },
+      constraints: {
+        global: [{ id: "ok-c", name: "No 4", description: "rule", active: true }],
+        perPlayer: {
+          p1: [{ id: "ok-pc", name: "No solo", description: "rule", active: true }],
+          p2: [],
+        },
+      },
+      challenges: {
+        deck: [{ id: "ok-ch", name: "Deck", description: "desc", completed: false }],
+        active: [],
+        completed: [],
+      },
+      oxygen: {
+        pool: 3,
+        playerOxygen: { p1: 2 },
+      },
+      specialMarkers: [{ kind: "x", value: 9 }],
+    });
+  });
+
+  it("does not persist empty campaign objects with no recognized fields", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 1,
+        result: null,
+        campaign: {},
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-j");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign).toBeUndefined();
+  });
+
+  it("treats null campaign sub-objects as explicit empty defaults when key exists", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 9,
+        result: null,
+        campaign: {
+          numberCards: null,
+          constraints: null,
+          challenges: null,
+          oxygen: null,
+          nanoTracker: null,
+          bunkerTracker: null,
+          specialMarkers: null,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-k");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign).toEqual({
+      numberCards: {
+        deck: [],
+        discard: [],
+        visible: [],
+        playerHands: {},
+      },
+      constraints: {
+        global: [],
+        perPlayer: {},
+      },
+      challenges: {
+        deck: [],
+        active: [],
+        completed: [],
+      },
+      oxygen: {
+        pool: 0,
+        playerOxygen: {},
+      },
+      nanoTracker: {
+        position: 0,
+        max: 0,
+      },
+      bunkerTracker: {
+        position: 0,
+        max: 0,
+      },
+      specialMarkers: [],
+    });
+  });
 });

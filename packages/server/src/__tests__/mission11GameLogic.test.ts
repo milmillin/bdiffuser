@@ -79,6 +79,42 @@ describe("mission 11 game logic", () => {
     expect(state.phase).toBe("playing");
   });
 
+  it("explodes when a dual cut targets a hidden red-like wire with a wrong guess", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 11,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "blue_as_red:7",
+          timestamp: 1000,
+        },
+      ],
+    });
+
+    const action = executeDualCut(state, "actor", "target", 0, 5);
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+
+    expect(action.explosion).toBe(true);
+    expect(action.success).toBe(false);
+    expect(action.revealedColor).toBe("red");
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
+    expect(target.hand[0].cut).toBe(true);
+  });
+
   it("explodes when a solo cut cuts the hidden red-like value", () => {
     const actor = makePlayer({
       id: "actor",

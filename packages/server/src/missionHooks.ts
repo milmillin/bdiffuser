@@ -36,6 +36,7 @@ import type {
   MissionId,
 } from "@bomb-busters/shared";
 import {
+  EQUIPMENT_DEFS,
   MISSION_SCHEMAS,
   type MissionHookRuleDef,
 } from "@bomb-busters/shared";
@@ -596,15 +597,19 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
  */
 registerHookHandler<"timer">("timer", {
   setup(rule: TimerRuleDef, ctx: SetupHookContext): void {
+    const playerCount = ctx.state.players.length as 2 | 3 | 4 | 5;
+    const durationSeconds =
+      rule.durationSecondsByPlayerCount?.[playerCount] ?? rule.durationSeconds;
+
     // Set the timer deadline on game state (unix-ms).
-    ctx.state.timerDeadline = Date.now() + rule.durationSeconds * 1000;
+    ctx.state.timerDeadline = Date.now() + durationSeconds * 1000;
 
     // Store timer config in the log so downstream systems can read it.
     ctx.state.log.push({
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `timer:${rule.durationSeconds}s,audio:${rule.audioPrompt}`,
+      detail: `timer:${durationSeconds}s,audio:${rule.audioPrompt}`,
       timestamp: Date.now(),
     });
   },
@@ -656,6 +661,38 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
   setup(_rule: BlueAsRedRuleDef, ctx: SetupHookContext): void {
     // Pick a random blue value from 1-12 to be the hidden red
     const hiddenRedValue = Math.floor(Math.random() * 12) + 1;
+
+    // Mission card rule: replace any equipment whose unlock value matches
+    // the hidden red-like value.
+    const usedEquipmentIds = new Set(
+      ctx.state.board.equipment.map((card) => card.id),
+    );
+    const replacementPool = EQUIPMENT_DEFS.filter(
+      (def) => def.pool === "base" && def.unlockValue !== hiddenRedValue,
+    );
+
+    let replacedCount = 0;
+    for (let i = 0; i < ctx.state.board.equipment.length; i++) {
+      const card = ctx.state.board.equipment[i];
+      if (card.unlockValue !== hiddenRedValue) continue;
+
+      const replacement = replacementPool.find((def) => !usedEquipmentIds.has(def.id));
+      if (!replacement) continue;
+
+      usedEquipmentIds.delete(card.id);
+      usedEquipmentIds.add(replacement.id);
+      ctx.state.board.equipment[i] = {
+        id: replacement.id,
+        name: replacement.name,
+        description: replacement.description,
+        unlockValue: replacement.unlockValue,
+        unlocked: false,
+        used: false,
+        image: replacement.image,
+      };
+      replacedCount++;
+    }
+
     ctx.state.log.push({
       turn: 0,
       playerId: "system",
@@ -663,6 +700,15 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
       detail: `blue_as_red:${hiddenRedValue}`,
       timestamp: Date.now(),
     });
+    if (replacedCount > 0) {
+      ctx.state.log.push({
+        turn: 0,
+        playerId: "system",
+        action: "hookSetup",
+        detail: `blue_as_red:equipment_replaced:${replacedCount}`,
+        timestamp: Date.now(),
+      });
+    }
   },
 
   resolve(_rule: BlueAsRedRuleDef, ctx: ResolveHookContext): HookResult | void {
@@ -690,13 +736,50 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
 /**
  * Mission 12 — Equipment double lock.
  *
- * Resolve: Overrides the default equipment unlock threshold from 2 to the
- *          value specified in the rule (requiredCuts, typically 2 matching
- *          value-pairs = 4 total cuts for that value, but the rule says
- *          "2 wires whose game-value matches" meaning 2 cuts still needed
- *          per equipment unlock — however the unlock value check changes).
+ * Setup: Assigns a face-up number-card lock value to each equipment card
+ *        when `secondaryLockSource` is enabled.
+ *
+ * Resolve: Overrides the default equipment unlock threshold using
+ *          `requiredCuts`.
  */
 registerHookHandler<"equipment_double_lock">("equipment_double_lock", {
+  setup(rule: EquipmentDoubleLockRuleDef, ctx: SetupHookContext): void {
+    if (rule.secondaryLockSource !== "number_card") return;
+
+    const requiredSecondaryCuts = rule.secondaryRequiredCuts ?? rule.requiredCuts;
+    const lockValues = shuffle([...MISSION_NUMBER_VALUES]).slice(
+      0,
+      ctx.state.board.equipment.length,
+    );
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: lockValues.map((value, idx) => ({
+        id: `m12-lock-${idx}-${value}`,
+        value,
+        faceUp: true,
+      })),
+      deck: [],
+      discard: [],
+      playerHands: {},
+    };
+
+    for (let i = 0; i < ctx.state.board.equipment.length; i++) {
+      const card = ctx.state.board.equipment[i];
+      const lockValue = lockValues[i];
+      card.secondaryLockValue = lockValue;
+      card.secondaryLockCutsRequired = requiredSecondaryCuts;
+    }
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `equipment_double_lock:number_cards:${lockValues.join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
   resolve(rule: EquipmentDoubleLockRuleDef, _ctx: ResolveHookContext): HookResult {
     return {
       overrideEquipmentUnlock: true,

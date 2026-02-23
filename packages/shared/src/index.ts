@@ -4,5 +4,7 @@ export * from "./constants.js";
 export * from "./missionSchema.js";
 export * from "./missions.js";
 export * from "./imageMap.js";
+export * from "./equipmentCardText.js";
+export * from "./characterCardText.js";
 export * from "./wireLabel.js";
 export * from "./visibility.js";

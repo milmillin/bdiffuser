@@ -60,3 +60,23 @@ describe("setupGame rejects invalid player count for restricted missions", () =>
     expect(() => setupGame(players, 34)).not.toThrow();
   });
 });
+
+describe("setupGame sorting", () => {
+  it("deals each player's hand in non-decreasing sortValue order", () => {
+    const players = [
+      makePlayer({ id: "p1", hand: [] }),
+      makePlayer({ id: "p2", hand: [] }),
+      makePlayer({ id: "p3", hand: [] }),
+    ];
+
+    const { players: dealtPlayers } = setupGame(players, 1);
+
+    for (const player of dealtPlayers) {
+      for (let index = 1; index < player.hand.length; index++) {
+        expect(player.hand[index - 1].sortValue).toBeLessThanOrEqual(
+          player.hand[index].sortValue,
+        );
+      }
+    }
+  });
+});

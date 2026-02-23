@@ -4,7 +4,6 @@ import type {
   CharacterId,
   ChatMessage,
   ClientGameState,
-  EquipmentGuessValue,
   GameResult,
   LobbyState,
   MissionId,
@@ -25,7 +24,7 @@ export type ClientMessage =
       targetTileIndex: number;
       guessValue: number | "YELLOW";
     }
-  | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: EquipmentGuessValue }
+  | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number }
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
   | { type: "useEquipment"; equipmentId: BaseEquipmentId; payload: UseEquipmentPayload }
@@ -79,6 +78,19 @@ export type GameAction =
       playerId: string;
       effect?: string;
       detail?: string;
+    }
+  | {
+      type: "dualCutDoubleDetectorResult";
+      actorId: string;
+      targetId: string;
+      tileIndex1: number;
+      tileIndex2: number;
+      guessValue: number;
+      outcome: "both_match" | "one_match" | "none_match";
+      cutTileIndex?: number;
+      detonatorAdvanced?: boolean;
+      explosion?: boolean;
+      infoTokenPlacedIndex?: number;
     }
   | {
       type: "gameOver";

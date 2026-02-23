@@ -1,13 +1,200 @@
 import { describe, expect, it } from "vitest";
 import {
+  EQUIPMENT_DEFS,
+  type ActionLegalityCode,
+  type BaseEquipmentId,
+  type GameState,
+  type UseEquipmentPayload,
+} from "@bomb-busters/shared";
+import {
   makeEquipmentCard,
   makeGameState,
   makePlayer,
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { executeDualCut } from "../gameLogic";
+import { executeDualCut, executeSoloCut } from "../gameLogic";
 import { executeUseEquipment, validateUseEquipment } from "../equipment";
+
+const BASE_EQUIPMENT_IDS = [
+  "label_neq",
+  "talkies_walkies",
+  "triple_detector",
+  "post_it",
+  "super_detector",
+  "rewinder",
+  "emergency_batteries",
+  "general_radar",
+  "stabilizer",
+  "x_or_y_ray",
+  "coffee_thermos",
+  "label_eq",
+] as const satisfies readonly BaseEquipmentId[];
+
+function getBaseEquipmentDef(equipmentId: BaseEquipmentId) {
+  const def = EQUIPMENT_DEFS.find(
+    (equipment) => equipment.id === equipmentId && equipment.pool === "base",
+  );
+  if (!def) {
+    throw new Error(`Missing base equipment definition for ${equipmentId}`);
+  }
+  return def;
+}
+
+function unlockedEquipmentCard(
+  id: string,
+  name: string,
+  unlockValue: number,
+) {
+  return makeEquipmentCard({
+    id,
+    name,
+    unlockValue,
+    unlocked: true,
+    used: false,
+  });
+}
+
+function stateWithEquipment(
+  players: ReturnType<typeof makePlayer>[],
+  equipment: ReturnType<typeof makeEquipmentCard>,
+) {
+  return makeGameState({
+    players,
+    currentPlayerIndex: 0,
+    board: {
+      ...makeGameState().board,
+      equipment: [equipment],
+    },
+  });
+}
+
+function buildValidPayload(equipmentId: BaseEquipmentId): UseEquipmentPayload {
+  switch (equipmentId) {
+    case "label_neq":
+      return { kind: "label_neq", tileIndexA: 0, tileIndexB: 1 };
+    case "talkies_walkies":
+      return {
+        kind: "talkies_walkies",
+        teammateId: "teammate",
+        myTileIndex: 1,
+        teammateTileIndex: 0,
+      };
+    case "triple_detector":
+      return {
+        kind: "triple_detector",
+        targetPlayerId: "teammate",
+        targetTileIndices: [0, 1, 2],
+        guessValue: 4,
+      };
+    case "post_it":
+      return { kind: "post_it", value: 4, tileIndex: 0 };
+    case "super_detector":
+      return { kind: "super_detector", targetPlayerId: "teammate", guessValue: 4 };
+    case "rewinder":
+      return { kind: "rewinder" };
+    case "emergency_batteries":
+      return { kind: "emergency_batteries", playerIds: ["teammate"] };
+    case "general_radar":
+      return { kind: "general_radar", value: 4 };
+    case "stabilizer":
+      return { kind: "stabilizer" };
+    case "x_or_y_ray":
+      return {
+        kind: "x_or_y_ray",
+        targetPlayerId: "teammate",
+        targetTileIndex: 1,
+        guessValueA: 4,
+        guessValueB: 7,
+      };
+    case "coffee_thermos":
+      return { kind: "coffee_thermos", targetPlayerId: "observer" };
+    case "label_eq":
+      return { kind: "label_eq", tileIndexA: 2, tileIndexB: 3 };
+  }
+}
+
+function buildPayloadWithWrongKind(
+  equipmentId: BaseEquipmentId,
+): UseEquipmentPayload {
+  if (equipmentId === "rewinder") {
+    return { kind: "label_eq", tileIndexA: 2, tileIndexB: 3 };
+  }
+  return { kind: "rewinder" };
+}
+
+function buildStateForEquipmentMatrix(equipmentId: BaseEquipmentId): GameState {
+  const actor = makePlayer({
+    id: "actor",
+    hand: [
+      makeTile({ id: "a1", gameValue: 4 }),
+      makeTile({ id: "a2", gameValue: 5 }),
+      makeTile({ id: "a3", gameValue: 7 }),
+      makeTile({ id: "a4", gameValue: 7 }),
+      makeTile({ id: "a5", gameValue: 8 }),
+    ],
+  });
+  const teammate = makePlayer({
+    id: "teammate",
+    characterUsed: true,
+    hand: [
+      makeTile({ id: "t1", gameValue: 1 }),
+      makeTile({ id: "t2", gameValue: 7 }),
+      makeTile({ id: "t3", gameValue: 9 }),
+    ],
+  });
+  const observer = makePlayer({
+    id: "observer",
+    hand: [makeTile({ id: "o1", gameValue: 2 })],
+  });
+  const equipmentDef = getBaseEquipmentDef(equipmentId);
+
+  return makeGameState({
+    phase: "playing",
+    players: [actor, teammate, observer],
+    currentPlayerIndex: 0,
+    board: {
+      ...makeGameState().board,
+      equipment: [
+        makeEquipmentCard({
+          id: equipmentDef.id,
+          name: equipmentDef.name,
+          unlockValue: equipmentDef.unlockValue,
+          unlocked: true,
+          used: false,
+        }),
+      ],
+    },
+  });
+}
+
+function expectLegalityCode(
+  state: GameState,
+  actorId: string,
+  equipmentId: BaseEquipmentId,
+  expectedCode: ActionLegalityCode | null,
+) {
+  const error = validateUseEquipment(
+    state,
+    actorId,
+    equipmentId,
+    buildValidPayload(equipmentId),
+  );
+
+  if (expectedCode === null) {
+    expect(error).toBeNull();
+    return;
+  }
+
+  expect(error).not.toBeNull();
+  expect(error?.code).toBe(expectedCode);
+}
+
+const TIMED_EQUIPMENT_IDS = new Set<BaseEquipmentId>(
+  BASE_EQUIPMENT_IDS.filter(
+    (equipmentId) => getBaseEquipmentDef(equipmentId).useTiming !== "anytime",
+  ),
+);
 
 describe("equipment validation", () => {
   it("rejects locked equipment", () => {
@@ -30,10 +217,453 @@ describe("equipment validation", () => {
       },
     });
 
-    const error = validateUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
+    const error = validateUseEquipment(state, "actor", "rewinder", {
+      kind: "rewinder",
+    });
     expect(error).not.toBeNull();
     expect(error?.code).toBe("EQUIPMENT_LOCKED");
   });
+
+  it("rejects post-it when value does not match targeted blue wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      value: 6,
+      tileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects label = when selected wires are not adjacent", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3 }),
+        makeTile({ id: "a2", gameValue: 4 }),
+        makeTile({ id: "a3", gameValue: 5 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_eq", "Label =", 12),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_eq", {
+      kind: "label_eq",
+      tileIndexA: 0,
+      tileIndexB: 2,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects label != when adjacent wires are equal", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3 }),
+        makeTile({ id: "a2", gameValue: 3 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects Talkies-Walkies when either selected wire is cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1, cut: true })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects Emergency Batteries when target has not used character ability", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+      characterUsed: false,
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("emergency_batteries", "Emergency Batteries", 7),
+    );
+
+    const error = validateUseEquipment(state, "actor", "emergency_batteries", {
+      kind: "emergency_batteries",
+      playerIds: ["target"],
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects General Radar for values outside 1-12", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("general_radar", "General Radar", 8),
+    );
+
+    const error = validateUseEquipment(state, "actor", "general_radar", {
+      kind: "general_radar",
+      value: 13,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+  });
+
+  it("rejects Stabilizer when already active for the actor this turn", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("stabilizer", "Stabilizer", 9),
+    );
+    state.turnNumber = 4;
+    state.turnEffects = {
+      stabilizer: {
+        playerId: "actor",
+        turnNumber: 4,
+      },
+    };
+
+    const error = validateUseEquipment(state, "actor", "stabilizer", {
+      kind: "stabilizer",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects Coffee Thermos self-targeting", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("coffee_thermos", "Coffee Thermos", 11),
+    );
+
+    const error = validateUseEquipment(state, "actor", "coffee_thermos", {
+      kind: "coffee_thermos",
+      targetPlayerId: "actor",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects Triple Detector with duplicate target indices", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 1 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+        makeTile({ id: "t3", gameValue: 6 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("triple_detector", "Triple Detector 3000", 3),
+    );
+
+    const error = validateUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "target",
+      targetTileIndices: [0, 0, 1],
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+  });
+
+  it("rejects Super Detector when actor does not hold the guessed value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 2 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 5 })],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("super_detector", "Super Detector", 5),
+    );
+
+    const error = validateUseEquipment(state, "actor", "super_detector", {
+      kind: "super_detector",
+      targetPlayerId: "target",
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("GUESS_VALUE_NOT_IN_HAND");
+  });
+
+  it("rejects X or Y Ray when announced values are identical", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 5 })],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("x_or_y_ray", "X or Y Ray", 10),
+    );
+
+    const error = validateUseEquipment(state, "actor", "x_or_y_ray", {
+      kind: "x_or_y_ray",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValueA: 5,
+      guessValueB: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+  });
+
+  it("mission 12: clears secondary lock metadata after requirement is met", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 12,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "rewinder",
+            name: "Rewinder",
+            unlockValue: 6,
+            unlocked: true,
+            secondaryLockValue: 5,
+            secondaryLockCutsRequired: 2,
+          }),
+        ],
+      },
+    });
+
+    const blockedBefore = validateUseEquipment(state, "actor", "rewinder", {
+      kind: "rewinder",
+    });
+    expect(blockedBefore?.code).toBe("EQUIPMENT_LOCKED");
+
+    executeSoloCut(state, "actor", 5);
+
+    expect(state.board.equipment[0].secondaryLockValue).toBeUndefined();
+    expect(state.board.equipment[0].secondaryLockCutsRequired).toBeUndefined();
+
+    const allowedAfter = validateUseEquipment(state, "actor", "rewinder", {
+      kind: "rewinder",
+    });
+    expect(allowedAfter).toBeNull();
+  });
+});
+
+describe("equipment validation matrix across shared game states", () => {
+  it.each(BASE_EQUIPMENT_IDS)(
+    "accepts valid payload in baseline state for %s",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      expectLegalityCode(state, "actor", equipmentId, null);
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when a forced action is pending",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      state.pendingForcedAction = {
+        kind: "chooseNextPlayer",
+        captainId: "actor",
+      };
+      expectLegalityCode(state, "actor", equipmentId, "FORCED_ACTION_PENDING");
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when actor must reveal reds",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      state.mission = 3;
+      state.players[0].hand = [makeTile({ id: "r1", color: "red", gameValue: "RED" })];
+      expectLegalityCode(state, "actor", equipmentId, "FORCED_REVEAL_REDS_REQUIRED");
+    },
+  );
+
+  it("rejects equipment in mission 11 when actor has only hidden red-like wires", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 11;
+    state.players[0].hand = [
+      makeTile({ id: "b1", color: "blue", gameValue: 7 }),
+      makeTile({ id: "b2", color: "blue", gameValue: 7 }),
+    ];
+    state.log = [
+      {
+        turn: 0,
+        playerId: "system",
+        action: "hookSetup",
+        detail: "blue_as_red:7",
+        timestamp: 1000,
+      },
+    ];
+
+    expectLegalityCode(state, "actor", "rewinder", "FORCED_REVEAL_REDS_REQUIRED");
+  });
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when actor is missing from state",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      expectLegalityCode(state, "ghost", equipmentId, "ACTOR_NOT_FOUND");
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when card is not present on board",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      state.board.equipment = [];
+      expectLegalityCode(state, "actor", equipmentId, "EQUIPMENT_NOT_FOUND");
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)("rejects locked %s cards", (equipmentId) => {
+    const state = buildStateForEquipmentMatrix(equipmentId);
+    state.board.equipment[0].unlocked = false;
+    expectLegalityCode(state, "actor", equipmentId, "EQUIPMENT_LOCKED");
+  });
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when secondary lock requirement is not met",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      state.board.equipment[0].secondaryLockValue = 12;
+      state.board.equipment[0].secondaryLockCutsRequired = 2;
+      expectLegalityCode(state, "actor", equipmentId, "EQUIPMENT_LOCKED");
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)("rejects already-used %s cards", (equipmentId) => {
+    const state = buildStateForEquipmentMatrix(equipmentId);
+    state.board.equipment[0].used = true;
+    expectLegalityCode(state, "actor", equipmentId, "EQUIPMENT_ALREADY_USED");
+  });
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "rejects %s when payload kind does not match card id",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      const error = validateUseEquipment(
+        state,
+        "actor",
+        equipmentId,
+        buildPayloadWithWrongKind(equipmentId),
+      );
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+    },
+  );
+
+  it.each(BASE_EQUIPMENT_IDS)(
+    "enforces turn timing for %s while playing",
+    (equipmentId) => {
+      const state = buildStateForEquipmentMatrix(equipmentId);
+      state.currentPlayerIndex = 1;
+      const expectedCode = TIMED_EQUIPMENT_IDS.has(equipmentId)
+        ? "EQUIPMENT_TIMING_VIOLATION"
+        : null;
+      expectLegalityCode(state, "actor", equipmentId, expectedCode);
+    },
+  );
+
+  for (const phase of ["lobby", "setup_info_tokens", "finished"] as const) {
+    it.each(BASE_EQUIPMENT_IDS)(
+      `phase ${phase}: applies timing rules for %s`,
+      (equipmentId) => {
+        const state = buildStateForEquipmentMatrix(equipmentId);
+        state.phase = phase;
+        const expectedCode = TIMED_EQUIPMENT_IDS.has(equipmentId)
+          ? "EQUIPMENT_TIMING_VIOLATION"
+          : null;
+        expectLegalityCode(state, "actor", equipmentId, expectedCode);
+      },
+    );
+  }
 });
 
 describe("equipment execution", () => {
@@ -59,9 +689,247 @@ describe("equipment execution", () => {
       },
     });
 
-    const action = executeUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
+    const action = executeUseEquipment(state, "actor", "rewinder", {
+      kind: "rewinder",
+    });
     expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("rewinder");
     expect(state.board.detonatorPosition).toBe(1);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("post-it places an info token on actor stand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const action = executeUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      value: 4,
+      tileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("post_it");
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 4, position: 0, isYellow: false },
+    ]);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("label = places relation token with eq marker", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 4 }),
+        makeTile({ id: "a2", gameValue: 4 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_eq", "Label =", 12),
+    );
+
+    const action = executeUseEquipment(state, "actor", "label_eq", {
+      kind: "label_eq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("label_eq");
+    expect(state.players[0].infoTokens).toEqual([
+      {
+        value: 0,
+        position: 0,
+        positionB: 1,
+        isYellow: false,
+        relation: "eq",
+      },
+    ]);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("label != places relation token with neq marker", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 4 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const action = executeUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("label_neq");
+    expect(state.players[0].infoTokens).toEqual([
+      {
+        value: 0,
+        position: 0,
+        positionB: 1,
+        isYellow: false,
+        relation: "neq",
+      },
+    ]);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("talkies-walkies swaps only selected indices and does not auto-sort hands", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", sortValue: 1, gameValue: 1 }),
+        makeTile({ id: "a6", sortValue: 6, gameValue: 6 }),
+        makeTile({ id: "a9", sortValue: 9, gameValue: 9 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [
+        makeTile({ id: "t2", sortValue: 2, gameValue: 2 }),
+        makeTile({ id: "t3", sortValue: 3, gameValue: 3 }),
+        makeTile({ id: "t7", sortValue: 7, gameValue: 7 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 1,
+      teammateTileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies");
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["a1", "t2", "a9"]);
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["a6", "t3", "t7"]);
+    expect(state.players[0].hand[0].id).toBe("a1");
+    expect(state.players[0].hand[2].id).toBe("a9");
+    expect(state.players[1].hand[1].id).toBe("t3");
+    expect(state.players[1].hand[2].id).toBe("t7");
+    expect(state.players[1].hand.map((tile) => tile.sortValue)).toEqual([6, 3, 7]);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("emergency batteries resets used character abilities for selected players", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "p2-1", gameValue: 2 })],
+      characterUsed: true,
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "p3-1", gameValue: 3 })],
+      characterUsed: true,
+    });
+    const state = stateWithEquipment(
+      [actor, p2, p3],
+      unlockedEquipmentCard("emergency_batteries", "Emergency Batteries", 7),
+    );
+
+    const action = executeUseEquipment(state, "actor", "emergency_batteries", {
+      kind: "emergency_batteries",
+      playerIds: ["p2", "p3"],
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("emergency_batteries");
+    expect(state.players[1].characterUsed).toBe(false);
+    expect(state.players[2].characterUsed).toBe(false);
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("general radar returns per-player yes/no detail", () => {
+    const actor = makePlayer({
+      id: "actor",
+      name: "Actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bob",
+      hand: [makeTile({ id: "b1", gameValue: 9 })],
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      name: "Cara",
+      hand: [makeTile({ id: "c1", gameValue: 4 })],
+    });
+    const state = stateWithEquipment(
+      [actor, p2, p3],
+      unlockedEquipmentCard("general_radar", "General Radar", 8),
+    );
+
+    const action = executeUseEquipment(state, "actor", "general_radar", {
+      kind: "general_radar",
+      value: 4,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("general_radar");
+    expect(action.detail).toContain("Actor:yes");
+    expect(action.detail).toContain("Bob:no");
+    expect(action.detail).toContain("Cara:yes");
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("stabilizer marks turn effect for actor and turn number", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("stabilizer", "Stabilizer", 9),
+    );
+    state.turnNumber = 3;
+
+    const action = executeUseEquipment(state, "actor", "stabilizer", {
+      kind: "stabilizer",
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("stabilizer");
+    expect(state.turnEffects).toEqual({
+      stabilizer: {
+        playerId: "actor",
+        turnNumber: 3,
+      },
+    });
     expect(state.board.equipment[0].used).toBe(true);
   });
 
@@ -102,6 +970,70 @@ describe("equipment execution", () => {
       expect(action.detonatorAdvanced).toBe(false);
     }
     expect(state.board.detonatorPosition).toBe(0);
+  });
+
+  it("triple detector resolves by running a dual cut against one of chosen indices", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+        makeTile({ id: "t3", gameValue: 8 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("triple_detector", "Triple Detector 3000", 3),
+    );
+
+    const action = executeUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "target",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 5,
+    });
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.targetTileIndex).toBe(1);
+      expect(action.success).toBe(true);
+    }
+    expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("super detector resolves by selecting an uncut tile from target stand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 6 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 6 }),
+        makeTile({ id: "t2", gameValue: 2 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("super_detector", "Super Detector", 5),
+    );
+
+    const action = executeUseEquipment(state, "actor", "super_detector", {
+      kind: "super_detector",
+      targetPlayerId: "target",
+      guessValue: 6,
+    });
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.targetTileIndex).toBe(0);
+      expect(action.success).toBe(true);
+    }
+    expect(state.board.equipment[0].used).toBe(true);
   });
 
   it("x or y ray resolves with either announced value", () => {
@@ -147,6 +1079,7 @@ describe("equipment execution", () => {
       expect(action.success).toBe(true);
       expect(action.guessValue).toBe("YELLOW");
     }
+    expect(state.board.equipment[0].used).toBe(true);
   });
 
   it("coffee thermos passes turn to selected player", () => {
@@ -186,7 +1119,10 @@ describe("equipment execution", () => {
       targetPlayerId: "p3",
     });
     expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("coffee_thermos");
     expect(state.currentPlayerIndex).toBe(2);
     expect(state.turnNumber).toBe(2);
+    expect(state.board.equipment[0].used).toBe(true);
   });
 });

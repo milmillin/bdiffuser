@@ -1,5 +1,6 @@
 import {
   EQUIPMENT_DEFS,
+  getEquipmentCardText,
   resolveMissionSetup,
   type BoardState,
   type MissionId,
@@ -212,6 +213,12 @@ function EquipmentRow({
 
   const getStatus = (eq: BoardState["equipment"][number]) => {
     if (eq.used) return { label: "Used", className: "bg-black/70 text-gray-200" };
+    if (eq.unlocked && eq.secondaryLockValue !== undefined) {
+      return {
+        label: `2nd Lock ${eq.secondaryLockValue}x${eq.secondaryLockCutsRequired ?? 2}`,
+        className: "bg-black/70 text-amber-200",
+      };
+    }
     if (eq.unlocked) {
       return { label: "Available", className: "bg-green-700/80 text-white" };
     }
@@ -223,40 +230,72 @@ function EquipmentRow({
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Equipment</div>
       <div className="flex gap-3 overflow-x-auto pb-1">
         {equipment.map((eq) => {
-          const imageName =
-            (typeof eq.image === "string" && eq.image) ||
-            defsById.get(eq.id)?.image ||
-            "equipment_back.png";
+          const def = defsById.get(eq.id);
+          const rulesText = getEquipmentCardText(eq.id, def);
+          const status = getStatus(eq);
 
           return (
             <div
               key={eq.id}
-              className={`relative flex-shrink-0 w-28 sm:w-32 rounded-lg overflow-hidden border shadow-md ${
+              className={`relative flex-shrink-0 w-64 rounded-lg border shadow-md h-72 ${
                 eq.used
-                  ? "border-gray-700 opacity-60"
+                  ? "border-gray-700 opacity-60 bg-gray-900"
                   : eq.unlocked
-                    ? "border-green-500"
-                    : "border-gray-700"
+                    ? "border-green-500 bg-slate-900"
+                    : "border-gray-700 bg-slate-950"
               }`}
             >
-              <img
-                src={`/images/${imageName}`}
-                alt={eq.name}
-                className={`block w-full aspect-[264/378] object-cover ${eq.used ? "grayscale" : ""}`}
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.src.endsWith("/images/equipment_back.png")) {
-                    target.src = "/images/equipment_back.png";
-                  }
-                }}
-              />
-              <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${getStatus(eq).className}`}>
-                {getStatus(eq).label}
+              <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${status.className}`}>
+                {status.label}
               </div>
-              <div className="absolute inset-x-0 bottom-0 bg-black/70 px-1.5 py-1">
-                <div className="text-[10px] font-bold text-white truncate">{eq.name}</div>
+              <div className="h-full overflow-y-auto px-2.5 py-2.5 pt-7 space-y-2">
+                <div className="space-y-0.5">
+                  <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                    Equipment {eq.unlockValue}
+                  </div>
+                  <div className="text-sm font-bold text-white leading-tight">
+                    {eq.name}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    Unlocks after 2 cuts of value {eq.unlockValue}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-cyan-300">
+                    Timing
+                  </div>
+                  <p className="text-[11px] leading-snug text-gray-100">
+                    {rulesText.timing}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                    Effect
+                  </div>
+                  <p className="text-[11px] leading-snug text-gray-100">
+                    {rulesText.effect}
+                  </p>
+                </div>
+
+                {rulesText.reminders.length > 0 && (
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-fuchsia-300">
+                      Reminder
+                    </div>
+                    <ul className="space-y-1">
+                      {rulesText.reminders.map((reminder) => (
+                        <li
+                          key={reminder}
+                          className="text-[11px] leading-snug text-gray-300"
+                        >
+                          - {reminder}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           );
