@@ -124,8 +124,8 @@ export class BombBustersServer extends Server<Env> {
       const player = this.room.players.find((p) => p.id === connection.id);
       if (player) {
         player.connected = true;
-        const filtered = filterStateForPlayer(this.room.gameState, connection.id);
-        this.sendMsg(connection, { type: "gameState", state: filtered });
+        // Broadcast to all so everyone sees the updated connection status
+        this.broadcastGameState();
       } else {
         // Spectator: not in players list, send omniscient view
         const spectatorView = filterStateForSpectator(this.room.gameState);
