@@ -234,7 +234,7 @@ Card text extracted from equipment cards `1` through `12`:
     - Any uncut wire color can be exchanged (including yellow and red).
     - Everyone sees where these wires are taken and replaced.
   > **FAQ:** If the swapped wire has an info token, the token follows the wire to its new stand. Players cannot communicate or request a specific value during the swap, and cannot direct a 2-stand player which stand to use.
-- Equipment `3` (`Triple detector 3000`)
+- Equipment `3` (`Triple Detector`)
   - Timing: to be used in turn.
   - Effect: during a Dual Cut action, announce one value (not yellow) and designate 3 wires from a teammate's stand.
   - Card reminder: this works like Double Detector 2000, but with 3 wires.
