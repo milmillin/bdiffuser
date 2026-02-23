@@ -1234,18 +1234,18 @@ Baseline assumption used in this section:
 
 ### Mission 46
 
-- Card title: `Agent 007`
+- Card title: `Secret Agent`
 - Setup:
   - Add `4` yellow wires with required values: `5.1`, `6.1`, `7.1`, `8.1`.
   - If Equipment `7` (Emergency Batteries) is drawn, replace it.
   - 2-player override shown on card:
     - Captain does not place info token during setup.
 - Mission rule (back):
-  - All `7`-value wires must be cut last.
-  - Special action:
-    - If player starts turn with only `7`s left, they must cut all four 7-wires simultaneously.
-    - Failure explodes bomb.
-  - If a 7-wire is designated earlier, resolve as normal failure (info token placement and detonator +1).
+- All the `7`-value wires (ahem, `007` wires) must be cut last.
+- Special action:
+  - When a bomb disposal expert has only `7`s left in their hand at the start of their turn, they must cut all four `7`-wires at the same time.
+  - If this action fails, the bomb explodes.
+- If a `7`-wire is accidentally found earlier in the mission, it is handled as a usual failed action (info token placed in front of tile stand and detonator advances `1` space).
 
 ### Mission 47
 
