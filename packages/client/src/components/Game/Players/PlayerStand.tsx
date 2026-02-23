@@ -211,6 +211,8 @@ function WireTileView({
               <img
                 src={`/images/${tile.image}`}
                 alt={`${tile.color} wire ${tile.gameValue}`}
+                width={158}
+                height={504}
                 className="w-full h-auto block rounded-sm"
               />
             ) : (
@@ -234,6 +236,8 @@ function WireTileView({
           <img
             src={`/images/${WIRE_BACK_IMAGE}`}
             alt="Wire back"
+            width={158}
+            height={504}
             className="w-full h-auto block rounded-sm"
           />
         )}
