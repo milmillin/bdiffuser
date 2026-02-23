@@ -247,16 +247,6 @@ export function LeftDock({
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Version label */}
-            <div className="relative h-20 flex items-center justify-center">
-              <span
-                className="absolute text-[9px] font-mono text-gray-600 whitespace-nowrap select-none"
-                style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-              >
-                {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
-              </span>
-            </div>
-
             <div className="h-2" />
 
             {/* Rules tab */}

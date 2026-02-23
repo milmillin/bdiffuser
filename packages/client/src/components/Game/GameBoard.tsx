@@ -757,6 +757,7 @@ function Header({
         <h1 className="text-lg font-black">
           BOMB<span className="text-red-500">BUSTERS</span>
         </h1>
+        <span className="text-[9px] font-mono text-gray-600 select-none">{`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}</span>
         <span className="text-sm text-gray-400" data-testid="mission-label">
           Mission #{gameState.mission}
         </span>
