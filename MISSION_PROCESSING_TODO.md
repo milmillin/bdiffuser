@@ -24,14 +24,14 @@ and add per-mission setup/special rules into `GAME_RULES.md`.
 - [x] Mission 6: front `packages/client/public/images/mission_6.png`, back `packages/client/public/images/mission_6_back.png`
 - [x] Mission 7: front `packages/client/public/images/mission_7.png`, back `packages/client/public/images/mission_7_back.png`
 - [x] Mission 8: front `packages/client/public/images/mission_8.png`, back `packages/client/public/images/mission_8_back.png`
-- [ ] Mission 9: front `packages/client/public/images/mission_9.png`, back `packages/client/public/images/mission_9_back.png`
-- [ ] Mission 10: front `packages/client/public/images/mission_10.png`, back `packages/client/public/images/mission_10_back.png`
-- [ ] Mission 11: front `packages/client/public/images/mission_11.png`, back `packages/client/public/images/mission_11_back.png`
-- [ ] Mission 12: front `packages/client/public/images/mission_12.png`, back `packages/client/public/images/mission_12_back.png`
-- [ ] Mission 13: front `packages/client/public/images/mission_13.png`, back `packages/client/public/images/mission_13_back.png`
-- [ ] Mission 14: front `packages/client/public/images/mission_14.png`, back `packages/client/public/images/mission_14_back.png`
-- [ ] Mission 15: front `packages/client/public/images/mission_15.png`, back `packages/client/public/images/mission_15_back.png`
-- [ ] Mission 16: front `packages/client/public/images/mission_16.png`, back `packages/client/public/images/mission_16_back.png`
+- [x] Mission 9: front `packages/client/public/images/mission_9.png`, back `packages/client/public/images/mission_9_back.png`
+- [x] Mission 10: front `packages/client/public/images/mission_10.png`, back `packages/client/public/images/mission_10_back.png`
+- [x] Mission 11: front `packages/client/public/images/mission_11.png`, back `packages/client/public/images/mission_11_back.png`
+- [x] Mission 12: front `packages/client/public/images/mission_12.png`, back `packages/client/public/images/mission_12_back.png`
+- [x] Mission 13: front `packages/client/public/images/mission_13.png`, back `packages/client/public/images/mission_13_back.png`
+- [x] Mission 14: front `packages/client/public/images/mission_14.png`, back `packages/client/public/images/mission_14_back.png`
+- [x] Mission 15: front `packages/client/public/images/mission_15.png`, back `packages/client/public/images/mission_15_back.png`
+- [x] Mission 16: front `packages/client/public/images/mission_16.png`, back `packages/client/public/images/mission_16_back.png`
 - [ ] Mission 17: front `packages/client/public/images/mission_17.png`, back `packages/client/public/images/mission_17_back.png`
 - [ ] Mission 18: front `packages/client/public/images/mission_18.png`, back `packages/client/public/images/mission_18_back.png`
 - [ ] Mission 19: front `packages/client/public/images/mission_19.png`, back `packages/client/public/images/mission_19_back.png`

@@ -444,6 +444,142 @@ Normalization note:
   - Campaign progression note:
     - On success, open the `Missions 9 to 19` box.
 
+## 21. Mission Cards 9-16 (Processed from Images)
+
+Source images:
+
+- Fronts: `packages/client/public/images/mission_9.png` through `packages/client/public/images/mission_16.png`
+- Backs: `packages/client/public/images/mission_9_back.png` through `packages/client/public/images/mission_16_back.png`
+
+Baseline assumption used in this section:
+
+- Where a front card does not redefine blue wire count, it continues to use all `48` blue wires from mission 4 onward.
+
+### Mission 9
+
+- Card title: `The sense of priorities`
+- Setup:
+  - Add `1` red wire and `2` yellow wires.
+  - Shuffle Number cards, draw `3`, place face up in a row.
+  - Place the Sequence card `face A` on top of the left Number card.
+  - 2-player override shown on card:
+    - `2` red wires, `4` yellow wires.
+- Mission rule (back), sequence priority (`face A`):
+  - Do not cut wires matching the middle or right Number cards until at least `2` wires of the left Number card value are cut.
+  - Do not cut wires matching the right Number card until at least `2` wires of the middle Number card value are cut.
+  - Other values can be cut at any time.
+  - After `2` wires of the left value are cut, flip/remove the left Number card and shift the Sequence marker; then repeat for the next step.
+
+### Mission 10
+
+- Card title: `A bad quarter of an hour`
+- Setup:
+  - Add `1` red wire and `4` yellow wires.
+  - Prepare a `15` minute timer.
+  - If Equipment `11` is drawn, replace it.
+  - 2-player override shown on card:
+    - Timer is `12` minutes.
+- Mission rule (back):
+  - Start timer after setup; mission must be defused within time limit.
+  - Turn order is no longer clockwise; any player may call to become active and take next turn.
+  - New turn may only be called after current active player's turn fully ends.
+  - Same player cannot take consecutive turns (except in 2-player games).
+
+### Mission 11
+
+- Card title: `Blue on red, nothing moves`
+- Setup:
+  - Add `2` yellow wires.
+  - Draw one Number card at random and place it face up on this mission card (back side reference area).
+  - If equipment with that same number is drawn, replace it.
+  - 2-player override shown on card:
+    - `4` yellow wires.
+    - Captain does not place an info token during setup.
+- Mission rule (back):
+  - All `4` blue wires of the drawn Number card value are treated exactly as red wires for this mission.
+  - Cutting one of that value explodes the bomb.
+  - These wires may only be safely revealed when, at the start of your turn, your remaining hand contains only that value.
+
+### Mission 12
+
+- Card title: `Equipment out of reach`
+- Setup:
+  - Add `1` red wire and `4` yellow wires.
+  - Place one face-up Number card on each equipment card in play (equipment number remains visible).
+  - 2-player override shown on card:
+    - `2` red wires, `4` yellow wires.
+- Mission rule (back):
+  - To use an equipment card, both conditions are required:
+    - Cut `2` wires of the equipment's own value (normal unlock condition), and
+    - Cut `2` wires of the Number card value placed on that equipment.
+  - Order does not matter.
+  - Special handling for `Double Bottom Equipment`:
+    - When it introduces 2 new equipment cards, place Number cards on both.
+    - Remove those Number-card locks immediately if their condition is already met; otherwise remove later when satisfied.
+
+### Mission 13
+
+- Card title: `Red alert!`
+- Setup:
+  - Add `3` red wires.
+  - Before dealing blue wires:
+    - Distribute the 3 red wires face down clockwise starting with Captain.
+    - In 2-player game, Captain gets 2 reds and places 1 on each stand.
+  - Info token setup is changed:
+    - Each player draws an info token at random (replace yellow token if drawn) and places it correctly in front of their stand.
+  - 2-player override shown on card:
+    - Captain does not place an info token during setup.
+- Mission rule (back):
+  - New special action: cut the 3 red wires simultaneously by designating 3 uncut wires.
+  - If at least one designated wire is not red, bomb explodes.
+  - In 4-5 player games, this special action may be performed even if acting player has no red wire.
+  - If a player has only red wires remaining, they must use this special action.
+
+### Mission 14
+
+- Card title: `High risk mine clearance`
+- Setup:
+  - Add `2` red wires.
+  - Add `2 out of 3` yellow wires.
+  - Shuffle character cards face down and deal one to each player.
+  - The player receiving the Captain card is the `Intern` for this mission.
+  - 2-player override shown on card:
+    - `3` red wires, `4` yellow wires.
+- Mission rule (back):
+  - If the Intern fails a Duo Cut action, the bomb explodes immediately.
+  - Intern cannot use Equipment `9` (`Stabilizator`).
+
+### Mission 15
+
+- Card title: `Mission a NOVOSIBIRSK CK`
+- Setup:
+  - Add `1 out of 3` red wire.
+  - Place equipment cards in play face down (without looking at them).
+  - Shuffle all 12 Number cards face down as a stack and reveal the top card.
+  - 2-player override shown on card:
+    - `2 out of 3` red wires.
+- Mission rule (back):
+  - When all 4 blue wires of the currently revealed Number card value are cut:
+    - Reveal one equipment card; it becomes available immediately regardless of its printed value.
+    - Reveal next Number card and continue.
+  - If a newly revealed Number card already has all 4 matching wires cut, discard/skip it and reveal the next one (no equipment gained for skipped card).
+
+### Mission 16
+
+- Card title: `A story of common sense`
+- Setup:
+  - Add `1` red wire.
+  - Add `2 out of 3` yellow wires.
+  - Shuffle Number cards, draw `3`, place face up in a row.
+  - Place the Sequence card `face B` on the left Number card.
+  - 2-player override shown on card:
+    - `2` red wires, `4` yellow wires.
+- Mission rule (back), sequence priority (`face B`):
+  - Do not cut wires matching the middle or right Number cards until all `4` wires of the left Number card value are cut.
+  - Do not cut wires matching the right Number card until all `4` wires of the middle Number card value are cut.
+  - Other values can be cut at any time.
+  - After all `4` wires of the left value are cut, flip/remove that Number card and shift the Sequence marker; then repeat for the next step.
+
 ---
 
 ## Source
