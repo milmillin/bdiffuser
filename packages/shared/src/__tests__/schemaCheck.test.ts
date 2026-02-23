@@ -124,8 +124,8 @@ describe("image asset consistency", () => {
     expect(extra, `extra MISSION_IMAGES IDs: ${extra.join(", ")}`).toEqual([]);
   });
 
-  function expectedExt(id: MissionId): string {
-    return id === 31 || id === 32 || id === 35 ? "jpg" : "png";
+  function expectedExt(_id: MissionId): string {
+    return "jpg";
   }
 
   it("all mission front images exist on disk", () => {
