@@ -2,6 +2,7 @@ import type { GameState, InfoToken, Player, WireValue } from "@bomb-busters/shar
 
 const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21, 33]);
 const COUNT_TOKEN_MISSIONS = new Set<number>([24]);
+const ABSENT_VALUE_TOKEN_MISSIONS = new Set<number>([22]);
 
 function isParityTokenMission(state: Readonly<GameState>): boolean {
   return EVEN_ODD_TOKEN_MISSIONS.has(state.mission);
@@ -9,6 +10,10 @@ function isParityTokenMission(state: Readonly<GameState>): boolean {
 
 function isCountTokenMission(state: Readonly<GameState>): boolean {
   return COUNT_TOKEN_MISSIONS.has(state.mission);
+}
+
+function isAbsentValueTokenMission(state: Readonly<GameState>): boolean {
+  return ABSENT_VALUE_TOKEN_MISSIONS.has(state.mission);
 }
 
 function tokenParity(value: number): "even" | "odd" {
@@ -29,6 +34,11 @@ function countValueCopies(owner: Readonly<Player>, value: WireValue): number {
   return count;
 }
 
+function toAbsentNumericValue(value: WireValue): number {
+  if (typeof value !== "number") return 1;
+  return value === 1 ? 2 : 1;
+}
+
 /**
  * Apply mission-specific token variants while preserving legacy token shape.
  * Missions 21 and 33 convert numeric tokens to even/odd parity tokens.
@@ -40,6 +50,19 @@ export function applyMissionInfoTokenVariant(
   owner?: Readonly<Player>,
 ): InfoToken {
   if (token.relation != null) return token;
+
+  if (isAbsentValueTokenMission(state)) {
+    if (!owner) return token;
+    const tile = owner.hand[token.position];
+    if (!tile) return token;
+    return {
+      ...token,
+      value: toAbsentNumericValue(tile.gameValue),
+      isYellow: false,
+      parity: undefined,
+      countHint: undefined,
+    };
+  }
 
   if (isCountTokenMission(state)) {
     if (!owner) return token;
