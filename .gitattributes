@@ -1,0 +1,2 @@
+package.json merge=version-merge
+packages/*/package.json merge=version-merge
