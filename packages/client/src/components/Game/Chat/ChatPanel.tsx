@@ -12,10 +12,19 @@ export function ChatPanel({
 }) {
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Consider "near bottom" if within 40px of the bottom
+    isNearBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  };
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) {
+    if (el && isNearBottomRef.current) {
       el.scrollTop = el.scrollHeight;
     }
   }, [messages.length]);
@@ -38,6 +47,7 @@ export function ChatPanel({
 
       <div
         ref={scrollRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0"
       >
         {messages.map((msg) => (
