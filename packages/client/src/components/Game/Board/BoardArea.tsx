@@ -2,15 +2,17 @@ import { EQUIPMENT_DEFS, type BoardState } from "@bomb-busters/shared";
 
 export function BoardArea({ board }: { board: BoardState }) {
   return (
-    <div className="bg-[var(--color-bomb-surface)] rounded-xl px-3 py-2 flex items-center gap-3" data-testid="board-area">
-      <DetonatorDial
-        position={board.detonatorPosition}
-        max={board.detonatorMax}
-      />
-      <ValidationTrack
-        track={board.validationTrack}
-        markers={board.markers}
-      />
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl px-3 py-2 space-y-2" data-testid="board-area">
+      <div className="flex items-start gap-3">
+        <DetonatorDial
+          position={board.detonatorPosition}
+          max={board.detonatorMax}
+        />
+        <ValidationTrack
+          track={board.validationTrack}
+          markers={board.markers}
+        />
+      </div>
       {board.equipment.length > 0 && (
         <EquipmentRow equipment={board.equipment} />
       )}
@@ -173,7 +175,7 @@ function EquipmentRow({
   return (
     <div>
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Equipment</div>
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-3 overflow-x-auto pb-1">
         {equipment.map((eq) => {
           const imageName =
             (typeof eq.image === "string" && eq.image) ||
@@ -183,7 +185,7 @@ function EquipmentRow({
           return (
             <div
               key={eq.id}
-              className={`relative flex-shrink-0 w-24 rounded-lg overflow-hidden border ${
+              className={`relative flex-shrink-0 w-28 sm:w-32 rounded-lg overflow-hidden border shadow-md ${
                 eq.used
                   ? "border-gray-700 opacity-60"
                   : eq.unlocked
@@ -194,7 +196,9 @@ function EquipmentRow({
               <img
                 src={`/images/${imageName}`}
                 alt={eq.name}
-                className={`w-full h-auto block ${eq.used ? "grayscale" : ""}`}
+                className={`block w-full aspect-[264/378] object-cover ${eq.used ? "grayscale" : ""}`}
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   const target = e.currentTarget;
                   if (!target.src.endsWith("/images/equipment_back.png")) {
