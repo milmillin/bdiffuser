@@ -28,7 +28,7 @@ This file tracks all remaining work after introducing the central mission schema
 ## Milestones
 
 - [x] M1: Missions 1-12 fully playable with schema parity and tests.
-- [ ] M2: Missions 13-35 fully playable with schema parity and tests.
+- [x] M2: Missions 13-35 fully playable with schema parity and tests.
 - [ ] M3: Missions 36-66 fully playable with schema parity and tests.
 
 ### Milestone Task Mapping
