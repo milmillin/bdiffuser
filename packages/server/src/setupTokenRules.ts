@@ -68,6 +68,7 @@ export function advanceToNextSetupPlayer(state: GameState): void {
  * - Setup never uses yellow tokens.
  */
 export function validateSetupInfoTokenPlacement(
+  state: Readonly<GameState>,
   player: Readonly<Player>,
   value: number,
   tileIndex: number,
@@ -86,6 +87,23 @@ export function validateSetupInfoTokenPlacement(
   const tile = player.hand[tileIndex];
   if (tile.cut) {
     return legalityError("TILE_ALREADY_CUT", "Cannot place token on a cut wire");
+  }
+
+  // Mission 17: captain places false tokens and may not place on red wires.
+  if (state.mission === 17 && player.isCaptain) {
+    if (tile.color === "red") {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Captain false setup tokens cannot target red wires",
+      );
+    }
+    if (typeof tile.gameValue === "number" && tile.gameValue === value) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Captain setup token must be false in mission 17",
+      );
+    }
+    return null;
   }
 
   if (tile.color !== "blue" || typeof tile.gameValue !== "number") {

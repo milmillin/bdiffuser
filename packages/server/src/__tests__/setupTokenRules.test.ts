@@ -55,6 +55,15 @@ describe("setupTokenRules", () => {
     expect(allSetupInfoTokensPlaced(state)).toBe(true);
   });
 
+  it("mission 17: captain requires 2 setup info tokens", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+    const state = makeGameState({ mission: 17, players: [captain, partner] });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(2);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(1);
+  });
+
   it("mission 58: all players require 0 setup info tokens", () => {
     const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
     const p2 = makePlayer({ id: "p2", infoTokens: [] });
@@ -127,6 +136,12 @@ describe("setupTokenRules", () => {
   });
 
   describe("validateSetupInfoTokenPlacement", () => {
+    const stateFor = (
+      mission: ReturnType<typeof makeGameState>["mission"],
+      player: ReturnType<typeof makePlayer>,
+    ) =>
+      makeGameState({ mission, players: [player] });
+
     it("accepts a matching blue wire/value placement", () => {
       const player = makePlayer({
         hand: [
@@ -134,7 +149,7 @@ describe("setupTokenRules", () => {
         ],
       });
 
-      const error = validateSetupInfoTokenPlacement(player, 3, 0);
+      const error = validateSetupInfoTokenPlacement(stateFor(1, player), player, 3, 0);
       expect(error).toBeNull();
     });
 
@@ -143,9 +158,9 @@ describe("setupTokenRules", () => {
         hand: [makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" })],
       });
 
-      expect(validateSetupInfoTokenPlacement(player, 0, 0)?.code).toBe("MISSION_RULE_VIOLATION");
-      expect(validateSetupInfoTokenPlacement(player, 13, 0)?.code).toBe("MISSION_RULE_VIOLATION");
-      expect(validateSetupInfoTokenPlacement(player, 3.5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(validateSetupInfoTokenPlacement(stateFor(1, player), player, 0, 0)?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(validateSetupInfoTokenPlacement(stateFor(1, player), player, 13, 0)?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(validateSetupInfoTokenPlacement(stateFor(1, player), player, 3.5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
     });
 
     it("rejects invalid tile index", () => {
@@ -153,7 +168,7 @@ describe("setupTokenRules", () => {
         hand: [makeTile({ id: "b-4", gameValue: 4, sortValue: 4, color: "blue" })],
       });
 
-      const error = validateSetupInfoTokenPlacement(player, 4, 2);
+      const error = validateSetupInfoTokenPlacement(stateFor(1, player), player, 4, 2);
       expect(error).toEqual({
         code: "INVALID_TILE_INDEX",
         message: "Invalid tile index",
@@ -164,8 +179,8 @@ describe("setupTokenRules", () => {
       const yellowPlayer = makePlayer({ hand: [makeYellowTile()] });
       const redPlayer = makePlayer({ hand: [makeRedTile()] });
 
-      expect(validateSetupInfoTokenPlacement(yellowPlayer, 5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
-      expect(validateSetupInfoTokenPlacement(redPlayer, 5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(validateSetupInfoTokenPlacement(stateFor(1, yellowPlayer), yellowPlayer, 5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(validateSetupInfoTokenPlacement(stateFor(1, redPlayer), redPlayer, 5, 0)?.code).toBe("MISSION_RULE_VIOLATION");
     });
 
     it("rejects mismatched value for target blue tile", () => {
@@ -173,7 +188,7 @@ describe("setupTokenRules", () => {
         hand: [makeTile({ id: "b-6", gameValue: 6, sortValue: 6, color: "blue" })],
       });
 
-      const error = validateSetupInfoTokenPlacement(player, 5, 0);
+      const error = validateSetupInfoTokenPlacement(stateFor(1, player), player, 5, 0);
       expect(error).toEqual({
         code: "MISSION_RULE_VIOLATION",
         message: "Setup info token value must match the targeted blue wire",
@@ -185,10 +200,46 @@ describe("setupTokenRules", () => {
         hand: [makeTile({ id: "b-2", gameValue: 2, sortValue: 2, color: "blue", cut: true })],
       });
 
-      const error = validateSetupInfoTokenPlacement(player, 2, 0);
+      const error = validateSetupInfoTokenPlacement(stateFor(1, player), player, 2, 0);
       expect(error).toEqual({
         code: "TILE_ALREADY_CUT",
         message: "Cannot place token on a cut wire",
+      });
+    });
+
+    it("mission 17: captain accepts false setup token on blue wire", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "b-6", gameValue: 6, sortValue: 6, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(17, captain), captain, 5, 0);
+      expect(error).toBeNull();
+    });
+
+    it("mission 17: captain rejects matching setup token on blue wire", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "b-6", gameValue: 6, sortValue: 6, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(17, captain), captain, 6, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Captain setup token must be false in mission 17",
+      });
+    });
+
+    it("mission 17: captain rejects red target wire", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeRedTile()],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(17, captain), captain, 5, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Captain false setup tokens cannot target red wires",
       });
     });
   });

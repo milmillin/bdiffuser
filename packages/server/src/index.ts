@@ -382,7 +382,7 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    const placementError = validateSetupInfoTokenPlacement(player, value, tileIndex);
+    const placementError = validateSetupInfoTokenPlacement(state, player, value, tileIndex);
     if (placementError) {
       this.sendMsg(conn, {
         type: "error",

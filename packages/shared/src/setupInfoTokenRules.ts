@@ -12,6 +12,11 @@ export function requiredSetupInfoTokenCountForMission(
     return 0;
   }
 
+  // Mission 17: captain places 2 false setup tokens.
+  if (mission === 17 && isCaptain) {
+    return 2;
+  }
+
   if (
     TWO_PLAYER_CAPTAIN_SKIP_MISSIONS.has(mission) &&
     playerCount === 2 &&
