@@ -12,7 +12,8 @@ Execution rules:
 8. Run the smallest relevant verification (tests/typecheck/build) needed to ensure CI safety.
 9. Update `TODO.md` by marking only the chosen task as done (`[x]`).
 10. Do not mark any other TODO items as done.
-11. Commit only if this task produced local changes that are not already committed; do not push in this workflow.
+11. Update `TBD` in the TODO item appropriately. If the before version and after version do not agree, update `GAME_RULES.md`.
+12. Commit only if this task produced local changes that are not already committed; do not push in this workflow.
 
 Commit requirements:
 
