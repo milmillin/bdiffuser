@@ -154,12 +154,25 @@ export function shuffle<T>(array: T[]): T[] {
 function resolveEquipmentPool(spec: MissionEquipmentSpec): (typeof EQUIPMENT_DEFS)[number][] {
   if (spec.mode === "none") return [];
 
-  let candidateDefs =
-    spec.mode === "fixed_pool"
-      ? [...EQUIPMENT_DEFS]
-      : EQUIPMENT_DEFS.filter((def) =>
-          spec.includeCampaignEquipment ? true : def.pool === "base",
-        );
+  let candidateDefs: (typeof EQUIPMENT_DEFS)[number][];
+
+  if (spec.mode === "fixed_pool") {
+    // Respect mission-authored equipment ID order for deterministic forced pools.
+    const defsById = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def] as const));
+    const seen = new Set<string>();
+    candidateDefs = [];
+    for (const id of spec.fixedEquipmentIds ?? []) {
+      if (seen.has(id)) continue;
+      const def = defsById.get(id);
+      if (!def) continue;
+      candidateDefs.push(def);
+      seen.add(id);
+    }
+  } else {
+    candidateDefs = EQUIPMENT_DEFS.filter((def) =>
+      spec.includeCampaignEquipment ? true : def.pool === "base",
+    );
+  }
 
   if (spec.excludedUnlockValues?.length) {
     const excluded = new Set(spec.excludedUnlockValues);
@@ -169,11 +182,6 @@ function resolveEquipmentPool(spec: MissionEquipmentSpec): (typeof EQUIPMENT_DEF
   if (spec.excludedEquipmentIds?.length) {
     const excluded = new Set(spec.excludedEquipmentIds);
     candidateDefs = candidateDefs.filter((def) => !excluded.has(def.id));
-  }
-
-  if (spec.mode === "fixed_pool") {
-    const fixedSet = new Set(spec.fixedEquipmentIds ?? []);
-    candidateDefs = candidateDefs.filter((def) => fixedSet.has(def.id));
   }
 
   return candidateDefs;

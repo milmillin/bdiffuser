@@ -30,4 +30,20 @@ describe("equipment pool resolution", () => {
     expect(ids).toContain("double_fond");
     expect(ids).not.toContain("disintegrator");
   });
+
+  it("mission 18 fixed_pool only exposes General Radar", () => {
+    const { setup } = resolveMissionSetup(18, 4);
+    const ids = resolveEquipmentPoolIds(setup.equipment);
+
+    expect(ids).toEqual(["general_radar"]);
+  });
+
+  it("fixed_pool preserves configured equipment ID order", () => {
+    const ids = resolveEquipmentPoolIds({
+      mode: "fixed_pool",
+      fixedEquipmentIds: ["stabilizer", "talkies_walkies", "general_radar"],
+    });
+
+    expect(ids).toEqual(["stabilizer", "talkies_walkies", "general_radar"]);
+  });
 });

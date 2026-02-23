@@ -185,7 +185,7 @@ Dependency: blocked by Phase 0C.
 
 #### Equipment Runtime Parity
 
-- [~] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).
+- [x] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).
   - [x] Mission 15: face-down equipment with Number-deck progression unlock flow.
     - [x] Added hook rule `number_deck_equipment_reveal` and Mission 15 hook wiring.
     - [x] Mission 15 setup now initializes a Number deck (1 visible + hidden draw pile) and marks equipment face-down.
