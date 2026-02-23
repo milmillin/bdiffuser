@@ -1216,6 +1216,158 @@ Source images processed in this batch:
   - Number card is discarded once all 4 matching wires are cut; when deck is empty, reshuffle Number cards.
   - If player starts turn with only red wires remaining, they perform `Reveal Your Red Wires`.
 
+## 26. Mission Cards 52-59 (Processed from Images)
+
+Source images processed in this batch:
+
+- `mission_52(.png/_back.png)`
+- `mission_53(.png/_back.png)`
+- `mission_54(.png/_back.png)`
+- `mission_55(.png/_back.png)`
+- `mission_56(.png/_back.png)`
+- `mission_57(.png/_back.png)`
+- `mission_58(.png/_back.png)`
+- `mission_59(.png/_back.png)`
+
+### Mission 52
+
+- Card title: `All traitors!`
+- Setup:
+  - Add `3` red wires.
+  - Replace Equipment `1` (Label) and `12` (Label =) if drawn.
+  - Instead of placing 1 info token, each player places 2 setup tokens.
+  - These 2 setup tokens must be false:
+    - Values must not correspond to the 2 designated wires.
+    - Designated wires may be blue or red.
+  - 2-player override shown on card:
+    - `3` red wires and `4` yellow wires.
+- Mission rule (back):
+  - All info tokens in this mission are false:
+    - A token means `this wire is not this value`.
+  - On Duo Cut failure, targeted player places exactly one token of the announced value in front of the designated wire (also false information).
+
+### Mission 53
+
+- Card title: `Nano is back`
+- Setup:
+  - Add `2` red wires.
+  - Place Nano just before square `1` on the board track.
+  - Detonator is not used in this mission.
+  - Replace Equipment `6` (Retardator) and `9` (Stabilizer) if drawn.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - At end of each player's turn, Nano moves according to outcome:
+    - Normal successful cut: Nano `+1` space.
+    - Successful cut on Nano's current value: Nano `-1` space.
+    - Cut failure: Nano `+2` spaces.
+  - If Nano goes past square `12`, bomb explodes immediately.
+
+### Mission 54
+
+- Card title: `The Attack of Red Rabbit`
+- Setup:
+  - Use all `11` red wires as a separate face-down stack in mission-card location (not mixed into general wire pool at setup).
+  - Mission uses oxygen economy:
+    - 2 players: `9` oxygen each
+    - 3 players: `6` oxygen each
+    - 4 players: `3` oxygen each
+    - 5 players: `2` oxygen each
+  - Put each player's oxygen visibly in front of them; remaining oxygen stays in center as reserve.
+  - Replace Equipment `10` (X/Y Ray) if drawn.
+  - Do not use character equipped with X/Y Ray.
+- Mission rule (back):
+  - To perform a cut action, player pays oxygen into center reserve by targeted value zone:
+    - `1-4`: pay `1`
+    - `5-8`: pay `2`
+    - `9-12`: pay `3`
+  - If player cannot pay at start of turn, they pass and detonator advances `1`.
+  - Each time a validation token is placed, every player retrieves one oxygen token.
+  - Before first round, play mission sound file.
+  - On success, open box `Missions 55 to 66`.
+
+### Mission 55
+
+- Card title: `Doctor No's Challenge`
+- Setup:
+  - Add `2` red wires.
+  - Draw random Challenge cards equal to player count and place face up on table.
+  - Place detonator on the opposite notch indicated by mission card.
+  - 2-player override shown on card:
+    - `2 out of 3` red wires.
+- Mission rule (back):
+  - When an in-game challenge is completed, discard that challenge and move detonator back `1`.
+  - Challenge cards define completion conditions for:
+    - either one player (example: wire arrangement on one stand),
+    - or whole team (example: sequence of wires to cut).
+
+### Mission 56
+
+- Card title: `The rebel sons`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - During wire distribution, each player places one own wire upside down (value facing teammates), at one end of their hand, without looking.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Each player must cut their own upside-down wire with normal cut action; failure explodes bomb.
+  - No equipment or personal equipment may target upside-down wires.
+  - A player may still perform Duo Cut on a teammate's upside-down wire, but must advance detonator `1` step when doing so.
+
+### Mission 57
+
+- Card title: `Mission impossible`
+- Setup:
+  - Add `1` red wire.
+  - Place all Number cards face up on table.
+  - Randomly place one face-up Constraint card next to each Number card.
+  - Replace Equipment `10-10` (Disintegrator) if drawn.
+  - 2-player override shown on card:
+    - `2` red wires.
+- Mission rule (back):
+  - Each time a validation token is placed, activate the corresponding Constraint card for that number (on top of any previous one); exactly one active constraint at a time.
+  - All players must obey active constraint.
+  - If active player cannot act due to constraint, they pass without detonator movement.
+  - If no player can act for a full round, bomb explodes.
+  - Constraints do not apply to `Reveal Your Red Wires`.
+
+### Mission 58
+
+- Card title: `System D`
+- Setup:
+  - Add `2` red wires.
+  - Put all info tokens back in box; none are used this mission (including setup).
+  - Replace Equipment `4` (Post-it) and `7` (Emergency Batteries) if drawn.
+  - Do not take new characters; every player has Double Detector 2000 as personal equipment.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - On failed cut, do not reveal information about designated wire.
+  - Every player may use Double Detector 2000 every turn (unlimited uses).
+
+### Mission 59
+
+- Card title: `Nano to the rescue`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Randomly align all 12 Number cards face up side by side.
+  - Place Nano on Number card `7`, facing toward the larger side/greater direction of available cards.
+  - Replace Equipment `10` (X/Y Ray) if drawn.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back), per cut attempt:
+  - Active player must:
+    - Move Nano forward or keep Nano in place (never backward) onto a number they can play.
+    - Attempt a cut action on Nano's current value.
+    - Re-orient Nano (keep direction or turn around).
+  - If active player cannot play with values available around Nano (under/in front per card wording):
+    - Turn Nano around,
+    - Advance detonator `1`,
+    - then play.
+  - When all 4 wires of a number are cut, turn that Number card face down.
+  - Card note: Equipment `11` (Coffee Thermos) passes its entire turn.
+
 ---
 
 ## Source
