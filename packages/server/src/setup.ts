@@ -236,6 +236,15 @@ export function setupGame(
     player.hand = [];
   }
 
+  // Mission 28: Captain returns their character card to the box.
+  if (mission === 28) {
+    const captain = players.find((player) => player.isCaptain);
+    if (captain) {
+      captain.character = null;
+      captain.characterUsed = false;
+    }
+  }
+
   const blueTiles = createBlueTiles(setup.blue.minValue, setup.blue.maxValue);
 
   const red = createRedTiles(setup.red);
