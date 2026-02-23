@@ -1423,18 +1423,16 @@ Baseline assumption used in this section:
 
 ### Mission 56
 
-- Card title: `The rebel sons`
+- Card title: `The Rebel Sons`
 - Setup:
-  - Red setup: `2 out of 3`.
-  - During wire distribution, each player places one own wire upside down (value facing teammates), at one end of their hand, without looking.
+  - Add `2` red wires.
+  - During wire distribution, each player flips 1 of their wires around without looking at it and places it at the far right end of their tile stand.
   - 2-player override shown on card:
     - `3` red wires.
 - Mission rule (back):
-  - Each player must cut their own upside-down wire with normal cut action; failure explodes bomb.
-  - No equipment or personal equipment may target upside-down wires.
-  - A player may still perform Dual Cut on a teammate's upside-down wire, but must advance detonator `1` step when doing so.
-
-> **FAQ:** If a flipped (upside-down) wire is RED, reveal it via the normal "Reveal Your Red Wires" action. **ERRATUM:** Number cards are NOT used in this mission (contrary to what the setup indication may suggest).
+  - Each bomb disposal expert must cut their flipped-around wire themselves using a regular cut action, but without using equipment or a Double Detector.
+  - If that cut action fails, the bomb explodes.
+  - A bomb disposal expert can (by choice or by necessity) do the Dual Cut action with a teammate's flipped-around wire; if they do, the detonator dial advances `1` space.
 
 ### Mission 57
 
