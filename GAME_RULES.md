@@ -291,8 +291,8 @@ Additional card text extracted from later-mission equipment cards:
   - Card reminder: depending on values already cut, those new equipment cards may be immediately usable.
 - Equipment `22` (`Single thread label`)
   - Timing: can be used at any time.
-  - Effect: place a token in front of one of your blue wires (cut or uncut).
-  - Card reminder: it indicates that this value appears only once on that stand (including already-cut wires).
+  - Effect: place a token right in front of one of your blue wires (cut or not).
+  - Card reminder: it indicates that this value appears only once on the support (wires already cut included).
 - Equipment `33` (`Emergency fund`)
   - Timing: immediate effect.
   - Effect: return already-used Equipment cards immediately; they become available again for this mission.
