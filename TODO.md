@@ -298,7 +298,7 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 
 - [x] Ship M1 (missions 1-12) only when all M1 tests pass.
 - [x] Ship M2 (missions 13-35) only when all M2 tests pass.
-- [ ] Ship M3 (missions 36-66) only when all M3 tests pass.
+- [x] Ship M3 (missions 36-66) only when all M3 tests pass.
 
 ### Maintainability
 
