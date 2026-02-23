@@ -431,16 +431,20 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-// ── Built-in Hook Handlers (Missions 9/10/11/12/15/23) ──────
+// ── Built-in Hook Handlers (Missions 9/10/11/12/15/23/43+/66) ──────
 
 import type {
+  BunkerFlowRuleDef,
+  ChallengeRewardsRuleDef,
   SequencePriorityRuleDef,
   TimerRuleDef,
   DynamicTurnOrderRuleDef,
   BlueAsRedRuleDef,
   EquipmentDoubleLockRuleDef,
   HiddenEquipmentPileRuleDef,
+  NanoProgressionRuleDef,
   NumberDeckEquipmentRevealRuleDef,
+  OxygenProgressionRuleDef,
 } from "@bomb-busters/shared";
 
 const MISSION_NUMBER_VALUES = [
@@ -481,6 +485,129 @@ function setSequencePointer(state: GameState, value: number): void {
     markers.push({ kind: "sequence_pointer", value });
   }
   state.campaign.specialMarkers = markers;
+}
+
+function setActionPointer(state: GameState, value: number): void {
+  state.campaign ??= {};
+  const markers = [...(state.campaign.specialMarkers ?? [])];
+  const idx = markers.findIndex((m) => m.kind === "action_pointer");
+  if (idx >= 0) {
+    markers[idx] = { ...markers[idx], value };
+  } else {
+    markers.push({ kind: "action_pointer", value });
+  }
+  state.campaign.specialMarkers = markers;
+}
+
+function parseTargetValueFromChallengeId(id: string): number | null {
+  const match = /challenge-value-(\d+)/.exec(id);
+  if (!match) return null;
+  const value = Number.parseInt(match[1] ?? "", 10);
+  if (!Number.isFinite(value)) return null;
+  return value;
+}
+
+function clampProgress(value: number, max: number): number {
+  const boundedMax = Math.max(1, Math.floor(max));
+  return Math.min(Math.max(0, Math.floor(value)), boundedMax);
+}
+
+function initializeCampaignProgressState(state: GameState): void {
+  state.campaign ??= {};
+}
+
+function applyNanoDelta(
+  state: GameState,
+  delta: number,
+  actorId: string,
+  logDetail: string,
+): void {
+  const tracker = state.campaign?.nanoTracker;
+  if (!tracker) return;
+
+  const before = tracker.position;
+  tracker.position = clampProgress(before + delta, tracker.max);
+
+  state.log.push({
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: `nano_progression:${before}->${tracker.position}|${logDetail}`,
+    timestamp: Date.now(),
+  });
+
+  if (tracker.position >= tracker.max && state.phase !== "finished") {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+  }
+}
+
+function rotatePlayerOxygenClockwise(state: GameState): void {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return;
+
+  const ids = state.players.map((player) => player.id);
+  if (ids.length <= 1) return;
+
+  const rotated: Record<string, number> = {};
+  for (let i = 0; i < ids.length; i++) {
+    const fromId = ids[(i - 1 + ids.length) % ids.length];
+    const toId = ids[i];
+    rotated[toId] = oxygen.playerOxygen[fromId] ?? 0;
+  }
+  oxygen.playerOxygen = rotated;
+}
+
+function spendOxygenForTurn(
+  state: GameState,
+  cost: number,
+  playerId: string | undefined,
+): { paid: number; deficit: number } {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return { paid: 0, deficit: cost };
+  if (cost <= 0) return { paid: 0, deficit: 0 };
+
+  let remaining = Math.max(0, Math.floor(cost));
+  let paid = 0;
+
+  if (playerId) {
+    const owned = oxygen.playerOxygen[playerId] ?? 0;
+    const fromPlayer = Math.min(owned, remaining);
+    oxygen.playerOxygen[playerId] = owned - fromPlayer;
+    remaining -= fromPlayer;
+    paid += fromPlayer;
+  }
+
+  const fromPool = Math.min(oxygen.pool, remaining);
+  oxygen.pool -= fromPool;
+  remaining -= fromPool;
+  paid += fromPool;
+
+  return { paid, deficit: remaining };
+}
+
+function buildChallengeDeck(totalCount: number) {
+  const count = Math.max(1, Math.floor(totalCount));
+  const values = [...MISSION_NUMBER_VALUES];
+  const cards: { id: string; name: string; description: string; completed: boolean }[] = [];
+
+  let index = 0;
+  while (cards.length < count) {
+    if (index % values.length === 0) {
+      shuffle(values);
+    }
+    const value = values[index % values.length];
+    cards.push({
+      id: `challenge-value-${value}-${cards.length}`,
+      name: `Challenge ${value}`,
+      description: `Complete by successfully cutting value ${value}.`,
+      completed: false,
+    });
+    index++;
+  }
+
+  return cards;
 }
 
 function getCutCountForValue(state: Readonly<GameState>, value: number): number {
@@ -1023,6 +1150,252 @@ registerHookHandler<"hidden_equipment_pile">("hidden_equipment_pile", {
       playerId: "system",
       action: "hookSetup",
       detail: `hidden_equipment_pile:${ctx.state.board.equipment.length}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Nano progression missions (e.g. 43/53/59).
+ *
+ * Maintains campaign.nanoTracker and applies mission failure when max is reached.
+ */
+registerHookHandler<"nano_progression">("nano_progression", {
+  setup(rule: NanoProgressionRuleDef, ctx: SetupHookContext): void {
+    initializeCampaignProgressState(ctx.state);
+
+    const max = Math.max(1, Math.floor(rule.max));
+    const start = clampProgress(rule.start, max);
+    ctx.state.campaign!.nanoTracker = { position: start, max };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `nano_progression:start=${start},max=${max},advanceOn=${rule.advanceOn},movement=${rule.movement ?? "forward"}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(rule: NanoProgressionRuleDef, ctx: ResolveHookContext): void {
+    if (rule.advanceOn !== "successful_cut") return;
+    if (!ctx.cutSuccess) return;
+    if (ctx.state.phase === "finished") return;
+
+    let delta = Math.abs(Math.floor(rule.advanceBy ?? 1));
+    if (delta === 0) return;
+
+    if (rule.movement === "value_parity") {
+      if (typeof ctx.cutValue !== "number") return;
+      delta = ctx.cutValue % 2 === 0 ? -delta : delta;
+    }
+
+    applyNanoDelta(ctx.state, delta, ctx.action.actorId, "point=resolve");
+  },
+
+  endTurn(rule: NanoProgressionRuleDef, ctx: EndTurnHookContext): void {
+    if (rule.advanceOn !== "end_turn") return;
+    if (ctx.state.phase === "finished") return;
+
+    const delta = Math.abs(Math.floor(rule.advanceBy ?? 1));
+    if (delta === 0) return;
+
+    applyNanoDelta(ctx.state, delta, ctx.previousPlayerId ?? "system", "point=endTurn");
+  },
+});
+
+/**
+ * Oxygen progression missions (e.g. 44/49/54/63).
+ *
+ * Consumes oxygen each turn. If oxygen is depleted for required cost, detonator
+ * advances by one as a fallback penalty.
+ */
+registerHookHandler<"oxygen_progression">("oxygen_progression", {
+  setup(rule: OxygenProgressionRuleDef, ctx: SetupHookContext): void {
+    initializeCampaignProgressState(ctx.state);
+
+    const initialPool = Math.max(0, Math.floor(rule.initialPool));
+    const initialPlayerOxygen = Math.max(0, Math.floor(rule.initialPlayerOxygen ?? 0));
+    const playerOxygen: Record<string, number> = {};
+    for (const player of ctx.state.players) {
+      playerOxygen[player.id] = initialPlayerOxygen;
+    }
+
+    ctx.state.campaign!.oxygen = {
+      pool: initialPool,
+      playerOxygen,
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `oxygen_progression:pool=${initialPool},perTurnCost=${Math.max(0, Math.floor(rule.perTurnCost))},rotate=${Boolean(rule.rotatePlayerOxygen)}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  endTurn(rule: OxygenProgressionRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    const oxygen = ctx.state.campaign?.oxygen;
+    if (!oxygen) return;
+
+    const perTurnCost = Math.max(0, Math.floor(rule.perTurnCost));
+    const actorId = ctx.previousPlayerId ?? "system";
+    const { paid, deficit } = spendOxygenForTurn(ctx.state, perTurnCost, ctx.previousPlayerId);
+
+    if (rule.rotatePlayerOxygen) {
+      rotatePlayerOxygenClockwise(ctx.state);
+    }
+
+    if (deficit > 0) {
+      ctx.state.board.detonatorPosition += 1;
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+      }
+    }
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail: [
+        `oxygen_progression:cost=${perTurnCost}`,
+        `paid=${paid}`,
+        `deficit=${deficit}`,
+        `pool=${oxygen.pool}`,
+      ].join("|"),
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Challenge progression missions (e.g. 55/60).
+ *
+ * Completing active challenge values reduces the detonator and draws replacements.
+ */
+registerHookHandler<"challenge_rewards">("challenge_rewards", {
+  setup(rule: ChallengeRewardsRuleDef, ctx: SetupHookContext): void {
+    initializeCampaignProgressState(ctx.state);
+
+    const activeCount = Math.max(1, Math.floor(rule.activeCount));
+    const deck = buildChallengeDeck(Math.max(8, activeCount + 6));
+    const active = deck.splice(0, activeCount);
+    ctx.state.campaign!.challenges = {
+      deck,
+      active,
+      completed: [],
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `challenge_rewards:active=${active.map((card) => card.id).join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(rule: ChallengeRewardsRuleDef, ctx: ResolveHookContext): void {
+    if (!ctx.cutSuccess) return;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const challenges = ctx.state.campaign?.challenges;
+    if (!challenges) return;
+
+    const completedTargets: number[] = [];
+    const stillActive = [] as typeof challenges.active;
+    for (const challenge of challenges.active) {
+      const targetValue = parseTargetValueFromChallengeId(challenge.id);
+      if (targetValue == null || targetValue !== ctx.cutValue) {
+        stillActive.push(challenge);
+        continue;
+      }
+      challenge.completed = true;
+      challenges.completed.push(challenge);
+      completedTargets.push(targetValue);
+    }
+
+    if (completedTargets.length === 0) return;
+
+    challenges.active = stillActive;
+
+    const desiredActiveCount = Math.max(1, Math.floor(rule.activeCount));
+    while (challenges.active.length < desiredActiveCount && challenges.deck.length > 0) {
+      const next = challenges.deck.shift()!;
+      next.completed = false;
+      challenges.active.push(next);
+    }
+
+    const reductionPerCompletion = Math.max(0, Math.floor(rule.rewardDetonatorReduction));
+    const totalReduction = reductionPerCompletion * completedTargets.length;
+    if (totalReduction > 0) {
+      ctx.state.board.detonatorPosition = Math.max(
+        0,
+        ctx.state.board.detonatorPosition - totalReduction,
+      );
+    }
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: [
+        `challenge_rewards:completed=${completedTargets.join(",")}`,
+        `detonator_reduction=${totalReduction}`,
+        `active=${challenges.active.map((card) => card.id).join(",") || "none"}`,
+      ].join("|"),
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 66 bunker flow progression.
+ */
+registerHookHandler<"bunker_flow">("bunker_flow", {
+  setup(rule: BunkerFlowRuleDef, ctx: SetupHookContext): void {
+    initializeCampaignProgressState(ctx.state);
+
+    const max = Math.max(1, Math.floor(rule.max));
+    const position = clampProgress(rule.start, max);
+    ctx.state.campaign!.bunkerTracker = { position, max };
+
+    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
+    setActionPointer(ctx.state, position % cycle);
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `bunker_flow:start=${position},max=${max},cycle=${cycle}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(rule: BunkerFlowRuleDef, ctx: ResolveHookContext): void {
+    if (!ctx.cutSuccess) return;
+
+    const tracker = ctx.state.campaign?.bunkerTracker;
+    if (!tracker) return;
+
+    const advanceBy = Math.max(0, Math.floor(rule.advanceBy));
+    if (advanceBy === 0) return;
+
+    const before = tracker.position;
+    tracker.position = clampProgress(before + advanceBy, tracker.max);
+
+    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
+    setActionPointer(ctx.state, tracker.position % cycle);
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `bunker_flow:${before}->${tracker.position}|cycle=${cycle}`,
       timestamp: Date.now(),
     });
   },

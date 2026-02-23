@@ -25,6 +25,16 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_59_nano_navigation_values"],
+    hookRules: [
+      {
+        kind: "nano_progression",
+        start: 0,
+        max: 8,
+        advanceOn: "successful_cut",
+        advanceBy: 1,
+        movement: "value_parity",
+      },
+    ],
   });
 
   setMission(60, {
@@ -35,6 +45,9 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_60_challenge_cards_reduce_detonator"],
+    hookRules: [
+      { kind: "challenge_rewards", activeCount: 1, rewardDetonatorReduction: 1 },
+    ],
   });
 
   setMission(61, {
@@ -66,6 +79,15 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_63_rotating_oxygen_pool"],
+    hookRules: [
+      {
+        kind: "oxygen_progression",
+        initialPool: 12,
+        perTurnCost: 1,
+        initialPlayerOxygen: 1,
+        rotatePlayerOxygen: true,
+      },
+    ],
     notes: ["FAQ: Must play if you have enough oxygen. Cannot voluntarily skip."],
   });
 
@@ -99,6 +121,9 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
       yellow: exact(2),
     },
     behaviorHooks: ["mission_66_bunker_flow"],
+    hookRules: [
+      { kind: "bunker_flow", start: 0, max: 10, advanceBy: 1, actionCycleLength: 4 },
+    ],
     notes: ["FAQ: Standee must move after every cut. On hash squares, must perform successful cut matching ACTION constraint to trigger action."],
   });
 }

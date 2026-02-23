@@ -1,0 +1,144 @@
+import { describe, it, expect } from "vitest";
+import {
+  makeBoardState,
+  makeGameState,
+  makePlayer,
+} from "@bomb-busters/shared/testing";
+import { dispatchHooks } from "../missionHooks";
+
+// Side-effect import registers built-in handlers.
+import "../missionHooks";
+
+function parseChallengeValue(id: string): number | null {
+  const match = /challenge-value-(\d+)/.exec(id);
+  if (!match) return null;
+  const value = Number.parseInt(match[1] ?? "", 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+describe("mission progression hooks", () => {
+  it("mission 43 setup initializes nano tracker", () => {
+    const state = makeGameState({
+      mission: 43,
+      log: [],
+    });
+
+    dispatchHooks(43, { point: "setup", state });
+
+    expect(state.campaign?.nanoTracker).toEqual({ position: 0, max: 6 });
+    expect(
+      state.log.some(
+        (entry) => entry.action === "hookSetup" && entry.detail.startsWith("nano_progression:"),
+      ),
+    ).toBe(true);
+  });
+
+  it("mission 43 resolve advances nano and fails when max is reached", () => {
+    const state = makeGameState({
+      mission: 43,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+      board: makeBoardState({ detonatorMax: 3 }),
+    });
+    dispatchHooks(43, { point: "setup", state });
+
+    expect(state.campaign?.nanoTracker).toBeDefined();
+    state.campaign!.nanoTracker!.position = 5;
+
+    dispatchHooks(43, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 6 },
+      cutValue: 6,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.nanoTracker?.position).toBe(6);
+    expect(state.result).toBe("loss_detonator");
+    expect(state.phase).toBe("finished");
+  });
+
+  it("mission 44 endTurn consumes oxygen and advances detonator on deficit", () => {
+    const state = makeGameState({
+      mission: 44,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 2 }),
+    });
+    dispatchHooks(44, { point: "setup", state });
+
+    expect(state.campaign?.oxygen?.pool).toBe(8);
+
+    dispatchHooks(44, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p1",
+    });
+    expect(state.campaign?.oxygen?.pool).toBe(7);
+
+    state.campaign!.oxygen!.pool = 0;
+    dispatchHooks(44, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.board.detonatorPosition).toBe(2);
+    expect(state.result).toBe("loss_detonator");
+    expect(state.phase).toBe("finished");
+  });
+
+  it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
+    const state = makeGameState({
+      mission: 55,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+      board: makeBoardState({ detonatorPosition: 2, detonatorMax: 4 }),
+    });
+    dispatchHooks(55, { point: "setup", state });
+
+    const active = state.campaign?.challenges?.active ?? [];
+    expect(active.length).toBe(1);
+    const target = parseChallengeValue(active[0]?.id ?? "");
+    expect(target).not.toBeNull();
+
+    dispatchHooks(55, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: target! },
+      cutValue: target!,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.challenges?.completed.length).toBe(1);
+    expect(state.campaign?.challenges?.active.length).toBe(1);
+    expect(state.board.detonatorPosition).toBe(1);
+  });
+
+  it("mission 66 bunker flow setup + resolve advances bunker tracker and action pointer", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+    });
+    dispatchHooks(66, { point: "setup", state });
+
+    expect(state.campaign?.bunkerTracker).toEqual({ position: 0, max: 10 });
+    expect(
+      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+    ).toBe(0);
+
+    dispatchHooks(66, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.bunkerTracker?.position).toBe(1);
+    expect(
+      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+    ).toBe(1);
+  });
+});

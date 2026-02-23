@@ -14,6 +14,15 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_49_oxygen_transfer_economy"],
+    hookRules: [
+      {
+        kind: "oxygen_progression",
+        initialPool: 10,
+        perTurnCost: 1,
+        initialPlayerOxygen: 1,
+        rotatePlayerOxygen: true,
+      },
+    ],
     notes: [
       "FAQ: When a player has no wires or reveals RED, remaining oxygen removed from game.",
       "FAQ: Can voluntarily skip to save oxygen (detonator +1).",
@@ -63,6 +72,9 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_53_nano_replaces_detonator"],
+    hookRules: [
+      { kind: "nano_progression", start: 0, max: 8, advanceOn: "end_turn", advanceBy: 1 },
+    ],
   });
 
   setMission(54, {
@@ -74,6 +86,14 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
       equipment: { mode: "default", excludedUnlockValues: [10] },
     },
     behaviorHooks: ["mission_54_red_stack_and_oxygen"],
+    hookRules: [
+      {
+        kind: "oxygen_progression",
+        initialPool: 7,
+        perTurnCost: 1,
+        initialPlayerOxygen: 1,
+      },
+    ],
     notes: ["FAQ: If insufficient oxygen, skip and detonator +1. But if you can play, you must play."],
   });
 
@@ -85,6 +105,9 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: outOf(2, 3) } },
     behaviorHooks: ["mission_55_challenge_cards_reduce_detonator"],
+    hookRules: [
+      { kind: "challenge_rewards", activeCount: 1, rewardDetonatorReduction: 1 },
+    ],
   });
 
   setMission(56, {

@@ -43,6 +43,9 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       red: exact(3),
     },
     behaviorHooks: ["mission_43_nano_track_and_hidden_wire_pool"],
+    hookRules: [
+      { kind: "nano_progression", start: 0, max: 6, advanceOn: "successful_cut", advanceBy: 1 },
+    ],
   });
 
   setMission(44, {
@@ -53,6 +56,9 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       equipment: { mode: "default", excludedUnlockValues: [10] },
     },
     behaviorHooks: ["mission_44_oxygen_cost_and_no_talking"],
+    hookRules: [
+      { kind: "oxygen_progression", initialPool: 8, perTurnCost: 1 },
+    ],
     notes: [
       "FAQ: Stabilizer can pretend-cut zone 1 when everything is already cut.",
       "FAQ: Skip to save oxygen (detonator +1). Stabilizer can negate detonator movement when passing.",

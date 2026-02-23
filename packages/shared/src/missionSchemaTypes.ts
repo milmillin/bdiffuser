@@ -117,6 +117,64 @@ export interface HiddenEquipmentPileRuleDef {
 }
 
 /**
+ * Campaign Nano missions: track mission pressure on a dedicated progress bar.
+ */
+export interface NanoProgressionRuleDef {
+  kind: "nano_progression";
+  /** Starting tracker position. */
+  start: number;
+  /** Inclusive maximum tracker position before mission failure. */
+  max: number;
+  /** Which lifecycle event advances Nano progression. */
+  advanceOn: "successful_cut" | "end_turn";
+  /** Base advancement amount per trigger (defaults to 1). */
+  advanceBy?: number;
+  /** Optional movement mode for value-driven Nano navigation missions. */
+  movement?: "forward" | "value_parity";
+}
+
+/**
+ * Campaign oxygen missions: shared pool + optional per-player oxygen rotation.
+ */
+export interface OxygenProgressionRuleDef {
+  kind: "oxygen_progression";
+  /** Initial shared oxygen pool for mission start. */
+  initialPool: number;
+  /** Oxygen spent at each end-turn hook execution. */
+  perTurnCost: number;
+  /** Optional per-player oxygen stock at setup time. */
+  initialPlayerOxygen?: number;
+  /** Rotate per-player oxygen ownership clockwise each turn. */
+  rotatePlayerOxygen?: boolean;
+}
+
+/**
+ * Campaign challenge-card missions: complete active challenges for rewards.
+ */
+export interface ChallengeRewardsRuleDef {
+  kind: "challenge_rewards";
+  /** Number of simultaneously active challenge cards. */
+  activeCount: number;
+  /** Detonator reduction applied when a challenge is completed. */
+  rewardDetonatorReduction: number;
+}
+
+/**
+ * Mission 66 bunker flow: a linear progression track with action pointer.
+ */
+export interface BunkerFlowRuleDef {
+  kind: "bunker_flow";
+  /** Initial bunker tracker position. */
+  start: number;
+  /** Inclusive max bunker tracker position. */
+  max: number;
+  /** Progress increment for each successful cut. */
+  advanceBy: number;
+  /** Pointer cycle used for action-marker rotation (defaults to 4). */
+  actionCycleLength?: number;
+}
+
+/**
  * Mission 9: Sequence card priority (face A).
  * Three visible number cards define an ordered gating:
  * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
@@ -143,6 +201,10 @@ export type MissionHookRuleDef =
   | EquipmentDoubleLockRuleDef
   | NumberDeckEquipmentRevealRuleDef
   | HiddenEquipmentPileRuleDef
+  | NanoProgressionRuleDef
+  | OxygenProgressionRuleDef
+  | ChallengeRewardsRuleDef
+  | BunkerFlowRuleDef
   | SequencePriorityRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
