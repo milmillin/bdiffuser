@@ -98,6 +98,129 @@ export interface BoardMarker {
   confirmed?: boolean;
 }
 
+// ── Campaign Objects ────────────────────────────────────────
+
+/** A numbered card used in campaign missions (e.g. action-order or value cards). */
+export interface NumberCard {
+  id: string;
+  value: number;
+  /** Whether this card is face-up (visible to all players). */
+  faceUp: boolean;
+}
+
+/** Tracks the number-card deck, discard pile, and visible/hidden hands. */
+export interface NumberCardState {
+  /** Draw pile (face-down, ordered top-first). */
+  deck: NumberCard[];
+  /** Discard pile (most recent on top). */
+  discard: NumberCard[];
+  /** Cards visible to all players (e.g. a shared display). */
+  visible: NumberCard[];
+  /** Per-player hidden cards, keyed by player ID. */
+  playerHands: Record<string, NumberCard[]>;
+}
+
+/** A constraint that restricts actions during a mission. */
+export interface ConstraintCard {
+  id: string;
+  name: string;
+  description: string;
+  /** Whether this constraint is currently active. */
+  active: boolean;
+}
+
+/** Tracks global constraints and per-player constraints. */
+export interface ConstraintCardState {
+  /** Constraints applying to all players. */
+  global: ConstraintCard[];
+  /** Per-player active constraints, keyed by player ID. */
+  perPlayer: Record<string, ConstraintCard[]>;
+}
+
+/** A challenge card that may award bonuses when completed. */
+export interface ChallengeCard {
+  id: string;
+  name: string;
+  description: string;
+  /** Whether this challenge has been completed. */
+  completed: boolean;
+}
+
+/** Tracks drawn/available/completed challenge cards. */
+export interface ChallengeCardState {
+  /** Undrawn challenge cards (draw pile). */
+  deck: ChallengeCard[];
+  /** Currently active challenge(s). */
+  active: ChallengeCard[];
+  /** Completed/discarded challenges. */
+  completed: ChallengeCard[];
+}
+
+/** Tracks the oxygen economy for missions that use it. */
+export interface OxygenState {
+  /** Total oxygen remaining in the shared pool. */
+  pool: number;
+  /** Oxygen tokens held per player, keyed by player ID. */
+  playerOxygen: Record<string, number>;
+}
+
+/** A linear progress tracker (used for Nano/Bunker mechanics). */
+export interface ProgressTracker {
+  /** Current position on the track (0-based). */
+  position: number;
+  /** Maximum position (inclusive) before triggering the end condition. */
+  max: number;
+}
+
+/** Special markers placed on the board (X marker, sequence/action pointers). */
+export interface SpecialMarker {
+  /** Marker type identifier. */
+  kind: "x" | "sequence_pointer" | "action_pointer";
+  /** Associated value or position (e.g. wire value, player index). */
+  value: number;
+}
+
+/**
+ * All campaign-specific state, attached optionally to GameState.
+ * Each sub-object is present only when the active mission uses that mechanic.
+ */
+export interface CampaignState {
+  numberCards?: NumberCardState;
+  constraints?: ConstraintCardState;
+  challenges?: ChallengeCardState;
+  oxygen?: OxygenState;
+  nanoTracker?: ProgressTracker;
+  bunkerTracker?: ProgressTracker;
+  specialMarkers?: SpecialMarker[];
+}
+
+// ── Campaign Defaults ───────────────────────────────────────
+
+/** Empty number-card state (no cards in play). */
+export function emptyNumberCardState(): NumberCardState {
+  return { deck: [], discard: [], visible: [], playerHands: {} };
+}
+
+/** Empty constraint-card state (no constraints). */
+export function emptyConstraintCardState(): ConstraintCardState {
+  return { global: [], perPlayer: {} };
+}
+
+/** Empty challenge-card state (no challenges). */
+export function emptyChallengeCardState(): ChallengeCardState {
+  return { deck: [], active: [], completed: [] };
+}
+
+/** Default oxygen state with a given pool size. */
+export function defaultOxygenState(pool = 0): OxygenState {
+  return { pool, playerOxygen: {} };
+}
+
+/** Default progress tracker at position 0. */
+export function defaultProgressTracker(max: number): ProgressTracker {
+  return { position: 0, max };
+}
+
 // ── Chat ────────────────────────────────────────────────────
 
 export interface ChatMessage {
@@ -127,6 +250,8 @@ export interface GameState {
   /** Log of actions taken */
   log: GameLogEntry[];
   chat: ChatMessage[];
+  /** Campaign-specific state; absent for non-campaign missions. */
+  campaign?: CampaignState;
 }
 
 export const ALL_MISSION_IDS = [
@@ -160,6 +285,8 @@ export interface ClientGameState {
   result: GameResult;
   log: GameLogEntry[];
   chat: ChatMessage[];
+  /** Campaign-specific state (visibility-filtered); absent for non-campaign missions. */
+  campaign?: CampaignState;
 }
 
 export interface ClientPlayer {

@@ -1,0 +1,33 @@
+import { describe, it, expect } from "vitest";
+import { resolveMissionSetup } from "@bomb-busters/shared";
+import { resolveEquipmentPoolIds } from "../setup";
+
+describe("equipment pool resolution", () => {
+  it("uses base pool by default", () => {
+    const { setup } = resolveMissionSetup(4, 4);
+    const ids = resolveEquipmentPoolIds(setup.equipment);
+
+    expect(ids).toContain("rewinder");
+    expect(ids).toContain("x_or_y_ray");
+    expect(ids).not.toContain("double_fond");
+    expect(ids).not.toContain("disintegrator");
+  });
+
+  it("mission 41 excludes only campaign double_fond (not base rewinder)", () => {
+    const { setup } = resolveMissionSetup(41, 4);
+    const ids = resolveEquipmentPoolIds(setup.equipment);
+
+    expect(ids).toContain("rewinder");
+    expect(ids).toContain("x_or_y_ray");
+    expect(ids).not.toContain("double_fond");
+  });
+
+  it("mission 57 excludes only campaign disintegrator (not base X/Y Ray)", () => {
+    const { setup } = resolveMissionSetup(57, 4);
+    const ids = resolveEquipmentPoolIds(setup.equipment);
+
+    expect(ids).toContain("x_or_y_ray");
+    expect(ids).toContain("double_fond");
+    expect(ids).not.toContain("disintegrator");
+  });
+});

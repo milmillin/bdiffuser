@@ -145,6 +145,38 @@ export function shuffle<T>(array: T[]): T[] {
   return array;
 }
 
+function resolveEquipmentPool(spec: MissionEquipmentSpec): (typeof EQUIPMENT_DEFS)[number][] {
+  if (spec.mode === "none") return [];
+
+  let candidateDefs =
+    spec.mode === "fixed_pool"
+      ? [...EQUIPMENT_DEFS]
+      : EQUIPMENT_DEFS.filter((def) =>
+          spec.includeCampaignEquipment ? true : def.pool === "base",
+        );
+
+  if (spec.excludedUnlockValues?.length) {
+    const excluded = new Set(spec.excludedUnlockValues);
+    candidateDefs = candidateDefs.filter((def) => !excluded.has(def.unlockValue));
+  }
+
+  if (spec.excludedEquipmentIds?.length) {
+    const excluded = new Set(spec.excludedEquipmentIds);
+    candidateDefs = candidateDefs.filter((def) => !excluded.has(def.id));
+  }
+
+  if (spec.mode === "fixed_pool") {
+    const fixedSet = new Set(spec.fixedEquipmentIds ?? []);
+    candidateDefs = candidateDefs.filter((def) => fixedSet.has(def.id));
+  }
+
+  return candidateDefs;
+}
+
+export function resolveEquipmentPoolIds(spec: MissionEquipmentSpec): string[] {
+  return resolveEquipmentPool(spec).map((def) => def.id);
+}
+
 function createEquipmentCards(
   count: number,
   spec: MissionEquipmentSpec,
@@ -153,17 +185,9 @@ function createEquipmentCards(
     return [];
   }
 
-  let candidateDefs = [...EQUIPMENT_DEFS];
+  const candidateDefs = resolveEquipmentPool(spec);
 
-  if (spec.excludedUnlockValues?.length) {
-    const excluded = new Set(spec.excludedUnlockValues);
-    candidateDefs = candidateDefs.filter((def) => !excluded.has(def.unlockValue));
-  }
-
-  if (spec.mode === "fixed_pool") {
-    const fixedSet = new Set(spec.fixedEquipmentIds ?? []);
-    candidateDefs = candidateDefs.filter((def) => fixedSet.has(def.id));
-  } else {
+  if (spec.mode !== "fixed_pool") {
     shuffle(candidateDefs);
   }
 

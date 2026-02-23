@@ -2,17 +2,32 @@
   "name": "bomb-busters",
   "private": true,
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "workerd", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd",
+      "sharp"
+    ]
   },
   "scripts": {
     "dev": "pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",
     "dev:all": "pnpm --parallel --filter client --filter server dev",
     "mission:test": "node scripts/mission-tester/run-campaign.mjs",
-    "build": "pnpm --filter client build",
+    "build": "pnpm --filter shared build && pnpm --filter client build",
+    "test": "vitest run",
+    "schema:check": "vitest run --dir packages/shared --testNamePattern 'mission ID|override validity|equipment reference|image asset'",
+    "test:shared": "vitest run --dir packages/shared",
+    "test:server": "vitest run --dir packages/server",
+    "smoke": "pnpm typecheck && pnpm test",
+    "check": "pnpm typecheck && pnpm test",
     "typecheck": "pnpm -r typecheck",
+    "prepare": "git config core.hooksPath .githooks",
     "deploy:server": "pnpm --filter server run deploy",
     "deploy:client": "pnpm --filter client exec wrangler deploy",
     "deploy": "pnpm run deploy:server && pnpm build && pnpm run deploy:client"
+  },
+  "packageManager": "pnpm@10.30.1",
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }

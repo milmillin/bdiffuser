@@ -7,6 +7,7 @@ import type {
   WireTile,
   LobbyState,
 } from "@bomb-busters/shared";
+import { filterCampaignState } from "@bomb-busters/shared";
 
 /**
  * Filter game state for a specific player.
@@ -28,6 +29,9 @@ export function filterStateForPlayer(
     result: state.result,
     log: state.log,
     chat: state.chat,
+    ...(state.campaign
+      ? { campaign: filterCampaignState(state.campaign, playerId) }
+      : {}),
   };
 }
 

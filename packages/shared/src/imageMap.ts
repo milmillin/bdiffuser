@@ -75,7 +75,8 @@ export interface EquipmentDef {
   description: string;
   unlockValue: number;
   image: string;
-  useTiming: "anytime" | "in_turn" | "start_of_turn";
+  useTiming: "anytime" | "in_turn" | "start_of_turn" | "immediate";
+  pool: "base" | "campaign";
 }
 
 export const EQUIPMENT_DEFS: EquipmentDef[] = [
@@ -86,6 +87,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 2,
     image: "equipment_2.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "rewinder",
@@ -94,6 +96,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 6,
     image: "equipment_6.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "post_it",
@@ -102,6 +105,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 4,
     image: "equipment_4.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "coffee_thermos",
@@ -110,6 +114,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 11,
     image: "equipment_11.png",
     useTiming: "in_turn",
+    pool: "base",
   },
   {
     id: "label_neq",
@@ -118,6 +123,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 1,
     image: "equipment_1.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "general_radar",
@@ -126,6 +132,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 8,
     image: "equipment_8.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "emergency_batteries",
@@ -134,6 +141,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 7,
     image: "equipment_7.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "label_eq",
@@ -142,6 +150,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 12,
     image: "equipment_12.png",
     useTiming: "anytime",
+    pool: "base",
   },
   {
     id: "super_detector",
@@ -150,6 +159,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 5,
     image: "equipment_5.png",
     useTiming: "in_turn",
+    pool: "base",
   },
   {
     id: "stabilizer",
@@ -158,6 +168,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 9,
     image: "equipment_9.png",
     useTiming: "start_of_turn",
+    pool: "base",
   },
   {
     id: "x_or_y_ray",
@@ -166,6 +177,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 10,
     image: "equipment_10.png",
     useTiming: "in_turn",
+    pool: "base",
   },
   {
     id: "triple_detector",
@@ -174,6 +186,61 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     unlockValue: 3,
     image: "equipment_3.png",
     useTiming: "in_turn",
+    pool: "base",
+  },
+  {
+    id: "double_fond",
+    name: "Double fond",
+    description: "Draw 2 Equipment cards and put them into play with the others.",
+    unlockValue: 6,
+    image: "equipment_yellow.png",
+    useTiming: "immediate",
+    pool: "campaign",
+  },
+  {
+    id: "single_thread_label",
+    name: "Single thread label",
+    description: "Place a token in front of one of your blue wires (cut or uncut) to show this value appears once on that stand.",
+    unlockValue: 2,
+    image: "equipment_22.png",
+    useTiming: "anytime",
+    pool: "campaign",
+  },
+  {
+    id: "emergency_fund",
+    name: "Emergency fund",
+    description: "Return already-used Equipment cards immediately so they become available again this mission.",
+    unlockValue: 3,
+    image: "equipment_33.png",
+    useTiming: "immediate",
+    pool: "campaign",
+  },
+  {
+    id: "thread_cutter",
+    name: "Thread cutter card",
+    description: "During a Solo Cut action, cut 2 identical wires even if they are not the last remaining ones of that value.",
+    unlockValue: 9,
+    image: "equipment_99.png",
+    useTiming: "in_turn",
+    pool: "campaign",
+  },
+  {
+    id: "disintegrator",
+    name: "Disintegrator",
+    description: "Draw a random Info token (1-12); all players cut their possible remaining wires of that value.",
+    unlockValue: 10,
+    image: "equipment_1010.png",
+    useTiming: "immediate",
+    pool: "campaign",
+  },
+  {
+    id: "grapple",
+    name: "Grapple",
+    description: "Take a designated teammate wire without revealing it and file it into your own hand.",
+    unlockValue: 11,
+    image: "equipment_1111.png",
+    useTiming: "anytime",
+    pool: "campaign",
   },
 ];
 

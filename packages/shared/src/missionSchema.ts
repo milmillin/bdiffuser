@@ -36,7 +36,11 @@ export interface BlueWireSpec {
 
 export interface MissionEquipmentSpec {
   mode: "none" | "default" | "fixed_pool";
+  /** Include campaign-only equipment cards (22/33/99/10-10/11-11/yellow) in the draw pool. */
+  includeCampaignEquipment?: boolean;
   excludedUnlockValues?: readonly number[];
+  /** Exclude specific equipment cards by ID (used when unlock values are not unique). */
+  excludedEquipmentIds?: readonly string[];
   fixedEquipmentIds?: readonly string[];
 }
 
@@ -46,6 +50,77 @@ export interface MissionSetupSpec {
   yellow: WirePoolSpec;
   equipment: MissionEquipmentSpec;
 }
+
+// ── Resolved Hook Rule Definitions (machine-readable) ──────────
+
+/**
+ * Mission 10: Real-time countdown timer.
+ * Players must complete the mission within `durationSeconds`.
+ * An audio cue plays to signal time pressure.
+ */
+export interface TimerRuleDef {
+  kind: "timer";
+  /** Timer duration in seconds. */
+  durationSeconds: number;
+  /** Whether an audio cue accompanies the timer. */
+  audioPrompt: boolean;
+}
+
+/**
+ * Mission 10: Captain designates the next player each turn
+ * instead of following clockwise order.
+ */
+export interface DynamicTurnOrderRuleDef {
+  kind: "dynamic_turn_order";
+  /** Who selects the next player. */
+  selector: "captain";
+}
+
+/**
+ * Mission 11: One random blue wire value is secretly treated as a
+ * detonator (red) during gameplay. No player knows which value it is.
+ * Cutting that blue triggers a detonator advance just like cutting red.
+ */
+export interface BlueAsRedRuleDef {
+  kind: "blue_value_treated_as_red";
+  /** How many blue values become hidden reds. */
+  count: 1;
+  /** Whether any player knows which blue is the hidden red. */
+  knownToAnyPlayer: false;
+}
+
+/**
+ * Mission 12: Equipment requires cutting 2 wires whose game-value
+ * matches the unlock value (instead of the normal 1).
+ */
+export interface EquipmentDoubleLockRuleDef {
+  kind: "equipment_double_lock";
+  /** Number of matching wire cuts required to unlock equipment. */
+  requiredCuts: 2;
+}
+
+/**
+ * Discriminated union of all resolved hook rule definitions.
+ * Extend this union as more hooks are resolved in later milestones.
+ */
+export type MissionHookRuleDef =
+  | TimerRuleDef
+  | DynamicTurnOrderRuleDef
+  | BlueAsRedRuleDef
+  | EquipmentDoubleLockRuleDef;
+
+// ── Source Reference Metadata ──────────────────────────────────
+
+export interface MissionSourceRef {
+  /** Mission card front image filename (e.g. "mission_1.png"). */
+  cardImage: string;
+  /** Mission card back image filename (e.g. "mission_1_back.png"). */
+  cardImageBack: string;
+  /** Section heading in GAME_RULES.md (e.g. "### Mission 1"). */
+  rulesSection: string;
+}
+
+// ── Mission Schema ─────────────────────────────────────────────
 
 export interface MissionRuleSchema {
   id: MissionId;
@@ -58,6 +133,14 @@ export interface MissionRuleSchema {
   allowedPlayerCounts?: readonly PlayerCount[];
   /** Procedural mission logic handled in server runtime. */
   behaviorHooks?: readonly string[];
+  /**
+   * Resolved hook rule definitions with exact machine-readable parameters.
+   * Each entry corresponds to a behaviorHook string but with full type safety
+   * and unambiguous semantics. Populated as ambiguities are resolved.
+   */
+  hookRules?: readonly MissionHookRuleDef[];
+  /** Traceability back to physical mission card and rules document. */
+  sourceRef?: MissionSourceRef;
   notes?: readonly string[];
 }
 
@@ -106,6 +189,19 @@ function defaultDifficulty(id: MissionId): MissionDifficulty {
   return "campaign";
 }
 
+function missionImageExt(id: MissionId): string {
+  return id === 31 || id === 32 || id === 35 ? "jpg" : "png";
+}
+
+function buildSourceRef(id: MissionId): MissionSourceRef {
+  const ext = missionImageExt(id);
+  return {
+    cardImage: `mission_${id}.${ext}`,
+    cardImageBack: `mission_${id}_back.${ext}`,
+    rulesSection: `### Mission ${id}`,
+  };
+}
+
 const schemas = {} as Record<MissionId, MissionRuleSchema>;
 for (const id of ALL_MISSION_IDS) {
   schemas[id] = {
@@ -114,6 +210,7 @@ for (const id of ALL_MISSION_IDS) {
     difficulty: defaultDifficulty(id),
     setup: defaultSetup(),
     allowedPlayerCounts: PLAYER_COUNTS,
+    sourceRef: buildSourceRef(id),
   } satisfies MissionRuleSchema;
 }
 
@@ -257,6 +354,10 @@ setMission(10, {
     equipment: { mode: "default", excludedUnlockValues: [11] },
   },
   behaviorHooks: ["mission_10_timer_and_dynamic_turn_order"],
+  hookRules: [
+    { kind: "timer", durationSeconds: 900, audioPrompt: true },
+    { kind: "dynamic_turn_order", selector: "captain" },
+  ],
 });
 
 setMission(11, {
@@ -273,6 +374,9 @@ setMission(11, {
     },
   },
   behaviorHooks: ["mission_11_blue_value_treated_as_red"],
+  hookRules: [
+    { kind: "blue_value_treated_as_red", count: 1, knownToAnyPlayer: false },
+  ],
 });
 
 setMission(12, {
@@ -289,6 +393,9 @@ setMission(12, {
     },
   },
   behaviorHooks: ["mission_12_equipment_double_lock"],
+  hookRules: [
+    { kind: "equipment_double_lock", requiredCuts: 2 },
+  ],
 });
 
 setMission(13, {
@@ -615,7 +722,11 @@ setMission(41, {
     ...defaultSetup(),
     red: outOf(1, 3),
     yellow: exact(4),
-    equipment: { mode: "default", excludedUnlockValues: [6] },
+    equipment: {
+      mode: "default",
+      includeCampaignEquipment: true,
+      excludedEquipmentIds: ["double_fond"],
+    },
   },
   overrides: {
     2: { red: outOf(2, 3), yellow: exact(2) },
@@ -790,7 +901,11 @@ setMission(57, {
   setup: {
     ...defaultSetup(),
     red: exact(1),
-    equipment: { mode: "default", excludedUnlockValues: [10] },
+    equipment: {
+      mode: "default",
+      includeCampaignEquipment: true,
+      excludedEquipmentIds: ["disintegrator"],
+    },
   },
   overrides: { 2: { red: exact(2) } },
   behaviorHooks: ["mission_57_constraint_per_validated_value"],
@@ -1045,6 +1160,14 @@ function validateEquipmentSpec(missionId: MissionId, spec: MissionEquipmentSpec)
     for (const value of spec.excludedUnlockValues) {
       if (!allUnlockValues.has(value)) {
         throw new Error(`Mission ${missionId}: unknown equipment unlock value ${value}`);
+      }
+    }
+  }
+
+  if (spec.excludedEquipmentIds) {
+    for (const id of spec.excludedEquipmentIds) {
+      if (!allEquipmentIds.has(id)) {
+        throw new Error(`Mission ${missionId}: unknown excluded equipment id ${id}`);
       }
     }
   }

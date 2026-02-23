@@ -22,11 +22,17 @@ pnpm dev:server       # Wrangler dev server (port 1999)
 # Type-check all packages
 pnpm typecheck
 
+# Run tests (Vitest)
+pnpm test
+
+# Fast smoke check (typecheck + test) — runs automatically on every commit
+pnpm smoke
+
 # Build for production (builds shared first, then client)
 pnpm build
 ```
 
-No test framework is configured yet.
+A pre-commit hook runs `pnpm smoke` on every commit. It is installed automatically via the `prepare` script when you run `pnpm install`.
 
 ## Architecture
 

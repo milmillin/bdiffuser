@@ -36,57 +36,62 @@ This file tracks all remaining work after introducing the central mission schema
 Dependency: none (first execution phase).
 
 ### Test Infrastructure (Unblocks all later validation work)
-- [ ] Add unit test framework for shared/server logic (Vitest recommended).
-- [ ] Add deterministic test helpers (seeded RNG, fixed tile/card setup builders).
-- [ ] Add scripts and CI wiring for mission schema + mission logic tests.
-- [ ] Add a fast smoke command that runs on every commit.
+- [x] Add unit test framework for shared/server logic (Vitest recommended).
+- [x] Add deterministic test helpers (seeded RNG, fixed tile/card setup builders).
+- [x] Add scripts and CI wiring for mission schema + mission logic tests.
+- [x] Add a fast smoke command that runs on every commit.
 
 ### Schema Tooling
-- [ ] Add schema lint/check script validating:
+- [x] Add schema lint/check script validating:
   - Mission ID completeness
   - Override validity by player count
   - Equipment reference validity
   - Image asset consistency
-- [ ] Fail CI when schema completeness/consistency checks fail.
+- [x] Fail CI when schema completeness/consistency checks fail.
 
 ## Phase 0B - Mission Data Correctness (P0)
 Dependency: starts after Phase 0A.
 
 ### Mission Setup Parity
-- [ ] Verify every mission setup field in `packages/shared/src/missionSchema.ts` against mission card assets (1-66 + 31/32/35).
-- [ ] Build ambiguity triage list for approximations currently represented in schema:
+- [x] Verify every mission setup field in `packages/shared/src/missionSchema.ts` against mission card assets (1-66 + 31/32/35).
+  - Verification report: `packages/shared/MISSION_SCHEMA_VERIFICATION.md` (66/66 OK).
+  - D1/D2 resolved by campaign-equipment modeling:
+    - Mission 41 now excludes `double_fond` by equipment ID (keeps base Rewinder available).
+    - Mission 57 now excludes `disintegrator` by equipment ID (keeps base X/Y Ray available).
+- [x] Build ambiguity triage list for approximations currently represented in schema:
   - Scope: missions 9-66 + supplementals 31/32/35.
   - Scope: all non-generic behavior hook definitions currently listed in schema.
   - Output: one tracked row per ambiguity (`missionId`, rule, options, default interpretation, owner, status).
-- [ ] Resolve all triaged ambiguities into exact machine-readable rules; no unresolved `open` rows remain for milestone scope being shipped.
-- [ ] Add `sourceRef` metadata per mission (card image + `GAME_RULES.md` section reference).
-- [ ] Add tracking table for unresolved rule ambiguities (owner + decision + date).
+  - Artifact: `packages/shared/AMBIGUITY_TRIAGE.md` (63 rows: 56 open, 0 blocked, 7 resolved).
+- [x] Resolve all triaged ambiguities into exact machine-readable rules; no unresolved `open` rows remain for milestone scope being shipped. (M1 scope: 4/4 resolved — missions 10, 11, 12. 56 open rows remain for M2/M3.)
+- [x] Add `sourceRef` metadata per mission (card image + `GAME_RULES.md` section reference).
+- [x] Add tracking table for unresolved rule ambiguities (owner + decision + date).
 
 ### Runtime Guardrails
-- [ ] Enforce `allowedPlayerCounts` in lobby mission picker (disable impossible missions).
-- [ ] Surface mission availability errors in UI before `startGame`.
-- [ ] Keep server-side hard validation for mission/player-count mismatch with clear error messages.
+- [x] Enforce `allowedPlayerCounts` in lobby mission picker (disable impossible missions).
+- [x] Surface mission availability errors in UI before `startGame`.
+- [x] Keep server-side hard validation for mission/player-count mismatch with clear error messages.
 
 ## Phase 0C - Runtime Foundations (P0)
 Dependency: starts after Phase 0B baseline parity is established for target milestone scope.
 
 ### Mission Hook Runtime
-- [ ] Implement mission behavior hook dispatcher in server runtime (setup, validation, action resolution, end-turn).
-- [ ] Define deterministic hook execution ordering.
-- [ ] Add hook tracing/logging for state transitions.
-- [ ] In development/test: hard-fail on unknown hook names.
-- [ ] In production: safe fallback + telemetry event for unknown hooks.
+- [x] Implement mission behavior hook dispatcher in server runtime (setup, validation, action resolution, end-turn).
+- [x] Define deterministic hook execution ordering.
+- [x] Add hook tracing/logging for state transitions.
+- [x] In development/test: hard-fail on unknown hook names.
+- [x] In production: safe fallback + telemetry event for unknown hooks.
 
 ### Shared State Expansion
-- [ ] Extend shared game state for campaign objects:
+- [x] Extend shared game state for campaign objects:
   - Number cards (deck/discard/visible/hidden)
   - Constraint cards (global + per-player active constraints)
   - Challenge cards
   - Oxygen economy (pool + ownership)
   - Nano/Bunker trackers
   - Special markers (`X`, sequence/action pointers)
-- [ ] Define visibility model for each new object (public/owner-only/hidden).
-- [ ] Add storage migration-safe defaults for rooms with old state shape.
+- [x] Define visibility model for each new object (public/owner-only/hidden).
+- [x] Add storage migration-safe defaults for rooms with old state shape.
 
 ### Dependency Notes
 - Hook Categories and mission-specific rule logic are blocked by Mission Hook Runtime.

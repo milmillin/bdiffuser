@@ -12,6 +12,7 @@ import {
   getAllTiles,
   getTileByFlatIndex,
 } from "./validation.js";
+import { dispatchHooks } from "./missionHooks.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -37,6 +38,19 @@ export function advanceTurn(state: GameState): void {
 
   state.currentPlayerIndex = next;
   state.turnNumber++;
+
+  // Dispatch endTurn hooks (may override next player index, etc.)
+  const endTurnResult = dispatchHooks(state.mission, {
+    point: "endTurn",
+    state,
+  });
+
+  if (endTurnResult.nextPlayerIndex !== undefined) {
+    const idx = endTurnResult.nextPlayerIndex;
+    if (idx >= 0 && idx < playerCount) {
+      state.currentPlayerIndex = idx;
+    }
+  }
 }
 
 /** Update the cut count for a blue value on the validation track */
@@ -56,8 +70,8 @@ function checkValidation(state: GameState, value: number): boolean {
   return cutCount >= 4;
 }
 
-/** Check if equipment should unlock (2 wires of matching value cut) */
-function checkEquipmentUnlock(state: GameState, value: number): void {
+/** Check if equipment should unlock (threshold wires of matching value cut) */
+function checkEquipmentUnlock(state: GameState, value: number, threshold = 2): void {
   if (typeof value !== "number") return;
 
   let cutCount = 0;
@@ -69,7 +83,7 @@ function checkEquipmentUnlock(state: GameState, value: number): void {
     }
   }
 
-  if (cutCount >= 2) {
+  if (cutCount >= threshold) {
     for (const eq of state.board.equipment) {
       if (eq.unlockValue === value && !eq.unlocked) {
         eq.unlocked = true;
@@ -138,12 +152,41 @@ export function executeDualCut(
     const actorTile = actorUncut.find((t) => t.gameValue === guessValue);
     if (actorTile) actorTile.cut = true;
 
+    // Dispatch resolve hooks (may override equipment unlock threshold, etc.)
+    const resolveResult = dispatchHooks(state.mission, {
+      point: "resolve",
+      state,
+      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex, guessValue },
+      cutValue: guessValue,
+      cutSuccess: true,
+    });
+
     // Check validation and equipment unlock
     if (typeof guessValue === "number") {
       checkValidation(state, guessValue);
-      checkEquipmentUnlock(state, guessValue);
+      if (!resolveResult.overrideEquipmentUnlock) {
+        checkEquipmentUnlock(state, guessValue);
+      } else {
+        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
+      }
     }
     updateMarkerConfirmations(state);
+
+    // Check detonator loss (hooks like blue_as_red may have advanced it)
+    if (checkDetonatorLoss(state)) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓ (but detonator triggered)`);
+      return {
+        type: "dualCutResult",
+        actorId,
+        targetId: targetPlayerId,
+        targetTileIndex,
+        guessValue,
+        success: true,
+        detonatorAdvanced: true,
+      };
+    }
 
     addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓`);
 
@@ -250,9 +293,22 @@ export function executeSoloCut(
     tile.cut = true;
   }
 
+  // Dispatch resolve hooks
+  const resolveResult = dispatchHooks(state.mission, {
+    point: "resolve",
+    state,
+    action: { type: "soloCut", actorId, value },
+    cutValue: value,
+    cutSuccess: true,
+  });
+
   if (typeof value === "number") {
     checkValidation(state, value);
-    checkEquipmentUnlock(state, value);
+    if (!resolveResult.overrideEquipmentUnlock) {
+      checkEquipmentUnlock(state, value);
+    } else {
+      checkEquipmentUnlock(state, value, resolveResult.equipmentUnlockThreshold ?? 2);
+    }
   }
   updateMarkerConfirmations(state);
 

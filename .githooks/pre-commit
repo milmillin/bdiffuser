@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Fast smoke check — runs typecheck + tests on every commit.
+# Installed automatically via `pnpm install` (see "prepare" script).
+
+pnpm smoke

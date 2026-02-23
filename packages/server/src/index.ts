@@ -2,13 +2,13 @@ import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
   ClientMessage,
   ServerMessage,
-  GameState,
   Player,
   MissionId,
   CharacterId,
   ChatMessage,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
+import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
 import {
@@ -21,11 +21,16 @@ import {
   executeSoloCut,
   executeRevealReds,
 } from "./gameLogic.js";
+import { dispatchHooks } from "./missionHooks.js";
 import {
   createBotPlayer,
   botPlaceInfoToken,
   getBotAction,
 } from "./botController.js";
+import {
+  normalizeRoomState,
+  type RoomStateSnapshot,
+} from "./storageMigrations.js";
 
 interface Env {
   [key: string]: unknown;
@@ -33,17 +38,8 @@ interface Env {
   ZHIPU_API_KEY: string;
 }
 
-interface RoomState {
-  gameState: GameState | null;
-  players: Player[];
-  mission: MissionId;
-  hostId: string | null;
-  botCount: number;
-  botLastActionTurn: Record<string, number>;
-}
-
 export class BombBustersServer extends Server<Env> {
-  room: RoomState = {
+  room: RoomStateSnapshot = {
     gameState: null,
     players: [],
     mission: 1,
@@ -53,9 +49,9 @@ export class BombBustersServer extends Server<Env> {
   };
 
   async onStart() {
-    const stored = await this.ctx.storage.get<RoomState>("room");
+    const stored = await this.ctx.storage.get<unknown>("room");
     if (stored) {
-      this.room = stored;
+      this.room = normalizeRoomState(stored, this.name);
     }
   }
 
@@ -216,6 +212,13 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    // Validate mission supports current player count
+    const missionError = validateMissionPlayerCount(this.room.mission, this.room.players.length);
+    if (missionError) {
+      this.sendMsg(conn, { type: "error", message: missionError });
+      return;
+    }
+
     // Randomly assign characters to players
     const allCharacters: CharacterId[] = [
       "double_detector",
@@ -262,6 +265,12 @@ export class BombBustersServer extends Server<Env> {
       log: [],
       chat: [],
     };
+
+    // Dispatch mission setup hooks (timer config, hidden reds, etc.)
+    dispatchHooks(this.room.mission, {
+      point: "setup",
+      state: this.room.gameState,
+    });
 
     // Auto-place info tokens for bots
     this.handleBotInfoTokens();
@@ -335,6 +344,17 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    // Dispatch mission validate hooks
+    const hookResult = dispatchHooks(state.mission, {
+      point: "validate",
+      state,
+      action: { type: "dualCut", actorId: conn.id, targetPlayerId, targetTileIndex, guessValue },
+    });
+    if (hookResult.validationError) {
+      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
+      return;
+    }
+
     const action = executeDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue);
 
     this.saveState();
@@ -353,6 +373,17 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    // Dispatch mission validate hooks
+    const hookResult = dispatchHooks(state.mission, {
+      point: "validate",
+      state,
+      action: { type: "soloCut", actorId: conn.id, value },
+    });
+    if (hookResult.validationError) {
+      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
+      return;
+    }
+
     const action = executeSoloCut(state, conn.id, value);
 
     this.saveState();
@@ -368,6 +399,17 @@ export class BombBustersServer extends Server<Env> {
     const error = validateRevealReds(state, conn.id);
     if (error) {
       this.sendMsg(conn, { type: "error", message: error });
+      return;
+    }
+
+    // Dispatch mission validate hooks
+    const hookResult = dispatchHooks(state.mission, {
+      point: "validate",
+      state,
+      action: { type: "revealReds", actorId: conn.id },
+    });
+    if (hookResult.validationError) {
+      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
       return;
     }
 
