@@ -212,8 +212,8 @@ function defaultDifficulty(id: MissionId): MissionDifficulty {
   return "campaign";
 }
 
-function missionImageExt(id: MissionId): string {
-  return id === 31 || id === 32 || id === 35 ? "jpg" : "png";
+function missionImageExt(_id: MissionId): string {
+  return "jpg";
 }
 
 function buildSourceRef(id: MissionId): MissionSourceRef {

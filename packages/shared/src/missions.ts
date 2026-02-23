@@ -18,7 +18,7 @@ export interface MissionDefinition {
 }
 
 function missionImageFilename(id: MissionId, back = false): string {
-  const ext = id === 31 || id === 32 || id === 35 ? "jpg" : "png";
+  const ext = "jpg";
   return back ? `mission_${id}_back.${ext}` : `mission_${id}.${ext}`;
 }
 
