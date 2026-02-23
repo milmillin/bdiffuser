@@ -1,5 +1,5 @@
 import type { ClientPlayer, InfoToken, VisibleTile } from "@bomb-busters/shared";
-import { CHARACTER_IMAGES, WIRE_BACK_IMAGE } from "@bomb-busters/shared";
+import { CHARACTER_IMAGES, WIRE_BACK_IMAGE, wireLabel } from "@bomb-busters/shared";
 
 export function PlayerStand({
   player,
@@ -61,7 +61,7 @@ export function PlayerStand({
         const colWidth = isOpponent ? "1.5rem" : "2rem";
         return (
           <div className={`inline-grid gap-x-1 ${isOpponent ? "mx-auto" : ""}`}
-            style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto" }}
+            style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
           >
             {/* Row 1: info tokens */}
             {player.hand.map((_, idx) => {
@@ -90,6 +90,12 @@ export function PlayerStand({
                 testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}
               />
+            ))}
+            {/* Row 3: wire labels */}
+            {player.hand.map((_, idx) => (
+              <div key={`label-${idx}`} className="text-center text-[10px] text-gray-500 font-mono leading-tight">
+                {wireLabel(idx)}
+              </div>
             ))}
           </div>
         );

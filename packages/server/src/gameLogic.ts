@@ -6,6 +6,7 @@ import type {
   GameLogEntry,
 } from "@bomb-busters/shared";
 import type { GameAction } from "@bomb-busters/shared";
+import { wireLabel } from "@bomb-busters/shared";
 import {
   getUncutTiles,
   getAllTiles,
@@ -125,7 +126,7 @@ export function executeDualCut(
       checkEquipmentUnlock(state, guessValue);
     }
 
-    addLog(state, actorId, "dualCut", `Correctly guessed ${guessValue} on ${target.name}'s wire`);
+    addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓`);
 
     // Check win
     if (checkWin(state)) {
@@ -154,7 +155,7 @@ export function executeDualCut(
       targetTile.cut = true;
       state.result = "loss_red_wire";
       state.phase = "finished";
-      addLog(state, actorId, "dualCut", `Cut a RED wire on ${target.name}'s stand! BOOM!`);
+      addLog(state, actorId, "dualCut", `cut a RED wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`);
 
       return {
         type: "dualCutResult",
@@ -183,7 +184,7 @@ export function executeDualCut(
       state,
       actorId,
       "dualCut",
-      `Wrong guess (${guessValue}) on ${target.name}'s wire. Detonator advances.`,
+      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗`,
     );
 
     // Check detonator loss
@@ -234,7 +235,7 @@ export function executeSoloCut(
     checkEquipmentUnlock(state, value);
   }
 
-  addLog(state, actorId, "soloCut", `Solo cut ${matchingTiles.length} wires of value ${value}`);
+  addLog(state, actorId, "soloCut", `solo cut ${matchingTiles.length} wire(s) of value ${value}`);
 
   if (checkWin(state)) {
     state.result = "win";
@@ -266,7 +267,7 @@ export function executeRevealReds(
     revealed++;
   }
 
-  addLog(state, actorId, "revealReds", `Revealed ${revealed} red wires`);
+  addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
 
   if (checkWin(state)) {
     state.result = "win";

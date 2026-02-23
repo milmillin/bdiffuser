@@ -5,6 +5,7 @@ import { PlayerStand } from "./Players/PlayerStand.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
+import { ActionLog } from "./ActionLog.js";
 
 export function GameBoard({
   gameState,
@@ -131,8 +132,9 @@ export function GameBoard({
           </div>
         </div>
 
-        {/* Chat panel */}
-        <div className="w-72 flex-shrink-0">
+        {/* Sidebar: action log + chat */}
+        <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 self-stretch">
+          <ActionLog log={gameState.log} players={gameState.players} />
           <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
         </div>
       </div>

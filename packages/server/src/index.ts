@@ -8,6 +8,7 @@ import type {
   CharacterId,
   ChatMessage,
 } from "@bomb-busters/shared";
+import { wireLabel } from "@bomb-busters/shared";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
 import {
@@ -287,6 +288,14 @@ export class BombBustersServer extends Server<Env> {
       isYellow: false,
     });
 
+    state.log.push({
+      turn: 0,
+      playerId: conn.id,
+      action: "placeInfoToken",
+      detail: `placed info token ${value} on wire ${wireLabel(tileIndex)}`,
+      timestamp: Date.now(),
+    });
+
     // Advance to next player for setup
     state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
 
@@ -455,6 +464,16 @@ export class BombBustersServer extends Server<Env> {
     for (const player of state.players) {
       if (player.isBot) {
         botPlaceInfoToken(state, player.id);
+        const token = player.infoTokens[player.infoTokens.length - 1];
+        if (token) {
+          state.log.push({
+            turn: 0,
+            playerId: player.id,
+            action: "placeInfoToken",
+            detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
+            timestamp: Date.now(),
+          });
+        }
       }
     }
 
