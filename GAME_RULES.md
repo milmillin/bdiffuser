@@ -580,6 +580,152 @@ Baseline assumption used in this section:
   - Other values can be cut at any time.
   - After all `4` wires of the left value are cut, flip/remove that Number card and shift the Sequence marker; then repeat for the next step.
 
+## 22. Mission Cards 17-24 (Processed from Images)
+
+Source images:
+
+- Fronts: `packages/client/public/images/mission_17.png` through `packages/client/public/images/mission_24.png`
+- Backs: `packages/client/public/images/mission_17_back.png` through `packages/client/public/images/mission_24_back.png`
+
+### Mission 17
+
+- Card title: `Sergio El Mytho`
+- Setup:
+  - Red setup: `2 out of 3` red wires.
+  - Shuffle character cards face down and deal one to each player; reveal.
+  - Player with Captain card is `Sergio el Mytho` for this mission.
+  - Sergio returns Captain card to the box (no Double Detector 2000 ability).
+  - Instead of placing 1 normal info token, Sergio places `2` info tokens that must be false:
+    - Token value must not match the designated wire.
+    - Cannot place these false tokens in front of a red wire.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Sergio's info tokens are always false and mean: `this wire is not this value`.
+  - If a Duo Cut targeting Sergio fails, Sergio places info token of the announced value in front of targeted wire (also false information).
+  - Sergio cannot use equipment cards, but may participate in effects from Equipment `2` (Walkie-Talkies) and `8` (General Radar).
+
+### Mission 18
+
+- Card title: `BAT-helping hand`
+- Setup:
+  - Add `2` red wires.
+  - Shuffle all `12` Number cards face down as a draw pile.
+  - Place Equipment `8` (General Radar) face up on board.
+  - Do not place any other equipment cards.
+  - Do not place info tokens during setup.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - On each turn, active player must:
+    - Reveal top Number card.
+    - Use Equipment `8` (General Radar) on that value.
+    - Designate which player (including self) must perform a cut action on that value.
+  - When Number-card draw pile is empty, reshuffle Number cards.
+  - Discard a Number card as soon as all 4 matching wires are cut.
+  - If a player starts turn with only red wires left, they perform `Reveal Your Red Wires`.
+  - Reminder on card: players may not recall/share previous radar answers.
+
+### Mission 19
+
+- Card title: `In the villain's lair...`
+- Setup:
+  - Add `1` red wire.
+  - Add `2 out of 3` yellow wires.
+  - Mission includes an external audio-file prompt (QR code/smartphone icon).
+- Mission rule (back):
+  - Play mission audio file from QR code (or fallback URL from rulebook).
+  - Card mostly provides fail/success narrative and campaign progression text.
+  - On success, open the `Missions 20 to 30` box.
+
+### Mission 20
+
+- Card title: `The big bad wolf`
+- Setup:
+  - Add `2` red wires.
+  - Add `2` yellow wires.
+  - Special `X` marker setup:
+    - Last wire dealt to each stand is not sorted.
+    - It is placed at far right of stand regardless of value.
+    - Place an `X` token in front of that wire.
+  - If Equipment `2` is drawn, replace it.
+  - 2-player override shown on card:
+    - Red: `2 out of 3`.
+    - Yellow: `4`.
+- Mission rule (back):
+  - Play normally, except wires marked with `X` are unranked.
+  - Equipment cannot be used on `X` wires.
+  - `X` wires are ignored by all equipment, including personal equipment, Equipment `5` (Super Detector), and Equipment `8` (General Radar).
+
+### Mission 21
+
+- Card title: `Kouign amann mortal`
+- Setup:
+  - Red setup: `1 out of 2`.
+  - Replace normal info tokens with even/odd tokens.
+  - During setup, each player places an even/odd token instead of a value token.
+  - 2-player override shown on card:
+    - `2` red wires.
+- Mission rule (back):
+  - Throughout mission, always use even/odd tokens instead of numeric info tokens.
+  - This applies to mistake info placement and to Equipment `4` (Post-it).
+  - Red has no numeric value, so it is neither even nor odd.
+
+### Mission 22
+
+- Card title: `None of that in my house!`
+- Setup:
+  - Add `1` red wire.
+  - Add `4` yellow wires.
+  - Setup info-token change:
+    - Each player chooses `2` token values they do not have and places them next to their stand.
+    - Choosing yellow token is allowed.
+    - Player with 2 stands places `1` token next to each stand.
+    - If a player has fewer than 2 missing values, they place fewer tokens.
+- Mission rule (back):
+  - As soon as first 2 yellow wires are cut:
+    - Starting with Captain, then clockwise, each player chooses an info token from board supply and gives it to player on their left.
+    - Each player places received token correctly in front of their stand (or next to stand if value not present).
+
+### Mission 23
+
+- Card title: `Mission in Sevenans`
+- Setup:
+  - Red setup: `1 out of 3`.
+  - Do not draw normal in-play equipment cards.
+  - Instead, create a face-down pile of `7` random equipment cards on board.
+  - Place one random Number card face up next to mission card.
+  - 2-player override shown on card:
+    - `2 out of 3` red.
+- Mission rule (back):
+  - All 4 wires of the Number-card value must be cut simultaneously.
+  - Special action for this mission:
+    - Designate the 4 wires of that value (without equipment and without Double Detector 2000), even if active player has none in own hand.
+    - Success: those 4 wires are cut.
+    - Failure: bomb explodes.
+  - After each round, before Captain's turn, discard 1 card from 7-card equipment pile until special action is successfully performed.
+  - Once special action is performed, any remaining equipment cards become usable immediately (regardless of normal cut requirements).
+
+### Mission 24
+
+- Card title: `The count is good!`
+- Setup:
+  - Add `2` red wires.
+  - Replace normal info tokens with `x1`, `x2`, `x3` tokens for this mission.
+  - Token meaning:
+    - `x1`: value appears once in that stand.
+    - `x2`: value appears twice.
+    - `x3`: value appears three times.
+    - Count includes already cut wires.
+  - `x2`/`x3` can be placed on any wire of that value in stand (for `x3`: left, middle, or right copy).
+  - These tokens cannot be placed on red wires.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Use `x1`/`x2`/`x3` tokens throughout mission instead of normal info tokens.
+  - Applies to mistake info placement and Equipment `4` (Post-it).
+  - With Equipment `4`, token may be placed in front of an already cut wire.
+
 ---
 
 ## Source
