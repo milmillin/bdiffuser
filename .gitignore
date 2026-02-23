@@ -12,3 +12,4 @@ output
 .claude-agent-home/
 tmp/
 .dev.vars
+*.tsbuildinfo
