@@ -28,24 +28,30 @@ export function createBotPlayer(id: string, nameIndex: number): Player {
 /**
  * Choose the next player index for a forced "captain chooses next player" action.
  * Picks the next clockwise player with uncut tiles; can wrap back to captain.
+ * Optionally avoid one specific player unless no other candidate exists.
  */
 export function botChooseNextPlayer(
   state: GameState,
   captainId: string,
+  excludedPlayerId?: string,
 ): number | null {
   const captainIndex = state.players.findIndex((p) => p.id === captainId);
   if (captainIndex === -1) return null;
 
   const playerCount = state.players.length;
+  let fallbackIndex: number | null = null;
   for (let i = 1; i <= playerCount; i++) {
     const idx = (captainIndex + i) % playerCount;
     const player = state.players[idx];
-    if (player.hand.some((t) => !t.cut)) {
-      return idx;
+    if (!player.hand.some((t) => !t.cut)) continue;
+    if (excludedPlayerId && player.id === excludedPlayerId) {
+      if (fallbackIndex === null) fallbackIndex = idx;
+      continue;
     }
+    return idx;
   }
 
-  return null;
+  return fallbackIndex;
 }
 
 /** Auto-place info token during setup. Picks the blue tile whose value appears most often in hand. */

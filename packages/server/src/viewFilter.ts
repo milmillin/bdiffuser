@@ -6,6 +6,7 @@ import type {
   Player,
   WireTile,
   LobbyState,
+  GameLogEntry,
 } from "@bomb-busters/shared";
 import { filterCampaignState } from "@bomb-busters/shared";
 
@@ -27,12 +28,25 @@ export function filterStateForPlayer(
     turnNumber: state.turnNumber,
     mission: state.mission,
     result: state.result,
-    log: state.log,
+    log: filterLog(state.log),
     chat: state.chat,
     ...(state.campaign
       ? { campaign: filterCampaignState(state.campaign, playerId) }
       : {}),
+    ...(state.pendingForcedAction
+      ? { pendingForcedAction: state.pendingForcedAction }
+      : {}),
+    ...(state.timerDeadline != null
+      ? { timerDeadline: state.timerDeadline }
+      : {}),
   };
+}
+
+function filterLog(log: GameLogEntry[]): GameLogEntry[] {
+  // Keep mission-11 hidden blue-as-red setup value server-side only.
+  return log.filter(
+    (entry) => !(entry.action === "hookSetup" && entry.detail.startsWith("blue_as_red:")),
+  );
 }
 
 function filterPlayer(player: Player, viewerId: string): ClientPlayer {

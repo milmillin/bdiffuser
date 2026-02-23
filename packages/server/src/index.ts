@@ -35,6 +35,7 @@ import {
   normalizeRoomState,
   type RoomStateSnapshot,
 } from "./storageMigrations.js";
+import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
 
 interface Env {
   [key: string]: unknown;
@@ -479,6 +480,17 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    // Mission 10: same player cannot take consecutive turns in 3+ player games,
+    // unless there is no other active player to choose.
+    if (isRepeatNextPlayerSelectionDisallowed(state, forced.lastPlayerId, targetPlayerId)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "In this mission, the same player cannot act twice in a row",
+        code: "MISSION_RULE_VIOLATION",
+      });
+      return;
+    }
+
     state.pendingForcedAction = undefined;
     state.currentPlayerIndex = targetIndex;
 
@@ -679,7 +691,18 @@ export class BombBustersServer extends Server<Env> {
 
     // Handle forced action: bot captain auto-selects next player
     if (state.pendingForcedAction?.kind === "chooseNextPlayer") {
-      const nextIdx = botChooseNextPlayer(state, botId);
+      const avoidPrevious =
+        state.mission === 10 &&
+        state.players.length > 2 &&
+        state.pendingForcedAction.lastPlayerId
+          ? state.pendingForcedAction.lastPlayerId
+          : undefined;
+
+      // Prefer mission-legal choice. If no alternative exists, allow fallback
+      // to avoid deadlock when only one player has uncut tiles left.
+      const nextIdx =
+        botChooseNextPlayer(state, botId, avoidPrevious) ??
+        botChooseNextPlayer(state, botId);
       if (nextIdx !== null) {
         state.pendingForcedAction = undefined;
         state.currentPlayerIndex = nextIdx;

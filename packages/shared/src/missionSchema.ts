@@ -100,6 +100,22 @@ export interface EquipmentDoubleLockRuleDef {
 }
 
 /**
+ * Mission 9: Sequence card priority (face A).
+ * Three visible number cards define an ordered gating:
+ * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
+ * - Need `requiredCuts` of card[1] before card[2] is allowed.
+ */
+export interface SequencePriorityRuleDef {
+  kind: "sequence_priority";
+  /** Number of visible sequence cards to draw from the number deck. */
+  cardCount: 3;
+  /** Required global cut count to unlock the next sequence step. */
+  requiredCuts: 2;
+  /** Printed sequence variant on mission card. */
+  variant: "face_a";
+}
+
+/**
  * Discriminated union of all resolved hook rule definitions.
  * Extend this union as more hooks are resolved in later milestones.
  */
@@ -107,7 +123,8 @@ export type MissionHookRuleDef =
   | TimerRuleDef
   | DynamicTurnOrderRuleDef
   | BlueAsRedRuleDef
-  | EquipmentDoubleLockRuleDef;
+  | EquipmentDoubleLockRuleDef
+  | SequencePriorityRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 
@@ -343,6 +360,10 @@ setMission(9, {
       yellow: exact(4),
     },
   },
+  behaviorHooks: ["mission_9_sequence_priority_face_a"],
+  hookRules: [
+    { kind: "sequence_priority", cardCount: 3, requiredCuts: 2, variant: "face_a" },
+  ],
 });
 
 setMission(10, {

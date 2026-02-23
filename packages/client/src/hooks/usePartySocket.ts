@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import PartySocket from "partysocket";
 import type {
+  ActionLegalityCode,
   ClientMessage,
   ServerMessage,
   ClientGameState,
@@ -19,6 +20,7 @@ interface UsePartySocketReturn {
   lastAction: GameAction | null;
   chatMessages: ChatMessage[];
   error: string | null;
+  errorCode: ActionLegalityCode | null;
   send: (msg: ClientMessage) => void;
   playerId: string | null;
 }
@@ -31,6 +33,7 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
   const [lastAction, setLastAction] = useState<GameAction | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<ActionLegalityCode | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,7 +85,11 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
           break;
         case "error":
           setError(msg.message);
-          setTimeout(() => setError(null), 5000);
+          setErrorCode(msg.code ?? null);
+          setTimeout(() => {
+            setError(null);
+            setErrorCode(null);
+          }, 5000);
           break;
       }
     });
@@ -99,5 +106,15 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
     }
   }, []);
 
-  return { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId };
+  return {
+    connected,
+    lobbyState,
+    gameState,
+    lastAction,
+    chatMessages,
+    error,
+    errorCode,
+    send,
+    playerId,
+  };
 }

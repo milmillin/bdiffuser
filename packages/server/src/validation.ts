@@ -5,7 +5,7 @@ import type {
   Player,
   WireTile,
 } from "@bomb-busters/shared";
-import { dispatchHooks } from "./missionHooks.js";
+import { dispatchHooks, getBlueAsRedValue } from "./missionHooks.js";
 
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
@@ -175,6 +175,28 @@ export function validateRevealRedsLegality(
   const uncutTiles = getUncutTiles(actor);
   if (uncutTiles.length === 0) {
     return legalityError("NO_WIRES_TO_REVEAL", "No wires to reveal");
+  }
+
+  if (state.mission === 11) {
+    const hiddenBlueAsRedValue = getBlueAsRedValue(state);
+    if (hiddenBlueAsRedValue == null) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission setup is missing hidden value configuration",
+      );
+    }
+
+    const allHiddenValue = uncutTiles.every(
+      (t) => t.gameValue === hiddenBlueAsRedValue,
+    );
+    if (!allHiddenValue) {
+      return legalityError(
+        "REVEAL_REDS_REQUIRES_ALL_RED",
+        "In this mission, you can only reveal when all remaining wires are the hidden red-like value",
+      );
+    }
+
+    return null;
   }
 
   const allRed = uncutTiles.every((t) => t.color === "red");

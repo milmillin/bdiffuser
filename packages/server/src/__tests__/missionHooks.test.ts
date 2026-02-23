@@ -46,6 +46,12 @@ describe("missionHooks dispatcher", () => {
       expect(rules[1].kind).toBe("dynamic_turn_order");
     });
 
+    it("returns hookRules for mission 9", () => {
+      const rules = getHookRules(9);
+      expect(rules.length).toBe(1);
+      expect(rules[0].kind).toBe("sequence_priority");
+    });
+
     it("returns hookRules for mission 11", () => {
       const rules = getHookRules(11);
       expect(rules.length).toBe(1);
@@ -61,6 +67,7 @@ describe("missionHooks dispatcher", () => {
 
   describe("handler registry", () => {
     it("has built-in handlers for missions 10/11/12 hook kinds", () => {
+      expect(hasHandler("sequence_priority")).toBe(true);
       expect(hasHandler("timer")).toBe(true);
       expect(hasHandler("dynamic_turn_order")).toBe(true);
       expect(hasHandler("blue_value_treated_as_red")).toBe(true);
@@ -89,6 +96,24 @@ describe("missionHooks dispatcher", () => {
       expect(timerLog!.detail).toContain("audio:true");
     });
 
+    it("mission 10: sets timerDeadline on game state (900s from now)", () => {
+      const state = makeGameState({ mission: 10, log: [] });
+      const before = Date.now();
+      dispatchHooks(10, { point: "setup", state });
+      const after = Date.now();
+
+      expect(state.timerDeadline).toBeDefined();
+      // Deadline should be ~900 seconds from now
+      expect(state.timerDeadline!).toBeGreaterThanOrEqual(before + 900_000);
+      expect(state.timerDeadline!).toBeLessThanOrEqual(after + 900_000);
+    });
+
+    it("mission 10: timerDeadline is not set for non-timer missions", () => {
+      const state = makeGameState({ mission: 1, log: [] });
+      dispatchHooks(1, { point: "setup", state });
+      expect(state.timerDeadline).toBeUndefined();
+    });
+
     it("mission 10: records dynamic turn order in log", () => {
       const state = makeGameState({ mission: 10, log: [] });
       dispatchHooks(10, { point: "setup", state });
@@ -112,10 +137,25 @@ describe("missionHooks dispatcher", () => {
       expect(value).toBeGreaterThanOrEqual(1);
       expect(value).toBeLessThanOrEqual(12);
     });
+
+    it("mission 9: initializes sequence cards and pointer", () => {
+      const state = makeGameState({ mission: 9, log: [] });
+      dispatchHooks(9, { point: "setup", state });
+
+      const visible = state.campaign?.numberCards?.visible ?? [];
+      expect(visible).toHaveLength(3);
+      expect(new Set(visible.map((c) => c.value)).size).toBe(3);
+      expect(visible.every((c) => c.value >= 1 && c.value <= 12)).toBe(true);
+
+      const sequencePointer = state.campaign?.specialMarkers?.find(
+        (m) => m.kind === "sequence_pointer",
+      );
+      expect(sequencePointer).toEqual({ kind: "sequence_pointer", value: 0 });
+    });
   });
 
   describe("resolve hooks", () => {
-    it("mission 11: advances detonator when cutting hidden red blue value", () => {
+    it("mission 11: triggers immediate loss when cutting hidden red-like value", () => {
       const state = makeGameState({
         mission: 11,
         board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
@@ -130,7 +170,7 @@ describe("missionHooks dispatcher", () => {
         ],
       });
 
-      const result = dispatchHooks(11, {
+      dispatchHooks(11, {
         point: "resolve",
         state,
         action: { type: "dualCut", actorId: "player-1", targetPlayerId: "player-2", targetTileIndex: 0, guessValue: 7 },
@@ -138,15 +178,16 @@ describe("missionHooks dispatcher", () => {
         cutSuccess: true,
       });
 
-      // Detonator should have advanced
-      expect(state.board.detonatorPosition).toBe(1);
+      // Mission should be lost immediately like a red-wire explosion.
+      expect(state.result).toBe("loss_red_wire");
+      expect(state.phase).toBe("finished");
       // Hook effect should be logged
       const effectLog = state.log.find((e) => e.action === "hookEffect");
       expect(effectLog).toBeDefined();
-      expect(effectLog!.detail).toContain("detonator_advance");
+      expect(effectLog!.detail).toContain("explosion");
     });
 
-    it("mission 11: does not advance detonator for non-matching blue value", () => {
+    it("mission 11: does not trigger loss for non-matching blue value", () => {
       const state = makeGameState({
         mission: 11,
         board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
@@ -169,10 +210,11 @@ describe("missionHooks dispatcher", () => {
         cutSuccess: true,
       });
 
-      expect(state.board.detonatorPosition).toBe(0);
+      expect(state.result).toBeNull();
+      expect(state.phase).toBe("playing");
     });
 
-    it("mission 11: does not advance detonator on failed cut", () => {
+    it("mission 11: does not trigger loss on failed cut", () => {
       const state = makeGameState({
         mission: 11,
         board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
@@ -195,7 +237,53 @@ describe("missionHooks dispatcher", () => {
         cutSuccess: false,
       });
 
-      expect(state.board.detonatorPosition).toBe(0);
+      expect(state.result).toBeNull();
+      expect(state.phase).toBe("playing");
+    });
+
+    it("mission 9: advances sequence pointer after required cuts of current value", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 2, cut: false })],
+      });
+      const target = makePlayer({
+        id: "target",
+        hand: [makeTile({ id: "t1", gameValue: 2, cut: true })],
+      });
+      const state = makeGameState({
+        mission: 9,
+        players: [actor, target],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(9, {
+        point: "resolve",
+        state,
+        action: { type: "dualCut", actorId: "actor", targetPlayerId: "target", targetTileIndex: 0, guessValue: 2 },
+        cutValue: 2,
+        cutSuccess: true,
+      });
+
+      const marker = state.campaign?.specialMarkers?.find(
+        (m) => m.kind === "sequence_pointer",
+      );
+      expect(marker?.value).toBe(1);
+      const effectLog = state.log.find(
+        (e) => e.action === "hookEffect" && e.detail.startsWith("sequence_priority:advance:"),
+      );
+      expect(effectLog).toBeDefined();
     });
 
     it("mission 12: returns equipment unlock threshold override", () => {
@@ -216,8 +304,41 @@ describe("missionHooks dispatcher", () => {
 
   describe("endTurn hooks", () => {
     it("returns empty result for mission without endTurn hooks", () => {
-      const state = makeGameState({ mission: 10 });
+      const state = makeGameState({ mission: 1 });
+      const result = dispatchHooks(1, { point: "endTurn", state });
+      expect(result.nextPlayerIndex).toBeUndefined();
+    });
+
+    it("mission 10: sets pendingForcedAction and returns captain index on endTurn", () => {
+      const captain = makePlayer({ id: "captain", isCaptain: true });
+      const player2 = makePlayer({ id: "p2", isCaptain: false });
+      const state = makeGameState({
+        mission: 10,
+        players: [captain, player2],
+        currentPlayerIndex: 1,
+      });
+
       const result = dispatchHooks(10, { point: "endTurn", state });
+
+      expect(state.pendingForcedAction).toEqual({
+        kind: "chooseNextPlayer",
+        captainId: "captain",
+      });
+      expect(result.nextPlayerIndex).toBe(0);
+    });
+
+    it("mission 10: does not set forced action if no captain found", () => {
+      const player1 = makePlayer({ id: "p1", isCaptain: false });
+      const player2 = makePlayer({ id: "p2", isCaptain: false });
+      const state = makeGameState({
+        mission: 10,
+        players: [player1, player2],
+        currentPlayerIndex: 0,
+      });
+
+      const result = dispatchHooks(10, { point: "endTurn", state });
+
+      expect(state.pendingForcedAction).toBeUndefined();
       expect(result.nextPlayerIndex).toBeUndefined();
     });
   });
@@ -231,6 +352,48 @@ describe("missionHooks dispatcher", () => {
         action: { type: "dualCut", actorId: "player-1" },
       });
       expect(result.validationError).toBeUndefined();
+    });
+
+    it("mission 9: blocks middle/right values while pointer is on first card", () => {
+      const state = makeGameState({
+        mission: 9,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      const blocked = dispatchHooks(9, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "player-1",
+          guessValue: 5,
+        },
+      });
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("locked");
+
+      const allowed = dispatchHooks(9, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "player-1",
+          guessValue: 2,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
     });
   });
 
@@ -413,6 +576,35 @@ describe("missionHooks dispatcher", () => {
 
       // First validation error wins
       expect(result.validationError).toBe("first error");
+    });
+
+    it("result merge: validationCode follows the first validationError", () => {
+      registerHookHandler("timer", {
+        validate(_rule, _ctx) {
+          return {
+            validationError: "first error",
+            validationCode: "MISSION_RULE_VIOLATION",
+          };
+        },
+      });
+      registerHookHandler("dynamic_turn_order", {
+        validate(_rule, _ctx) {
+          return {
+            validationError: "second error",
+            validationCode: "NOT_YOUR_TURN",
+          };
+        },
+      });
+
+      const state = makeGameState({ mission: 10 });
+      const result = dispatchHooks(10, {
+        point: "validate",
+        state,
+        action: { type: "dualCut", actorId: "p1" },
+      });
+
+      expect(result.validationError).toBe("first error");
+      expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
     });
 
     it("skips rules whose handler lacks the requested hook point", () => {

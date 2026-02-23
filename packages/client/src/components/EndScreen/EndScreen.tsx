@@ -24,7 +24,7 @@ export function EndScreen({
             isWin ? "text-green-400" : "text-red-500"
           }`}
         >
-          {isWin ? "MISSION COMPLETE!" : "BOOM!"}
+          {isWin ? "MISSION COMPLETE!" : gameState.result === "loss_timer" ? "TIME'S UP!" : "BOOM!"}
         </h1>
 
         <p className="text-gray-300 text-lg">
@@ -33,6 +33,8 @@ export function EndScreen({
             "A red wire was cut and the bomb exploded!"}
           {gameState.result === "loss_detonator" &&
             "The detonator reached the end!"}
+          {gameState.result === "loss_timer" &&
+            "The mission timer expired!"}
         </p>
 
         <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 text-left">

@@ -103,16 +103,22 @@ Dependency: blocked by Phase 0C.
 ### Core Rules (P0, required for M1)
 
 #### Validation Layer (mission-aware)
-- [ ] Move mission-sensitive legality checks to hook-aware validation.
-- [ ] Add action legality reason codes for UI and bots.
+- [x] Move mission-sensitive legality checks to hook-aware validation.
+- [x] Add action legality reason codes for UI and bots.
 - [ ] Implement support for:
   - Sequence/priority restrictions used in missions 1-12
-  - Forced actions and forced-pass states used in missions 1-12
+  - [x] Mission 9 face-A sequence-priority gating (left→middle→right unlock flow)
+  - [x] Forced action: captain chooses next player (mission 10 dynamic turn order)
+  - [x] Mission 10 no-consecutive-turn enforcement (3+ players; 2-player exception)
+  - [ ] Remaining forced-pass states used in missions 1-12
   - Mission-specific forbidden targets/values used in missions 1-12
+  - [x] Mission 11 reveal restriction: hidden red-like value can only be revealed when it is all remaining in hand
 
 #### Game Logic Layer (mission-aware)
 - [ ] Implement mission-aware action resolvers for special actions used in missions 1-12.
 - [ ] Implement mission-specific failure outcomes used in missions 1-12.
+  - [x] Mission 11 hidden blue-as-red parity: successful cut of hidden value explodes immediately (`loss_red_wire`)
+  - [x] Mission 10 timer enforcement: `timerDeadline` on GameState, Durable Object alarm-based timeout → `loss_timer` result.
 - [ ] Make win/loss checks mission-aware for mission patterns used in missions 1-12.
 
 #### Equipment Runtime Parity
@@ -164,7 +170,8 @@ Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 - [ ] Add UI surfaces for mission objects (cards, constraints, oxygen, Nano/Bunker, markers).
 - [ ] Add action-panel variants for mission-specific actions.
 - [ ] Show active mission constraints/reminders in turn UI.
-- [ ] Support non-clockwise turn indicators and forced-action states.
+- [x] Support captain UI for mission-10 `chooseNextPlayer` forced action (ChooseNextPlayerPanel).
+- [ ] Support non-clockwise turn indicators and remaining forced-action states.
 - [ ] Support mission-specific token placement interactions.
 
 ## Phase 3 - QA Hardening, Rollout, and Cleanup (P1/P2)

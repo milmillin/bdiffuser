@@ -12,12 +12,13 @@ import {
   getAllTiles,
   getTileByFlatIndex,
 } from "./validation.js";
-import { dispatchHooks } from "./missionHooks.js";
+import { dispatchHooks, getBlueAsRedValue } from "./missionHooks.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
   // Turn-scoped equipment effects expire once a turn ends.
   state.turnEffects = undefined;
+  const previousPlayerId = state.players[state.currentPlayerIndex]?.id;
 
   const playerCount = state.players.length;
   let next = (state.currentPlayerIndex + 1) % playerCount;
@@ -46,6 +47,7 @@ export function advanceTurn(state: GameState): void {
   const endTurnResult = dispatchHooks(state.mission, {
     point: "endTurn",
     state,
+    previousPlayerId,
   });
 
   if (endTurnResult.nextPlayerIndex !== undefined) {
@@ -153,12 +155,9 @@ export function executeDualCut(
   const isCorrect = targetTile.gameValue === guessValue;
 
   if (isCorrect) {
-    // Success: cut both the target tile and one of actor's matching tiles
+    // Success: cut the target tile first. The actor tile is cut only if no hook
+    // turns this success into an immediate mission loss.
     targetTile.cut = true;
-
-    const actorUncut = getUncutTiles(actor);
-    const actorTile = actorUncut.find((t) => t.gameValue === guessValue);
-    if (actorTile) actorTile.cut = true;
 
     // Dispatch resolve hooks (may override equipment unlock threshold, etc.)
     const resolveResult = dispatchHooks(state.mission, {
@@ -168,6 +167,41 @@ export function executeDualCut(
       cutValue: guessValue,
       cutSuccess: true,
     });
+
+    // Mission hooks may turn a successful cut into an immediate loss
+    // (for example mission 11 hidden blue-as-red).
+    if (state.phase === "finished" && state.result) {
+      updateMarkerConfirmations(state);
+
+      if (state.result === "loss_red_wire") {
+        addLog(
+          state,
+          actorId,
+          "dualCut",
+          `cut a RED-like hidden wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
+        );
+        return {
+          type: "dualCutResult",
+          actorId,
+          targetId: targetPlayerId,
+          targetTileIndex,
+          guessValue,
+          success: false,
+          revealedColor: "red",
+          revealedValue: targetTile.gameValue,
+          explosion: true,
+        };
+      }
+
+      return {
+        type: "gameOver",
+        result: state.result,
+      };
+    }
+
+    const actorUncut = getUncutTiles(actor);
+    const actorTile = actorUncut.find((t) => t.gameValue === guessValue);
+    if (actorTile) actorTile.cut = true;
 
     // Check validation and equipment unlock
     if (typeof guessValue === "number") {
@@ -321,8 +355,9 @@ export function executeSoloCut(
   const actorUncut = getUncutTiles(actor);
   const matchingTiles = actorUncut.filter((t) => t.gameValue === value);
 
-  for (const tile of matchingTiles) {
-    tile.cut = true;
+  // Cut one matching tile first; mission hooks may immediately end the mission.
+  if (matchingTiles[0]) {
+    matchingTiles[0].cut = true;
   }
 
   // Dispatch resolve hooks
@@ -333,6 +368,23 @@ export function executeSoloCut(
     cutValue: value,
     cutSuccess: true,
   });
+
+  if (state.phase === "finished" && state.result) {
+    updateMarkerConfirmations(state);
+    if (state.result === "loss_red_wire") {
+      addLog(
+        state,
+        actorId,
+        "soloCut",
+        `solo cut a RED-like hidden value (${value}) and triggered an explosion!`,
+      );
+    }
+    return { type: "gameOver", result: state.result };
+  }
+
+  for (let i = 1; i < matchingTiles.length; i++) {
+    matchingTiles[i].cut = true;
+  }
 
   if (typeof value === "number") {
     checkValidation(state, value);
@@ -369,6 +421,7 @@ export function executeRevealReds(
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const uncutTiles = getUncutTiles(actor);
+  const hiddenBlueAsRedValue = state.mission === 11 ? getBlueAsRedValue(state) : null;
 
   let revealed = 0;
   for (const tile of uncutTiles) {
@@ -377,7 +430,16 @@ export function executeRevealReds(
   }
   updateMarkerConfirmations(state);
 
-  addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
+  if (state.mission === 11 && hiddenBlueAsRedValue != null) {
+    addLog(
+      state,
+      actorId,
+      "revealReds",
+      `revealed ${revealed} hidden red-like wire(s) of value ${hiddenBlueAsRedValue}`,
+    );
+  } else {
+    addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
+  }
 
   if (checkWin(state)) {
     state.result = "win";

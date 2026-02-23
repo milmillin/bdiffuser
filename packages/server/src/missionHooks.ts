@@ -30,7 +30,11 @@
  *      first non-undefined value (fail-fast semantics).
  */
 
-import type { GameState, MissionId } from "@bomb-busters/shared";
+import type {
+  ActionLegalityCode,
+  GameState,
+  MissionId,
+} from "@bomb-busters/shared";
 import {
   MISSION_SCHEMAS,
   type MissionHookRuleDef,
@@ -191,6 +195,8 @@ export interface ResolveHookContext {
 export interface EndTurnHookContext {
   point: "endTurn";
   state: GameState;
+  /** Player who just completed a turn before turn advancement. */
+  previousPlayerId?: string;
 }
 
 export type HookContext =
@@ -204,6 +210,8 @@ export type HookContext =
 export interface HookResult {
   /** If set, the action is rejected with this error message (validate only). */
   validationError?: string;
+  /** Machine-readable reason code paired with `validationError` (validate only). */
+  validationCode?: ActionLegalityCode;
   /** If true, skip default equipment unlock logic (resolve only). */
   overrideEquipmentUnlock?: boolean;
   /** Equipment unlock threshold override (resolve only). */
@@ -253,11 +261,17 @@ export function clearHandlers(): void {
  * Merge two HookResults, with `next` overriding `prev` for set fields.
  */
 function mergeResults(prev: HookResult, next: HookResult): HookResult {
+  const mergedValidationError = prev.validationError ?? next.validationError;
+  const mergedValidationCode = prev.validationError
+    ? prev.validationCode
+    : (next.validationError ? next.validationCode : undefined);
+
   return {
     ...prev,
     ...next,
-    // Keep the first validation error encountered
-    validationError: prev.validationError ?? next.validationError,
+    // Keep the first validation outcome encountered
+    validationError: mergedValidationError,
+    validationCode: mergedValidationCode,
   };
 }
 
@@ -364,22 +378,227 @@ export function dispatchHooks(
   return result;
 }
 
-// ── Built-in Hook Handlers (Missions 10/11/12) ────────────
+/**
+ * Mission 11 helper: extract the hidden blue value that is treated as red.
+ * Returns null if the setup marker is missing or malformed.
+ */
+export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
+  const setupEntry = state.log.find(
+    (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:"),
+  );
+  if (!setupEntry) return null;
+
+  const value = Number.parseInt(setupEntry.detail.split(":")[1] ?? "", 10);
+  return Number.isFinite(value) ? value : null;
+}
+
+// ── Built-in Hook Handlers (Missions 9/10/11/12) ────────────
 
 import type {
+  SequencePriorityRuleDef,
   TimerRuleDef,
   DynamicTurnOrderRuleDef,
   BlueAsRedRuleDef,
   EquipmentDoubleLockRuleDef,
 } from "@bomb-busters/shared";
 
+const MISSION_NUMBER_VALUES = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+] as const;
+
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getSequenceVisibleValues(
+  state: Readonly<GameState>,
+  cardCount: number,
+): number[] | null {
+  const visible = state.campaign?.numberCards?.visible ?? [];
+  if (visible.length < cardCount) return null;
+  return visible.slice(0, cardCount).map((card) => card.value);
+}
+
+function getSequencePointer(state: Readonly<GameState>): number {
+  const marker = state.campaign?.specialMarkers?.find(
+    (m) => m.kind === "sequence_pointer",
+  );
+  return marker ? Math.max(0, Math.floor(marker.value)) : 0;
+}
+
+function setSequencePointer(state: GameState, value: number): void {
+  state.campaign ??= {};
+  const markers = [...(state.campaign.specialMarkers ?? [])];
+  const idx = markers.findIndex((m) => m.kind === "sequence_pointer");
+  if (idx >= 0) {
+    markers[idx] = { ...markers[idx], value };
+  } else {
+    markers.push({ kind: "sequence_pointer", value });
+  }
+  state.campaign.specialMarkers = markers;
+}
+
+function getCutCountForValue(state: Readonly<GameState>, value: number): number {
+  let count = 0;
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (tile.cut && tile.gameValue === value) count++;
+    }
+  }
+  return count;
+}
+
+function getProjectedCutCountForResolve(
+  ctx: ResolveHookContext,
+  value: number,
+): number {
+  let count = getCutCountForValue(ctx.state, value);
+  if (!ctx.cutSuccess) return count;
+
+  if (ctx.action.type === "dualCut") {
+    const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
+    const hasPendingActorCut =
+      actor?.hand.some((tile) => !tile.cut && tile.gameValue === value) ?? false;
+    if (hasPendingActorCut) count += 1;
+    return count;
+  }
+
+  if (ctx.action.type === "soloCut") {
+    const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
+    const pendingSoloCuts =
+      actor?.hand.filter((tile) => !tile.cut && tile.gameValue === value).length ?? 0;
+    count += pendingSoloCuts;
+  }
+
+  return count;
+}
+
 /**
- * Mission 10 — Timer: marks game state with timer metadata during setup.
- * Actual countdown enforcement is a client/server-clock concern handled
- * separately; the hook records the configuration.
+ * Mission 9 — Sequence priority (face A).
+ *
+ * Setup:
+ * - Draw 3 unique number cards, show face-up.
+ * - Place sequence pointer at index 0 (left card).
+ *
+ * Validate:
+ * - While pointer is 0: middle and right values are forbidden.
+ * - While pointer is 1: right value is forbidden.
+ * - Other values are always allowed.
+ *
+ * Resolve:
+ * - After each successful numeric cut, if required cut count for the current
+ *   pointer value is reached, advance pointer by 1.
+ */
+registerHookHandler<"sequence_priority">("sequence_priority", {
+  setup(rule: SequencePriorityRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const visibleValues = deckValues.slice(0, rule.cardCount);
+    const hiddenDeckValues = deckValues.slice(rule.cardCount);
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: visibleValues.map((value, idx) => ({
+        id: `m9-visible-${idx}-${value}`,
+        value,
+        faceUp: true,
+      })),
+      deck: hiddenDeckValues.map((value, idx) => ({
+        id: `m9-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+    setSequencePointer(ctx.state, 0);
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `sequence_priority:face_a:${visibleValues.join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(rule: SequencePriorityRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+
+    const cutValue =
+      ctx.action.type === "dualCut"
+        ? ctx.action.guessValue
+        : ctx.action.value;
+    if (typeof cutValue !== "number") return;
+
+    const values = getSequenceVisibleValues(ctx.state, rule.cardCount);
+    if (!values) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission sequence cards are not initialized",
+      };
+    }
+
+    const pointer = Math.min(getSequencePointer(ctx.state), rule.cardCount - 1);
+    const currentRequired = values[pointer];
+    const blockedValues =
+      pointer === 0
+        ? [values[1], values[2]]
+        : pointer === 1
+          ? [values[2]]
+          : [];
+
+    if (blockedValues.includes(cutValue)) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          `Value ${cutValue} is locked until ${rule.requiredCuts} wires of value ${currentRequired} are cut`,
+      };
+    }
+  },
+
+  resolve(rule: SequencePriorityRuleDef, ctx: ResolveHookContext): HookResult | void {
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+    if (!ctx.cutSuccess) return;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const values = getSequenceVisibleValues(ctx.state, rule.cardCount);
+    if (!values) return;
+
+    const pointer = Math.min(getSequencePointer(ctx.state), rule.cardCount - 1);
+    const currentRequired = values[pointer];
+    if (ctx.cutValue !== currentRequired) return;
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, currentRequired);
+    if (projectedCutCount < rule.requiredCuts) return;
+
+    if (pointer < rule.cardCount - 1) {
+      const nextPointer = pointer + 1;
+      setSequencePointer(ctx.state, nextPointer);
+      ctx.state.log.push({
+        turn: ctx.state.turnNumber,
+        playerId: ctx.action.actorId,
+        action: "hookEffect",
+        detail: `sequence_priority:advance:${nextPointer}`,
+        timestamp: Date.now(),
+      });
+    }
+  },
+});
+
+/**
+ * Mission 10 — Timer: sets a deadline on game state and logs config.
+ * The server enforces timeout via Durable Object alarm; the client can
+ * use `timerDeadline` for countdown display.
  */
 registerHookHandler<"timer">("timer", {
   setup(rule: TimerRuleDef, ctx: SetupHookContext): void {
+    // Set the timer deadline on game state (unix-ms).
+    ctx.state.timerDeadline = Date.now() + rule.durationSeconds * 1000;
+
     // Store timer config in the log so downstream systems can read it.
     ctx.state.log.push({
       turn: 0,
@@ -393,8 +612,8 @@ registerHookHandler<"timer">("timer", {
 
 /**
  * Mission 10 — Dynamic turn order: captain picks next player.
- * During endTurn, this signals the server to await captain selection
- * rather than auto-advancing clockwise. For now, we record the mode.
+ * During setup, records the mode. During endTurn, sets a pending forced
+ * action requiring the captain to choose the next active player.
  */
 registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
   setup(rule: DynamicTurnOrderRuleDef, ctx: SetupHookContext): void {
@@ -406,6 +625,22 @@ registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
       timestamp: Date.now(),
     });
   },
+
+  endTurn(rule: DynamicTurnOrderRuleDef, ctx: EndTurnHookContext): HookResult | void {
+    if (rule.selector !== "captain") return;
+
+    const captainIndex = ctx.state.players.findIndex((p) => p.isCaptain);
+    if (captainIndex === -1) return;
+
+    const captain = ctx.state.players[captainIndex];
+    ctx.state.pendingForcedAction = {
+      kind: "chooseNextPlayer",
+      captainId: captain.id,
+      ...(ctx.previousPlayerId ? { lastPlayerId: ctx.previousPlayerId } : {}),
+    };
+
+    return { nextPlayerIndex: captainIndex };
+  },
 });
 
 /**
@@ -414,8 +649,8 @@ registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
  * Setup: Randomly selects a blue wire value to secretly act as a detonator.
  *        Stores it in the game log (hidden from clients via view filter).
  *
- * Resolve: After a dualCut succeeds on a blue wire matching the hidden red
- *          value, advances the detonator.
+ * Resolve: Any successful cut of the hidden value explodes the bomb,
+ *          matching red-wire behavior for this mission.
  */
 registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
   setup(_rule: BlueAsRedRuleDef, ctx: SetupHookContext): void {
@@ -431,24 +666,21 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
   },
 
   resolve(_rule: BlueAsRedRuleDef, ctx: ResolveHookContext): HookResult | void {
-    if (ctx.action.type !== "dualCut" || !ctx.cutSuccess) return;
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+    if (!ctx.cutSuccess) return;
     if (typeof ctx.cutValue !== "number") return;
 
-    // Find the hidden red value from the setup log
-    const setupEntry = ctx.state.log.find(
-      (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:"),
-    );
-    if (!setupEntry) return;
-
-    const hiddenRedValue = parseInt(setupEntry.detail.split(":")[1], 10);
+    const hiddenRedValue = getBlueAsRedValue(ctx.state);
+    if (hiddenRedValue == null) return;
     if (ctx.cutValue === hiddenRedValue) {
-      // This blue wire is secretly red — advance detonator
-      ctx.state.board.detonatorPosition++;
+      // This blue wire is secretly red — immediate explosion.
+      ctx.state.result = "loss_red_wire";
+      ctx.state.phase = "finished";
       ctx.state.log.push({
         turn: ctx.state.turnNumber,
         playerId: ctx.action.actorId,
         action: "hookEffect",
-        detail: `blue_as_red:detonator_advance (value ${hiddenRedValue})`,
+        detail: `blue_as_red:explosion (value ${hiddenRedValue})`,
         timestamp: Date.now(),
       });
     }

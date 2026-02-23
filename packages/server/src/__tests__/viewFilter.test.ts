@@ -103,4 +103,28 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.board.detonatorPosition).toBe(0);
     expect(filtered.campaign!.oxygen!.pool).toBe(5);
   });
+
+  it("redacts mission-11 hidden blue-as-red setup log from client view", () => {
+    const state = makeGameState({
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "blue_as_red:7",
+          timestamp: 1000,
+        },
+        {
+          turn: 1,
+          playerId: "p1",
+          action: "dualCut",
+          detail: "some public action",
+          timestamp: 2000,
+        },
+      ],
+    });
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toBe("some public action");
+  });
 });
