@@ -233,6 +233,7 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 46 captain skip setup-token flow (2-player):
     - [x] 2-player captain now requires 0 setup tokens in mission 46.
     - [x] Added shared/server setup-token requirement coverage for mission 46.
+  - [x] Mission 52 two-token setup flow (all players place 2 setup tokens; bot auto-setup places until requirement is met).
 
 ## Phase 2 - Product Integration (P1)
 

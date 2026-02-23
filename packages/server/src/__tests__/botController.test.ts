@@ -7,15 +7,49 @@ import {
   makePlayer,
   makeSpecialMarker,
   makeTile,
+  makeRedTile,
 } from "@bomb-busters/shared/testing";
-import { getBotAction } from "../botController";
+import { botPlaceInfoToken, getBotAction } from "../botController";
 import { callLLM } from "../llmClient";
+import { validateSetupInfoTokenPlacement } from "../setupTokenRules";
 
 vi.mock("../llmClient", () => ({
   callLLM: vi.fn(),
 }));
 
 const mockedCallLLM = vi.mocked(callLLM);
+
+describe("botPlaceInfoToken", () => {
+  it("mission 52: places legal false setup tokens up to required count", () => {
+    const bot = makePlayer({
+      id: "bot",
+      isBot: true,
+      hand: [
+        makeTile({ id: "b-4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeRedTile({ id: "r-1" }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t-8", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+    const state = makeGameState({
+      mission: 52,
+      phase: "setup_info_tokens",
+      players: [bot, teammate],
+    });
+
+    botPlaceInfoToken(state, "bot");
+    botPlaceInfoToken(state, "bot");
+    botPlaceInfoToken(state, "bot");
+
+    expect(bot.infoTokens).toHaveLength(2);
+    expect(new Set(bot.infoTokens.map((token) => token.position)).size).toBe(2);
+    for (const token of bot.infoTokens) {
+      expect(validateSetupInfoTokenPlacement(state, bot, token.value, token.position)).toBeNull();
+    }
+  });
+});
 
 describe("getBotAction fallback", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;

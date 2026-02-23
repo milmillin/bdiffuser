@@ -23,6 +23,12 @@ describe("setupInfoTokenRules", () => {
     expect(requiredSetupInfoTokenCountForMission(17, 3, false)).toBe(1);
   });
 
+  it("requires 2 setup tokens for all players in mission 52", () => {
+    expect(requiredSetupInfoTokenCountForMission(52, 2, true)).toBe(2);
+    expect(requiredSetupInfoTokenCountForMission(52, 2, false)).toBe(2);
+    expect(requiredSetupInfoTokenCountForMission(52, 5, false)).toBe(2);
+  });
+
   it.each([11, 13, 27, 29, 46] as const)(
     "requires no setup token for 2-player captain in mission %i",
     (mission) => {

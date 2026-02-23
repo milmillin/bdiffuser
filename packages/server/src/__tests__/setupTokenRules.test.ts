@@ -77,6 +77,16 @@ describe("setupTokenRules", () => {
     expect(allSetupInfoTokensPlaced(state)).toBe(true);
   });
 
+  it("mission 52: all players require 2 setup info tokens", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+    const state = makeGameState({ mission: 52, players: [captain, partner] });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(2);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(2);
+    expect(allSetupInfoTokensPlaced(state)).toBe(false);
+  });
+
   it.each([13, 27, 29, 46] as const)(
     "mission %i (2p): captain requires 0 setup info tokens",
     (mission) => {

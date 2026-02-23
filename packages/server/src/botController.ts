@@ -9,6 +9,10 @@ import {
   getUncutTiles,
 } from "./validation.js";
 import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
+import {
+  requiredSetupInfoTokenCount,
+  validateSetupInfoTokenPlacement,
+} from "./setupTokenRules.js";
 
 const BOT_NAMES = ["IRIS", "NOVA", "BOLT", "FUSE", "CHIP"];
 
@@ -58,7 +62,35 @@ export function botChooseNextPlayer(
 /** Auto-place info token during setup. Picks the blue tile whose value appears most often in hand. */
 export function botPlaceInfoToken(state: GameState, botId: string): void {
   const bot = state.players.find((p) => p.id === botId);
-  if (!bot || bot.infoTokens.length > 0) return;
+  if (!bot) return;
+
+  const requiredTokenCount = requiredSetupInfoTokenCount(state, bot);
+  if (bot.infoTokens.length >= requiredTokenCount) return;
+
+  // Mission 52 setup uses false tokens on blue/red wires.
+  if (state.phase === "setup_info_tokens" && state.mission === 52) {
+    const existingPositions = new Set(bot.infoTokens.map((t) => t.position));
+    const tryPlace = (allowUsedPositions: boolean): boolean => {
+      for (let tileIndex = 0; tileIndex < bot.hand.length; tileIndex++) {
+        if (!allowUsedPositions && existingPositions.has(tileIndex)) continue;
+        for (let value = 1; value <= 12; value++) {
+          const error = validateSetupInfoTokenPlacement(state, bot, value, tileIndex);
+          if (error) continue;
+          bot.infoTokens.push({
+            value,
+            position: tileIndex,
+            isYellow: false,
+          });
+          return true;
+        }
+      }
+      return false;
+    };
+
+    if (tryPlace(false)) return;
+    if (tryPlace(true)) return;
+    return;
+  }
 
   const uncutBlue = bot.hand
     .map((tile, index) => ({ tile, index }))

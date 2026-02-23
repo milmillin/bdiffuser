@@ -735,18 +735,21 @@ export class BombBustersServer extends Server<Env> {
 
     for (const player of state.players) {
       if (!player.isBot) continue;
-      if (hasCompletedSetupInfoTokens(state, player)) continue;
+      while (!hasCompletedSetupInfoTokens(state, player)) {
+        const beforeCount = player.infoTokens.length;
+        botPlaceInfoToken(state, player.id);
+        if (player.infoTokens.length === beforeCount) break;
 
-      botPlaceInfoToken(state, player.id);
-      const token = player.infoTokens[player.infoTokens.length - 1];
-      if (token) {
-        state.log.push({
-          turn: 0,
-          playerId: player.id,
-          action: "placeInfoToken",
-          detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
-          timestamp: Date.now(),
-        });
+        const token = player.infoTokens[player.infoTokens.length - 1];
+        if (token) {
+          state.log.push({
+            turn: 0,
+            playerId: player.id,
+            action: "placeInfoToken",
+            detail: `placed info token ${token.value} on wire ${wireLabel(token.position)}`,
+            timestamp: Date.now(),
+          });
+        }
       }
     }
     this.advanceSetupTurnAndMaybeStart(state);
