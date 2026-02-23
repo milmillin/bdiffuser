@@ -726,6 +726,159 @@ Source images:
   - Applies to mistake info placement and Equipment `4` (Post-it).
   - With Equipment `4`, token may be placed in front of an already cut wire.
 
+## 23. Mission Cards 25-34 (Processed from Images, Next 8 Available)
+
+Source images processed in this batch:
+
+- `mission_25(.png/_back.png)`
+- `mission_26(.png/_back.png)`
+- `mission_27(.png/_back.png)`
+- `mission_28(.png/_back.png)`
+- `mission_29(.png/_back.png)`
+- `mission_30(.png/_back.png)`
+- `mission_33(.png/_back.png)`
+- `mission_34(.png/_back.png)`
+
+Note:
+
+- `mission_31` and `mission_32` images are not present in `packages/client/public/images/`.
+
+### Mission 25
+
+- Card title: `It's to hear you better...`
+- Setup:
+  - Add `2` red wires.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Players are not allowed to say wire numbers aloud.
+  - Players may communicate numbers indirectly (spelling, gestures, coded phrases, etc.).
+  - If a player says a number aloud, detonator advances 1 notch.
+
+### Mission 26
+
+- Card title: `When we talk about the wolf...`
+- Setup:
+  - Add `2` red wires.
+  - Place all 12 Number cards face up on table.
+  - If Equipment `10` is drawn, replace it.
+- Mission rule (back):
+  - On each turn, active player first flips one visible Number card face down.
+  - Then active player must perform a cut (`Duo Cut` or `Solo Cut`) on that number.
+  - Active player may only cut values whose Number cards are still visible.
+  - If no Number cards are visible, turn all Number cards face up again.
+  - When all 4 wires of a number are cut, remove that Number card from game.
+  - If active player has no wires matching any remaining visible Number cards, they pass without detonator penalty.
+  - Otherwise, they must cut among currently visible numbers.
+
+### Mission 27
+
+- Card title: `Dough threads`
+- Setup:
+  - Add `1` red wire and `4` yellow wires.
+  - After selecting Captain, do not distribute character cards (no Double Detector 2000 this mission).
+  - If Equipment `7` is drawn, replace it.
+  - 2-player override shown on card:
+    - Captain does not place an info token during setup.
+- Mission rule (back):
+  - As soon as first 2 yellow wires are cut:
+    - Randomly draw as many info tokens as players and place face up.
+    - Starting with Captain, then clockwise, each player chooses one and places it correctly in front of stand (or beside stand if value absent).
+
+### Mission 28
+
+- Card title: `Captain Lazy`
+- Setup:
+  - Add `2` red wires and `4` yellow wires.
+  - After character cards are distributed, Captain returns their character card to the box.
+  - Captain therefore has no Double Detector 2000.
+  - 2-player override shown on card:
+    - `3` red wires and `4` yellow wires.
+- Mission rule (back):
+  - Captain Lazy cannot use equipment cards and has no personal equipment.
+  - If Captain Lazy fails a Duo Cut action, bomb explodes immediately.
+  - Captain Lazy can still participate in effects of Equipment `2` (Walkie-talkies) and `8` (General Radar).
+
+### Mission 29
+
+- Card title: `Number error`
+- Setup:
+  - Add `3` red wires.
+  - Shuffle Number cards and deal:
+    - 2 face-down cards to each player,
+    - 3 to Captain's right-hand neighbor.
+  - Stack remaining Number cards face down on table.
+  - Each player secretly adds dealt Number cards to hand.
+  - 2-player override shown on card:
+    - Captain does not place an info token during setup.
+- Mission rule (back), per active turn:
+  - Active player's right neighbor places one of their Number cards face down on table.
+  - Active player takes normal turn.
+  - Hidden Number card is revealed:
+    - If active player cut that value this turn, detonator advances 1.
+  - Active player takes revealed Number card into hand.
+  - Additional rules:
+    - When all 4 wires of a value are cut, corresponding Number card is discarded.
+    - When a player has only 1 Number card left, they draw another (and redraw if that value is already completed).
+    - When only one value remains to cut, last Number card is immediately discarded.
+
+### Mission 30
+
+- Card title: `A very speedy mission!`
+- Setup:
+  - Red setup: `1 out of 2`.
+  - Add `4` yellow wires.
+  - Shuffle 12 Number cards face down next to board.
+  - Mission includes audio-file requirement (QR/smartphone).
+- Mission rule (back):
+  - Play mission audio file before first round.
+  - Card provides fail/success narrative and progression note.
+  - On success, open `Missions 31 to 42` box.
+
+### Mission 33
+
+- Card title on front is French (`Ce qui se passe a Vegas...`).
+- Setup (from card icons/text):
+  - Red setup: `2 out of 3`.
+  - Replace normal info tokens with even/odd tokens.
+  - During setup, place even/odd tokens instead of numeric info tokens.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Throughout mission, use even/odd tokens instead of numeric info tokens.
+  - Applies on mistake info placement and Equipment `4` (Post-it).
+
+### Mission 34
+
+- Card title: `The weak link`
+- Setup:
+  - Add `1` red wire.
+  - Use 5 constraint cards (`A` to `E`).
+  - Determine first-player Captain as normal, then:
+    - Shuffle character cards (including Captain card), deal one face down to each player.
+    - First-player Captain does not necessarily receive Captain card.
+  - Shuffle constraint cards `A-E`, deal one face down to each player, undealt cards stay unknown.
+  - Each player privately checks their character and constraint cards.
+  - Player with Captain card is the `weak link`:
+    - Must stay hidden.
+    - Only weak link applies their own constraint.
+  - 2-player note on card:
+    - Mission impossible (not playable with 2 players).
+- Mission rule (back):
+  - While character cards are hidden, no personal equipment is usable.
+  - Weak link:
+    - Must apply their constraint without discussing it.
+    - If they cannot play due to constraint on their turn:
+      - Detonator advances 2 notches.
+      - All players redraw both constraint and character cards.
+  - Other players:
+    - Play normally and ignore their own constraint cards.
+    - At start of turn, may accuse/designate weak link and describe that player's constraint.
+      - If wrong (identity and/or constraint), detonator advances 1 notch.
+      - If correct on both identity and constraint:
+        - Reveal all character cards and enable them.
+        - Weak link no longer applies constraint; mission continues normally.
+
 ---
 
 ## Source
