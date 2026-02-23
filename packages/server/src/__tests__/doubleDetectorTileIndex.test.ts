@@ -327,4 +327,43 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(target.infoTokens).toHaveLength(0);
     expect(state.phase).not.toBe("finished");
   });
+
+  it("mission 17: failed Double Detector targeting captain places false token with announced value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "c2", color: "blue", gameValue: 7 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 17,
+      players: [actor, captain],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "captain", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("none_match");
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(captain.infoTokens).toHaveLength(1);
+    expect(captain.infoTokens[0]).toMatchObject({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+  });
 });
