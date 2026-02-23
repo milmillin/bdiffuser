@@ -472,6 +472,40 @@ export function executeDualCutDoubleDetector(
     // Both match: cut first designated tile + actor's matching tile
     tile1.cut = true;
 
+    // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
+    const resolveResult = dispatchHooks(state.mission, {
+      point: "resolve",
+      state,
+      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: tileIndex1, guessValue },
+      cutValue: guessValue,
+      cutSuccess: true,
+    });
+
+    // Mission hooks may turn a successful cut into an immediate loss
+    if (state.phase === "finished" && state.result) {
+      updateMarkerConfirmations(state);
+      if (state.result === "loss_red_wire") {
+        addLog(
+          state,
+          actorId,
+          "dualCutDoubleDetector",
+          `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — cut a RED-like hidden wire! BOOM!`,
+        );
+        return {
+          type: "dualCutDoubleDetectorResult",
+          actorId,
+          targetId: targetPlayerId,
+          tileIndex1,
+          tileIndex2,
+          guessValue,
+          outcome: "both_match",
+          cutTileIndex: tileIndex1,
+          explosion: true,
+        };
+      }
+      return { type: "gameOver", result: state.result };
+    }
+
     const actorUncut = getUncutTiles(actor);
     let actorTile: WireTile | undefined;
     if (actorTileIndex != null) {
@@ -489,7 +523,11 @@ export function executeDualCutDoubleDetector(
 
     if (typeof guessValue === "number") {
       checkValidation(state, guessValue);
-      checkEquipmentUnlock(state, guessValue);
+      if (!resolveResult.overrideEquipmentUnlock) {
+        checkEquipmentUnlock(state, guessValue);
+      } else {
+        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
+      }
     }
     clearSatisfiedSecondaryEquipmentLocks(state);
     updateMarkerConfirmations(state);
@@ -527,6 +565,40 @@ export function executeDualCutDoubleDetector(
     const matchingTile = match1 ? tile1 : tile2;
     matchingTile.cut = true;
 
+    // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
+    const resolveResult = dispatchHooks(state.mission, {
+      point: "resolve",
+      state,
+      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: matchingTileIndex, guessValue },
+      cutValue: guessValue,
+      cutSuccess: true,
+    });
+
+    // Mission hooks may turn a successful cut into an immediate loss
+    if (state.phase === "finished" && state.result) {
+      updateMarkerConfirmations(state);
+      if (state.result === "loss_red_wire") {
+        addLog(
+          state,
+          actorId,
+          "dualCutDoubleDetector",
+          `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — cut a RED-like hidden wire! BOOM!`,
+        );
+        return {
+          type: "dualCutDoubleDetectorResult",
+          actorId,
+          targetId: targetPlayerId,
+          tileIndex1,
+          tileIndex2,
+          guessValue,
+          outcome: "one_match",
+          cutTileIndex: matchingTileIndex,
+          explosion: true,
+        };
+      }
+      return { type: "gameOver", result: state.result };
+    }
+
     const actorUncut = getUncutTiles(actor);
     let actorTile: WireTile | undefined;
     if (actorTileIndex != null) {
@@ -544,7 +616,11 @@ export function executeDualCutDoubleDetector(
 
     if (typeof guessValue === "number") {
       checkValidation(state, guessValue);
-      checkEquipmentUnlock(state, guessValue);
+      if (!resolveResult.overrideEquipmentUnlock) {
+        checkEquipmentUnlock(state, guessValue);
+      } else {
+        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
+      }
     }
     clearSatisfiedSecondaryEquipmentLocks(state);
     updateMarkerConfirmations(state);
@@ -581,20 +657,29 @@ export function executeDualCutDoubleDetector(
 
   // Determine which wire gets the info token:
   // If exactly one is red, place on the non-red wire per rule text
-  const tile1IsRed = tile1.color === "red";
-  const tile2IsRed = tile2.color === "red";
+  const hiddenBlueAsRedValue =
+    state.mission === 11 ? getBlueAsRedValue(state) : null;
+  const isHiddenRed = (tile: WireTile) =>
+    hiddenBlueAsRedValue != null &&
+    typeof tile.gameValue === "number" &&
+    tile.gameValue === hiddenBlueAsRedValue;
+  const tile1IsRed = tile1.color === "red" || isHiddenRed(tile1);
+  const tile2IsRed = tile2.color === "red" || isHiddenRed(tile2);
 
-  // Both red → bomb explodes (FAQ)
+  // Both red (or hidden-red-like) → bomb explodes (FAQ)
   if (tile1IsRed && tile2IsRed) {
     updateMarkerConfirmations(state);
     state.result = "loss_red_wire";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+    const bothActualRed = tile1.color === "red" && tile2.color === "red";
     addLog(
       state,
       actorId,
       "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED! BOOM!`,
+      bothActualRed
+        ? `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED! BOOM!`
+        : `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED-like hidden wires! BOOM!`,
     );
     return {
       type: "dualCutDoubleDetectorResult",
