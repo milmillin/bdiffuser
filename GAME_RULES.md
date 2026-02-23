@@ -440,19 +440,18 @@ Normalization note:
 
 ### Mission 2
 
-- Card title: `TRAINING, 2nd day` (`Lesson 2: Cutting a YELLOW wire`)
+- Card title: `TRAINING, Day 2` (`Lesson 2: How to cut a YELLOW wire`)
 - Setup:
   - Use `32` blue wires: values `1` to `8` only.
-  - Add `2` yellow wires, drawn from values `1.1` to `7.1`.
-  - Do not place equipment cards (training exception).
-  - Place board markers/pawns for special wires (here, yellow values in play).
-  - Yellow info token cannot be used during setup.
+  - Add `2` yellow wires drawn at random from values `1.1` to `7.1`.
+  - Do not place equipment cards.
 - Mission rule (back):
   - On turn, use either `Dual Cut` or `Solo Cut`.
   - Yellow wires are introduced:
-    - Yellow is cut like blue (Duo/Solo), but all yellow wires are treated as one shared value.
-    - To target yellow, player must call `yellow`.
-    - If a yellow is misidentified during a cut, use the yellow info token to reveal.
+    - Yellow wires are cut like blue (Dual or Solo).
+    - During a yellow cut, all yellow wires are treated as the same value.
+    - To cut a yellow wire, the active player must first have a yellow wire, then point to a teammate’s wire and state, `"This wire is yellow"`.
+    - If a yellow wire is ever cut by mistake, use the Yellow Info token `A` to show its value.
 
 ### Mission 3
 
