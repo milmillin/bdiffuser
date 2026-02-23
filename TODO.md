@@ -340,7 +340,7 @@ Dependency: starts after refreshed card image artifacts are available.
 - [x] `mission_2` (`mission_2.jpg` + `mission_2_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [x] `mission_3` (`mission_3.jpg` + `mission_3_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [x] `mission_4` (`mission_4.jpg` + `mission_4_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
-- [ ] `mission_5` (`mission_5.jpg` + `mission_5_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
+- [x] `mission_5` (`mission_5.jpg` + `mission_5_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_6` (`mission_6.jpg` + `mission_6_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_7` (`mission_7.jpg` + `mission_7_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
 - [ ] `mission_8` (`mission_8.jpg` + `mission_8_back.jpg`): regenerate LLM OCR extraction from updated artifacts and store normalized text output.
