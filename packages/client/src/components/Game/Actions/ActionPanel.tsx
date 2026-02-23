@@ -6,7 +6,7 @@ import type {
   EquipmentGuessValue,
   UseEquipmentPayload,
 } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
+import { BLUE_COPIES_PER_VALUE, EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
@@ -613,7 +613,7 @@ export function getSoloCutValues(
       // Remaining = 4 - already cut (from validation track).
       // Solo cut requires all remaining copies to be in my hand.
       const alreadyCut = state.board.validationTrack[value] ?? 0;
-      const remaining = 4 - alreadyCut;
+      const remaining = BLUE_COPIES_PER_VALUE - alreadyCut;
       if (myCount >= remaining && remaining > 0) {
         values.push(value);
       }

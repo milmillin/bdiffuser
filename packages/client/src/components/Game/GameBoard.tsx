@@ -516,6 +516,7 @@ export function GameBoard({
                             tileIndex1: ddSelectedTiles[0],
                             tileIndex2: ddSelectedTiles[1],
                             guessValue,
+                            actorTileIndex: ddGuessTile,
                           });
                           cancelDoubleDetector();
                         }}

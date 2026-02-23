@@ -25,7 +25,7 @@ export type ClientMessage =
       guessValue: number | "YELLOW";
       actorTileIndex?: number;
     }
-  | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number }
+  | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number; actorTileIndex?: number }
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
   | { type: "useEquipment"; equipmentId: BaseEquipmentId; payload: UseEquipmentPayload }

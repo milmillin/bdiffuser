@@ -139,7 +139,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleDualCut(connection, msg.targetPlayerId, msg.targetTileIndex, msg.guessValue, msg.actorTileIndex);
         break;
       case "dualCutDoubleDetector":
-        this.handleDualCutDoubleDetector(connection, msg.targetPlayerId, msg.tileIndex1, msg.tileIndex2, msg.guessValue);
+        this.handleDualCutDoubleDetector(connection, msg.targetPlayerId, msg.tileIndex1, msg.tileIndex2, msg.guessValue, msg.actorTileIndex);
         break;
       case "soloCut":
         this.handleSoloCut(connection, msg.value);
@@ -423,6 +423,7 @@ export class BombBustersServer extends Server<Env> {
     tileIndex1: number,
     tileIndex2: number,
     guessValue: number,
+    actorTileIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
@@ -451,6 +452,7 @@ export class BombBustersServer extends Server<Env> {
       tileIndex1,
       tileIndex2,
       guessValue,
+      actorTileIndex,
     );
 
     this.saveState();
