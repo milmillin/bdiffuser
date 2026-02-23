@@ -18,10 +18,20 @@ function renderPanel(
     playerId = "actor",
     selectedTarget = null,
     selectedGuessTile = null,
+    currentPlayerName = "Actor",
+    isCurrentPlayerBot = false,
+    character = null,
+    characterUsed = false,
+    onUseCharacterAbility = undefined,
   }: {
     playerId?: string;
     selectedTarget?: { playerId: string; tileIndex: number } | null;
     selectedGuessTile?: number | null;
+    currentPlayerName?: string;
+    isCurrentPlayerBot?: boolean;
+    character?: import("@bomb-busters/shared").CharacterId | null;
+    characterUsed?: boolean;
+    onUseCharacterAbility?: (() => void) | undefined;
   } = {},
 ): string {
   return renderToStaticMarkup(
@@ -35,6 +45,11 @@ function renderPanel(
       onClearTarget={vi.fn()}
       onCutConfirmed={vi.fn()}
       onEnterEquipmentMode={vi.fn()}
+      currentPlayerName={currentPlayerName}
+      isCurrentPlayerBot={isCurrentPlayerBot}
+      character={character}
+      characterUsed={characterUsed}
+      onUseCharacterAbility={onUseCharacterAbility}
     />,
   );
 }

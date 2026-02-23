@@ -29,6 +29,11 @@ function renderPanel(
       onClearTarget={vi.fn()}
       onCutConfirmed={vi.fn()}
       onEnterEquipmentMode={vi.fn()}
+      currentPlayerName="Actor"
+      isCurrentPlayerBot={false}
+      character={null}
+      characterUsed={false}
+      onUseCharacterAbility={undefined}
     />,
   );
 }

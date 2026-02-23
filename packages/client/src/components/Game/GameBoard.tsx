@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
-import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, MISSION_IMAGES, MISSION_SCHEMAS, MISSIONS, describeWirePoolSpec, wireLabel } from "@bomb-busters/shared";
+import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, MISSION_IMAGES, MISSION_SCHEMAS, MISSIONS, describeWirePoolSpec, requiresSetupInfoTokenForMission, wireLabel } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
@@ -92,8 +92,7 @@ export function GameBoard({
   const showActionPanel =
     gameState.phase === "playing" &&
     !gameState.pendingForcedAction &&
-    !!me &&
-    (isMyTurn || hasAnytimeEquipment);
+    !!me;
 
   // Dual cut target selection state
   const [selectedTarget, setSelectedTarget] = useState<{
@@ -127,12 +126,12 @@ export function GameBoard({
   const cancelEquipmentMode = useCallback(() => setEquipmentMode(null), []);
 
   const isSetup = gameState.phase === "setup_info_tokens";
-  const requiresSetupToken =
-    !(
-      isSetup &&
-      gameState.mission === 11 &&
-      gameState.players.length === 2 &&
-      me?.isCaptain
+  const requiresSetupToken = !isSetup || !me
+    ? true
+    : requiresSetupInfoTokenForMission(
+      gameState.mission,
+      gameState.players.length,
+      me.isCaptain,
     );
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName =
@@ -520,20 +519,25 @@ export function GameBoard({
                     setSelectedTarget(null);
                     setSelectedGuessTile(null);
                   }}
+                  currentPlayerName={currentPlayer?.name}
+                  isCurrentPlayerBot={currentPlayer?.isBot ?? false}
+                  character={me.character}
+                  characterUsed={me.characterUsed}
+                  onUseCharacterAbility={
+                    me.character && DOUBLE_DETECTOR_CHARACTERS.has(me.character)
+                      ? () => {
+                          setEquipmentMode({
+                            kind: "double_detector",
+                            targetPlayerId: null,
+                            selectedTiles: [],
+                            guessTileIndex: null,
+                          });
+                          setSelectedTarget(null);
+                          setSelectedGuessTile(null);
+                        }
+                      : undefined
+                  }
                 />
-              )}
-
-              {!isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !showActionPanel && (
-                <div className="text-center py-2 text-gray-400" data-testid="waiting-turn">
-                  {currentPlayer?.isBot ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-purple-300 font-bold">{currentPlayer.name}</span> is thinking...
-                    </span>
-                  ) : (
-                    <>Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span>'s turn...</>
-                  )}
-                </div>
               )}
 
               {/* Game over banner */}
@@ -742,4 +746,3 @@ function Header({
     </div>
   );
 }
-

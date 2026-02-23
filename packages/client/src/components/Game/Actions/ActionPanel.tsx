@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   BaseEquipmentId,
+  CharacterId,
   ClientGameState,
   ClientMessage,
 } from "@bomb-busters/shared";
-import { BLUE_COPIES_PER_VALUE, EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
+import { BLUE_COPIES_PER_VALUE, CHARACTER_CARD_TEXT, EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
@@ -72,6 +73,11 @@ export function ActionPanel({
   onClearTarget,
   onCutConfirmed,
   onEnterEquipmentMode,
+  currentPlayerName,
+  isCurrentPlayerBot,
+  character,
+  characterUsed,
+  onUseCharacterAbility,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
@@ -82,6 +88,11 @@ export function ActionPanel({
   onClearTarget: () => void;
   onCutConfirmed: () => void;
   onEnterEquipmentMode: (mode: EquipmentMode) => void;
+  currentPlayerName: string | undefined;
+  isCurrentPlayerBot: boolean;
+  character: CharacterId | null;
+  characterUsed: boolean;
+  onUseCharacterAbility: (() => void) | undefined;
 }) {
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
@@ -192,7 +203,16 @@ export function ActionPanel({
             <span className="text-sm font-bold text-yellow-400">Choose an Action</span>
           </>
         ) : (
-          <span className="text-sm font-bold text-gray-400">Equipment Actions</span>
+          <span className="text-sm text-gray-400" data-testid="waiting-turn">
+            {isCurrentPlayerBot ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-purple-300 font-bold">{currentPlayerName}</span> is thinking...
+              </span>
+            ) : (
+              <>Waiting for <span className="text-white font-bold">{currentPlayerName}</span>&apos;s turn...</>
+            )}
+          </span>
         )}
       </div>
 
@@ -347,6 +367,50 @@ export function ActionPanel({
           </button>
         </div>
       )}
+
+      {/* Personal Skill */}
+      {character != null && (() => {
+        const cardText = CHARACTER_CARD_TEXT[character];
+        const canUseSkill = isMyTurn && !forceRevealReds && !characterUsed && !!onUseCharacterAbility;
+        return (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-fuchsia-500/40 bg-fuchsia-950/15" data-testid="personal-skill-section">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-fuchsia-300 uppercase">
+                Personal Skill — {cardText.abilityName}
+              </div>
+              {characterUsed && (
+                <span className="bg-gray-600 text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full" data-testid="skill-used-badge">
+                  Used
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">{cardText.timing}</p>
+            {!characterUsed && (
+              <button
+                onClick={onUseCharacterAbility}
+                disabled={!canUseSkill}
+                data-testid="use-skill-button"
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+                  canUseSkill
+                    ? "bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
+                    : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                }`}
+                title={
+                  characterUsed
+                    ? "Already used this mission"
+                    : !isMyTurn
+                      ? "Can only use during your turn"
+                      : forceRevealReds
+                        ? "Reveal your remaining red wires first"
+                        : undefined
+                }
+              >
+                Use Skill
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Equipment */}
       {availableEquipment.length > 0 && (
