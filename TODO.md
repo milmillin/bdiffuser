@@ -180,7 +180,7 @@ Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 - [x] Add bot fallback strategy for not-yet-implemented hooks.
 
 ### Client UI
-- [ ] Add UI surfaces for mission objects (cards, constraints, oxygen, Nano/Bunker, markers).
+- [x] Add UI surfaces for mission objects (cards, constraints, oxygen, Nano/Bunker, markers).
 - [ ] Add action-panel variants for mission-specific actions.
   - [x] Mission 12 equipment buttons show secondary-lock progress and disable until satisfied
 - [~] Show active mission constraints/reminders in turn UI.
@@ -190,7 +190,8 @@ Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 - [x] Support captain UI for mission-10 `chooseNextPlayer` forced action (ChooseNextPlayerPanel).
 - [~] Support non-clockwise turn indicators and remaining forced-action states.
   - [x] Mission 10 dynamic-turn indicator + previous-player context in turn UI
-- [ ] Support mission-specific token placement interactions.
+- [x] Support mission-specific token placement interactions.
+  - [x] Mission 11 (2-player) captain setup-token skip reflected in client setup interaction and messaging
 
 ## Phase 3 - QA Hardening, Rollout, and Cleanup (P1/P2)
 Dependency: starts once each milestone’s Phase 1+2 scope is complete.

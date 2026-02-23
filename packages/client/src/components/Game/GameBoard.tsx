@@ -29,7 +29,11 @@ export function GameBoard({
   const isFinished = gameState.phase === "finished";
   const isMyTurn = !isFinished && currentPlayer?.id === playerId;
   const me = gameState.players.find((p) => p.id === playerId);
-  const opponents = gameState.players.filter((p) => p.id !== playerId);
+  const opponentsWithOrder = gameState.players
+    .map((p, i) => ({ player: p, turnOrder: i + 1 }))
+    .filter((entry) => entry.player.id !== playerId);
+  const opponents = opponentsWithOrder.map((entry) => entry.player);
+  const myOrder = gameState.players.findIndex((p) => p.id === playerId) + 1;
   const equipmentTiming = new Map(
     EQUIPMENT_DEFS.map((def) => [def.id, def.useTiming]),
   );
@@ -78,6 +82,13 @@ export function GameBoard({
   }, []);
 
   const isSetup = gameState.phase === "setup_info_tokens";
+  const requiresSetupToken =
+    !(
+      isSetup &&
+      gameState.mission === 11 &&
+      gameState.players.length === 2 &&
+      me?.isCaptain
+    );
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName =
     gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
@@ -123,6 +134,12 @@ export function GameBoard({
     };
   }, [isRulesPopupOpen]);
 
+  useEffect(() => {
+    if (!requiresSetupToken) {
+      setSelectedInfoTile(null);
+    }
+  }, [requiresSetupToken]);
+
   return (
     <>
       <div className="min-h-screen flex flex-col" style={{ perspective: "1200px" }} data-testid="game-board" data-phase={gameState.phase}>
@@ -138,12 +155,13 @@ export function GameBoard({
           <div className="flex-1 flex flex-col gap-2 min-w-0">
             {/* Opponents area */}
             <div className="flex gap-2 justify-center flex-shrink-0 flex-wrap">
-              {opponents.map((opp) => (
+              {opponentsWithOrder.map(({ player: opp, turnOrder }) => (
                 <PlayerStand
                   key={opp.id}
                   player={opp}
                   isOpponent={true}
                   isCurrentTurn={opp.id === currentPlayer?.id}
+                  turnOrder={turnOrder}
                   onCharacterClick={
                     opp.character
                       ? () => setViewingCharacter({ playerId: opp.id, characterId: opp.character! })
@@ -200,6 +218,7 @@ export function GameBoard({
                   player={me}
                   isOpponent={false}
                   isCurrentTurn={me.id === currentPlayer?.id}
+                  turnOrder={myOrder}
                   onCharacterClick={
                     me.character
                       ? () => setViewingCharacter({ playerId: me.id, characterId: me.character! })
@@ -207,7 +226,10 @@ export function GameBoard({
                   }
                   onTileClick={
                     isSetup && isMyTurn
-                      ? (tileIndex) => setSelectedInfoTile(tileIndex)
+                      ? (tileIndex) => {
+                          if (!requiresSetupToken) return;
+                          setSelectedInfoTile(tileIndex);
+                        }
                       : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
                         ? (tileIndex) => {
                             const tile = me.hand[tileIndex];
@@ -224,7 +246,7 @@ export function GameBoard({
                   }
                   selectedTileIndex={
                     isSetup
-                      ? (selectedInfoTile ?? undefined)
+                      ? (requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined)
                       : doubleDetectorMode && isMyTurn
                         ? (ddGuessTile ?? undefined)
                         : selectedTarget && isMyTurn && gameState.phase === "playing"
@@ -233,7 +255,9 @@ export function GameBoard({
                   }
                   tileSelectableFilter={
                     isSetup && isMyTurn
-                      ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
+                      ? (requiresSetupToken
+                        ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
+                        : undefined)
                       : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
                         ? (tile: VisibleTile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
                         : selectedTarget && isMyTurn && gameState.phase === "playing"
@@ -248,6 +272,7 @@ export function GameBoard({
                 <InfoTokenSetup
                   player={me}
                   selectedTileIndex={selectedInfoTile}
+                  requiresToken={requiresSetupToken}
                   send={send}
                   onPlaced={() => setSelectedInfoTile(null)}
                 />

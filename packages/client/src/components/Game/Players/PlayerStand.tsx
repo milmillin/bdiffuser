@@ -5,6 +5,7 @@ export function PlayerStand({
   player,
   isOpponent,
   isCurrentTurn,
+  turnOrder,
   onTileClick,
   selectedTileIndex,
   selectedTileIndices,
@@ -14,6 +15,7 @@ export function PlayerStand({
   player: ClientPlayer;
   isOpponent: boolean;
   isCurrentTurn: boolean;
+  turnOrder: number;
   onTileClick?: (flatIndex: number) => void;
   selectedTileIndex?: number;
   /** Multi-select support (e.g. Double Detector mode) */
@@ -46,6 +48,7 @@ export function PlayerStand({
             />
           </button>
         )}
+        <span className="text-[10px] text-gray-400 font-mono">#{turnOrder}</span>
         <span className="font-bold text-sm">
           {player.name}
           {player.isBot && (
