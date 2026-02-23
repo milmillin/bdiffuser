@@ -10,6 +10,7 @@ import {
   makeEquipmentCard,
   makeGameState,
   makePlayer,
+  makeRedTile,
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
@@ -1144,5 +1145,439 @@ describe("equipment execution", () => {
     expect(state.currentPlayerIndex).toBe(2);
     expect(state.turnNumber).toBe(2);
     expect(state.board.equipment[0].used).toBe(true);
+  });
+});
+
+describe("equipment validation edge cases", () => {
+  // Post-it edge cases
+  it("rejects post-it on a cut tile", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5, cut: true })],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("TILE_ALREADY_CUT");
+  });
+
+  it("rejects post-it on a red tile", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeRedTile({ id: "r1" }), makeTile({ id: "b1", gameValue: 3 })],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects post-it on a yellow tile", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeYellowTile({ id: "y1" })],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  // Label eq/neq edge cases
+  it("accepts label_eq on adjacent red tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeRedTile({ id: "r2" }),
+        makeTile({ id: "b1", gameValue: 3 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_eq", "Label =", 12),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_eq", {
+      kind: "label_eq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("accepts label_eq on adjacent yellow tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeYellowTile({ id: "y1" }),
+        makeYellowTile({ id: "y2" }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_eq", "Label =", 12),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_eq", {
+      kind: "label_eq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects label_eq on adjacent red + blue tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeTile({ id: "b1", gameValue: 5 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_eq", "Label =", 12),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_eq", {
+      kind: "label_eq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("accepts label_neq on adjacent red + blue tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeTile({ id: "b1", gameValue: 5 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects label_neq on adjacent red + red tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeRedTile({ id: "r2" }),
+        makeTile({ id: "b1", gameValue: 3 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  // Talkies-walkies edge cases
+  it("rejects talkies-walkies when teammate's tile is cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 3 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4, cut: true })],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("rejects talkies-walkies targeting self", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3 }),
+        makeTile({ id: "a2", gameValue: 4 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "actor",
+      myTileIndex: 0,
+      teammateTileIndex: 1,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("CANNOT_TARGET_SELF");
+  });
+
+  // Emergency batteries edge cases
+  it("rejects emergency batteries with 0 selected players", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+      characterUsed: true,
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("emergency_batteries", "Emergency Batteries", 7),
+    );
+
+    const error = validateUseEquipment(state, "actor", "emergency_batteries", {
+      kind: "emergency_batteries",
+      playerIds: [],
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+  });
+
+  it("rejects emergency batteries with 3 selected players", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "p2-1", gameValue: 2 })],
+      characterUsed: true,
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "p3-1", gameValue: 3 })],
+      characterUsed: true,
+    });
+    const p4 = makePlayer({
+      id: "p4",
+      hand: [makeTile({ id: "p4-1", gameValue: 4 })],
+      characterUsed: true,
+    });
+    const state = stateWithEquipment(
+      [actor, p2, p3, p4],
+      unlockedEquipmentCard("emergency_batteries", "Emergency Batteries", 7),
+    );
+
+    const error = validateUseEquipment(state, "actor", "emergency_batteries", {
+      kind: "emergency_batteries",
+      playerIds: ["p2", "p3", "p4"],
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
+  });
+
+  // Triple detector edge cases
+  it("rejects triple detector targeting self", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 6 }),
+        makeTile({ id: "a3", gameValue: 7 }),
+        makeTile({ id: "a4", gameValue: 8 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("triple_detector", "Triple Detector 3000", 3),
+    );
+
+    const error = validateUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "actor",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("CANNOT_TARGET_SELF");
+  });
+
+  it("rejects triple detector when target tile is cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5, cut: true }),
+        makeTile({ id: "t3", gameValue: 8 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("triple_detector", "Triple Detector 3000", 3),
+    );
+
+    const error = validateUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "target",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("TILE_ALREADY_CUT");
+  });
+
+  // Super detector edge cases
+  it("rejects super detector when target has no uncut tiles", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3, cut: true }),
+        makeTile({ id: "t2", gameValue: 5, cut: true }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("super_detector", "Super Detector", 5),
+    );
+
+    const error = validateUseEquipment(state, "actor", "super_detector", {
+      kind: "super_detector",
+      targetPlayerId: "target",
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  // X or Y Ray edge cases
+  it("rejects x_or_y_ray when actor lacks one of the announced values", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 6 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 9 })],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("x_or_y_ray", "X or Y Ray", 10),
+    );
+
+    const error = validateUseEquipment(state, "actor", "x_or_y_ray", {
+      kind: "x_or_y_ray",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValueA: 5,
+      guessValueB: 9,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("GUESS_VALUE_NOT_IN_HAND");
+  });
+
+  it("accepts x_or_y_ray with YELLOW as guess value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeYellowTile({ id: "a2" }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("x_or_y_ray", "X or Y Ray", 10),
+    );
+
+    const error = validateUseEquipment(state, "actor", "x_or_y_ray", {
+      kind: "x_or_y_ray",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValueA: 5,
+      guessValueB: "YELLOW",
+    });
+
+    expect(error).toBeNull();
   });
 });

@@ -10,6 +10,18 @@ import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
 import { ActionLog } from "./ActionLog.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
+import { EquipmentModePanel } from "./Actions/EquipmentModePanel.js";
+import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
+import {
+  getOpponentTileSelectableFilter as _getOpponentTileSelectableFilter,
+  getOwnTileSelectableFilter as _getOwnTileSelectableFilter,
+  getOpponentSelectedTileIndex as _getOpponentSelectedTileIndex,
+  getOpponentSelectedTileIndices as _getOpponentSelectedTileIndices,
+  getOwnSelectedTileIndex as _getOwnSelectedTileIndex,
+  getOwnSelectedTileIndices as _getOwnSelectedTileIndices,
+  handleOpponentTileClick as _handleOpponentTileClick,
+  handleOwnTileClickEquipment as _handleOwnTileClickEquipment,
+} from "./equipmentModeLogic.js";
 import gameRulesMarkdown from "../../../../../GAME_RULES.md?raw";
 
 type UnknownForcedAction = {
@@ -37,6 +49,14 @@ function getUnknownForcedAction(gameState: ClientGameState): UnknownForcedAction
       : {}),
   };
 }
+
+const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
+  "double_detector",
+  "talkies_walkies",
+  "triple_detector",
+  "super_detector",
+  "x_or_y_ray",
+]);
 
 export function GameBoard({
   gameState,
@@ -102,22 +122,9 @@ export function GameBoard({
     characterId: CharacterId;
   } | null>(null);
 
-  // Double Detector selection mode state
-  const [doubleDetectorMode, setDoubleDetectorMode] = useState(false);
-  const [ddSelectedTiles, setDdSelectedTiles] = useState<number[]>([]);
-  const [ddTargetPlayerId, setDdTargetPlayerId] = useState<string | null>(null);
-  const [ddGuessTile, setDdGuessTile] = useState<number | null>(null);
-
-  const cancelDoubleDetector = useCallback(() => {
-    setDoubleDetectorMode(false);
-    setDdSelectedTiles([]);
-    setDdTargetPlayerId(null);
-    setDdGuessTile(null);
-  }, []);
-
-  // Post-it selection mode state
-  const [postItMode, setPostItMode] = useState(false);
-  const cancelPostIt = useCallback(() => setPostItMode(false), []);
+  // Unified equipment mode state
+  const [equipmentMode, setEquipmentMode] = useState<EquipmentMode | null>(null);
+  const cancelEquipmentMode = useCallback(() => setEquipmentMode(null), []);
 
   const isSetup = gameState.phase === "setup_info_tokens";
   const requiresSetupToken =
@@ -209,10 +216,57 @@ export function GameBoard({
     );
   }, [unknownForcedAction?.kind]);
 
-  // Cancel post-it mode when turn or phase changes
+  // Cancel equipment mode when turn or phase changes
   useEffect(() => {
-    setPostItMode(false);
+    setEquipmentMode(null);
   }, [gameState.turnNumber, gameState.phase]);
+
+  // --- Equipment mode tile click handlers (delegated to pure functions) ---
+
+  const handleOpponentTileClick = (oppId: string, tileIndex: number) => {
+    const newMode = _handleOpponentTileClick(equipmentMode, oppId, tileIndex);
+    if (newMode !== equipmentMode) setEquipmentMode(newMode);
+  };
+
+  const handleOwnTileClickEquipment = (tileIndex: number) => {
+    const result = _handleOwnTileClickEquipment(equipmentMode, tileIndex, me);
+    if (result.sendPayload) send(result.sendPayload);
+    if (result.newMode !== equipmentMode) setEquipmentMode(result.newMode);
+  };
+
+  // --- Selectability filters (delegated to pure functions) ---
+
+  const getOpponentTileSelectableFilter = (oppId: string) =>
+    _getOpponentTileSelectableFilter(equipmentMode, oppId);
+
+  const getOwnTileSelectableFilter = () =>
+    _getOwnTileSelectableFilter(equipmentMode, me);
+
+  // --- Selection highlights ---
+
+  const getOpponentSelectedTileIndex = (oppId: string): number | undefined => {
+    const fromEquipment = _getOpponentSelectedTileIndex(equipmentMode, oppId);
+    if (fromEquipment !== undefined) return fromEquipment;
+    if (equipmentMode) return undefined;
+    return selectedTarget?.playerId === oppId ? selectedTarget.tileIndex : undefined;
+  };
+
+  const getOpponentSelectedTileIndices = (oppId: string) =>
+    _getOpponentSelectedTileIndices(equipmentMode, oppId);
+
+  const getOwnSelectedTileIndex = (): number | undefined => {
+    if (isSetup) return requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined;
+    const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
+    if (fromEquipment !== undefined) return fromEquipment;
+    if (equipmentMode) return undefined;
+    if (selectedTarget && isMyTurn && gameState.phase === "playing") {
+      return selectedGuessTile ?? undefined;
+    }
+    return undefined;
+  };
+
+  const getOwnSelectedTileIndices = () =>
+    _getOwnSelectedTileIndices(equipmentMode);
 
   return (
     <>
@@ -242,34 +296,18 @@ export function GameBoard({
                       : undefined
                   }
                   onTileClick={
-                    doubleDetectorMode && isMyTurn && gameState.phase === "playing"
-                      ? (tileIndex) => {
-                          // In DD mode: select up to 2 tiles on the same opponent
-                          if (ddTargetPlayerId && ddTargetPlayerId !== opp.id) return;
-                          setDdTargetPlayerId(opp.id);
-                          setDdSelectedTiles((prev) => {
-                            if (prev.includes(tileIndex)) {
-                              return prev.filter((i) => i !== tileIndex);
-                            }
-                            if (prev.length >= 2) return prev;
-                            return [...prev, tileIndex];
-                          });
-                        }
-                      : !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction
+                    equipmentMode && MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) && gameState.phase === "playing"
+                      ? (tileIndex) => handleOpponentTileClick(opp.id, tileIndex)
+                      : !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
                         ? (tileIndex) =>
                             setSelectedTarget({ playerId: opp.id, tileIndex })
                         : undefined
                   }
-                  selectedTileIndex={
-                    doubleDetectorMode && ddTargetPlayerId === opp.id
-                      ? undefined
-                      : selectedTarget?.playerId === opp.id
-                        ? selectedTarget.tileIndex
-                        : undefined
-                  }
-                  selectedTileIndices={
-                    doubleDetectorMode && ddTargetPlayerId === opp.id
-                      ? ddSelectedTiles
+                  selectedTileIndex={getOpponentSelectedTileIndex(opp.id)}
+                  selectedTileIndices={getOpponentSelectedTileIndices(opp.id)}
+                  tileSelectableFilter={
+                    equipmentMode && gameState.phase === "playing"
+                      ? getOpponentTileSelectableFilter(opp.id)
                       : undefined
                   }
                 />
@@ -305,55 +343,28 @@ export function GameBoard({
                       ? (requiresSetupToken
                         ? (tileIndex) => setSelectedInfoTile(tileIndex)
                         : undefined)
-                      : postItMode && isMyTurn && gameState.phase === "playing"
-                        ? (tileIndex) => {
-                            const tile = me.hand[tileIndex];
-                            if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") return;
-                            if (me.infoTokens.some((t) => t.position === tileIndex)) return;
-                            send({
-                              type: "useEquipment",
-                              equipmentId: "post_it",
-                              payload: { kind: "post_it", tileIndex },
-                            });
-                            setPostItMode(false);
-                          }
-                        : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
+                      : equipmentMode && gameState.phase === "playing"
+                        ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
+                        : selectedTarget && isMyTurn && gameState.phase === "playing"
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
-                              if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") return;
-                              setDdGuessTile(tileIndex);
+                              if (!tile || tile.cut || tile.color === "red") return;
+                              setSelectedGuessTile(tileIndex);
                             }
-                          : selectedTarget && isMyTurn && gameState.phase === "playing"
-                            ? (tileIndex) => {
-                                const tile = me.hand[tileIndex];
-                                if (!tile || tile.cut || tile.color === "red") return;
-                                setSelectedGuessTile(tileIndex);
-                              }
-                            : undefined
+                          : undefined
                   }
-                  selectedTileIndex={
-                    isSetup
-                      ? (requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined)
-                      : postItMode
-                        ? undefined
-                        : doubleDetectorMode && isMyTurn
-                          ? (ddGuessTile ?? undefined)
-                          : selectedTarget && isMyTurn && gameState.phase === "playing"
-                            ? (selectedGuessTile ?? undefined)
-                            : undefined
-                  }
+                  selectedTileIndex={getOwnSelectedTileIndex()}
+                  selectedTileIndices={getOwnSelectedTileIndices()}
                   tileSelectableFilter={
                     isSetup && isMyTurn
                       ? (requiresSetupToken
                         ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
                         : undefined)
-                      : postItMode && isMyTurn
-                        ? (tile: VisibleTile, idx: number) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number" && !me.infoTokens.some((t) => t.position === idx)
-                        : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
-                          ? (tile: VisibleTile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
-                          : selectedTarget && isMyTurn && gameState.phase === "playing"
-                            ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
-                            : undefined
+                      : equipmentMode && gameState.phase === "playing"
+                        ? getOwnTileSelectableFilter()
+                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                          : undefined
                   }
                 />
               )}
@@ -481,85 +492,20 @@ export function GameBoard({
                 )
               )}
 
-              {/* Double Detector mode panel */}
-              {doubleDetectorMode && isMyTurn && me && (
-                <div
-                  className="rounded-lg border border-yellow-600/60 bg-yellow-900/20 px-3 py-2 text-sm space-y-2"
-                  data-testid="dd-mode-panel"
-                >
-                  <div className="font-bold text-yellow-400 uppercase tracking-wide text-xs">
-                    Double Detector Mode
-                  </div>
-                  <div className="text-xs text-gray-300">
-                    {ddSelectedTiles.length < 2 ? (
-                      <>Select 2 tiles on one opponent's stand ({ddSelectedTiles.length}/2 selected{ddTargetPlayerId ? ` on ${opponents.find((o) => o.id === ddTargetPlayerId)?.name}` : ""}).</>
-                    ) : ddGuessTile == null ? (
-                      <>Now select one of your blue tiles as the guess value.</>
-                    ) : (
-                      <>
-                        Target: {opponents.find((o) => o.id === ddTargetPlayerId)?.name} wires {wireLabel(ddSelectedTiles[0])} & {wireLabel(ddSelectedTiles[1])}.
-                        Guess: {me.hand[ddGuessTile]?.gameValue}.
-                      </>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={cancelDoubleDetector}
-                      className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    {ddSelectedTiles.length === 2 && ddGuessTile != null && ddTargetPlayerId && (
-                      <button
-                        type="button"
-                        data-testid="dd-confirm"
-                        onClick={() => {
-                          const guessValue = me.hand[ddGuessTile]?.gameValue;
-                          if (typeof guessValue !== "number" || !ddTargetPlayerId) return;
-                          send({
-                            type: "dualCutDoubleDetector",
-                            targetPlayerId: ddTargetPlayerId,
-                            tileIndex1: ddSelectedTiles[0],
-                            tileIndex2: ddSelectedTiles[1],
-                            guessValue,
-                            actorTileIndex: ddGuessTile,
-                          });
-                          cancelDoubleDetector();
-                        }}
-                        className="px-3 py-1 rounded bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-bold transition-colors"
-                      >
-                        Confirm Double Detector
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Post-it mode panel */}
-              {postItMode && isMyTurn && me && (
-                <div
-                  className="rounded-lg border border-emerald-600/60 bg-emerald-900/20 px-3 py-2 text-sm space-y-2"
-                  data-testid="post-it-mode-panel"
-                >
-                  <div className="font-bold text-emerald-400 uppercase tracking-wide text-xs">
-                    Post-it Mode
-                  </div>
-                  <div className="text-xs text-gray-300">
-                    Click one of your blue wires to place the Post-it info token.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={cancelPostIt}
-                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              {/* Equipment mode panel (unified for all equipment types) */}
+              {equipmentMode && me && (
+                <EquipmentModePanel
+                  mode={equipmentMode}
+                  gameState={gameState}
+                  playerId={playerId}
+                  send={send}
+                  onCancel={cancelEquipmentMode}
+                  onUpdateMode={setEquipmentMode}
+                />
               )}
 
               {/* Playing phase: actions (including anytime equipment off-turn) */}
-              {showActionPanel && !doubleDetectorMode && !postItMode && me && (
+              {showActionPanel && !equipmentMode && me && (
                 <ActionPanel
                   gameState={gameState}
                   send={send}
@@ -569,11 +515,10 @@ export function GameBoard({
                   selectedGuessTile={selectedGuessTile}
                   onClearTarget={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
                   onCutConfirmed={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
-                  onEnterPostItMode={() => {
-                    cancelDoubleDetector();
+                  onEnterEquipmentMode={(mode) => {
+                    setEquipmentMode(mode);
                     setSelectedTarget(null);
                     setSelectedGuessTile(null);
-                    setPostItMode(true);
                   }}
                 />
               )}
@@ -717,11 +662,12 @@ export function GameBoard({
             DOUBLE_DETECTOR_CHARACTERS.has(viewingCharacter.characterId)
               ? () => {
                   setViewingCharacter(null);
-                  setDoubleDetectorMode(true);
-                  setDdSelectedTiles([]);
-                  setDdTargetPlayerId(null);
-                  setDdGuessTile(null);
-                  // Clear any normal dual cut selection
+                  setEquipmentMode({
+                    kind: "double_detector",
+                    targetPlayerId: null,
+                    selectedTiles: [],
+                    guessTileIndex: null,
+                  });
                   setSelectedTarget(null);
                   setSelectedGuessTile(null);
                 }
