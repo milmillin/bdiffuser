@@ -29,45 +29,45 @@ function saveSession(roomId: string, session: StoredSession) {
   } catch { /* ignore */ }
 }
 
-function getRoomFromHash(): string | null {
-  const hash = window.location.hash.replace(/^#/, "").trim();
-  return hash || null;
+function getRoomFromPath(): string | null {
+  const path = window.location.pathname.replace(/^\//, "").trim();
+  return path || null;
 }
 
 export default function App() {
-  const [roomId, setRoomId] = useState<string | null>(getRoomFromHash);
+  const [roomId, setRoomId] = useState<string | null>(getRoomFromPath);
   const [playerName, setPlayerName] = useState("");
 
-  // Pre-fill name from stored session when loading with a hash
+  // Pre-fill name from stored session when loading with a room path
   const [initialSession] = useState(() => {
-    const hashRoom = getRoomFromHash();
+    const hashRoom = getRoomFromPath();
     return hashRoom ? getSession(hashRoom) : null;
   });
 
   const handleJoin = useCallback((room: string, name: string) => {
     setRoomId(room);
     setPlayerName(name);
-    window.location.hash = room;
+    window.history.pushState(null, "", `/${room}`);
   }, []);
 
   const handleLeave = useCallback(() => {
     setRoomId(null);
     setPlayerName("");
-    window.location.hash = "";
+    window.history.pushState(null, "", "/");
   }, []);
 
   // Handle browser back/forward
   useEffect(() => {
     const onPopState = () => {
-      const hashRoom = getRoomFromHash();
+      const hashRoom = getRoomFromPath();
       if (!hashRoom) {
         setRoomId(null);
         setPlayerName("");
       } else if (hashRoom !== roomId) {
-        // User navigated to a different room hash — show join screen for it
+        // User navigated to a different room path — show join screen for it
         setRoomId(null);
         setPlayerName("");
-        // Let the next render pick up the hash via JoinScreen's initial state
+        // Let the next render pick up the path via JoinScreen's initial state
         // We don't auto-join because we need the player name
       }
     };
@@ -80,7 +80,7 @@ export default function App() {
       {!roomId
         ? <JoinScreen
             onJoin={handleJoin}
-            initialRoom={getRoomFromHash() ?? ""}
+            initialRoom={getRoomFromPath() ?? ""}
             initialName={initialSession?.playerName ?? ""}
           />
         : <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />
