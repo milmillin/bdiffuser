@@ -412,7 +412,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to "Triple Detector"; front image text verified against OCR (no artifacts affecting rule text).`).
 - [x] `equipment_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back clean; no text changes needed`).
 - [x] `equipment_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `OCR clean for front card image; no text changes needed in `GAME_RULES.md`).
-- [ ] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: source card text says `Move the detonator dial back 1 space`).
 - [ ] `equipment_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).

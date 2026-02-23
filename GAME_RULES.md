@@ -249,7 +249,7 @@ Card text extracted from equipment cards `1` through `12`:
   > **FAQ:** Same success/failure rules as Triple Detector: success if at least one wire matches; teammate cuts one matching wire without revealing if multiple match. Failure: teammate places info token on one wire of the stand (their choice).
 - Equipment `6` (`Rewinder`)
   - Timing: can be used at any time.
-  - Effect: move the detonator back one notch.
+  - Effect: move the detonator dial back 1 space.
 - Equipment `7` (`Emergency Batteries`)
   - Timing: can be used at any time.
   - Effect: turn one or two used Character cards face up; their personal equipment becomes available again for this mission.
