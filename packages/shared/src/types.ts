@@ -94,6 +94,18 @@ export interface BoardMarker {
   color: "red" | "yellow";
 }
 
+// ── Chat ────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: number;
+  isBotReasoning: boolean;
+  turnNumber: number;
+}
+
 // ── Game State ──────────────────────────────────────────────
 
 export type GamePhase = "lobby" | "setup_info_tokens" | "playing" | "finished";
@@ -110,6 +122,7 @@ export interface GameState {
   result: GameResult;
   /** Log of actions taken */
   log: GameLogEntry[];
+  chat: ChatMessage[];
 }
 
 export type MissionId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -135,6 +148,7 @@ export interface ClientGameState {
   mission: MissionId;
   result: GameResult;
   log: GameLogEntry[];
+  chat: ChatMessage[];
 }
 
 export interface ClientPlayer {

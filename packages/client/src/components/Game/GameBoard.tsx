@@ -1,18 +1,21 @@
 import { useState } from "react";
-import type { ClientGameState, ClientMessage, VisibleTile } from "@bomb-busters/shared";
+import type { ClientGameState, ClientMessage, ChatMessage, VisibleTile } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
+import { ChatPanel } from "./Chat/ChatPanel.js";
 
 export function GameBoard({
   gameState,
   send,
   playerId,
+  chatMessages,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
+  chatMessages: ChatMessage[];
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === playerId;
@@ -31,98 +34,106 @@ export function GameBoard({
   const isSetup = gameState.phase === "setup_info_tokens";
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ perspective: "1200px" }} data-testid="game-board" data-phase="playing">
+    <div className="min-h-screen flex flex-col" style={{ perspective: "1200px" }} data-testid="game-board" data-phase={gameState.phase}>
       <Header gameState={gameState} playerId={playerId} />
 
-      <div className="flex-1 flex flex-col gap-2 p-2 overflow-hidden">
-        {/* Opponents area */}
-        <div className="flex gap-2 justify-center flex-shrink-0 flex-wrap">
-          {opponents.map((opp) => (
-            <PlayerStand
-              key={opp.id}
-              player={opp}
-              isOpponent={true}
-              isCurrentTurn={opp.id === currentPlayer?.id}
-              onTileClick={
-                !isSetup && isMyTurn && gameState.phase === "playing"
-                  ? (tileIndex) =>
-                      setSelectedTarget({ playerId: opp.id, tileIndex })
-                  : undefined
-              }
-              selectedTileIndex={
-                selectedTarget?.playerId === opp.id
-                  ? selectedTarget.tileIndex
-                  : undefined
-              }
-            />
-          ))}
+      <div className="flex-1 flex gap-2 p-2 overflow-hidden">
+        {/* Game area */}
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          {/* Opponents area */}
+          <div className="flex gap-2 justify-center flex-shrink-0 flex-wrap">
+            {opponents.map((opp) => (
+              <PlayerStand
+                key={opp.id}
+                player={opp}
+                isOpponent={true}
+                isCurrentTurn={opp.id === currentPlayer?.id}
+                onTileClick={
+                  !isSetup && isMyTurn && gameState.phase === "playing"
+                    ? (tileIndex) =>
+                        setSelectedTarget({ playerId: opp.id, tileIndex })
+                    : undefined
+                }
+                selectedTileIndex={
+                  selectedTarget?.playerId === opp.id
+                    ? selectedTarget.tileIndex
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+
+          {/* Board area */}
+          <div className="flex-shrink-0">
+            <BoardArea board={gameState.board} />
+          </div>
+
+          {/* My area */}
+          <div className="flex-1 flex flex-col gap-2 min-h-0">
+            {me && (
+              <PlayerStand
+                player={me}
+                isOpponent={false}
+                isCurrentTurn={me.id === currentPlayer?.id}
+                onTileClick={
+                  isSetup && isMyTurn
+                    ? (tileIndex) => setSelectedInfoTile(tileIndex)
+                    : undefined
+                }
+                selectedTileIndex={isSetup ? (selectedInfoTile ?? undefined) : undefined}
+                tileSelectableFilter={
+                  isSetup && isMyTurn
+                    ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
+                    : undefined
+                }
+              />
+            )}
+
+            {/* Setup phase: info token placement */}
+            {isSetup && isMyTurn && me && (
+              <InfoTokenSetup
+                player={me}
+                selectedTileIndex={selectedInfoTile}
+                send={send}
+                onPlaced={() => setSelectedInfoTile(null)}
+              />
+            )}
+
+            {isSetup && !isMyTurn && (
+              <div className="text-center py-2 text-gray-400">
+                Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span> to place their info token...
+              </div>
+            )}
+
+            {/* Playing phase: actions */}
+            {isMyTurn && gameState.phase === "playing" && me && (
+              <ActionPanel
+                gameState={gameState}
+                send={send}
+                playerId={playerId}
+                selectedTarget={selectedTarget}
+                onClearTarget={() => setSelectedTarget(null)}
+              />
+            )}
+
+            {!isMyTurn && gameState.phase === "playing" && (
+              <div className="text-center py-2 text-gray-400" data-testid="waiting-turn">
+                {currentPlayer?.isBot ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-purple-300 font-bold">{currentPlayer.name}</span> is thinking...
+                  </span>
+                ) : (
+                  <>Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span>'s turn...</>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Board area */}
-        <div className="flex-shrink-0">
-          <BoardArea board={gameState.board} />
-        </div>
-
-        {/* My area */}
-        <div className="flex-1 flex flex-col gap-2 min-h-0">
-          {me && (
-            <PlayerStand
-              player={me}
-              isOpponent={false}
-              isCurrentTurn={me.id === currentPlayer?.id}
-              onTileClick={
-                isSetup && isMyTurn
-                  ? (tileIndex) => setSelectedInfoTile(tileIndex)
-                  : undefined
-              }
-              selectedTileIndex={isSetup ? (selectedInfoTile ?? undefined) : undefined}
-              tileSelectableFilter={
-                isSetup && isMyTurn
-                  ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
-                  : undefined
-              }
-            />
-          )}
-
-          {/* Setup phase: info token placement */}
-          {isSetup && isMyTurn && me && (
-            <InfoTokenSetup
-              player={me}
-              selectedTileIndex={selectedInfoTile}
-              send={send}
-              onPlaced={() => setSelectedInfoTile(null)}
-            />
-          )}
-
-          {isSetup && !isMyTurn && (
-            <div className="text-center py-2 text-gray-400">
-              Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span> to place their info token...
-            </div>
-          )}
-
-          {/* Playing phase: actions */}
-          {isMyTurn && gameState.phase === "playing" && me && (
-            <ActionPanel
-              gameState={gameState}
-              send={send}
-              playerId={playerId}
-              selectedTarget={selectedTarget}
-              onClearTarget={() => setSelectedTarget(null)}
-            />
-          )}
-
-          {!isMyTurn && gameState.phase === "playing" && (
-            <div className="text-center py-2 text-gray-400" data-testid="waiting-turn">
-              {currentPlayer?.isBot ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-purple-300 font-bold">{currentPlayer.name}</span> is thinking...
-                </span>
-              ) : (
-                <>Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span>'s turn...</>
-              )}
-            </div>
-          )}
+        {/* Chat panel */}
+        <div className="w-72 flex-shrink-0">
+          <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
         </div>
       </div>
     </div>

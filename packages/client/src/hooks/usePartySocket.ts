@@ -6,6 +6,7 @@ import type {
   ClientGameState,
   LobbyState,
   GameAction,
+  ChatMessage,
 } from "@bomb-busters/shared";
 
 const PARTYKIT_HOST =
@@ -16,6 +17,7 @@ interface UsePartySocketReturn {
   lobbyState: LobbyState | null;
   gameState: ClientGameState | null;
   lastAction: GameAction | null;
+  chatMessages: ChatMessage[];
   error: string | null;
   send: (msg: ClientMessage) => void;
   playerId: string | null;
@@ -27,6 +29,7 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<ClientGameState | null>(null);
   const [lastAction, setLastAction] = useState<GameAction | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
@@ -59,9 +62,13 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
         case "gameState":
           setGameState(msg.state);
           setLobbyState(null);
+          setChatMessages(msg.state.chat ?? []);
           break;
         case "action":
           setLastAction(msg.action);
+          break;
+        case "chat":
+          setChatMessages((prev) => [...prev, msg.message]);
           break;
         case "error":
           setError(msg.message);
@@ -82,5 +89,5 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
     }
   }, []);
 
-  return { connected, lobbyState, gameState, lastAction, error, send, playerId };
+  return { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId };
 }

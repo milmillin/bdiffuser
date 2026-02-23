@@ -75,16 +75,22 @@ export type BotAction =
   | { action: "soloCut"; value: number | "YELLOW" }
   | { action: "revealReds" };
 
+export interface BotActionResult {
+  action: BotAction;
+  reasoning: string | null;
+}
+
 const MAX_RETRIES = 2;
 
 export async function getBotAction(
   state: GameState,
   botId: string,
   apiKey: string,
-): Promise<BotAction> {
+  chatContext: string,
+): Promise<BotActionResult> {
   const filtered = filterStateForPlayer(state, botId);
   const systemPrompt = buildSystemPrompt();
-  const userMessage = buildUserMessage(filtered);
+  const userMessage = buildUserMessage(filtered, chatContext || undefined);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -93,10 +99,11 @@ export async function getBotAction(
         { role: "user", content: userMessage },
       ]);
 
+      const reasoning = typeof result.reasoning === "string" ? result.reasoning : null;
       const parsed = parseLLMAction(result);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
-        if (!error) return parsed;
+        if (!error) return { action: parsed, reasoning };
         console.log(`Bot action validation failed (attempt ${attempt + 1}): ${error}`);
       } else {
         console.log(`Bot action parse failed (attempt ${attempt + 1}):`, result);
@@ -107,7 +114,7 @@ export async function getBotAction(
   }
 
   // Fallback heuristic
-  return getFallbackAction(state, botId);
+  return { action: getFallbackAction(state, botId), reasoning: null };
 }
 
 function parseLLMAction(

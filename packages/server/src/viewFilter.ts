@@ -27,6 +27,7 @@ export function filterStateForPlayer(
     mission: state.mission,
     result: state.result,
     log: state.log,
+    chat: state.chat,
   };
 }
 

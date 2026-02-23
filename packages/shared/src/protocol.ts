@@ -1,5 +1,6 @@
 import type {
   CharacterId,
+  ChatMessage,
   ClientGameState,
   GameResult,
   LobbyState,
@@ -25,7 +26,8 @@ export type ClientMessage =
   | { type: "revealReds" }
   | { type: "useEquipment"; equipmentId: string }
   | { type: "addBot" }
-  | { type: "removeBot"; botId: string };
+  | { type: "removeBot"; botId: string }
+  | { type: "chat"; text: string };
 
 // ── Server → Client Messages ───────────────────────────────
 
@@ -33,7 +35,8 @@ export type ServerMessage =
   | { type: "lobby"; state: LobbyState }
   | { type: "gameState"; state: ClientGameState }
   | { type: "action"; action: GameAction }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "chat"; message: ChatMessage };
 
 // ── Game Actions (for animations) ───────────────────────────
 

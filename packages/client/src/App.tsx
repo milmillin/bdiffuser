@@ -109,7 +109,7 @@ function GameRoom({
   playerName: string;
   onLeave: () => void;
 }) {
-  const { connected, lobbyState, gameState, lastAction, error, send, playerId } =
+  const { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId } =
     usePartySocket(roomId);
   const [joined, setJoined] = useState(false);
 
@@ -143,7 +143,7 @@ function GameRoom({
       )}
 
       {gameState && gameState.phase !== "finished" && (
-        <GameBoard gameState={gameState} send={send} playerId={playerId!} />
+        <GameBoard gameState={gameState} send={send} playerId={playerId!} chatMessages={chatMessages} />
       )}
 
       {lobbyState && !gameState && (

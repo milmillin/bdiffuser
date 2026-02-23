@@ -6,6 +6,7 @@ import type {
   Player,
   MissionId,
   CharacterId,
+  ChatMessage,
 } from "@bomb-busters/shared";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
@@ -37,6 +38,7 @@ interface RoomState {
   mission: MissionId;
   hostId: string | null;
   botCount: number;
+  botLastActionTurn: Record<string, number>;
 }
 
 export class BombBustersServer extends Server<Env> {
@@ -46,6 +48,7 @@ export class BombBustersServer extends Server<Env> {
     mission: 1,
     hostId: null,
     botCount: 0,
+    botLastActionTurn: {},
   };
 
   async onStart() {
@@ -126,6 +129,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "removeBot":
         this.handleRemoveBot(connection, msg.botId);
+        break;
+      case "chat":
+        this.handleChat(connection, msg.text);
         break;
       default:
         this.sendMsg(connection, { type: "error", message: "Unknown message type" });
@@ -245,6 +251,7 @@ export class BombBustersServer extends Server<Env> {
       mission: this.room.mission,
       result: null,
       log: [],
+      chat: [],
     };
 
     // Auto-place info tokens for bots
@@ -355,6 +362,45 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  // -- Chat handlers -----------------------------------------------------
+
+  handleChat(conn: Connection, text: string) {
+    const state = this.room.gameState;
+    if (!state) return;
+
+    const player = state.players.find((p) => p.id === conn.id);
+    if (!player) return;
+
+    const sanitized = text.trim().slice(0, 500);
+    if (!sanitized) return;
+
+    const chatMsg: ChatMessage = {
+      id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      senderId: player.id,
+      senderName: player.name,
+      text: sanitized,
+      timestamp: Date.now(),
+      isBotReasoning: false,
+      turnNumber: state.turnNumber,
+    };
+
+    state.chat.push(chatMsg);
+    if (state.chat.length > 200) {
+      state.chat = state.chat.slice(-200);
+    }
+
+    this.broadcastChat(chatMsg);
+    this.saveState();
+  }
+
+  broadcastChat(chatMsg: ChatMessage) {
+    const msg: ServerMessage = { type: "chat", message: chatMsg };
+    const json = JSON.stringify(msg);
+    for (const conn of this.getConnections()) {
+      conn.send(json);
+    }
+  }
+
   // -- Bot handlers -----------------------------------------------------
 
   handleAddBot(conn: Connection) {
@@ -446,8 +492,34 @@ export class BombBustersServer extends Server<Env> {
     const botId = currentPlayer.id;
     const apiKey = (this.env as Env).ZHIPU_API_KEY;
 
-    const botAction = await getBotAction(state, botId, apiKey || "");
+    // Build chat context: messages since this bot's last action
+    const lastTurn = this.room.botLastActionTurn[botId] ?? 0;
+    const chatContext = state.chat
+      .filter((m) => m.turnNumber > lastTurn)
+      .map((m) => `[${m.senderName}]: ${m.text}`)
+      .join("\n");
 
+    const botResult = await getBotAction(state, botId, apiKey || "", chatContext);
+
+    // Broadcast bot reasoning as a chat message
+    if (botResult.reasoning) {
+      const reasoningMsg: ChatMessage = {
+        id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        senderId: botId,
+        senderName: currentPlayer.name,
+        text: botResult.reasoning,
+        timestamp: Date.now(),
+        isBotReasoning: true,
+        turnNumber: state.turnNumber,
+      };
+      state.chat.push(reasoningMsg);
+      if (state.chat.length > 200) {
+        state.chat = state.chat.slice(-200);
+      }
+      this.broadcastChat(reasoningMsg);
+    }
+
+    const botAction = botResult.action;
     let action: import("@bomb-busters/shared").GameAction;
     switch (botAction.action) {
       case "dualCut": {
@@ -490,6 +562,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       }
     }
+
+    // Track this bot's last action turn for context windowing
+    this.room.botLastActionTurn[botId] = state.turnNumber;
 
     this.saveState();
     this.broadcastAction(action);
