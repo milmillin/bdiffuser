@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
+import type { ClientGameState, ClientMessage, VisibleTile } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
@@ -25,29 +25,10 @@ export function GameBoard({
     tileIndex: number;
   } | null>(null);
 
-  if (gameState.phase === "setup_info_tokens") {
-    return (
-      <div className="min-h-screen flex flex-col" data-testid="game-board" data-phase="setup_info_tokens">
-        <Header gameState={gameState} playerId={playerId} />
-        <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6" data-testid="info-token-phase">
-          <h2 className="text-xl font-bold text-yellow-400">
-            Place an Info Token
-          </h2>
-          <p className="text-gray-400 text-center max-w-md">
-            Choose one of your blue wires and place an Info token pointing to it.
-            This gives your teammates information about your hand.
-          </p>
-          {me && (
-            <InfoTokenSetup
-              player={me}
-              send={send}
-              alreadyPlaced={me.infoTokens.length > 0}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Info token setup tile selection state
+  const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
+
+  const isSetup = gameState.phase === "setup_info_tokens";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ perspective: "1200px" }} data-testid="game-board" data-phase="playing">
@@ -63,7 +44,7 @@ export function GameBoard({
               isOpponent={true}
               isCurrentTurn={opp.id === currentPlayer?.id}
               onTileClick={
-                isMyTurn && gameState.phase === "playing"
+                !isSetup && isMyTurn && gameState.phase === "playing"
                   ? (tileIndex) =>
                       setSelectedTarget({ playerId: opp.id, tileIndex })
                   : undefined
@@ -89,10 +70,37 @@ export function GameBoard({
               player={me}
               isOpponent={false}
               isCurrentTurn={me.id === currentPlayer?.id}
+              onTileClick={
+                isSetup && isMyTurn
+                  ? (tileIndex) => setSelectedInfoTile(tileIndex)
+                  : undefined
+              }
+              selectedTileIndex={isSetup ? (selectedInfoTile ?? undefined) : undefined}
+              tileSelectableFilter={
+                isSetup && isMyTurn
+                  ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
+                  : undefined
+              }
             />
           )}
 
-          {/* Actions */}
+          {/* Setup phase: info token placement */}
+          {isSetup && isMyTurn && me && (
+            <InfoTokenSetup
+              player={me}
+              selectedTileIndex={selectedInfoTile}
+              send={send}
+              onPlaced={() => setSelectedInfoTile(null)}
+            />
+          )}
+
+          {isSetup && !isMyTurn && (
+            <div className="text-center py-2 text-gray-400">
+              Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span> to place their info token...
+            </div>
+          )}
+
+          {/* Playing phase: actions */}
           {isMyTurn && gameState.phase === "playing" && me && (
             <ActionPanel
               gameState={gameState}

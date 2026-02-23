@@ -7,12 +7,14 @@ export function PlayerStand({
   isCurrentTurn,
   onTileClick,
   selectedTileIndex,
+  tileSelectableFilter,
 }: {
   player: ClientPlayer;
   isOpponent: boolean;
   isCurrentTurn: boolean;
   onTileClick?: (flatIndex: number) => void;
   selectedTileIndex?: number;
+  tileSelectableFilter?: (tile: VisibleTile) => boolean;
 }) {
   return (
     <div
@@ -83,7 +85,7 @@ export function PlayerStand({
                 tile={tile}
                 isOpponent={isOpponent}
                 isSmall={isOpponent}
-                isSelectable={!!onTileClick && !tile.cut}
+                isSelectable={tileSelectableFilter ? tileSelectableFilter(tile) : !!onTileClick && !tile.cut}
                 isSelected={selectedTileIndex === idx}
                 testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}

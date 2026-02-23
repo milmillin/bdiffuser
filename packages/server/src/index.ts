@@ -259,6 +259,12 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "setup_info_tokens") return;
 
+    // Enforce turn order during setup
+    if (state.players[state.currentPlayerIndex].id !== conn.id) {
+      this.sendMsg(conn, { type: "error", message: "It's not your turn to place an info token" });
+      return;
+    }
+
     const player = state.players.find((p) => p.id === conn.id);
     if (!player) return;
 
@@ -273,6 +279,9 @@ export class BombBustersServer extends Server<Env> {
       position: tileIndex,
       isYellow: false,
     });
+
+    // Advance to next player for setup
+    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
 
     // Check if all players have placed tokens
     const allPlaced = state.players.every((p) => p.infoTokens.length > 0);
