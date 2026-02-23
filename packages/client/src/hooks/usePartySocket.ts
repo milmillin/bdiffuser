@@ -25,7 +25,10 @@ interface UsePartySocketReturn {
   playerId: string | null;
 }
 
-export function usePartySocket(roomId: string): UsePartySocketReturn {
+export function usePartySocket(
+  roomId: string,
+  options?: { id?: string; onIdReady?: (id: string) => void },
+): UsePartySocketReturn {
   const socketRef = useRef<PartySocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
@@ -36,11 +39,16 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
   const [errorCode, setErrorCode] = useState<ActionLegalityCode | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
+  // Stable refs so the effect doesn't re-run when callbacks change
+  const onIdReadyRef = useRef(options?.onIdReady);
+  onIdReadyRef.current = options?.onIdReady;
+
   useEffect(() => {
     const socket = new PartySocket({
       host: PARTYKIT_HOST,
       room: roomId,
       party: "bomb-busters-server",
+      id: options?.id,
     });
 
     socketRef.current = socket;
@@ -48,6 +56,7 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
     socket.addEventListener("open", () => {
       setConnected(true);
       setPlayerId(socket.id);
+      onIdReadyRef.current?.(socket.id);
     });
 
     socket.addEventListener("close", () => {
@@ -98,7 +107,7 @@ export function usePartySocket(roomId: string): UsePartySocketReturn {
       socket.close();
       socketRef.current = null;
     };
-  }, [roomId]);
+  }, [roomId, options?.id]);
 
   const send = useCallback((msg: ClientMessage) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {

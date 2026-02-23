@@ -198,49 +198,105 @@ export class BombBustersServer extends Server<Env> {
     }
   }
 
+  /**
+   * Replace a player's old ID with a new one across all room state references.
+   * Used when a disconnected player reconnects with a different connection ID.
+   */
+  private replacePlayerId(oldId: string, newId: string) {
+    // Update player object
+    const player = this.room.players.find((p) => p.id === oldId);
+    if (player) player.id = newId;
+
+    // Update hostId
+    if (this.room.hostId === oldId) {
+      this.room.hostId = newId;
+    }
+
+    // Update game state references
+    const gs = this.room.gameState;
+    if (gs) {
+      // Update player ID in gameState.players
+      const gsPlayer = gs.players.find((p) => p.id === oldId);
+      if (gsPlayer) gsPlayer.id = newId;
+
+      // Update pendingForcedAction references
+      if (gs.pendingForcedAction) {
+        if (gs.pendingForcedAction.captainId === oldId) {
+          gs.pendingForcedAction.captainId = newId;
+        }
+        if (gs.pendingForcedAction.lastPlayerId === oldId) {
+          gs.pendingForcedAction.lastPlayerId = newId;
+        }
+      }
+    }
+  }
+
   handleJoin(conn: Connection, name: string) {
     if (this.room.gameState) {
-      // Reconnection during game
-      const existing = this.room.players.find((p) => p.id === conn.id);
+      // Reconnection during game — try exact ID match first
+      let existing = this.room.players.find((p) => p.id === conn.id);
       if (existing) {
         existing.connected = true;
         existing.name = name;
         this.broadcastGameState();
-      } else {
-        // Late joiner becomes a spectator — send omniscient view
-        const spectatorView = filterStateForSpectator(this.room.gameState);
-        this.sendMsg(conn, { type: "gameState", state: spectatorView });
+        return;
       }
+
+      // Name-based fallback: find a disconnected player with the same name
+      const byName = this.room.players.find(
+        (p) => !p.isBot && !p.connected && p.name === name,
+      );
+      if (byName) {
+        this.replacePlayerId(byName.id, conn.id);
+        byName.connected = true;
+        this.saveState();
+        this.broadcastGameState();
+        return;
+      }
+
+      // Late joiner becomes a spectator — send omniscient view
+      const spectatorView = filterStateForSpectator(this.room.gameState);
+      this.sendMsg(conn, { type: "gameState", state: spectatorView });
       return;
     }
 
-    // Check if player already exists (reconnection in lobby)
+    // Check if player already exists (reconnection in lobby — exact ID)
     let player = this.room.players.find((p) => p.id === conn.id);
     if (player) {
       player.name = name;
       player.connected = true;
     } else {
-      if (this.room.players.length >= 5) {
-        this.sendMsg(conn, { type: "error", message: "Room is full (max 5 players)" });
-        return;
-      }
+      // Name-based fallback in lobby: find a disconnected player with the same name
+      const byName = this.room.players.find(
+        (p) => !p.isBot && !p.connected && p.name === name,
+      );
+      if (byName) {
+        this.replacePlayerId(byName.id, conn.id);
+        byName.connected = true;
+        player = byName;
+      } else {
+        if (this.room.players.length >= 5) {
+          this.sendMsg(conn, { type: "error", message: "Room is full (max 5 players)" });
+          return;
+        }
 
-      player = {
-        id: conn.id,
-        name,
-        character: null,
-        isCaptain: false,
-        hand: [],
-        infoTokens: [],
-        characterUsed: false,
-        connected: true,
-        isBot: false,
-      };
-      this.room.players.push(player);
+        player = {
+          id: conn.id,
+          name,
+          character: null,
+          isCaptain: false,
+          hand: [],
+          infoTokens: [],
+          characterUsed: false,
+          connected: true,
+          isBot: false,
+        };
+        this.room.players.push(player);
 
-      // First player is host
-      if (!this.room.hostId) {
-        this.room.hostId = conn.id;
+        // First player is host
+        if (!this.room.hostId) {
+          this.room.hostId = conn.id;
+        }
       }
     }
 

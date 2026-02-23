@@ -1,18 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
 
+const SESSION_KEY_PREFIX = "bb-session-";
+
+interface StoredSession {
+  playerId: string;
+  playerName: string;
+}
+
+function getSession(roomId: string): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(`${SESSION_KEY_PREFIX}${roomId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.playerId === "string" && typeof parsed.playerName === "string") {
+      return parsed as StoredSession;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveSession(roomId: string, session: StoredSession) {
+  try {
+    localStorage.setItem(`${SESSION_KEY_PREFIX}${roomId}`, JSON.stringify(session));
+  } catch { /* ignore */ }
+}
+
+function getRoomFromHash(): string | null {
+  const hash = window.location.hash.replace(/^#/, "").trim();
+  return hash || null;
+}
+
 export default function App() {
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(getRoomFromHash);
   const [playerName, setPlayerName] = useState("");
+
+  // Pre-fill name from stored session when loading with a hash
+  const [initialSession] = useState(() => {
+    const hashRoom = getRoomFromHash();
+    return hashRoom ? getSession(hashRoom) : null;
+  });
+
+  const handleJoin = useCallback((room: string, name: string) => {
+    setRoomId(room);
+    setPlayerName(name);
+    window.location.hash = room;
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    setRoomId(null);
+    setPlayerName("");
+    window.location.hash = "";
+  }, []);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const onPopState = () => {
+      const hashRoom = getRoomFromHash();
+      if (!hashRoom) {
+        setRoomId(null);
+        setPlayerName("");
+      } else if (hashRoom !== roomId) {
+        // User navigated to a different room hash — show join screen for it
+        setRoomId(null);
+        setPlayerName("");
+        // Let the next render pick up the hash via JoinScreen's initial state
+        // We don't auto-join because we need the player name
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [roomId]);
 
   return (
     <>
       {!roomId
-        ? <JoinScreen onJoin={(room, name) => { setRoomId(room); setPlayerName(name); }} />
-        : <GameRoom roomId={roomId} playerName={playerName} onLeave={() => setRoomId(null)} />
+        ? <JoinScreen
+            onJoin={handleJoin}
+            initialRoom={getRoomFromHash() ?? ""}
+            initialName={initialSession?.playerName ?? ""}
+          />
+        : <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />
       }
       <div
         data-testid="app-version"
@@ -24,9 +95,17 @@ export default function App() {
   );
 }
 
-function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void }) {
-  const [name, setName] = useState("");
-  const [room, setRoom] = useState("");
+function JoinScreen({
+  onJoin,
+  initialRoom,
+  initialName,
+}: {
+  onJoin: (roomId: string, name: string) => void;
+  initialRoom: string;
+  initialName: string;
+}) {
+  const [name, setName] = useState(initialName);
+  const [room, setRoom] = useState(initialRoom);
 
   const handleCreate = () => {
     if (!name.trim()) return;
@@ -112,8 +191,16 @@ function GameRoom({
   playerName: string;
   onLeave: () => void;
 }) {
+  // Restore stored playerId for reconnection
+  const storedSession = getSession(roomId);
+  const stableId = storedSession?.playerId;
+
+  const handleIdReady = useCallback((id: string) => {
+    saveSession(roomId, { playerId: id, playerName });
+  }, [roomId, playerName]);
+
   const { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId } =
-    usePartySocket(roomId);
+    usePartySocket(roomId, { id: stableId, onIdReady: handleIdReady });
   const [joined, setJoined] = useState(false);
 
   // Auto-join when connected
