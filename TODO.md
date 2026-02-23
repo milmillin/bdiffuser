@@ -397,7 +397,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_56`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Done: card front/back OCR matched cleanly; title corrected to The Rebel Sons and setup/rule text aligned to card wording in GAME_RULES.md`).
 - [x] `mission_57`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Verified front/back OCR against source images; no text changes required, `GAME_RULES.md` already matched.`).
 - [x] `mission_58`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — source front/back card text already matches existing GAME_RULES.md entry`).
-- [ ] `mission_59`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_59`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Front/back OCR verified from source images; existing GAME_RULES.md text already matches, no changes needed.`).
 - [ ] `mission_60`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_61`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `mission_62`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
