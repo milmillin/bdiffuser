@@ -65,7 +65,7 @@ function JoinScreen({ onJoin }: { onJoin: (roomId: string, name: string) => void
 
           <button
             onClick={handleCreate}
-            disabled={!name.trim()}
+            disabled={!name.trim() || !!room.trim()}
             data-testid="create-room"
             className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
           >
