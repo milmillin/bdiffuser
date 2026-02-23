@@ -14,7 +14,7 @@ import type {
 import { wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
-import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
+import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
 import {
   validateDualCutWithHooks,
   validateDualCutDoubleDetectorWithHooks,
@@ -103,6 +103,10 @@ export class BombBustersServer extends Server<Env> {
         player.connected = true;
         const filtered = filterStateForPlayer(this.room.gameState, connection.id);
         this.sendMsg(connection, { type: "gameState", state: filtered });
+      } else {
+        // Spectator: not in players list, send omniscient view
+        const spectatorView = filterStateForSpectator(this.room.gameState);
+        this.sendMsg(connection, { type: "gameState", state: spectatorView });
       }
     } else {
       // In lobby
@@ -130,6 +134,16 @@ export class BombBustersServer extends Server<Env> {
     } catch (e) {
       console.error("Failed to parse client message:", e);
       this.sendMsg(connection, { type: "error", message: "Invalid message format" });
+      return;
+    }
+
+    // Block spectators from performing game actions
+    if (
+      msg.type !== "join" &&
+      this.room.gameState &&
+      !this.room.players.some((p) => p.id === connection.id)
+    ) {
+      this.sendMsg(connection, { type: "error", message: "Spectators cannot perform actions" });
       return;
     }
 
@@ -190,7 +204,9 @@ export class BombBustersServer extends Server<Env> {
         existing.name = name;
         this.broadcastGameState();
       } else {
-        this.sendMsg(conn, { type: "error", message: "Game already in progress" });
+        // Late joiner becomes a spectator — send omniscient view
+        const spectatorView = filterStateForSpectator(this.room.gameState);
+        this.sendMsg(conn, { type: "gameState", state: spectatorView });
       }
       return;
     }
@@ -965,9 +981,20 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state) return;
 
+    const playerIds = new Set(this.room.players.map((p) => p.id));
+    let spectatorView: ReturnType<typeof filterStateForSpectator> | null = null;
+
     for (const conn of this.getConnections()) {
-      const filtered = filterStateForPlayer(state, conn.id);
-      this.sendMsg(conn, { type: "gameState", state: filtered });
+      if (playerIds.has(conn.id)) {
+        const filtered = filterStateForPlayer(state, conn.id);
+        this.sendMsg(conn, { type: "gameState", state: filtered });
+      } else {
+        // Spectator — compute once, reuse for all spectator connections
+        if (!spectatorView) {
+          spectatorView = filterStateForSpectator(state);
+        }
+        this.sendMsg(conn, { type: "gameState", state: spectatorView });
+      }
     }
   }
 

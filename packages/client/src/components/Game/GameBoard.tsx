@@ -742,6 +742,14 @@ function Header({
         <span className="text-sm text-gray-400" data-testid="mission-label">
           Mission #{gameState.mission}
         </span>
+        <code className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono tracking-wider" data-testid="room-code">
+          {gameState.roomId}
+        </code>
+        {gameState.isSpectator && (
+          <span className="text-xs font-bold bg-purple-600/80 text-white px-2 py-0.5 rounded" data-testid="spectator-badge">
+            SPECTATOR
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-4 text-sm">
@@ -767,7 +775,7 @@ function Header({
           </span>
         </div>
         <div className="text-gray-400">
-          {me?.name} {me?.isCaptain ? "(Captain)" : ""}
+          {gameState.isSpectator ? "Spectator" : <>{me?.name} {me?.isCaptain ? "(Captain)" : ""}</>}
         </div>
         <button
           type="button"

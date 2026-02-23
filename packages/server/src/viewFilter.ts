@@ -79,6 +79,58 @@ function filterLog(log: GameLogEntry[]): GameLogEntry[] {
   );
 }
 
+/**
+ * Filter game state for a spectator (not a player).
+ * Spectators see all tiles fully visible but cannot act.
+ */
+export function filterStateForSpectator(state: GameState): ClientGameState {
+  return {
+    phase: state.phase,
+    roomId: state.roomId,
+    playerId: "__spectator__",
+    isSpectator: true,
+    players: state.players.map(filterPlayerFullyVisible),
+    board: filterBoard(state.board),
+    currentPlayerIndex: state.currentPlayerIndex,
+    turnNumber: state.turnNumber,
+    mission: state.mission,
+    result: state.result,
+    log: filterLog(state.log),
+    chat: state.chat,
+    ...(state.campaign
+      ? { campaign: filterCampaignState(state.campaign, "__spectator__") }
+      : {}),
+    ...(state.pendingForcedAction
+      ? { pendingForcedAction: state.pendingForcedAction }
+      : {}),
+    ...(state.timerDeadline != null
+      ? { timerDeadline: state.timerDeadline }
+      : {}),
+  };
+}
+
+function filterPlayerFullyVisible(player: Player): ClientPlayer {
+  return {
+    id: player.id,
+    name: player.name,
+    character: player.character,
+    isCaptain: player.isCaptain,
+    hand: player.hand.map((tile) => ({
+      id: tile.id,
+      cut: tile.cut,
+      color: tile.color,
+      gameValue: tile.gameValue,
+      sortValue: tile.sortValue,
+      image: tile.image,
+    })),
+    infoTokens: player.infoTokens,
+    characterUsed: player.characterUsed,
+    connected: player.connected,
+    isBot: player.isBot,
+    remainingTiles: player.hand.filter((t) => !t.cut).length,
+  };
+}
+
 function filterPlayer(player: Player, viewerId: string): ClientPlayer {
   const isOwn = player.id === viewerId;
   return {

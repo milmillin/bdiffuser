@@ -142,7 +142,7 @@ function GameRoom({
       )}
 
       {gameState && (
-        <GameBoard gameState={gameState} send={send} playerId={playerId!} chatMessages={chatMessages} onPlayAgain={onLeave} />
+        <GameBoard gameState={gameState} send={send} playerId={gameState.playerId} chatMessages={chatMessages} onPlayAgain={onLeave} />
       )}
 
       {lobbyState && !gameState && (

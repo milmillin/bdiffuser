@@ -393,6 +393,7 @@ export interface ClientGameState {
   phase: GamePhase;
   roomId: string;
   playerId: string;
+  isSpectator?: boolean;
   players: ClientPlayer[];
   board: BoardState;
   currentPlayerIndex: number;
