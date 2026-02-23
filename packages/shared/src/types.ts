@@ -112,7 +112,7 @@ export type UseEquipmentPayload =
       targetTileIndices: number[];
       guessValue: number;
     }
-  | { kind: "post_it"; value: number; tileIndex: number }
+  | { kind: "post_it"; tileIndex: number }
   | { kind: "super_detector"; targetPlayerId: string; guessValue: number }
   | { kind: "rewinder" }
   | { kind: "emergency_batteries"; playerIds: string[] }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   BaseEquipmentId,
   ClientGameState,
@@ -7,6 +7,10 @@ import type {
   UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import { EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
+import {
+  getMission9SequenceGate,
+  isMission9BlockedCutValue,
+} from "./actionPanelMissionRules.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -37,6 +41,7 @@ export function ActionPanel({
   selectedGuessTile,
   onClearTarget,
   onCutConfirmed,
+  onEnterPostItMode,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
@@ -46,6 +51,7 @@ export function ActionPanel({
   selectedGuessTile: number | null;
   onClearTarget: () => void;
   onCutConfirmed: () => void;
+  onEnterPostItMode?: () => void;
 }) {
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
@@ -57,10 +63,13 @@ export function ActionPanel({
 
   // Check if solo cut is available (all remaining copies in my hand)
   const soloValues = getSoloCutValues(gameState, playerId);
+  const mission9HasYellowSoloValue = soloValues.includes("YELLOW");
 
   // Check if reveal reds is available
   const canRevealReds = checkCanRevealReds(gameState, playerId);
   const forceRevealReds = isMyTurn && canRevealReds;
+  const mission11RevealBlockedHint =
+    isMyTurn && gameState.mission === 11 && !canRevealReds;
 
   const availableEquipment = gameState.board.equipment.filter(
     (
@@ -89,9 +98,28 @@ export function ActionPanel({
 
   const guessValue =
     selectedGuessTile != null ? me.hand[selectedGuessTile]?.gameValue : null;
+  const mission9Gate = getMission9SequenceGate(gameState);
+  const mission9ActiveValue = mission9Gate?.activeValue;
+  const mission9RequiredCuts = mission9Gate?.requiredCuts ?? 2;
+  const mission9ActiveProgress = mission9Gate?.activeProgress;
+  const isMission9BlockedValue = (value: number | "YELLOW"): boolean =>
+    isMission9BlockedCutValue(gameState, value);
+  const mission9DualCutBlocked =
+    guessValue != null &&
+    isMission9BlockedCutValue(gameState, guessValue);
+
+  useEffect(() => {
+    if (!(gameState.mission === 9 && typeof mission9ActiveValue === "number")) {
+      return;
+    }
+    setSelectedSoloValue((prev) =>
+      typeof prev === "number" && prev !== mission9ActiveValue ? null : prev,
+    );
+  }, [mission9ActiveValue, gameState.mission]);
 
   const handleDualCut = () => {
     if (!isMyTurn || !selectedTarget || guessValue == null) return;
+    if (mission9DualCutBlocked) return;
     send({
       type: "dualCut",
       targetPlayerId: selectedTarget.playerId,
@@ -102,6 +130,10 @@ export function ActionPanel({
   };
 
   const useEquipment = (equipmentId: BaseEquipmentId) => {
+    if (equipmentId === "post_it") {
+      onEnterPostItMode?.();
+      return;
+    }
     const payload = buildEquipmentPayload(gameState, playerId, equipmentId);
     if (!payload) return;
     send({
@@ -125,6 +157,37 @@ export function ActionPanel({
         <p className="text-sm text-amber-300">
           You must reveal your remaining red wires before taking other actions.
         </p>
+      )}
+
+      {mission11RevealBlockedHint && (
+        <p className="text-xs text-sky-300" data-testid="mission11-reveal-hint">
+          Mission 11: Reveal Reds is only legal when all your remaining wires match the hidden red-like value.
+        </p>
+      )}
+
+      {gameState.mission === 9 && typeof mission9ActiveValue === "number" && (
+        <div
+          className="rounded-lg border border-emerald-500/40 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100 space-y-1"
+          data-testid="mission9-action-reminder"
+        >
+          <div className="font-bold uppercase tracking-wide text-emerald-200">
+            Mission 9 Sequence Action Gate
+          </div>
+          <div>
+            Active value: <span className="font-semibold">{mission9ActiveValue}</span> (
+            {mission9ActiveProgress}/{mission9RequiredCuts} cuts).
+          </div>
+          {mission9DualCutBlocked && (
+            <div className="text-amber-200">
+              Current guess is blocked by sequence priority. Choose value {mission9ActiveValue}.
+            </div>
+          )}
+          {mission9HasYellowSoloValue && (
+            <div className="text-emerald-200/90">
+              Yellow cuts are not restricted by sequence priority.
+            </div>
+          )}
+        </div>
       )}
 
       {/* Dual Cut */}
@@ -157,10 +220,17 @@ export function ActionPanel({
               {guessValue != null ? (
                 <button
                   onClick={handleDualCut}
+                  disabled={mission9DualCutBlocked}
                   data-testid="dual-cut-submit"
-                  className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded font-bold text-sm transition-colors"
+                  className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+                    mission9DualCutBlocked
+                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
                 >
-                  Cut! (Guess: {String(guessValue)})
+                  {mission9DualCutBlocked
+                    ? `Cut blocked (need ${mission9ActiveValue})`
+                    : `Cut! (Guess: ${String(guessValue)})`}
                 </button>
               ) : (
                 <span className="text-sm text-gray-400">
@@ -179,23 +249,29 @@ export function ActionPanel({
             Solo Cut
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {soloValues.map((v) => (
-              <button
-                key={String(v)}
-                onClick={() =>
-                  setSelectedSoloValue(selectedSoloValue === v ? null : v)
-                }
-                data-testid={`solo-cut-${String(v).toLowerCase()}`}
-                className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
-                  selectedSoloValue === v
-                    ? "bg-yellow-500 text-black"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-              >
-                {String(v)}
-              </button>
-            ))}
-            {selectedSoloValue != null && (
+            {soloValues.map((v) => {
+              const blockedBySequence = isMission9BlockedValue(v);
+              return (
+                <button
+                  key={String(v)}
+                  onClick={() =>
+                    setSelectedSoloValue(selectedSoloValue === v ? null : v)
+                  }
+                  disabled={blockedBySequence}
+                  data-testid={`solo-cut-${String(v).toLowerCase()}`}
+                  className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
+                    blockedBySequence
+                      ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      : selectedSoloValue === v
+                        ? "bg-yellow-500 text-black"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {String(v)}
+                </button>
+              );
+            })}
+            {selectedSoloValue != null && !isMission9BlockedValue(selectedSoloValue) && (
               <button
                 onClick={() => {
                   send({ type: "soloCut", value: selectedSoloValue });
@@ -343,20 +419,8 @@ function buildEquipmentPayload(
       if (value == null) return null;
       return { kind: "general_radar", value };
     }
-    case "post_it": {
-      const tileIndex = parsePromptIndex(
-        `Post-it: choose your blue wire index (0-${me.hand.length - 1}):`,
-        0,
-        Math.max(0, me.hand.length - 1),
-      );
-      if (tileIndex == null) return null;
-      const tile = me.hand[tileIndex];
-      if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") {
-        window.alert("Post-it requires one of your uncut blue wires.");
-        return null;
-      }
-      return { kind: "post_it", tileIndex, value: tile.gameValue };
-    }
+    case "post_it":
+      return null;
     case "label_eq":
     case "label_neq": {
       const tileIndexA = parsePromptIndex(

@@ -12,6 +12,32 @@ import { ActionLog } from "./ActionLog.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
 import gameRulesMarkdown from "../../../../../GAME_RULES.md?raw";
 
+type UnknownForcedAction = {
+  kind: string;
+  captainId?: string;
+};
+
+const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
+const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
+  FORCED_ACTION_CHOOSE_NEXT_PLAYER,
+]);
+
+function getUnknownForcedAction(gameState: ClientGameState): UnknownForcedAction | null {
+  const raw = (gameState as { pendingForcedAction?: unknown }).pendingForcedAction;
+  if (!raw || typeof raw !== "object") return null;
+
+  const candidate = raw as { kind?: unknown; captainId?: unknown };
+  if (typeof candidate.kind !== "string") return null;
+  if (HANDLED_FORCED_ACTION_KINDS.has(candidate.kind)) return null;
+
+  return {
+    kind: candidate.kind,
+    ...(typeof candidate.captainId === "string"
+      ? { captainId: candidate.captainId }
+      : {}),
+  };
+}
+
 export function GameBoard({
   gameState,
   send,
@@ -81,6 +107,10 @@ export function GameBoard({
     setDdGuessTile(null);
   }, []);
 
+  // Post-it selection mode state
+  const [postItMode, setPostItMode] = useState(false);
+  const cancelPostIt = useCallback(() => setPostItMode(false), []);
+
   const isSetup = gameState.phase === "setup_info_tokens";
   const requiresSetupToken =
     !(
@@ -91,9 +121,20 @@ export function GameBoard({
     );
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName =
-    gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
+    gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
     gameState.pendingForcedAction.lastPlayerId
       ? gameState.players.find((p) => p.id === gameState.pendingForcedAction?.lastPlayerId)?.name
+      : undefined;
+  const pendingForcedAction = gameState.pendingForcedAction;
+  const unknownForcedAction = getUnknownForcedAction(gameState);
+  const isUnknownForcedActionCaptain =
+    unknownForcedAction?.captainId != null &&
+    unknownForcedAction.captainId === playerId;
+  const forcedActionCaptainId =
+    unknownForcedAction?.captainId ?? pendingForcedAction?.captainId;
+  const forcedActionCaptainName =
+    forcedActionCaptainId
+      ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
       : undefined;
   const activeGlobalConstraints =
     gameState.campaign?.constraints?.global?.filter((constraint) => constraint.active) ?? [];
@@ -152,6 +193,18 @@ export function GameBoard({
       setSelectedInfoTile(null);
     }
   }, [requiresSetupToken]);
+
+  useEffect(() => {
+    if (!unknownForcedAction) return;
+    console.warn(
+      `[GameBoard] Unsupported forced action kind "${unknownForcedAction.kind}" is pending; fallback UI is active.`,
+    );
+  }, [unknownForcedAction?.kind]);
+
+  // Cancel post-it mode when turn or phase changes
+  useEffect(() => {
+    setPostItMode(false);
+  }, [gameState.turnNumber, gameState.phase]);
 
   return (
     <>
@@ -242,39 +295,55 @@ export function GameBoard({
                       ? (requiresSetupToken
                         ? (tileIndex) => setSelectedInfoTile(tileIndex)
                         : undefined)
-                      : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
+                      : postItMode && isMyTurn && gameState.phase === "playing"
                         ? (tileIndex) => {
                             const tile = me.hand[tileIndex];
                             if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") return;
-                            setDdGuessTile(tileIndex);
+                            if (me.infoTokens.some((t) => t.position === tileIndex)) return;
+                            send({
+                              type: "useEquipment",
+                              equipmentId: "post_it",
+                              payload: { kind: "post_it", tileIndex },
+                            });
+                            setPostItMode(false);
                           }
-                        : selectedTarget && isMyTurn && gameState.phase === "playing"
+                        : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
-                              if (!tile || tile.cut || tile.color === "red") return;
-                              setSelectedGuessTile(tileIndex);
+                              if (!tile || tile.cut || tile.color !== "blue" || typeof tile.gameValue !== "number") return;
+                              setDdGuessTile(tileIndex);
                             }
-                          : undefined
+                          : selectedTarget && isMyTurn && gameState.phase === "playing"
+                            ? (tileIndex) => {
+                                const tile = me.hand[tileIndex];
+                                if (!tile || tile.cut || tile.color === "red") return;
+                                setSelectedGuessTile(tileIndex);
+                              }
+                            : undefined
                   }
                   selectedTileIndex={
                     isSetup
                       ? (requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined)
-                      : doubleDetectorMode && isMyTurn
-                        ? (ddGuessTile ?? undefined)
-                        : selectedTarget && isMyTurn && gameState.phase === "playing"
-                          ? (selectedGuessTile ?? undefined)
-                          : undefined
+                      : postItMode
+                        ? undefined
+                        : doubleDetectorMode && isMyTurn
+                          ? (ddGuessTile ?? undefined)
+                          : selectedTarget && isMyTurn && gameState.phase === "playing"
+                            ? (selectedGuessTile ?? undefined)
+                            : undefined
                   }
                   tileSelectableFilter={
                     isSetup && isMyTurn
                       ? (requiresSetupToken
                         ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
                         : undefined)
-                      : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
-                        ? (tile: VisibleTile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
-                        : selectedTarget && isMyTurn && gameState.phase === "playing"
-                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
-                          : undefined
+                      : postItMode && isMyTurn
+                        ? (tile: VisibleTile, idx: number) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number" && !me.infoTokens.some((t) => t.position === idx)
+                        : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
+                          ? (tile: VisibleTile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
+                          : selectedTarget && isMyTurn && gameState.phase === "playing"
+                            ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                            : undefined
                   }
                 />
               )}
@@ -301,9 +370,11 @@ export function GameBoard({
                   <div className="font-bold uppercase tracking-wide text-sky-200">
                     Dynamic Turn Order
                   </div>
-                  {gameState.pendingForcedAction?.kind === "chooseNextPlayer" ? (
+                  {gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER ? (
                     <div className="text-sky-100/90">
-                      Captain is choosing the next active player
+                      {forcedActionCaptainName
+                        ? <>Captain <span className="font-semibold">{forcedActionCaptainName}</span> is choosing the next active player</>
+                        : <>Captain is choosing the next active player</>}
                       {previousPlayerName ? (
                         <> (previous: <span className="font-semibold">{previousPlayerName}</span>)</>
                       ) : null}
@@ -344,7 +415,7 @@ export function GameBoard({
 
               {/* Playing phase: forced action (captain chooses next player) */}
               {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
+                gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
                 gameState.pendingForcedAction.captainId === playerId &&
                 me && (
                 <ChooseNextPlayerPanel
@@ -356,11 +427,48 @@ export function GameBoard({
 
               {/* Playing phase: waiting for captain to choose (non-captain view) */}
               {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
+                gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
                 gameState.pendingForcedAction.captainId !== playerId && (
                 <div className="text-center py-2 text-gray-400" data-testid="waiting-captain">
-                  Waiting for the <span className="text-yellow-400 font-bold">Captain</span> to choose the next player...
+                  Waiting for{" "}
+                  <span className="text-yellow-400 font-bold">
+                    {forcedActionCaptainName ?? "the Captain"}
+                  </span>{" "}
+                  to choose the next player...
                 </div>
+              )}
+
+              {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
+              {gameState.phase === "playing" &&
+                unknownForcedAction && (
+                isUnknownForcedActionCaptain ? (
+                  <div
+                    className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-center text-amber-200 space-y-2"
+                    data-testid="forced-action-fallback-captain"
+                  >
+                    <p>
+                      You must resolve a mission-required action before normal turns continue.
+                    </p>
+                    <p className="text-xs text-amber-300/90">
+                      This client version does not support this forced action yet.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs font-bold transition-colors"
+                    >
+                      Reload Client
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-2 text-gray-400" data-testid="waiting-forced-action">
+                    Mission-required action is pending
+                    {forcedActionCaptainName ? (
+                      <> for <span className="text-yellow-400 font-bold">{forcedActionCaptainName}</span></>
+                    ) : null}
+                    .
+                  </div>
+                )
               )}
 
               {/* Double Detector mode panel */}
@@ -417,8 +525,30 @@ export function GameBoard({
                 </div>
               )}
 
+              {/* Post-it mode panel */}
+              {postItMode && isMyTurn && me && (
+                <div
+                  className="rounded-lg border border-emerald-600/60 bg-emerald-900/20 px-3 py-2 text-sm space-y-2"
+                  data-testid="post-it-mode-panel"
+                >
+                  <div className="font-bold text-emerald-400 uppercase tracking-wide text-xs">
+                    Post-it Mode
+                  </div>
+                  <div className="text-xs text-gray-300">
+                    Click one of your blue wires to place the Post-it info token.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelPostIt}
+                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
               {/* Playing phase: actions (including anytime equipment off-turn) */}
-              {showActionPanel && !doubleDetectorMode && me && (
+              {showActionPanel && !doubleDetectorMode && !postItMode && me && (
                 <ActionPanel
                   gameState={gameState}
                   send={send}
@@ -428,6 +558,12 @@ export function GameBoard({
                   selectedGuessTile={selectedGuessTile}
                   onClearTarget={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
                   onCutConfirmed={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
+                  onEnterPostItMode={() => {
+                    cancelDoubleDetector();
+                    setSelectedTarget(null);
+                    setSelectedGuessTile(null);
+                    setPostItMode(true);
+                  }}
                 />
               )}
 

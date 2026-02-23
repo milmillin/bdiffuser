@@ -20,7 +20,7 @@ export function PlayerStand({
   selectedTileIndex?: number;
   /** Multi-select support (e.g. Double Detector mode) */
   selectedTileIndices?: number[];
-  tileSelectableFilter?: (tile: VisibleTile) => boolean;
+  tileSelectableFilter?: (tile: VisibleTile, index: number) => boolean;
   onCharacterClick?: () => void;
 }) {
   return (
@@ -116,7 +116,7 @@ export function PlayerStand({
                 tile={tile}
                 isOpponent={isOpponent}
                 isSmall={isOpponent}
-                isSelectable={tileSelectableFilter ? tileSelectableFilter(tile) : !!onTileClick && !tile.cut}
+                isSelectable={tileSelectableFilter ? tileSelectableFilter(tile, idx) : !!onTileClick && !tile.cut}
                 isSelected={selectedTileIndex === idx || (selectedTileIndices?.includes(idx) ?? false)}
                 testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}

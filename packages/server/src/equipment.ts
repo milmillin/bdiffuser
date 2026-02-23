@@ -193,9 +193,6 @@ export function validateUseEquipment(
       }
       return null;
     case "post_it": {
-      if (!isIntegerInRange(payload.value, 1, 12)) {
-        return legalityError("EQUIPMENT_INVALID_PAYLOAD", "Info token value must be 1-12");
-      }
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) {
@@ -207,11 +204,8 @@ export function validateUseEquipment(
           "Post-it can only target your blue wires",
         );
       }
-      if (tile.gameValue !== payload.value) {
-        return legalityError(
-          "EQUIPMENT_RULE_VIOLATION",
-          "Post-it value must match the targeted blue wire",
-        );
+      if (actor.infoTokens.some((t) => t.position === payload.tileIndex)) {
+        return legalityError("EQUIPMENT_RULE_VIOLATION", "This wire already has an info token");
       }
       return null;
     }
@@ -485,12 +479,14 @@ export function executeUseEquipment(
       };
     }
     case "post_it": {
+      const tile = getTileByFlatIndex(actor, payload.tileIndex)!;
+      const value = tile.gameValue as number;
       actor.infoTokens.push({
-        value: payload.value,
+        value,
         position: payload.tileIndex,
         isYellow: false,
       });
-      addLog(state, actorId, "useEquipment", `used Post-it on wire ${payload.tileIndex} with value ${payload.value}`);
+      addLog(state, actorId, "useEquipment", `used Post-it on wire ${payload.tileIndex} with value ${value}`);
       return {
         type: "equipmentUsed",
         equipmentId,

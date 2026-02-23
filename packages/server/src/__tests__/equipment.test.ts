@@ -88,7 +88,7 @@ function buildValidPayload(equipmentId: BaseEquipmentId): UseEquipmentPayload {
         guessValue: 4,
       };
     case "post_it":
-      return { kind: "post_it", value: 4, tileIndex: 0 };
+      return { kind: "post_it", tileIndex: 0 };
     case "super_detector":
       return { kind: "super_detector", targetPlayerId: "teammate", guessValue: 4 };
     case "rewinder":
@@ -224,10 +224,32 @@ describe("equipment validation", () => {
     expect(error?.code).toBe("EQUIPMENT_LOCKED");
   });
 
-  it("rejects post-it when value does not match targeted blue wire", () => {
+  it("derives value from tile correctly during execution", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 7 })],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    executeUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 7, position: 0, isYellow: false },
+    ]);
+  });
+
+  it("rejects post-it on a wire that already has an info token", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", gameValue: 5 })],
+      infoTokens: [{ value: 5, position: 0, isYellow: false }],
     });
     const state = stateWithEquipment(
       [actor],
@@ -236,7 +258,6 @@ describe("equipment validation", () => {
 
     const error = validateUseEquipment(state, "actor", "post_it", {
       kind: "post_it",
-      value: 6,
       tileIndex: 0,
     });
 
@@ -712,7 +733,6 @@ describe("equipment execution", () => {
 
     const action = executeUseEquipment(state, "actor", "post_it", {
       kind: "post_it",
-      value: 4,
       tileIndex: 0,
     });
 
