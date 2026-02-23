@@ -211,7 +211,7 @@ Dependency: blocked by Phase 0C.
 
 - [ ] Implement token variants:
   - Standard numeric
-  - Even/Odd
+  - [x] Even/Odd
   - [x] `x1/x2/x3`
   - False-information
   - Absent-value

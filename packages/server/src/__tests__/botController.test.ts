@@ -50,7 +50,7 @@ describe("botPlaceInfoToken", () => {
     }
   });
 
-  it("mission 21: places parity setup token", () => {
+  it.each([21, 33] as const)("mission %i: places parity setup token", (mission) => {
     const bot = makePlayer({
       id: "bot",
       isBot: true,
@@ -61,7 +61,7 @@ describe("botPlaceInfoToken", () => {
       hand: [makeTile({ id: "t-8", color: "blue", gameValue: 8, sortValue: 8 })],
     });
     const state = makeGameState({
-      mission: 21,
+      mission,
       phase: "setup_info_tokens",
       players: [bot, teammate],
     });

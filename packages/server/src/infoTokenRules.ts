@@ -1,6 +1,6 @@
 import type { GameState, InfoToken, Player, WireValue } from "@bomb-busters/shared";
 
-const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21]);
+const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21, 33]);
 const COUNT_TOKEN_MISSIONS = new Set<number>([24]);
 
 function isParityTokenMission(state: Readonly<GameState>): boolean {
@@ -31,7 +31,7 @@ function countValueCopies(owner: Readonly<Player>, value: WireValue): number {
 
 /**
  * Apply mission-specific token variants while preserving legacy token shape.
- * Mission 21 converts numeric tokens to even/odd parity tokens.
+ * Missions 21 and 33 convert numeric tokens to even/odd parity tokens.
  * Mission 24 converts numeric/yellow tokens to x1/x2/x3 count hints.
  */
 export function applyMissionInfoTokenVariant(

@@ -291,6 +291,38 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
+  it("expert tier (mission 33): failed dual cut places even/odd token", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t3", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 33,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCut(state, "actor", "target", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(target.infoTokens).toEqual([
+      {
+        value: 0,
+        parity: "odd",
+        position: 0,
+        isYellow: false,
+      },
+    ]);
+  });
+
   it("mid-campaign tier (mission 24): failed dual cut places x1/x2/x3 count token", () => {
     const actor = makePlayer({
       id: "actor",
