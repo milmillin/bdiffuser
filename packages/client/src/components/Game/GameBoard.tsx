@@ -22,7 +22,7 @@ import {
   handleOpponentTileClick as _handleOpponentTileClick,
   handleOwnTileClickEquipment as _handleOwnTileClickEquipment,
 } from "./equipmentModeLogic.js";
-import gameRulesMarkdown from "../../../../../GAME_RULES.md?raw";
+import { GameRulesPopup } from "./GameRulesPopup/index.js";
 
 type UnknownForcedAction = {
   kind: string;
@@ -645,6 +645,7 @@ export function GameBoard({
       <GameRulesPopup
         isOpen={isRulesPopupOpen}
         onClose={() => setIsRulesPopupOpen(false)}
+        gameState={gameState}
       />
 
       {viewingCharacter && (
@@ -742,51 +743,3 @@ function Header({
   );
 }
 
-function GameRulesPopup({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/75 p-3 sm:p-6"
-      data-testid="rules-popup"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Game rules"
-    >
-      <div
-        className="mx-auto flex h-full max-h-[95vh] max-w-5xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
-          <div className="min-w-0">
-            <h2 className="text-sm font-black uppercase tracking-wide text-gray-100">
-              Game Rules
-            </h2>
-            <p className="text-xs text-gray-400">Source: GAME_RULES.md</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            data-testid="close-rules-popup"
-            className="rounded border border-gray-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200 transition-colors hover:bg-gray-800"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-          <pre className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-gray-200">
-            {gameRulesMarkdown}
-          </pre>
-        </div>
-      </div>
-    </div>
-  );
-}
