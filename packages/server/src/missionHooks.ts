@@ -95,7 +95,24 @@ export interface UnknownHookTelemetryEvent {
   timestamp: number;
 }
 
-export type TelemetrySink = (event: UnknownHookTelemetryEvent) => void;
+export type MissionFailureReason = "loss_red_wire" | "loss_detonator" | "loss_timer";
+
+export interface MissionFailureTelemetryEvent {
+  type: "mission_failure";
+  missionId: MissionId;
+  failureReason: MissionFailureReason;
+  turnNumber: number;
+  playerCount: number;
+  detonatorPosition: number;
+  detonatorMax: number;
+  actorId: string;
+  targetPlayerId: string | null;
+  timestamp: number;
+}
+
+export type TelemetryEvent = UnknownHookTelemetryEvent | MissionFailureTelemetryEvent;
+
+export type TelemetrySink = (event: TelemetryEvent) => void;
 
 let telemetrySink: TelemetrySink | null = null;
 
@@ -107,6 +124,26 @@ export function setTelemetrySink(sink: TelemetrySink): void {
 /** Remove the current telemetry sink. */
 export function clearTelemetrySink(): void {
   telemetrySink = null;
+}
+
+export function emitMissionFailureTelemetry(
+  state: GameState,
+  failureReason: MissionFailureReason,
+  actorId: string,
+  targetPlayerId?: string | null,
+): void {
+  telemetrySink?.({
+    type: "mission_failure",
+    missionId: state.mission,
+    failureReason,
+    turnNumber: state.turnNumber,
+    playerCount: state.players.length,
+    detonatorPosition: state.board.detonatorPosition,
+    detonatorMax: state.board.detonatorMax,
+    actorId,
+    targetPlayerId: targetPlayerId ?? null,
+    timestamp: Date.now(),
+  });
 }
 
 // ── Strict Unknown Hooks (dev/test hard-fail) ─────────────
@@ -722,6 +759,11 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
       // This blue wire is secretly red — immediate explosion.
       ctx.state.result = "loss_red_wire";
       ctx.state.phase = "finished";
+      const targetPlayerId =
+        ctx.action.type === "dualCut" && typeof ctx.action.targetPlayerId === "string"
+          ? ctx.action.targetPlayerId
+          : null;
+      emitMissionFailureTelemetry(ctx.state, "loss_red_wire", ctx.action.actorId, targetPlayerId);
       ctx.state.log.push({
         turn: ctx.state.turnNumber,
         playerId: ctx.action.actorId,

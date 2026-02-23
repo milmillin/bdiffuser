@@ -214,9 +214,19 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 - [ ] Ship M3 (missions 36-66 + 31/32/35) only when all M3 tests pass.
 
 ### Maintainability
-- [~] Split `missionSchema.ts` into modular files by domain or mission tier.
+- [x] Split `missionSchema.ts` into modular files by domain or mission tier.
   - [x] Extracted schema type/hook definitions into `missionSchemaTypes.ts`
   - [x] Extracted schema validation helpers into `missionSchemaValidation.ts`
+  - [x] Extracted wire-pool utility helpers into `missionSchemaUtils.ts`
+  - [x] Extracted mission builder DSL/helpers into `missionSchemaBuilders.ts`
+  - [x] Extracted training-tier mission registrations (missions 1-8) into `missionData/training.ts`
+  - [x] Extracted early-campaign mission registrations (missions 9-16) into `missionData/earlyCampaign.ts`
+  - [x] Extracted mid-campaign mission registrations (missions 17-24) into `missionData/midCampaign.ts`
+  - [x] Extracted late-campaign mission registrations (missions 25-32) into `missionData/lateCampaign.ts`
+  - [x] Extracted expert-campaign mission registrations (missions 33-40) into `missionData/expertCampaign.ts`
+  - [x] Extracted expansion-A mission registrations (missions 41-48) into `missionData/expansionA.ts`
+  - [x] Extracted expansion-B mission registrations (missions 49-57) into `missionData/expansionB.ts`
+  - [x] Extracted expansion-C mission registrations (missions 58-66) into `missionData/expansionC.ts`
 - [x] Add schema authoring docs with examples and invariants.
 - [x] Add generated mission summary docs for human review.
   - [x] Added generator script `scripts/generate-mission-summary.mjs`

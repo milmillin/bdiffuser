@@ -27,7 +27,7 @@ import {
   executeRevealReds,
 } from "./gameLogic.js";
 import { executeUseEquipment, validateUseEquipment } from "./equipment.js";
-import { dispatchHooks } from "./missionHooks.js";
+import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
 import {
   createBotPlayer,
   botPlaceInfoToken,
@@ -731,6 +731,7 @@ export class BombBustersServer extends Server<Env> {
       if (state.timerDeadline != null && Date.now() >= state.timerDeadline) {
         state.result = "loss_timer";
         state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_timer", "system");
         state.log.push({
           turn: state.turnNumber,
           playerId: "system",

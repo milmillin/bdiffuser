@@ -1,0 +1,607 @@
+import type {
+  ClientGameState,
+  ClientMessage,
+  ClientPlayer,
+  EquipmentGuessValue,
+} from "@bomb-busters/shared";
+import { wireLabel } from "@bomb-busters/shared";
+
+export type EquipmentMode =
+  | { kind: "post_it" }
+  | {
+      kind: "double_detector";
+      targetPlayerId: string | null;
+      selectedTiles: number[];
+      guessTileIndex: number | null;
+    }
+  | { kind: "general_radar" }
+  | { kind: "label_eq"; firstTileIndex: number | null }
+  | { kind: "label_neq"; firstTileIndex: number | null }
+  | {
+      kind: "talkies_walkies";
+      teammateId: string | null;
+      teammateTileIndex: number | null;
+      myTileIndex: number | null;
+    }
+  | { kind: "emergency_batteries"; selectedPlayerIds: string[] }
+  | { kind: "coffee_thermos" }
+  | {
+      kind: "triple_detector";
+      targetPlayerId: string | null;
+      targetTileIndices: number[];
+      guessTileIndex: number | null;
+    }
+  | {
+      kind: "super_detector";
+      targetPlayerId: string | null;
+      guessTileIndex: number | null;
+    }
+  | {
+      kind: "x_or_y_ray";
+      targetPlayerId: string | null;
+      targetTileIndex: number | null;
+      guessATileIndex: number | null;
+      guessBTileIndex: number | null;
+    };
+
+const MODE_COLORS: Record<
+  EquipmentMode["kind"],
+  { border: string; bg: string; title: string; confirm: string }
+> = {
+  post_it: {
+    border: "border-emerald-600/60",
+    bg: "bg-emerald-900/20",
+    title: "text-emerald-400",
+    confirm: "bg-emerald-600 hover:bg-emerald-500 text-white",
+  },
+  double_detector: {
+    border: "border-yellow-600/60",
+    bg: "bg-yellow-900/20",
+    title: "text-yellow-400",
+    confirm: "bg-yellow-600 hover:bg-yellow-500 text-black",
+  },
+  general_radar: {
+    border: "border-cyan-600/60",
+    bg: "bg-cyan-900/20",
+    title: "text-cyan-400",
+    confirm: "bg-cyan-600 hover:bg-cyan-500 text-white",
+  },
+  label_eq: {
+    border: "border-blue-600/60",
+    bg: "bg-blue-900/20",
+    title: "text-blue-400",
+    confirm: "bg-blue-600 hover:bg-blue-500 text-white",
+  },
+  label_neq: {
+    border: "border-orange-600/60",
+    bg: "bg-orange-900/20",
+    title: "text-orange-400",
+    confirm: "bg-orange-600 hover:bg-orange-500 text-white",
+  },
+  talkies_walkies: {
+    border: "border-indigo-600/60",
+    bg: "bg-indigo-900/20",
+    title: "text-indigo-400",
+    confirm: "bg-indigo-600 hover:bg-indigo-500 text-white",
+  },
+  emergency_batteries: {
+    border: "border-amber-600/60",
+    bg: "bg-amber-900/20",
+    title: "text-amber-400",
+    confirm: "bg-amber-600 hover:bg-amber-500 text-black",
+  },
+  coffee_thermos: {
+    border: "border-lime-600/60",
+    bg: "bg-lime-900/20",
+    title: "text-lime-400",
+    confirm: "bg-lime-600 hover:bg-lime-500 text-black",
+  },
+  triple_detector: {
+    border: "border-purple-600/60",
+    bg: "bg-purple-900/20",
+    title: "text-purple-400",
+    confirm: "bg-purple-600 hover:bg-purple-500 text-white",
+  },
+  super_detector: {
+    border: "border-pink-600/60",
+    bg: "bg-pink-900/20",
+    title: "text-pink-400",
+    confirm: "bg-pink-600 hover:bg-pink-500 text-white",
+  },
+  x_or_y_ray: {
+    border: "border-violet-600/60",
+    bg: "bg-violet-900/20",
+    title: "text-violet-400",
+    confirm: "bg-violet-600 hover:bg-violet-500 text-white",
+  },
+};
+
+const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
+  post_it: "Post-it Mode",
+  double_detector: "Double Detector Mode",
+  general_radar: "General Radar",
+  label_eq: "Label = Mode",
+  label_neq: "Label ≠ Mode",
+  talkies_walkies: "Talkies-Walkies",
+  emergency_batteries: "Emergency Batteries",
+  coffee_thermos: "Coffee Thermos",
+  triple_detector: "Triple Detector",
+  super_detector: "Super Detector",
+  x_or_y_ray: "X or Y Ray",
+};
+
+function ModeWrapper({
+  kind,
+  testId,
+  children,
+  onCancel,
+  confirmButton,
+}: {
+  kind: EquipmentMode["kind"];
+  testId?: string;
+  children: React.ReactNode;
+  onCancel: () => void;
+  confirmButton?: React.ReactNode;
+}) {
+  const colors = MODE_COLORS[kind];
+  return (
+    <div
+      className={`rounded-lg border ${colors.border} ${colors.bg} px-3 py-2 text-sm space-y-2`}
+      data-testid={testId ?? "equipment-mode-panel"}
+    >
+      <div
+        className={`font-bold ${colors.title} uppercase tracking-wide text-xs`}
+      >
+        {MODE_TITLES[kind]}
+      </div>
+      <div className="text-xs text-gray-300">{children}</div>
+      <div className="flex gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
+        >
+          Cancel
+        </button>
+        {confirmButton}
+      </div>
+    </div>
+  );
+}
+
+export function EquipmentModePanel({
+  mode,
+  gameState,
+  playerId,
+  send,
+  onCancel,
+  onUpdateMode,
+}: {
+  mode: EquipmentMode;
+  gameState: ClientGameState;
+  playerId: string;
+  send: (msg: ClientMessage) => void;
+  onCancel: () => void;
+  onUpdateMode: (mode: EquipmentMode) => void;
+}) {
+  const me = gameState.players.find((p) => p.id === playerId);
+  if (!me) return null;
+  const opponents = gameState.players.filter((p) => p.id !== playerId);
+  const colors = MODE_COLORS[mode.kind];
+
+  const sendAndCancel = (msg: ClientMessage) => {
+    send(msg);
+    onCancel();
+  };
+
+  let content: React.ReactNode;
+  let confirmButton: React.ReactNode = null;
+  let testId: string | undefined;
+
+  switch (mode.kind) {
+    case "post_it": {
+      testId = "post-it-mode-panel";
+      content = "Click one of your blue wires to place the Post-it info token.";
+      break;
+    }
+
+    case "double_detector": {
+      testId = "dd-mode-panel";
+      if (mode.selectedTiles.length < 2) {
+        const targetName = mode.targetPlayerId
+          ? opponents.find((o) => o.id === mode.targetPlayerId)?.name
+          : null;
+        content = (
+          <>
+            Select 2 tiles on one opponent's stand (
+            {mode.selectedTiles.length}/2 selected
+            {targetName ? ` on ${targetName}` : ""}).
+          </>
+        );
+      } else if (mode.guessTileIndex == null) {
+        content = "Now select one of your blue tiles as the guess value.";
+      } else {
+        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Target: {targetName}&apos;s wires {wireLabel(mode.selectedTiles[0])}{" "}
+            & {wireLabel(mode.selectedTiles[1])}. Guess:{" "}
+            {String(guessValue)}.
+          </>
+        );
+        if (typeof guessValue === "number" && mode.targetPlayerId) {
+          confirmButton = (
+            <button
+              type="button"
+              data-testid="dd-confirm"
+              onClick={() =>
+                sendAndCancel({
+                  type: "dualCutDoubleDetector",
+                  targetPlayerId: mode.targetPlayerId!,
+                  tileIndex1: mode.selectedTiles[0],
+                  tileIndex2: mode.selectedTiles[1],
+                  guessValue,
+                  actorTileIndex: mode.guessTileIndex!,
+                })
+              }
+              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            >
+              Confirm Double Detector
+            </button>
+          );
+        }
+      }
+      break;
+    }
+
+    case "general_radar": {
+      content = (
+        <div className="space-y-2">
+          <div>Choose a value to announce (1–12):</div>
+          <div className="grid grid-cols-4 gap-1">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() =>
+                  sendAndCancel({
+                    type: "useEquipment",
+                    equipmentId: "general_radar",
+                    payload: { kind: "general_radar", value },
+                  })
+                }
+                className="px-2 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold transition-colors"
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+      break;
+    }
+
+    case "label_eq":
+    case "label_neq": {
+      if (mode.firstTileIndex === null) {
+        content = "Click one of your uncut wires to select the first wire.";
+      } else {
+        const adjacentLabels: string[] = [];
+        if (mode.firstTileIndex > 0)
+          adjacentLabels.push(wireLabel(mode.firstTileIndex - 1));
+        if (mode.firstTileIndex < me.hand.length - 1)
+          adjacentLabels.push(wireLabel(mode.firstTileIndex + 1));
+        content = (
+          <>
+            Selected wire {wireLabel(mode.firstTileIndex)}. Now click an
+            adjacent wire ({adjacentLabels.join(" or ")}).
+          </>
+        );
+      }
+      break;
+    }
+
+    case "talkies_walkies": {
+      if (mode.teammateId === null) {
+        content = "Click an uncut wire on an opponent's stand to select it.";
+      } else {
+        const teammateName = opponents.find(
+          (o) => o.id === mode.teammateId,
+        )?.name;
+        content = (
+          <>
+            Selected {teammateName}&apos;s wire{" "}
+            {wireLabel(mode.teammateTileIndex!)}. Now click one of your uncut
+            wires to swap.
+          </>
+        );
+      }
+      break;
+    }
+
+    case "emergency_batteries": {
+      const usedPlayers = gameState.players.filter((p) => p.characterUsed);
+      if (usedPlayers.length === 0) {
+        content =
+          "No players have used character abilities to recharge.";
+      } else {
+        content = (
+          <div className="space-y-2">
+            <div>Select 1–2 players with used character abilities:</div>
+            <div className="flex gap-2 flex-wrap">
+              {usedPlayers.map((player) => {
+                const isSelected = mode.selectedPlayerIds.includes(player.id);
+                return (
+                  <button
+                    key={player.id}
+                    type="button"
+                    onClick={() => {
+                      if (usedPlayers.length === 1) {
+                        sendAndCancel({
+                          type: "useEquipment",
+                          equipmentId: "emergency_batteries",
+                          payload: {
+                            kind: "emergency_batteries",
+                            playerIds: [player.id],
+                          },
+                        });
+                        return;
+                      }
+                      const newIds = isSelected
+                        ? mode.selectedPlayerIds.filter(
+                            (id) => id !== player.id,
+                          )
+                        : mode.selectedPlayerIds.length >= 2
+                          ? mode.selectedPlayerIds
+                          : [...mode.selectedPlayerIds, player.id];
+                      onUpdateMode({ ...mode, selectedPlayerIds: newIds });
+                    }}
+                    className={`px-3 py-1.5 rounded text-sm font-bold transition-colors ${
+                      isSelected
+                        ? "bg-amber-500 text-black"
+                        : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                    }`}
+                  >
+                    {player.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+        if (mode.selectedPlayerIds.length >= 1) {
+          confirmButton = (
+            <button
+              type="button"
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: "emergency_batteries",
+                  payload: {
+                    kind: "emergency_batteries",
+                    playerIds: mode.selectedPlayerIds,
+                  },
+                })
+              }
+              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            >
+              Confirm ({mode.selectedPlayerIds.length} selected)
+            </button>
+          );
+        }
+      }
+      break;
+    }
+
+    case "coffee_thermos": {
+      const candidates = gameState.players.filter(
+        (p) => p.id !== playerId && p.hand.some((t) => !t.cut),
+      );
+      content = (
+        <div className="space-y-2">
+          <div>Choose a player to give the next turn to:</div>
+          <div className="flex gap-2 flex-wrap">
+            {candidates.map((player) => (
+              <button
+                key={player.id}
+                type="button"
+                onClick={() =>
+                  sendAndCancel({
+                    type: "useEquipment",
+                    equipmentId: "coffee_thermos",
+                    payload: {
+                      kind: "coffee_thermos",
+                      targetPlayerId: player.id,
+                    },
+                  })
+                }
+                className="px-3 py-1.5 rounded bg-lime-700 hover:bg-lime-600 text-white text-sm font-bold transition-colors"
+              >
+                {player.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+      break;
+    }
+
+    case "triple_detector": {
+      if (mode.targetTileIndices.length < 3) {
+        const targetName = mode.targetPlayerId
+          ? opponents.find((o) => o.id === mode.targetPlayerId)?.name
+          : null;
+        content = (
+          <>
+            Select 3 uncut tiles on one opponent's stand (
+            {mode.targetTileIndices.length}/3 selected
+            {targetName ? ` on ${targetName}` : ""}).
+          </>
+        );
+      } else if (mode.guessTileIndex == null) {
+        content = "Now click one of your blue tiles as the guess value.";
+      } else {
+        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Target: {targetName}&apos;s wires{" "}
+            {mode.targetTileIndices.map((i) => wireLabel(i)).join(", ")}. Guess:{" "}
+            {String(guessValue)}.
+          </>
+        );
+        if (typeof guessValue === "number" && mode.targetPlayerId) {
+          confirmButton = (
+            <button
+              type="button"
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: "triple_detector",
+                  payload: {
+                    kind: "triple_detector",
+                    targetPlayerId: mode.targetPlayerId!,
+                    targetTileIndices: mode.targetTileIndices,
+                    guessValue,
+                  },
+                })
+              }
+              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            >
+              Confirm Triple Detector
+            </button>
+          );
+        }
+      }
+      break;
+    }
+
+    case "super_detector": {
+      if (mode.targetPlayerId == null) {
+        content =
+          "Click any uncut tile on an opponent's stand to target their entire stand.";
+      } else if (mode.guessTileIndex == null) {
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Targeting {targetName}&apos;s entire stand. Now click one of your
+            blue tiles as the guess value.
+          </>
+        );
+      } else {
+        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Target: {targetName}&apos;s entire stand. Guess:{" "}
+            {String(guessValue)}.
+          </>
+        );
+        if (typeof guessValue === "number") {
+          confirmButton = (
+            <button
+              type="button"
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: "super_detector",
+                  payload: {
+                    kind: "super_detector",
+                    targetPlayerId: mode.targetPlayerId!,
+                    guessValue,
+                  },
+                })
+              }
+              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            >
+              Confirm Super Detector
+            </button>
+          );
+        }
+      }
+      break;
+    }
+
+    case "x_or_y_ray": {
+      if (mode.targetPlayerId == null || mode.targetTileIndex == null) {
+        content = "Click an uncut tile on an opponent's stand.";
+      } else if (mode.guessATileIndex == null) {
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Targeting {targetName}&apos;s wire{" "}
+            {wireLabel(mode.targetTileIndex)}. Click one of your blue or yellow
+            tiles as the first announced value.
+          </>
+        );
+      } else if (mode.guessBTileIndex == null) {
+        const valueA = me.hand[mode.guessATileIndex]?.gameValue;
+        content = (
+          <>
+            First value: {String(valueA)}. Click another tile with a different
+            value as the second announced value.
+          </>
+        );
+      } else {
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        const valueA = me.hand[mode.guessATileIndex]?.gameValue;
+        const valueB = me.hand[mode.guessBTileIndex]?.gameValue;
+        content = (
+          <>
+            Target: {targetName}&apos;s wire{" "}
+            {wireLabel(mode.targetTileIndex!)}. Values: {String(valueA)} and{" "}
+            {String(valueB)}.
+          </>
+        );
+        if (valueA != null && valueB != null) {
+          confirmButton = (
+            <button
+              type="button"
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: "x_or_y_ray",
+                  payload: {
+                    kind: "x_or_y_ray",
+                    targetPlayerId: mode.targetPlayerId!,
+                    targetTileIndex: mode.targetTileIndex!,
+                    guessValueA: valueA as EquipmentGuessValue,
+                    guessValueB: valueB as EquipmentGuessValue,
+                  },
+                })
+              }
+              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            >
+              Confirm X or Y Ray
+            </button>
+          );
+        }
+      }
+      break;
+    }
+  }
+
+  return (
+    <ModeWrapper
+      kind={mode.kind}
+      testId={testId}
+      onCancel={onCancel}
+      confirmButton={confirmButton}
+    >
+      {content}
+    </ModeWrapper>
+  );
+}

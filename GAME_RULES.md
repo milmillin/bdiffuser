@@ -146,6 +146,8 @@ Additional note:
 
 - The active player does not reveal where their intended matching wire was in their own hand on failure.
 
+> **FAQ:** You may intentionally announce an incorrect number during Dual Cut (e.g. to avoid pointing at a red wire or to signal information to teammates).
+
 ## 8. Solo Cut Action
 
 You may perform Solo Cut only when all remaining copies of a value that are still in the game are in your own hand.
@@ -155,6 +157,10 @@ You may perform Solo Cut only when all remaining copies of a value that are stil
   - 2 of a value (when the other pair has already been cut).
 - You cut/reveal those matching wire(s) and place them face up in front of your stand.
 - No teammate target is needed for Solo Cut.
+
+> **FAQ:** Solo Cut can use wires from both of a player's stands, as long as those are the only remaining copies of that value in the game.
+
+> **FAQ:** You cannot Solo Cut 3-of-a-kind. Wires are always cut as 2 or 4-of-a-kind. If you hold 3 copies, you must wait for one to be cut via Duo Cut first.
 
 ## 9. Reveal Your Red Wires Action
 
@@ -227,10 +233,12 @@ Card text extracted from equipment cards `1` through `12`:
   - Card reminders:
     - Any uncut wire color can be exchanged (including yellow and red).
     - Everyone sees where these wires are taken and replaced.
+  > **FAQ:** If the swapped wire has an info token, the token follows the wire to its new stand. Players cannot communicate or request a specific value during the swap, and cannot direct a 2-stand player which stand to use.
 - Equipment `3` (`Triple detector 3000`)
   - Timing: to be used in turn.
   - Effect: during a Duo Cut action, announce one value (not yellow) and designate 3 wires from a teammate's stand.
   - Card reminder: this works like Double Detector 2000, but with 3 wires.
+  > **FAQ:** Success means at least one of the 3 wires matches the announced value; the teammate cuts one matching wire without revealing whether multiple matched. Failure means none match; the teammate places an info token on one of the 3 wires (their choice).
 - Equipment `4` (`Post-it`)
   - Timing: can be used at any time.
   - Effect: place an Info token in front of one of your blue wires.
@@ -238,6 +246,7 @@ Card text extracted from equipment cards `1` through `12`:
   - Timing: to be used in turn.
   - Effect: during a Duo Cut action, announce one value (not yellow) and designate an entire stand of a teammate.
   - Card reminder: this works like Double Detector 2000, but with all wires in that stand.
+  > **FAQ:** Same success/failure rules as Triple Detector: success if at least one wire matches; teammate cuts one matching wire without revealing if multiple match. Failure: teammate places info token on one wire of the stand (their choice).
 - Equipment `6` (`Rewinder`)
   - Timing: can be used at any time.
   - Effect: move the detonator back one notch.
@@ -248,16 +257,19 @@ Card text extracted from equipment cards `1` through `12`:
   - Timing: can be used at any time.
   - Effect: announce a number (`1`-`12`); all players (including you) answer `yes` if they have at least one uncut blue wire of that value.
   - Card reminder: if a player has 2 stands, they answer for each stand.
+  > **FAQ:** Only reveal yes/no, not location or quantity. YELLOW and RED wires have no numeric value — a 7.5 red wire does NOT count as "7".
 - Equipment `9` (`Stabilizer`)
   - Timing: to be used at the start of your turn.
   - Effect: use before a Duo Cut. For that turn, if your Duo Cut fails:
     - The detonator does not advance.
     - The bomb does not explode (including red-wire failure case).
   - Card reminder: if a wrong wire was designated, the targeted player still places the usual Info token (number or yellow).
+  > **FAQ:** If the chosen wire is RED, do not place an info token.
 - Equipment `10` (`X or Y ray`)
   - Timing: to be used in turn.
   - Effect: during a Duo Cut action, by designating one wire you may announce 2 possible values (yellow included).
   - Card reminder: you must have both announced values in your own hand.
+  > **FAQ:** Success if the wire matches either announced value; both that wire and your matching wire are revealed. The two announced values need not be consecutive.
 - Equipment `11` (`Coffee thermos`)
   - Timing: to be used in turn.
   - Effect: pass your turn and choose the next active Minesweeper (without consultation).
@@ -294,6 +306,7 @@ Additional card text extracted from later-mission equipment cards:
   - Timing: can be used at any time.
   - Effect: designate a teammate's wire, take it without revealing it, and file it into your own hand.
   - Card reminder: everyone sees where the wire is taken from and where it is placed.
+  > **FAQ:** If the receiving player has 2 stands, they choose which stand to place the wire on.
 
 ### 13.6 Equipment Back Art
 
@@ -314,6 +327,8 @@ Rulebook-explicit character ability in base text:
     - Detonator advances 1.
     - Teammate places 1 info token on one of the two pointed wires (teammate chooses).
     - If exactly one of the two pointed wires was red, bomb does not explode from this failure handling; teammate places info token on the non-red wire per rule text.
+
+> **FAQ:** The 2 designated wires need not be adjacent (but logically they often are). Both wires must be on the same stand (cannot span 2 stands of one player). If both designated wires are red, the bomb explodes. If only one is red, the bomb explodes only if the player chooses to reveal the red one; proper play is to place the info token on the non-red wire. You cannot announce YELLOW (or RED) with Double Detector — only values 1-12.
 
 ## 15. End of Mission
 
@@ -353,6 +368,14 @@ Allowed:
 - Discussing general tactics.
 - Discussing timing/use of equipment.
 - Reminding teammates about available powers or mission special rules.
+
+### 16.3 Mistake (Wrong Value Announced)
+
+> **FAQ:** If a player mistakenly announces a value that is not in their hand during a Duo Cut, cut another wire the player does have, AND advance the detonator 1 notch.
+
+### 16.4 Info Token Shortage
+
+> **FAQ:** If the needed info token is unavailable (both copies are in use), take one that is no longer useful (e.g. its wire has already been cut). If none can be repurposed, say the value aloud and point — teammates must remember.
 
 ## 17. Rule Priority
 
@@ -549,6 +572,8 @@ Baseline assumption used in this section:
   - Other values can be cut at any time.
   - After `2` wires of the left value are cut, flip/remove the left Number card and shift the Sequence marker; then repeat for the next step.
 
+> **FAQ:** If a player only has sequence-blocked wires left (i.e. they can only cut values that are not yet unlocked), the bomb explodes.
+
 ### Mission 10
 
 - Card title: `A bad quarter of an hour`
@@ -563,6 +588,8 @@ Baseline assumption used in this section:
   - Turn order is no longer clockwise; any player may call to become active and take next turn.
   - New turn may only be called after current active player's turn fully ends.
   - Same player cannot take consecutive turns (except in 2-player games).
+
+> **FAQ:** The same player cannot play several rounds in a row, except in 2-player games or when they are the last player with wires remaining.
 
 ### Mission 11
 
@@ -596,6 +623,8 @@ Baseline assumption used in this section:
     - When it introduces 2 new equipment cards, place Number cards on both.
     - Remove those Number-card locks immediately if their condition is already met; otherwise remove later when satisfied.
 
+> **FAQ:** Cutting 2 wires of a value unlocks BOTH the corresponding equipment card AND the corresponding Number card lock (if any). Both conditions are checked simultaneously.
+
 ### Mission 13
 
 - Card title: `Red alert!`
@@ -613,6 +642,8 @@ Baseline assumption used in this section:
   - If at least one designated wire is not red, bomb explodes.
   - In 4-5 player games, this special action may be performed even if acting player has no red wire.
   - If a player has only red wires remaining, they must use this special action.
+
+> **FAQ:** You cannot use Equipment or Personal Equipment to cut RED wires in this mission. RED and YELLOW wires have no numeric value, so detectors (Double Detector, Triple Detector, Super Detector) cannot target them.
 
 ### Mission 14
 
@@ -697,6 +728,8 @@ Baseline assumption used in this section:
   - Discard a Number card as soon as all 4 matching wires are cut.
   - If a player starts turn with only red wires left, they perform `Reveal Your Red Wires`.
   - Reminder on card: players may not recall/share previous radar answers.
+
+> **FAQ:** The active player designates only WHO cuts, not which wire or which stand. The next turn goes to the player on the active player's left (not the designated player's left).
 
 ### Mission 19
 
@@ -798,6 +831,8 @@ Baseline assumption used in this section:
   - Applies to mistake info placement and Equipment `4` (Post-it).
   - With Equipment `4`, token may be placed in front of an already cut wire.
 
+> **FAQ:** If Walkie-Talkies (Equipment `2`) are used on a wire that has an x1/x2/x3 info token, that token is discarded.
+
 ### Mission 25
 
 - Card title: `It's to hear you better...`
@@ -877,6 +912,12 @@ Baseline assumption used in this section:
     - When a player has only 1 Number card left, they draw another (and redraw if that value is already completed).
     - When only one value remains to cut, last Number card is immediately discarded.
 
+> **FAQ:** Multiple clarifications for Mission 29:
+> - Detector multi-wire (e.g. Triple Detector): only the wire actually cut can trigger the detonator advance from the Number card — other designated wires do not count.
+> - If a player's hand is empty (no wires), they place their Number cards face down under the draw pile.
+> - If the right-hand neighbor has no Number cards, the next player to the right plays a Number card instead.
+> - Coffee Thermos (Equipment `11`): skip step 2 (the Number card reveal), take the Number card, and if selecting your left neighbor as next player, that neighbor plays a Number card for their turn.
+
 ### Mission 30
 
 - Card title: `A very speedy mission!`
@@ -904,6 +945,8 @@ Baseline assumption used in this section:
   - Everyone must apply their own constraint.
   - When player can no longer apply their constraint at start of turn, they flip it and then play normally for rest of mission.
 
+> **FAQ:** Once a constraint card is flipped, the player plays normally even if they later recover a matching wire via Walkie-Talkies (Equipment `2`).
+
 ### Mission 32
 
 - Card title: `Prank attack!`
@@ -917,6 +960,8 @@ Baseline assumption used in this section:
   - At start of each turn, Captain may (after consultation) replace visible constraint with next card.
   - If active player cannot play due to constraint, they pass (no detonator movement).
   - Constraints do not apply to `Reveal Your Red Wires`.
+
+> **FAQ:** If the Restraint card pile is empty, players continue without any restraint.
 
 ### Mission 33
 
@@ -1032,6 +1077,8 @@ Baseline assumption used in this section:
   - If that upside-down wire is the only legal choice for another player, that player must pass and detonator advances `1`.
   - No equipment or personal equipment may target upside-down wires.
 
+> **FAQ:** If the Captain's upside-down wire is RED, they reveal it when all their remaining uncut wires are RED (via the normal "Reveal Your Red Wires" action).
+
 ### Mission 39
 
 - Card title: `The Doctor's 4 Sons Walk`
@@ -1055,6 +1102,8 @@ Baseline assumption used in this section:
     - Distribute all remaining Number cards from that pile to players clockwise, face down.
     - Each player places info token(s) matching received values in front of their hand.
     - If no token of a value remains, ignore that value.
+
+> **FAQ:** If a player is dealt a Number card for a value not in their hand or no longer in the game, ignore it (no info token placed).
 
 ### Mission 40
 
@@ -1104,6 +1153,8 @@ Baseline assumption used in this section:
     - Failure: place info token there and detonator moves forward `1`.
   - If a player only has Iberian yellow left (plus red if any), that player passes.
 
+> **FAQ:** If the special designated Iberian (yellow) wire is RED, the bomb explodes.
+
 ### Mission 42
 
 - Card title: `What is this circus?`
@@ -1152,6 +1203,8 @@ Baseline assumption used in this section:
   - Communication restriction:
     - No speaking.
     - One gesture allowed: raise thumb up/down to indicate oxygen need.
+
+> **FAQ:** The Stabilizer (Equipment `9`) can be used to pretend-cut zone 1 when everything is already cut. If a player doesn't want to play (to save oxygen), they skip and the detonator advances +1. The Stabilizer can negate the detonator movement when passing.
 
 ### Mission 45
 
@@ -1250,6 +1303,8 @@ Baseline assumption used in this section:
     - No speaking.
     - One thumb up/down gesture allowed to indicate oxygen need.
 
+> **FAQ:** When a player has no wires left or reveals RED, their remaining oxygen tokens are removed from the game. A player can voluntarily skip their turn to save oxygen (detonator advances +1).
+
 ### Mission 50
 
 - Card title: `The Black Sea`
@@ -1346,6 +1401,8 @@ Baseline assumption used in this section:
   - Before first round, play mission sound file.
   - On success, open box `Missions 55 to 66`.
 
+> **FAQ:** If a player has insufficient oxygen, they skip and the detonator advances +1. But if you CAN play, you MUST play.
+
 ### Mission 55
 
 - Card title: `Doctor No's Challenge`
@@ -1373,6 +1430,8 @@ Baseline assumption used in this section:
   - Each player must cut their own upside-down wire with normal cut action; failure explodes bomb.
   - No equipment or personal equipment may target upside-down wires.
   - A player may still perform Duo Cut on a teammate's upside-down wire, but must advance detonator `1` step when doing so.
+
+> **FAQ:** If a flipped (upside-down) wire is RED, reveal it via the normal "Reveal Your Red Wires" action. **ERRATUM:** Number cards are NOT used in this mission (contrary to what the setup indication may suggest).
 
 ### Mission 57
 
@@ -1496,6 +1555,8 @@ Baseline assumption used in this section:
     - No talking.
     - One thumb up/down gesture allowed to signal oxygen need.
 
+> **FAQ:** You must play if you have enough oxygen. You cannot voluntarily skip your turn.
+
 ### Mission 64
 
 - Card title: `The return of the rebel sons!`
@@ -1511,6 +1572,8 @@ Baseline assumption used in this section:
   - Each player must cut upside-down wires with normal cut action, without equipment or Double Detector 2000.
   - Failure explodes bomb.
   - Duo Cut on teammate's upside-down wire is allowed by choice/necessity, but detonator advances `1`.
+
+> **FAQ:** With 2 stands, only 2 wires total are flipped. The lowest-value upside-down wire goes to the far-left of the 1st stand, and the highest-value goes to the far-right of the 2nd stand.
 
 ### Mission 65
 
@@ -1554,9 +1617,13 @@ Baseline assumption used in this section:
   - Before first round, play mission sound file.
   - Card includes final fail/success narrative text.
 
+> **FAQ:** The standee must move after every cut (success or failure). On hash-marked squares, you must perform a SUCCESSFUL cut matching the ACTION constraint to trigger the action; regardless of success, do not move on hash squares.
+
 ---
 
 ## Source
 
 - Upstream URL: `https://tesera.ru/images/items/2386644/BombBusters_rules_EN-web.pdf`
 - Rulebook edition in document footer: US edition 2024, version `v1.0`.
+- FAQ source: Bomb Busters FAQ (July 11, 2025).
+- Sound-missions audio credits: `www.pegasusna.com/bombbusters-audiocredits-en`

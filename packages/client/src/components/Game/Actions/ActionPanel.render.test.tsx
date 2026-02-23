@@ -34,6 +34,7 @@ function renderPanel(
       selectedGuessTile={selectedGuessTile}
       onClearTarget={vi.fn()}
       onCutConfirmed={vi.fn()}
+      onEnterEquipmentMode={vi.fn()}
     />,
   );
 }

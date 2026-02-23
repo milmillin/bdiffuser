@@ -18,11 +18,13 @@ import {
   getStrictUnknownHooks,
   setTelemetrySink,
   clearTelemetrySink,
+  emitMissionFailureTelemetry,
   UnknownHookError,
 } from "../missionHooks";
 import type {
   HookResult,
   HookTraceEntry,
+  MissionFailureTelemetryEvent,
   UnknownHookTelemetryEvent,
   SetupHookContext,
   ValidateHookContext,
@@ -1104,7 +1106,9 @@ describe("missionHooks dispatcher", () => {
       telemetryEvents = [];
       clearHandlers();
       setStrictUnknownHooks(false);
-      setTelemetrySink((event) => telemetryEvents.push(event));
+      setTelemetrySink((event) => {
+        if (event.type === "unknown_hook_kind") telemetryEvents.push(event);
+      });
     });
 
     afterEach(() => {
@@ -1192,6 +1196,62 @@ describe("missionHooks dispatcher", () => {
       const state = makeGameState({ mission: 10, log: [] });
       // Should not throw even without a sink
       expect(() => dispatchHooks(10, { point: "setup", state })).not.toThrow();
+    });
+  });
+
+  describe("mission failure telemetry", () => {
+    let telemetryEvents: MissionFailureTelemetryEvent[];
+
+    beforeEach(() => {
+      telemetryEvents = [];
+      setTelemetrySink((event) => {
+        if (event.type === "mission_failure") telemetryEvents.push(event);
+      });
+    });
+
+    afterEach(() => {
+      clearTelemetrySink();
+    });
+
+    it("emits structured mission failure payload", () => {
+      const state = makeGameState({
+        mission: 65,
+        turnNumber: 7,
+        board: {
+          ...makeBoardState(),
+          detonatorPosition: 3,
+          detonatorMax: 6,
+        },
+        players: [
+          makePlayer({ id: "p1", hand: [] }),
+          makePlayer({ id: "p2", hand: [] }),
+          makePlayer({ id: "p3", hand: [] }),
+        ],
+      });
+
+      emitMissionFailureTelemetry(state, "loss_detonator", "p1", "p2");
+
+      expect(telemetryEvents).toHaveLength(1);
+      expect(telemetryEvents[0]).toMatchObject({
+        type: "mission_failure",
+        missionId: 65,
+        failureReason: "loss_detonator",
+        turnNumber: 7,
+        playerCount: 3,
+        detonatorPosition: 3,
+        detonatorMax: 6,
+        actorId: "p1",
+        targetPlayerId: "p2",
+      });
+      expect(typeof telemetryEvents[0].timestamp).toBe("number");
+    });
+
+    it("defaults targetPlayerId to null when omitted", () => {
+      const state = makeGameState({ mission: 10, log: [] });
+      emitMissionFailureTelemetry(state, "loss_timer", "system");
+
+      expect(telemetryEvents).toHaveLength(1);
+      expect(telemetryEvents[0].targetPlayerId).toBeNull();
     });
   });
 });

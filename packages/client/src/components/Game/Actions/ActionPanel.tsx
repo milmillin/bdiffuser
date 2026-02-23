@@ -3,14 +3,13 @@ import type {
   BaseEquipmentId,
   ClientGameState,
   ClientMessage,
-  EquipmentGuessValue,
-  UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import { BLUE_COPIES_PER_VALUE, EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
 } from "./actionPanelMissionRules.js";
+import type { EquipmentMode } from "./EquipmentModePanel.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -41,7 +40,7 @@ export function ActionPanel({
   selectedGuessTile,
   onClearTarget,
   onCutConfirmed,
-  onEnterPostItMode,
+  onEnterEquipmentMode,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
@@ -51,7 +50,7 @@ export function ActionPanel({
   selectedGuessTile: number | null;
   onClearTarget: () => void;
   onCutConfirmed: () => void;
-  onEnterPostItMode?: () => void;
+  onEnterEquipmentMode: (mode: EquipmentMode) => void;
 }) {
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
@@ -131,18 +130,18 @@ export function ActionPanel({
   };
 
   const useEquipment = (equipmentId: BaseEquipmentId) => {
-    if (equipmentId === "post_it") {
-      onEnterPostItMode?.();
+    if (equipmentId === "rewinder") {
+      send({ type: "useEquipment", equipmentId: "rewinder", payload: { kind: "rewinder" } });
+      onCutConfirmed();
       return;
     }
-    const payload = buildEquipmentPayload(gameState, playerId, equipmentId);
-    if (!payload) return;
-    send({
-      type: "useEquipment",
-      equipmentId,
-      payload,
-    });
-    onCutConfirmed();
+    if (equipmentId === "stabilizer") {
+      send({ type: "useEquipment", equipmentId: "stabilizer", payload: { kind: "stabilizer" } });
+      onCutConfirmed();
+      return;
+    }
+    const initialMode = getInitialEquipmentMode(equipmentId);
+    if (initialMode) onEnterEquipmentMode(initialMode);
   };
 
   return (
@@ -355,235 +354,36 @@ export function ActionPanel({
               );
             })}
           </div>
-          <p className="text-xs text-gray-500">
-            For cards requiring targets/values, prompts will ask for stand and wire indices.
-          </p>
         </div>
       )}
     </div>
   );
 }
 
-function parsePromptIndex(
-  promptText: string,
-  min: number,
-  max: number,
-): number | null {
-  const raw = window.prompt(promptText);
-  if (raw == null) return null;
-  const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
-    window.alert(`Please enter an integer between ${min} and ${max}.`);
-    return null;
-  }
-  return parsed;
-}
-
-function parseGuessValue(value: string): EquipmentGuessValue | null {
-  const normalized = value.trim().toUpperCase();
-  if (normalized === "Y" || normalized === "YELLOW") return "YELLOW";
-  const numeric = Number(normalized);
-  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= 12) {
-    return numeric;
-  }
-  return null;
-}
-
-function choosePlayerByPrompt(
-  candidates: { id: string; name: string }[],
-  title: string,
-): string | null {
-  if (candidates.length === 0) return null;
-  const options = candidates
-    .map((player, index) => `${index}: ${player.name}`)
-    .join("\n");
-  const selected = parsePromptIndex(`${title}\n${options}`, 0, candidates.length - 1);
-  if (selected == null) return null;
-  return candidates[selected]?.id ?? null;
-}
-
-function buildEquipmentPayload(
-  gameState: ClientGameState,
-  playerId: string,
-  equipmentId: BaseEquipmentId,
-): UseEquipmentPayload | null {
-  const me = gameState.players.find((player) => player.id === playerId);
-  if (!me) return null;
-
+function getInitialEquipmentMode(equipmentId: BaseEquipmentId): EquipmentMode | null {
   switch (equipmentId) {
-    case "rewinder":
-      return { kind: "rewinder" };
-    case "stabilizer":
-      return { kind: "stabilizer" };
-    case "general_radar": {
-      const value = parsePromptIndex("General Radar value (1-12):", 1, 12);
-      if (value == null) return null;
-      return { kind: "general_radar", value };
-    }
     case "post_it":
-      return null;
+      return { kind: "post_it" };
+    case "general_radar":
+      return { kind: "general_radar" };
     case "label_eq":
-    case "label_neq": {
-      const tileIndexA = parsePromptIndex(
-        `Choose first wire index (0-${me.hand.length - 1}):`,
-        0,
-        Math.max(0, me.hand.length - 1),
-      );
-      if (tileIndexA == null) return null;
-      const tileIndexB = parsePromptIndex(
-        `Choose second adjacent wire index (0-${me.hand.length - 1}):`,
-        0,
-        Math.max(0, me.hand.length - 1),
-      );
-      if (tileIndexB == null) return null;
-      return equipmentId === "label_eq"
-        ? { kind: "label_eq", tileIndexA, tileIndexB }
-        : { kind: "label_neq", tileIndexA, tileIndexB };
-    }
-    case "talkies_walkies": {
-      const teammates = gameState.players.filter((player) => player.id !== playerId);
-      const teammateId = choosePlayerByPrompt(
-        teammates,
-        "Talkies-Walkies: choose teammate index:",
-      );
-      if (!teammateId) return null;
-      const teammate = gameState.players.find((player) => player.id === teammateId);
-      if (!teammate) return null;
-
-      const myTileIndex = parsePromptIndex(
-        `Choose your uncut wire index (0-${me.hand.length - 1}):`,
-        0,
-        Math.max(0, me.hand.length - 1),
-      );
-      if (myTileIndex == null) return null;
-      const teammateTileIndex = parsePromptIndex(
-        `Choose ${teammate.name}'s wire index (0-${teammate.hand.length - 1}):`,
-        0,
-        Math.max(0, teammate.hand.length - 1),
-      );
-      if (teammateTileIndex == null) return null;
-
-      return {
-        kind: "talkies_walkies",
-        teammateId,
-        myTileIndex,
-        teammateTileIndex,
-      };
-    }
-    case "emergency_batteries": {
-      const usedPlayers = gameState.players.filter((player) => player.characterUsed);
-      if (usedPlayers.length === 0) {
-        window.alert("No used character cards are available to recharge.");
-        return null;
-      }
-      const options = usedPlayers
-        .map((player, index) => `${index}: ${player.name}`)
-        .join("\n");
-      const raw = window.prompt(
-        `Emergency Batteries: choose 1-2 player indices (comma-separated)\n${options}`,
-      );
-      if (raw == null) return null;
-      const parsed = raw
-        .split(",")
-        .map((part) => Number(part.trim()))
-        .filter((n) => Number.isInteger(n));
-      if (parsed.length < 1 || parsed.length > 2) {
-        window.alert("Please choose one or two players.");
-        return null;
-      }
-      const ids = [...new Set(parsed)]
-        .map((index) => usedPlayers[index]?.id)
-        .filter((id): id is string => Boolean(id));
-      if (ids.length < 1 || ids.length > 2) {
-        window.alert("Invalid player selection.");
-        return null;
-      }
-      return { kind: "emergency_batteries", playerIds: ids };
-    }
-    case "coffee_thermos": {
-      const candidates = gameState.players.filter(
-        (player) =>
-          player.id !== playerId &&
-          player.hand.some((tile) => !tile.cut),
-      );
-      const targetPlayerId = choosePlayerByPrompt(
-        candidates,
-        "Coffee Thermos: choose next active player index:",
-      );
-      if (!targetPlayerId) return null;
-      return { kind: "coffee_thermos", targetPlayerId };
-    }
-    case "triple_detector": {
-      const candidates = gameState.players.filter((player) => player.id !== playerId);
-      const targetPlayerId = choosePlayerByPrompt(
-        candidates,
-        "Triple Detector: choose target player index:",
-      );
-      if (!targetPlayerId) return null;
-      const target = gameState.players.find((player) => player.id === targetPlayerId);
-      if (!target) return null;
-
-      const rawIndices = window.prompt(
-        `Triple Detector: enter 3 target indices from ${target.name}'s stand (comma-separated, 0-${target.hand.length - 1})`,
-      );
-      if (rawIndices == null) return null;
-      const targetTileIndices = rawIndices
-        .split(",")
-        .map((part) => Number(part.trim()))
-        .filter((n) => Number.isInteger(n));
-      const guessValue = parsePromptIndex("Triple Detector guess value (1-12):", 1, 12);
-      if (guessValue == null) return null;
-      return {
-        kind: "triple_detector",
-        targetPlayerId,
-        targetTileIndices,
-        guessValue,
-      };
-    }
-    case "super_detector": {
-      const candidates = gameState.players.filter((player) => player.id !== playerId);
-      const targetPlayerId = choosePlayerByPrompt(
-        candidates,
-        "Super Detector: choose target player index:",
-      );
-      if (!targetPlayerId) return null;
-      const guessValue = parsePromptIndex("Super Detector guess value (1-12):", 1, 12);
-      if (guessValue == null) return null;
-      return { kind: "super_detector", targetPlayerId, guessValue };
-    }
-    case "x_or_y_ray": {
-      const candidates = gameState.players.filter((player) => player.id !== playerId);
-      const targetPlayerId = choosePlayerByPrompt(
-        candidates,
-        "X or Y Ray: choose target player index:",
-      );
-      if (!targetPlayerId) return null;
-      const target = gameState.players.find((player) => player.id === targetPlayerId);
-      if (!target) return null;
-      const targetTileIndex = parsePromptIndex(
-        `X or Y Ray: choose target wire index (0-${target.hand.length - 1}):`,
-        0,
-        Math.max(0, target.hand.length - 1),
-      );
-      if (targetTileIndex == null) return null;
-      const rawA = window.prompt("X or Y Ray: first announced value (1-12 or YELLOW):");
-      if (rawA == null) return null;
-      const rawB = window.prompt("X or Y Ray: second announced value (1-12 or YELLOW):");
-      if (rawB == null) return null;
-      const guessValueA = parseGuessValue(rawA);
-      const guessValueB = parseGuessValue(rawB);
-      if (!guessValueA || !guessValueB) {
-        window.alert("Both announced values must be 1-12 or YELLOW.");
-        return null;
-      }
-      return {
-        kind: "x_or_y_ray",
-        targetPlayerId,
-        targetTileIndex,
-        guessValueA,
-        guessValueB,
-      };
-    }
+      return { kind: "label_eq", firstTileIndex: null };
+    case "label_neq":
+      return { kind: "label_neq", firstTileIndex: null };
+    case "talkies_walkies":
+      return { kind: "talkies_walkies", teammateId: null, teammateTileIndex: null, myTileIndex: null };
+    case "emergency_batteries":
+      return { kind: "emergency_batteries", selectedPlayerIds: [] };
+    case "coffee_thermos":
+      return { kind: "coffee_thermos" };
+    case "triple_detector":
+      return { kind: "triple_detector", targetPlayerId: null, targetTileIndices: [], guessTileIndex: null };
+    case "super_detector":
+      return { kind: "super_detector", targetPlayerId: null, guessTileIndex: null };
+    case "x_or_y_ray":
+      return { kind: "x_or_y_ray", targetPlayerId: null, targetTileIndex: null, guessATileIndex: null, guessBTileIndex: null };
+    default:
+      return null;
   }
 }
 
