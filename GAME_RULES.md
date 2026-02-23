@@ -879,6 +879,175 @@ Note:
         - Reveal all character cards and enable them.
         - Weak link no longer applies constraint; mission continues normally.
 
+## 24. Mission Cards 36-43 (Processed from Images, Next 8 Available)
+
+Source images processed in this batch:
+
+- `mission_36(.png/_back.png)`
+- `mission_37(.png/_back.png)`
+- `mission_38(.png/_back.png)`
+- `mission_39(.png/_back.png)`
+- `mission_40(.png/_back.png)`
+- `mission_41(.png/_back.png)`
+- `mission_42(.png/_back.png)`
+- `mission_43(.png/_back.png)`
+
+Note:
+
+- `mission_35` image is not present in `packages/client/public/images/`.
+
+### Mission 36
+
+- Card title: `Panic in the Tropics`
+- Setup:
+  - Red setup: `1 out of 3`.
+  - Add `2` yellow wires.
+  - Shuffle Number cards, draw `5`, place face up in a line.
+  - Captain chooses (without consulting others) one of the two ends and places Sequence card `side A` there with arrow pointing inward along the line.
+  - 2-player override shown on card:
+    - Red: `2 out of 3`.
+    - Yellow: `4`.
+- Mission rule (back):
+  - Wires matching the visible Number cards must be cut in the arrow order.
+  - Each time `2` wires of the first Number-card value are cut:
+    - Remove that Number card.
+    - Current player may reposition Sequence card to either end, without consulting others.
+  - Values not among the 5 visible Number cards can be cut at any time.
+
+### Mission 37
+
+- Card title: `The boss of the farce!`
+- Setup:
+  - Add `2` red wires.
+  - Shuffle all `12` Constraint cards face down, then reveal the top one.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Visible constraint must be applied.
+  - Each time all `4` wires of any value are cut, replace visible constraint with next one.
+  - If active player cannot play because of the constraint, they pass.
+  - If no player can play for a full round:
+    - Detonator advances `1`.
+    - Replace visible constraint.
+  - When constraint pile is empty, there is no longer any constraint.
+  - Constraints do not apply to `Reveal Your Red Wires`.
+
+### Mission 38
+
+- Card title: `One thread upside down, one thread right side up...`
+- Setup:
+  - Add `2` red wires.
+  - During wire distribution, Captain places one of their own wires upside down (value facing teammates), without looking, at one end of their hand (single stand end).
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Captain must personally cut this upside-down wire using a normal cut action; failure explodes the bomb.
+  - Another player cannot cut this wire for the Captain.
+  - If that upside-down wire is the only legal choice for another player, that player must pass and detonator advances `1`.
+  - No equipment or personal equipment may target upside-down wires.
+
+### Mission 39
+
+- Card title: `The Doctor's 4 Sons Walk`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Add `4` yellow wires.
+  - Do not place equipment cards on the board.
+  - Place one random Number card face up on first equipment slot.
+  - Create a face-down pile of `8` random Number cards next to board.
+  - Instead of choosing setup info token, each player draws one random info token and places it correctly; replace yellow info token if drawn.
+  - 2-player override shown on card:
+    - Red: `3`.
+    - Yellow: `4`.
+- Mission rule (back):
+  - The `4` wires matching the visible Number card must be cut simultaneously.
+  - Special action:
+    - On turn, player may designate/cut those 4 wires (without personal equipment), even if they do not hold one in own hand.
+    - Failure explodes bomb.
+  - After each round, before Captain turn, discard one card from the 8-card Number pile until special action is successfully performed.
+  - Once special action is performed:
+    - Distribute all remaining Number cards from that pile to players clockwise, face down.
+    - Each player places info token(s) matching received values in front of their hand.
+    - If no token of a value remains, ignore that value.
+
+### Mission 40
+
+- Card title: `Christmas Trap`
+- Setup:
+  - Add `3` red wires.
+  - Replace normal info tokens with both:
+    - `x1/x2/x3` tokens, and
+    - even/odd tokens.
+  - During setup and throughout game, players alternate token type by seating order:
+    - Captain places `x1/x2/x3`.
+    - Player on Captain's left places even/odd.
+    - Continue alternating.
+  - Neither token type can be placed in front of red wires.
+  - 2-player override shown on card:
+    - Captain places no token.
+    - Only second player places one even/odd token.
+- Mission rule (back):
+  - Same alternating token-type assignment remains in force for full mission.
+  - Applies to both normal setup/mistake info placement and Equipment `4` (Post-it).
+  - Captain and (with higher player counts) 3rd/5th players use `x1/x2/x3`.
+  - 2nd and (with higher player counts) 4th players use even/odd.
+  - With Equipment `4`, an `x1/x2/x3` token may be placed in front of an already cut wire.
+  - Neither token type may be placed in front of red wires.
+
+### Mission 41
+
+- Card title: `Bomba latina`
+- Setup:
+  - Red setup: `1 out of 3`.
+  - Yellow count: equal to player count (maximum `4` yellows).
+  - Yellow wires are treated as `IBERIAN` wires for this mission:
+    - Do not mix them into general wire deal.
+    - Distribute one face down to each player.
+    - With 5 players, Captain gets no yellow at setup.
+  - Set detonator dial to card-indicated opposite notch.
+  - Each player draws random info token and places it correctly (instead of choosing).
+  - If Equipment `6` (Double Bottom) is drawn, replace it.
+  - 2-player override shown on card:
+    - Red: `2 out of 3`.
+    - Yellow: `2`.
+- Mission rule (back):
+  - Iberian (yellow) wires are cut one-by-one, not in normal yellow-pair style.
+  - Special action:
+    - Designate exactly one teammate yellow wire by announcing it as Iberian.
+    - Success: that yellow is revealed and detonator moves back `1`.
+    - Failure: place info token there and detonator moves forward `1`.
+  - If a player only has Iberian yellow left (plus red if any), that player passes.
+
+### Mission 42
+
+- Card title: `What is this circus?`
+- Setup:
+  - Red setup: `1 out of 3`.
+  - Add `4` yellow wires.
+  - Card indicates external mission audio (smartphone/QR).
+- Mission rule (back):
+  - Before first round, play mission sound file.
+  - Card otherwise provides fail/success narrative outcome.
+  - On success, open box `Missions 43 to 54`.
+
+### Mission 43
+
+- Card title: `Nano and robot`
+- Setup:
+  - Add `3` red wires.
+  - Place Nano robot standee on board space `1`.
+  - During wire distribution, place additional face-down wires on Nano, without looking:
+    - 2 players: `5` wires on Nano.
+    - 3 or 4 players: `4` wires on Nano.
+    - 5 players: `3` wires on Nano.
+  - 2-player override shown on card:
+    - Captain draws info token at random during setup.
+- Mission rule (back):
+  - At end of each player's turn, Nano moves forward one space; after `12`, Nano turns around and moves backward (`11`, etc.).
+  - When active player cuts wires matching Nano's current number, they take one wire from Nano, keep it hidden from others, and place it correctly into own hand (if 2 stands, choose stand).
+  - Mission win requires cutting/revealing all wires including Nano's wires.
+  - Equipment `11` (Coffee Thermos) does not prevent Nano from moving.
+
 ---
 
 ## Source
