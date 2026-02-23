@@ -291,6 +291,41 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
+  it("mid-campaign tier (mission 24): failed dual cut places x1/x2/x3 count token", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t3-a", color: "blue", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t3-b", color: "blue", gameValue: 3, sortValue: 3, cut: true }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 24,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCut(state, "actor", "target", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(target.infoTokens).toEqual([
+      {
+        value: 0,
+        countHint: 2,
+        position: 0,
+        isYellow: false,
+      },
+    ]);
+  });
+
   it("system-d tier (mission 58): failed dual cut does not place info token", () => {
     const actor = makePlayer({
       id: "actor",

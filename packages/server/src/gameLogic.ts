@@ -403,7 +403,7 @@ export function executeDualCut(
         value: tokenValue,
         position: targetTileIndex,
         isYellow: tokenIsYellow,
-      }));
+      }, target));
     }
 
     addLog(
@@ -639,7 +639,7 @@ export function executeDualCutDoubleDetector(
       value: tokenValue,
       position: infoTokenTileIndex,
       isYellow: tokenIsYellow,
-    }));
+    }, target));
   }
 
   updateMarkerConfirmations(state);

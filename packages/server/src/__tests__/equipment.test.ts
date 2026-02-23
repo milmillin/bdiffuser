@@ -923,6 +923,39 @@ describe("equipment execution", () => {
     ]);
   });
 
+  it("mission 24: post-it places x1/x2/x3 token based on stand count", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "a2", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "a3", gameValue: 4, sortValue: 4, cut: true }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 24,
+      players: [actor],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [unlockedEquipmentCard("post_it", "Post-it", 4)],
+      },
+    });
+
+    const action = executeUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("post_it");
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 0, countHint: 3, position: 0, isYellow: false },
+    ]);
+  });
+
   it("label = places relation token with eq marker", () => {
     const actor = makePlayer({
       id: "actor",

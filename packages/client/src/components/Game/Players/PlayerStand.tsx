@@ -101,7 +101,7 @@ export function PlayerStand({
                   <div className="flex flex-col items-center gap-0.5">
                     {infoTokens.map((token, tokenIndex) => (
                       <InfoTokenView
-                        key={`${idx}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.value}`}
+                        key={`${idx}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
                         token={token}
                       />
                     ))}
@@ -137,6 +137,7 @@ export function PlayerStand({
 }
 
 function getInfoTokenImage(token: InfoToken): string {
+  if (token.countHint != null) return `info_x${token.countHint}.png`;
   if (token.isYellow) return "info_yellow.png";
   if (token.parity === "even") return "info_even.png";
   if (token.parity === "odd") return "info_odd.png";
@@ -162,7 +163,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
   return (
     <img
       src={`/images/${getInfoTokenImage(token)}`}
-      alt={`Info: ${token.isYellow ? "YELLOW" : token.parity ?? token.value}`}
+      alt={`Info: ${token.isYellow ? "YELLOW" : token.countHint != null ? `x${token.countHint}` : token.parity ?? token.value}`}
       className="w-full h-auto block"
     />
   );

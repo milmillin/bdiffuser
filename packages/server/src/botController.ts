@@ -81,7 +81,7 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
             value,
             position: tileIndex,
             isYellow: false,
-          }));
+          }, bot));
           return true;
         }
       }
@@ -125,7 +125,7 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
     value: bestValue,
     position: target.index,
     isYellow: false,
-  }));
+  }, bot));
 }
 
 export type BotAction =
@@ -397,6 +397,8 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
         ? ("YELLOW" as const)
         : token.parity
           ? pickGuessValueFromParity(guessValues, token.parity)
+          : token.countHint != null
+            ? null
           : token.value;
       if (guessValue == null) continue;
       if (

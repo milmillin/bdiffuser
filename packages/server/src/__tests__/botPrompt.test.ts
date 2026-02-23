@@ -117,6 +117,33 @@ describe("buildUserMessage campaign context", () => {
     expect(message).toContain("[Info Token: EVEN]");
   });
 
+  it("renders mission-24 count tokens as x1/x2/x3 in bot prompt context", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "p1-1", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [{ value: 0, countHint: 2, position: 0, isYellow: false }],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 8, sortValue: 8 })],
+      infoTokens: [{ value: 0, countHint: 1, position: 0, isYellow: false }],
+    });
+
+    const state = makeGameState({
+      mission: 24,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("[Info Token: x2]");
+    expect(message).toContain("[Info Token: x1]");
+  });
+
   it("does not leak hidden challenge deck names in bot prompt", () => {
     const p1 = makePlayer({
       id: "p1",

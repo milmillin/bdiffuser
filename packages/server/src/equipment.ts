@@ -580,7 +580,7 @@ export function executeUseEquipment(
         value,
         position: payload.tileIndex,
         isYellow: false,
-      }));
+      }, actor));
       addLog(state, actorId, "useEquipment", `used Post-it on wire ${payload.tileIndex} with value ${value}`);
       return {
         type: "equipmentUsed",

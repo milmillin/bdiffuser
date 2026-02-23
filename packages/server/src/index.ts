@@ -410,7 +410,7 @@ export class BombBustersServer extends Server<Env> {
       value,
       position: tileIndex,
       isYellow: false,
-    });
+    }, player);
     player.infoTokens.push(token);
 
     state.log.push({

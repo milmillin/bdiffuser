@@ -82,8 +82,10 @@ function formatInfoToken(token: {
   value: number;
   isYellow: boolean;
   parity?: "even" | "odd";
+  countHint?: 1 | 2 | 3;
 }): string {
   if (token.isYellow) return "YELLOW";
+  if (token.countHint != null) return `x${token.countHint}`;
   if (token.parity === "even") return "EVEN";
   if (token.parity === "odd") return "ODD";
   return String(token.value);

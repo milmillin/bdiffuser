@@ -25,4 +25,25 @@ describe("PlayerStand", () => {
 
     expect(html).toContain("/images/info_odd.png");
   });
+
+  it("renders mission-24 count tokens with x1/x2/x3 images", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [{ value: 0, countHint: 3, position: 0, isYellow: false }],
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("/images/info_x3.png");
+  });
 });
