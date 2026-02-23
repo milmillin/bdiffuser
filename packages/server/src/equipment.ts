@@ -59,6 +59,10 @@ function hasUncutValue(player: Player, value: EquipmentGuessValue): boolean {
   return getUncutTiles(player).some((tile) => tile.gameValue === value);
 }
 
+function isXMarkedWire(tile: WireTile | undefined): boolean {
+  return tile?.isXMarked === true;
+}
+
 function countCutValue(state: GameState, value: number): number {
   let count = 0;
   for (const player of state.players) {
@@ -220,6 +224,12 @@ export function validateUseEquipment(
       if (tile.cut) {
         return legalityError("TILE_ALREADY_CUT", "Cannot place Post-it on a cut wire");
       }
+      if (state.mission === 20 && isXMarkedWire(tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in mission 20",
+        );
+      }
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") {
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
@@ -243,6 +253,12 @@ export function validateUseEquipment(
       const tileB = getTileByFlatIndex(actor, payload.tileIndexB);
       if (!tileA || !tileB) {
         return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      }
+      if (state.mission === 20 && (isXMarkedWire(tileA) || isXMarkedWire(tileB))) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in mission 20",
+        );
       }
       if (Math.abs(payload.tileIndexA - payload.tileIndexB) !== 1) {
         return legalityError(
@@ -277,6 +293,12 @@ export function validateUseEquipment(
       const teammateTile = getTileByFlatIndex(teammate, payload.teammateTileIndex);
       if (!myTile || !teammateTile) {
         return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      }
+      if (state.mission === 20 && (isXMarkedWire(myTile) || isXMarkedWire(teammateTile))) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in mission 20",
+        );
       }
       if (myTile.cut || teammateTile.cut) {
         return legalityError(
@@ -358,6 +380,12 @@ export function validateUseEquipment(
         const tile = getTileByFlatIndex(target, index);
         if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
         if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+        if (state.mission === 20 && isXMarkedWire(tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "X-marked wires are ignored by equipment in mission 20",
+          );
+        }
       }
       return null;
     }
@@ -381,10 +409,15 @@ export function validateUseEquipment(
           "You don't have an uncut wire with that value",
         );
       }
-      if (getUncutTiles(target).length === 0) {
+      const eligibleTiles = getUncutTiles(target).filter(
+        (tile) => !(state.mission === 20 && isXMarkedWire(tile)),
+      );
+      if (eligibleTiles.length === 0) {
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
-          "Target stand has no uncut wires",
+          state.mission === 20
+            ? "Target stand has no non-X uncut wires"
+            : "Target stand has no uncut wires",
         );
       }
       return null;
@@ -400,6 +433,12 @@ export function validateUseEquipment(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+      if (state.mission === 20 && isXMarkedWire(tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in mission 20",
+        );
+      }
       const { guessValueA, guessValueB } = payload;
       if (guessValueA === guessValueB) {
         return legalityError(
@@ -586,7 +625,10 @@ export function executeUseEquipment(
       const details = state.players
         .map((player) => {
           const hasValue = getUncutTiles(player).some(
-            (tile) => tile.color === "blue" && tile.gameValue === payload.value,
+            (tile) =>
+              tile.color === "blue" &&
+              tile.gameValue === payload.value &&
+              !(state.mission === 20 && isXMarkedWire(tile)),
           );
           return `${player.name}:${hasValue ? "yes" : "no"}`;
         })
@@ -651,7 +693,11 @@ export function executeUseEquipment(
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
       const uncutIndices = target.hand
         .map((tile, index) => ({ tile, index }))
-        .filter((entry) => !entry.tile.cut)
+        .filter(
+          (entry) =>
+            !entry.tile.cut &&
+            !(state.mission === 20 && isXMarkedWire(entry.tile)),
+        )
         .map((entry) => entry.index);
       const chosenTileIndex = chooseDetectorTarget(
         target,

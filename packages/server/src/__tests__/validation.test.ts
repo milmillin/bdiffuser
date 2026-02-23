@@ -619,6 +619,16 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("mission 20: Double Detector cannot target X-marked wires", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.mission = 20;
+    state.players[1].hand[0].isXMarked = true;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("rejects actor with null character", () => {
     const actor = makePlayer({
       id: "actor",

@@ -146,6 +146,9 @@ Dependency: blocked by Phase 0C.
     - [x] Setup clears captain character card (no personal equipment in this mission).
     - [x] Captain cannot use personal Double Detector ability.
     - [x] Captain cannot activate equipment cards.
+  - [x] Mission 20 X-wire target restrictions:
+    - [x] Personal Double Detector cannot target X-marked wires.
+    - [x] Equipment targeting paths reject X-marked wire targets.
 
 #### Game Logic Layer (mission-aware)
 - [ ] Implement mission-specific progression systems (Nano, oxygen, challenge rewards, bunker flow).

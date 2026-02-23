@@ -190,6 +190,14 @@ export function validateDualCutDoubleDetectorLegality(
     return legalityError("TILE_ALREADY_CUT", "Tile 2 already cut");
   }
 
+  // Mission 20: X-marked wires are ignored by personal equipment.
+  if (state.mission === 20 && (tile1.isXMarked || tile2.isXMarked)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "X-marked wires cannot be targeted by personal equipment in mission 20",
+    );
+  }
+
   if (typeof guessValue !== "number") {
     return legalityError(
       "DOUBLE_DETECTOR_GUESS_NOT_BLUE",

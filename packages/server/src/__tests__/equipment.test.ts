@@ -667,6 +667,45 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "label_eq", "MISSION_RULE_VIOLATION");
   });
 
+  it("mission 20: rejects Post-it targeting an X-marked wire", () => {
+    const state = buildStateForEquipmentMatrix("post_it");
+    state.mission = 20;
+    state.players[0].hand[0].isXMarked = true;
+
+    expectLegalityCode(state, "actor", "post_it", "MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 20: rejects Talkies-Walkies when either selected wire is X-marked", () => {
+    const state = buildStateForEquipmentMatrix("talkies_walkies");
+    state.mission = 20;
+    state.players[1].hand[0].isXMarked = true;
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 1,
+      teammateTileIndex: 0,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 20: rejects X or Y Ray targeting an X-marked wire", () => {
+    const state = buildStateForEquipmentMatrix("x_or_y_ray");
+    state.mission = 20;
+    state.players[1].hand[1].isXMarked = true;
+
+    const error = validateUseEquipment(state, "actor", "x_or_y_ray", {
+      kind: "x_or_y_ray",
+      targetPlayerId: "teammate",
+      targetTileIndex: 1,
+      guessValueA: 4,
+      guessValueB: 7,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {
@@ -985,6 +1024,41 @@ describe("equipment execution", () => {
     expect(action.detail).toContain("Bob:no");
     expect(action.detail).toContain("Cara:yes");
     expect(state.board.equipment[0].used).toBe(true);
+  });
+
+  it("mission 20: General Radar ignores X-marked wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      name: "Actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bob",
+      hand: [makeTile({ id: "b1", gameValue: 9 })],
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      name: "Cara",
+      hand: [makeTile({ id: "c1", gameValue: 4, isXMarked: true })],
+    });
+    const state = stateWithEquipment(
+      [actor, p2, p3],
+      unlockedEquipmentCard("general_radar", "General Radar", 8),
+    );
+    state.mission = 20;
+
+    const action = executeUseEquipment(state, "actor", "general_radar", {
+      kind: "general_radar",
+      value: 4,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("general_radar");
+    expect(action.detail).toContain("Actor:yes");
+    expect(action.detail).toContain("Bob:no");
+    expect(action.detail).toContain("Cara:no");
   });
 
   it("stabilizer marks turn effect for actor and turn number", () => {

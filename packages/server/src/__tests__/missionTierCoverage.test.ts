@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { BaseEquipmentId } from "@bomb-busters/shared";
 import {
   makeBoardState,
+  makeEquipmentCard,
   makeGameState,
   makePlayer,
   makeTile,
@@ -64,6 +65,39 @@ describe("mission complexity tier representative coverage", () => {
       expect(marked).toHaveLength(1);
       expect(player.hand[player.hand.length - 1].isXMarked).toBe(true);
     }
+  });
+
+  it("x-marker tier (mission 20): Post-it cannot target an X-marked wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a4", color: "blue", gameValue: 4, sortValue: 4, isXMarked: true })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t7", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 20,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      board: makeBoardState({
+        equipment: [
+          makeEquipmentCard({
+            id: "post_it",
+            name: "Post-it",
+            unlockValue: 4,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      }),
+    });
+
+    const blocked = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+    expect(blocked?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
   it("hooked tier (mission 9): sequence-priority blocks then unlocks", () => {
