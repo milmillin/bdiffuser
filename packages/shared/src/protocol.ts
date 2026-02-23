@@ -23,6 +23,7 @@ export type ClientMessage =
       targetPlayerId: string;
       targetTileIndex: number;
       guessValue: number | "YELLOW";
+      actorTileIndex?: number;
     }
   | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number }
   | { type: "soloCut"; value: number | "YELLOW" }

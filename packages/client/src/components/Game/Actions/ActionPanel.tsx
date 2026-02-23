@@ -6,7 +6,7 @@ import type {
   EquipmentGuessValue,
   UseEquipmentPayload,
 } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS, wireLabel, resolveMissionSetup, getWirePoolCount } from "@bomb-busters/shared";
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
@@ -125,6 +125,7 @@ export function ActionPanel({
       targetPlayerId: selectedTarget.playerId,
       targetTileIndex: selectedTarget.tileIndex,
       guessValue: guessValue as number | "YELLOW",
+      actorTileIndex: selectedGuessTile ?? undefined,
     });
     onCutConfirmed();
   };
@@ -586,7 +587,7 @@ function buildEquipmentPayload(
   }
 }
 
-function getSoloCutValues(
+export function getSoloCutValues(
   state: ClientGameState,
   playerId: string,
 ): (number | "YELLOW")[] {
@@ -617,11 +618,15 @@ function getSoloCutValues(
         values.push(value);
       }
     } else {
-      // Yellow wire: only offer when opponents have no hidden uncut tiles.
-      const opponentsHaveUncut = state.players.some(
-        (p) => p.id !== playerId && p.hand.some((t) => !t.cut && t.gameValue == null),
+      // Yellow wire: count total yellows from mission schema, subtract visible cut yellows.
+      const { setup } = resolveMissionSetup(state.mission, state.players.length);
+      const totalYellowsInGame = getWirePoolCount(setup.yellow);
+      const allCutYellows = state.players.reduce(
+        (sum, p) => sum + p.hand.filter((t) => t.cut && t.color === "yellow").length,
+        0,
       );
-      if (!opponentsHaveUncut && myCount >= 1) {
+      const remainingYellows = totalYellowsInGame - allCutYellows;
+      if (myCount >= remainingYellows && remainingYellows > 0) {
         values.push("YELLOW");
       }
     }

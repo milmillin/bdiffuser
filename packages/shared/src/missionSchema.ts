@@ -1,176 +1,38 @@
 import {
-  BLUE_WIRE_VALUES,
   RED_WIRE_SORT_VALUES,
   YELLOW_WIRE_SORT_VALUES,
 } from "./constants.js";
-import { EQUIPMENT_DEFS } from "./imageMap.js";
+import { validateMissionSchemas } from "./missionSchemaValidation.js";
+import type {
+  BlueWireSpec,
+  MissionDifficulty,
+  MissionEquipmentSpec,
+  MissionRuleSchema,
+  MissionSetupSpec,
+  MissionSourceRef,
+  PlayerCount,
+  ResolvedMissionSetup,
+  WirePoolSpec,
+} from "./missionSchemaTypes.js";
 import { ALL_MISSION_IDS, type MissionId } from "./types.js";
-
-export type MissionDifficulty = "novice" | "intermediate" | "expert" | "campaign";
-export type PlayerCount = 2 | 3 | 4 | 5;
-
-export type WirePoolSpec =
-  | { kind: "none" }
-  | {
-      kind: "exact";
-      count: number;
-      /** Candidate sort values used for random draw. Defaults to all values of that color. */
-      candidates?: readonly number[];
-    }
-  | {
-      kind: "out_of";
-      keep: number;
-      draw: number;
-      /** Candidate sort values used for random draw. Defaults to all values of that color. */
-      candidates?: readonly number[];
-    }
-  | {
-      kind: "fixed";
-      values: readonly number[];
-    };
-
-export interface BlueWireSpec {
-  minValue: number;
-  maxValue: number;
-}
-
-export interface MissionEquipmentSpec {
-  mode: "none" | "default" | "fixed_pool";
-  /** Include campaign-only equipment cards (22/33/99/10-10/11-11/yellow) in the draw pool. */
-  includeCampaignEquipment?: boolean;
-  excludedUnlockValues?: readonly number[];
-  /** Exclude specific equipment cards by ID (used when unlock values are not unique). */
-  excludedEquipmentIds?: readonly string[];
-  fixedEquipmentIds?: readonly string[];
-}
-
-export interface MissionSetupSpec {
-  blue: BlueWireSpec;
-  red: WirePoolSpec;
-  yellow: WirePoolSpec;
-  equipment: MissionEquipmentSpec;
-}
-
-// ── Resolved Hook Rule Definitions (machine-readable) ──────────
-
-/**
- * Mission 10: Real-time countdown timer.
- * Players must complete the mission within `durationSeconds`.
- * An audio cue plays to signal time pressure.
- */
-export interface TimerRuleDef {
-  kind: "timer";
-  /** Timer duration in seconds. */
-  durationSeconds: number;
-  /** Optional mission-specific timer overrides by player count. */
-  durationSecondsByPlayerCount?: Partial<Record<PlayerCount, number>>;
-  /** Whether an audio cue accompanies the timer. */
-  audioPrompt: boolean;
-}
-
-/**
- * Mission 10: Captain designates the next player each turn
- * instead of following clockwise order.
- */
-export interface DynamicTurnOrderRuleDef {
-  kind: "dynamic_turn_order";
-  /** Who selects the next player. */
-  selector: "captain";
-}
-
-/**
- * Mission 11: One random blue wire value is secretly treated as a
- * detonator (red) during gameplay. No player knows which value it is.
- * Cutting that blue triggers a detonator advance just like cutting red.
- */
-export interface BlueAsRedRuleDef {
-  kind: "blue_value_treated_as_red";
-  /** How many blue values become hidden reds. */
-  count: 1;
-  /** Whether any player knows which blue is the hidden red. */
-  knownToAnyPlayer: false;
-}
-
-/**
- * Mission 12: Equipment requires cutting 2 wires whose game-value
- * matches the unlock value (instead of the normal 1).
- */
-export interface EquipmentDoubleLockRuleDef {
-  kind: "equipment_double_lock";
-  /** Number of matching wire cuts required to unlock equipment. */
-  requiredCuts: 2;
-  /** Optional secondary lock source (mission 12: number cards on equipment). */
-  secondaryLockSource?: "number_card";
-  /** Required cuts for the secondary lock value. */
-  secondaryRequiredCuts?: number;
-}
-
-/**
- * Mission 9: Sequence card priority (face A).
- * Three visible number cards define an ordered gating:
- * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
- * - Need `requiredCuts` of card[1] before card[2] is allowed.
- */
-export interface SequencePriorityRuleDef {
-  kind: "sequence_priority";
-  /** Number of visible sequence cards to draw from the number deck. */
-  cardCount: 3;
-  /** Required global cut count to unlock the next sequence step. */
-  requiredCuts: 2;
-  /** Printed sequence variant on mission card. */
-  variant: "face_a";
-}
-
-/**
- * Discriminated union of all resolved hook rule definitions.
- * Extend this union as more hooks are resolved in later milestones.
- */
-export type MissionHookRuleDef =
-  | TimerRuleDef
-  | DynamicTurnOrderRuleDef
-  | BlueAsRedRuleDef
-  | EquipmentDoubleLockRuleDef
-  | SequencePriorityRuleDef;
-
-// ── Source Reference Metadata ──────────────────────────────────
-
-export interface MissionSourceRef {
-  /** Mission card front image filename (e.g. "mission_1.jpg"). */
-  cardImage: string;
-  /** Mission card back image filename (e.g. "mission_1_back.jpg"). */
-  cardImageBack: string;
-  /** Section heading in GAME_RULES.md (e.g. "### Mission 1"). */
-  rulesSection: string;
-}
-
-// ── Mission Schema ─────────────────────────────────────────────
-
-export interface MissionRuleSchema {
-  id: MissionId;
-  name: string;
-  difficulty: MissionDifficulty;
-  setup: MissionSetupSpec;
-  /** Mission-specific setup overrides by player count. */
-  overrides?: Partial<Record<PlayerCount, Partial<MissionSetupSpec>>>;
-  /** Some missions are explicitly marked impossible at certain player counts. */
-  allowedPlayerCounts?: readonly PlayerCount[];
-  /** Procedural mission logic handled in server runtime. */
-  behaviorHooks?: readonly string[];
-  /**
-   * Resolved hook rule definitions with exact machine-readable parameters.
-   * Each entry corresponds to a behaviorHook string but with full type safety
-   * and unambiguous semantics. Populated as ambiguities are resolved.
-   */
-  hookRules?: readonly MissionHookRuleDef[];
-  /** Traceability back to physical mission card and rules document. */
-  sourceRef?: MissionSourceRef;
-  notes?: readonly string[];
-}
-
-export interface ResolvedMissionSetup {
-  mission: MissionRuleSchema;
-  setup: MissionSetupSpec;
-}
+export type {
+  BlueAsRedRuleDef,
+  BlueWireSpec,
+  DynamicTurnOrderRuleDef,
+  EquipmentDoubleLockRuleDef,
+  MissionDifficulty,
+  MissionEquipmentSpec,
+  MissionHookRuleDef,
+  MissionRuleSchema,
+  MissionSetupSpec,
+  MissionSourceRef,
+  PlayerCount,
+  ResolvedMissionSetup,
+  SequencePriorityRuleDef,
+  TimerRuleDef,
+  WirePoolSpec,
+} from "./missionSchemaTypes.js";
+export { describeWirePoolSpec, getWirePoolCount } from "./missionSchemaUtils.js";
 
 const PLAYER_COUNTS = [2, 3, 4, 5] as const;
 
@@ -1082,164 +944,4 @@ export function resolveMissionSetup(
   return { mission, setup };
 }
 
-export function getWirePoolCount(spec: WirePoolSpec): number {
-  switch (spec.kind) {
-    case "none":
-      return 0;
-    case "exact":
-      return spec.count;
-    case "out_of":
-      return spec.keep;
-    case "fixed":
-      return spec.values.length;
-  }
-}
-
-export function describeWirePoolSpec(spec: WirePoolSpec): string {
-  switch (spec.kind) {
-    case "none":
-      return "0";
-    case "exact":
-      return `${spec.count}`;
-    case "out_of":
-      return `${spec.keep} out of ${spec.draw}`;
-    case "fixed":
-      return `fixed ${spec.values.length}`;
-  }
-}
-
-function validateBlueSpec(missionId: MissionId, spec: BlueWireSpec): void {
-  if (!Number.isInteger(spec.minValue) || !Number.isInteger(spec.maxValue)) {
-    throw new Error(`Mission ${missionId}: blue range must be integer values`);
-  }
-  if (spec.minValue < 1 || spec.maxValue > 12 || spec.minValue > spec.maxValue) {
-    throw new Error(`Mission ${missionId}: invalid blue range ${spec.minValue}-${spec.maxValue}`);
-  }
-  if (!BLUE_WIRE_VALUES.includes(spec.minValue as (typeof BLUE_WIRE_VALUES)[number])) {
-    throw new Error(`Mission ${missionId}: invalid blue min value ${spec.minValue}`);
-  }
-  if (!BLUE_WIRE_VALUES.includes(spec.maxValue as (typeof BLUE_WIRE_VALUES)[number])) {
-    throw new Error(`Mission ${missionId}: invalid blue max value ${spec.maxValue}`);
-  }
-}
-
-function validatePoolSpec(
-  missionId: MissionId,
-  color: "red" | "yellow",
-  spec: WirePoolSpec,
-): void {
-  const defaultCandidates = color === "red" ? RED_WIRE_SORT_VALUES : YELLOW_WIRE_SORT_VALUES;
-
-  switch (spec.kind) {
-    case "none":
-      return;
-    case "exact": {
-      if (!Number.isInteger(spec.count) || spec.count < 0) {
-        throw new Error(`Mission ${missionId}: ${color} exact count must be non-negative integer`);
-      }
-      const candidates = spec.candidates ?? defaultCandidates;
-      if (spec.count > candidates.length) {
-        throw new Error(
-          `Mission ${missionId}: ${color} exact count ${spec.count} exceeds candidates ${candidates.length}`,
-        );
-      }
-      return;
-    }
-    case "out_of": {
-      if (
-        !Number.isInteger(spec.keep) ||
-        !Number.isInteger(spec.draw) ||
-        spec.keep < 0 ||
-        spec.draw < 0 ||
-        spec.keep > spec.draw
-      ) {
-        throw new Error(`Mission ${missionId}: invalid ${color} out_of keep/draw`);
-      }
-      const candidates = spec.candidates ?? defaultCandidates;
-      if (spec.draw > candidates.length) {
-        throw new Error(
-          `Mission ${missionId}: ${color} out_of draw ${spec.draw} exceeds candidates ${candidates.length}`,
-        );
-      }
-      return;
-    }
-    case "fixed": {
-      if (spec.values.length === 0) {
-        throw new Error(`Mission ${missionId}: ${color} fixed values cannot be empty`);
-      }
-      const candidateSet = new Set<number>(defaultCandidates as readonly number[]);
-      for (const value of spec.values) {
-        if (!candidateSet.has(value)) {
-          throw new Error(`Mission ${missionId}: invalid fixed ${color} value ${value}`);
-        }
-      }
-      return;
-    }
-  }
-}
-
-function validateEquipmentSpec(missionId: MissionId, spec: MissionEquipmentSpec): void {
-  const allEquipmentIds = new Set(EQUIPMENT_DEFS.map((d) => d.id));
-  const allUnlockValues = new Set(EQUIPMENT_DEFS.map((d) => d.unlockValue));
-
-  if (spec.mode === "fixed_pool") {
-    if (!spec.fixedEquipmentIds || spec.fixedEquipmentIds.length === 0) {
-      throw new Error(`Mission ${missionId}: fixed_pool requires fixedEquipmentIds`);
-    }
-    for (const id of spec.fixedEquipmentIds) {
-      if (!allEquipmentIds.has(id)) {
-        throw new Error(`Mission ${missionId}: unknown fixed equipment id ${id}`);
-      }
-    }
-  }
-
-  if (spec.excludedUnlockValues) {
-    for (const value of spec.excludedUnlockValues) {
-      if (!allUnlockValues.has(value)) {
-        throw new Error(`Mission ${missionId}: unknown equipment unlock value ${value}`);
-      }
-    }
-  }
-
-  if (spec.excludedEquipmentIds) {
-    for (const id of spec.excludedEquipmentIds) {
-      if (!allEquipmentIds.has(id)) {
-        throw new Error(`Mission ${missionId}: unknown excluded equipment id ${id}`);
-      }
-    }
-  }
-}
-
-function validateMissionSchemas(): void {
-  for (const missionId of ALL_MISSION_IDS) {
-    const mission = MISSION_SCHEMAS[missionId];
-    if (!mission) {
-      throw new Error(`Missing mission schema for mission ${missionId}`);
-    }
-
-    validateBlueSpec(missionId, mission.setup.blue);
-    validatePoolSpec(missionId, "red", mission.setup.red);
-    validatePoolSpec(missionId, "yellow", mission.setup.yellow);
-    validateEquipmentSpec(missionId, mission.setup.equipment);
-
-    if (mission.overrides) {
-      for (const [count, override] of Object.entries(mission.overrides)) {
-        const parsed = Number(count) as PlayerCount;
-        if (![2, 3, 4, 5].includes(parsed)) {
-          throw new Error(`Mission ${missionId}: unsupported player-count override ${count}`);
-        }
-        if (override.blue) validateBlueSpec(missionId, override.blue);
-        if (override.red) validatePoolSpec(missionId, "red", override.red);
-        if (override.yellow) validatePoolSpec(missionId, "yellow", override.yellow);
-        if (override.equipment) {
-          validateEquipmentSpec(
-            missionId,
-            mergeEquipment(mission.setup.equipment, override.equipment),
-          );
-        }
-      }
-    }
-  }
-}
-
-validateMissionSchemas();
+validateMissionSchemas(MISSION_SCHEMAS, mergeEquipment);

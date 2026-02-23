@@ -16,6 +16,7 @@
     "mission:test:hooks": "node scripts/mission-tester/run-campaign.mjs --scenario hooks",
     "mission:test:m1": "node scripts/mission-tester/run-campaign.mjs --scenario m1",
     "mission:test:full": "node scripts/mission-tester/run-campaign.mjs --scenario full",
+    "mission:summary": "node scripts/generate-mission-summary.mjs",
     "build": "pnpm --filter shared build && pnpm --filter client build",
     "test": "vitest run",
     "schema:check": "vitest run --dir packages/shared --testNamePattern 'mission ID|override validity|equipment reference|image asset'",

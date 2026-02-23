@@ -166,6 +166,7 @@ export function executeDualCut(
   targetPlayerId: string,
   targetTileIndex: number,
   guessValue: number | "YELLOW",
+  actorTileIndex?: number,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -224,7 +225,16 @@ export function executeDualCut(
     }
 
     const actorUncut = getUncutTiles(actor);
-    const actorTile = actorUncut.find((t) => t.gameValue === guessValue);
+    let actorTile: WireTile | undefined;
+    if (actorTileIndex != null) {
+      const candidate = getTileByFlatIndex(actor, actorTileIndex);
+      if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
+        actorTile = candidate;
+      }
+    }
+    if (!actorTile) {
+      actorTile = actorUncut.find((t) => t.gameValue === guessValue);
+    }
     if (actorTile) actorTile.cut = true;
 
     // Check validation and equipment unlock

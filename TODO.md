@@ -23,12 +23,12 @@ This file tracks all remaining work after introducing the central mission schema
 6. Phase 3 - QA hardening + rollout + cleanup
 
 ## Milestones
-- [ ] M1: Missions 1-12 fully playable with schema parity and tests.
+- [x] M1: Missions 1-12 fully playable with schema parity and tests.
 - [ ] M2: Missions 13-35 fully playable with schema parity and tests.
 - [ ] M3: Missions 36-66 (+31/32/35) fully playable with schema parity and tests.
 
 ### Milestone Task Mapping
-- [ ] M1 requires: Phase 0A + 0B + 0C complete, plus Phase 1 Core rules for missions 1-12, plus Phase 2 filtering/UI/bot support for features used by missions 1-12, plus Phase 3 M1 test gate.
+- [x] M1 requires: Phase 0A + 0B + 0C complete, plus Phase 1 Core rules for missions 1-12, plus Phase 2 filtering/UI/bot support for features used by missions 1-12, plus Phase 3 M1 test gate.
 - [ ] M2 requires: M1 complete, plus remaining Phase 1 Advanced rules for missions 13-35, plus Phase 2 support for those mechanics, plus Phase 3 M2 test gate.
 - [ ] M3 requires: M2 complete, plus final Phase 1 Advanced rules for missions 36-66 (+31/32/35), plus Phase 2 support for those mechanics, plus Phase 3 M3 test gate.
 
@@ -105,7 +105,7 @@ Dependency: blocked by Phase 0C.
 #### Validation Layer (mission-aware)
 - [x] Move mission-sensitive legality checks to hook-aware validation.
 - [x] Add action legality reason codes for UI and bots.
-- [ ] Implement support for:
+- [x] Implement support for:
   - Sequence/priority restrictions used in missions 1-12
   - [x] Mission 9 face-A sequence-priority gating (left→middle→right unlock flow)
   - [x] Forced action: captain chooses next player (mission 10 dynamic turn order)
@@ -115,24 +115,24 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 11 reveal restriction: hidden red-like value can only be revealed when it is all remaining in hand
 
 #### Game Logic Layer (mission-aware)
-- [ ] Implement mission-aware action resolvers for special actions used in missions 1-12.
-- [ ] Implement mission-specific failure outcomes used in missions 1-12.
+- [x] Implement mission-aware action resolvers for special actions used in missions 1-12.
+- [x] Implement mission-specific failure outcomes used in missions 1-12.
   - [x] Mission 11 hidden blue-as-red parity: successful cut of hidden value explodes immediately (`loss_red_wire`)
   - [x] Mission 11 hidden blue-as-red parity: wrong dual-cut guess on hidden value also explodes (`loss_red_wire`)
   - [x] Mission 10 timer enforcement: `timerDeadline` on GameState, Durable Object alarm-based timeout → `loss_timer` result.
   - [x] Mission 10 2-player timer override: 12-minute setup timer
-- [ ] Make win/loss checks mission-aware for mission patterns used in missions 1-12.
+- [x] Make win/loss checks mission-aware for mission patterns used in missions 1-12.
 
 #### Equipment Runtime Parity
-- [ ] Implement full shared-equipment use/effects required by missions 1-12.
-- [ ] Implement mission-specific equipment exclusions/replacements needed by missions 1-12.
+- [x] Implement full shared-equipment use/effects required by missions 1-12.
+- [x] Implement mission-specific equipment exclusions/replacements needed by missions 1-12.
   - [x] Mission 11 setup replacement for equipment matching hidden red-like value
   - [x] Mission 12 per-equipment number-card secondary lock enforcement
   - [x] Mission 12 secondary lock metadata clears when requirement is satisfied
 
 #### Token System Parity
-- [ ] Implement token variants required by missions 1-12.
-- [~] Implement mission-specific setup token flows required by missions 1-12.
+- [x] Implement token variants required by missions 1-12.
+- [x] Implement mission-specific setup token flows required by missions 1-12.
   - [x] Mission 11 (2-player) setup override: captain skips info-token placement
   - [x] Setup info-token legality enforcement (own blue wire + matching value + valid index)
 
@@ -165,9 +165,10 @@ Dependency: blocked by Phase 0C.
 Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 
 ### View Filtering and Persistence
-- [~] Update `viewFilter.ts` for all new mission objects and visibility semantics.
+- [x] Update `viewFilter.ts` for all new mission objects and visibility semantics.
   - [x] Mission 11 hidden blue-as-red setup value stays server-only in filtered log
   - [x] Mission-driven client fields preserved: `pendingForcedAction`, `timerDeadline`
+  - [x] Added coverage for constraints, oxygen ownership map, bunker tracker, number-card visibility, and all special marker kinds
 - [x] Verify room persistence/restore across all mission object types.
   - [x] Persist/restore mission-10 `pendingForcedAction` (+ `lastPlayerId`) via storage migration
   - [x] Storage migration tests cover campaign object restore: number cards, constraints, challenges, oxygen, nano/bunker trackers, special markers, and timer deadline
@@ -181,15 +182,20 @@ Dependency: blocked by Phase 1 Core for M1 and Phase 1 Advanced for M2/M3.
 
 ### Client UI
 - [x] Add UI surfaces for mission objects (cards, constraints, oxygen, Nano/Bunker, markers).
-- [ ] Add action-panel variants for mission-specific actions.
+- [x] Add action-panel variants for mission-specific actions.
+  - [x] Mission 9 action panel sequence gate (active value/progress + block invalid dual/solo submits)
+  - [x] Mission 11 reveal-action hinting (blocked/ready guidance without hidden-value leak)
   - [x] Mission 12 equipment buttons show secondary-lock progress and disable until satisfied
-- [~] Show active mission constraints/reminders in turn UI.
+- [x] Show active mission constraints/reminders in turn UI.
   - [x] Mission 10 live timer countdown in header (`timerDeadline`)
   - [x] Mission 9 sequence-priority hint panel (cards + active pointer)
   - [x] Mission 12 equipment secondary-lock progress panel
+  - [x] Turn constraint reminder panel for active global + current-player constraints
 - [x] Support captain UI for mission-10 `chooseNextPlayer` forced action (ChooseNextPlayerPanel).
-- [~] Support non-clockwise turn indicators and remaining forced-action states.
+- [x] Support non-clockwise turn indicators and remaining forced-action states.
   - [x] Mission 10 dynamic-turn indicator + previous-player context in turn UI
+  - [x] Forced-action captain identity surfaced in dynamic/waiting UI
+  - [x] Fallback waiting banner for unsupported future forced-action kinds
 - [x] Support mission-specific token placement interactions.
   - [x] Mission 11 (2-player) captain setup-token skip reflected in client setup interaction and messaging
 
@@ -203,14 +209,18 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 - [x] Keep `pnpm mission:test` for campaign smoke and expand scenarios.
 
 ### Rollout by Milestone
-- [ ] Ship M1 (missions 1-12) only when all M1 tests pass.
+- [x] Ship M1 (missions 1-12) only when all M1 tests pass.
 - [ ] Ship M2 (missions 13-35) only when all M2 tests pass.
 - [ ] Ship M3 (missions 36-66 + 31/32/35) only when all M3 tests pass.
 
 ### Maintainability
-- [ ] Split `missionSchema.ts` into modular files by domain or mission tier.
-- [ ] Add schema authoring docs with examples and invariants.
-- [ ] Add generated mission summary docs for human review.
+- [~] Split `missionSchema.ts` into modular files by domain or mission tier.
+  - [x] Extracted schema type/hook definitions into `missionSchemaTypes.ts`
+  - [x] Extracted schema validation helpers into `missionSchemaValidation.ts`
+- [x] Add schema authoring docs with examples and invariants.
+- [x] Add generated mission summary docs for human review.
+  - [x] Added generator script `scripts/generate-mission-summary.mjs`
+  - [x] Added generated artifact `packages/shared/MISSION_SUMMARY_GENERATED.md`
 - [ ] Add telemetry dashboard for mission failure reasons.
 
 ## Definition of Done (Campaign Rules Parity)

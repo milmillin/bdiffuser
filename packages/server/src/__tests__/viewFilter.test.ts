@@ -8,6 +8,8 @@ import {
   makeSpecialMarker,
   makeNumberCardState,
   makeNumberCard,
+  makeConstraintCardState,
+  makeConstraintCard,
   makeChallengeCard,
   makeChallengeCardState,
 } from "@bomb-busters/shared/testing";
@@ -31,7 +33,7 @@ describe("filterStateForPlayer – campaign state", () => {
     const filtered = filterStateForPlayer(state, "player-1");
     expect(filtered.campaign).toBeDefined();
     expect(filtered.campaign!.oxygen!.pool).toBe(12);
-    expect(filtered.campaign!.nanoTracker!.position).toBe(2);
+    expect(filtered.campaign!.nanoTracker).toEqual({ position: 2, max: 8 });
     expect(filtered.campaign!.specialMarkers).toHaveLength(1);
   });
 
@@ -152,5 +154,148 @@ describe("filterStateForPlayer – campaign state", () => {
 
     const filtered = filterStateForPlayer(state, "player-1");
     expect(filtered.timerDeadline).toBe(1_700_000_000_000);
+  });
+
+  it("preserves constraints visibility for global and per-player entries", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({ id: "p1", name: "Alice" }),
+        makePlayer({ id: "p2", name: "Bob" }),
+      ],
+      campaign: makeCampaignState({
+        constraints: makeConstraintCardState({
+          global: [
+            makeConstraintCard({
+              id: "g1",
+              name: "No 5",
+              description: "Cannot cut 5",
+              active: true,
+            }),
+          ],
+          perPlayer: {
+            p1: [
+              makeConstraintCard({
+                id: "p1c",
+                name: "No Solo",
+                description: "Cannot solo",
+                active: true,
+              }),
+            ],
+            p2: [
+              makeConstraintCard({
+                id: "p2c",
+                name: "No 7",
+                description: "Cannot say 7",
+                active: false,
+              }),
+            ],
+          },
+        }),
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    expect(filtered.campaign!.constraints).toEqual({
+      global: [
+        {
+          id: "g1",
+          name: "No 5",
+          description: "Cannot cut 5",
+          active: true,
+        },
+      ],
+      perPlayer: {
+        p1: [
+          {
+            id: "p1c",
+            name: "No Solo",
+            description: "Cannot solo",
+            active: true,
+          },
+        ],
+        p2: [
+          {
+            id: "p2c",
+            name: "No 7",
+            description: "Cannot say 7",
+            active: false,
+          },
+        ],
+      },
+    });
+  });
+
+  it("preserves oxygen ownership map and bunker tracker", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({ id: "p1", name: "Alice" }),
+        makePlayer({ id: "p2", name: "Bob" }),
+      ],
+      campaign: makeCampaignState({
+        oxygen: makeOxygenState({
+          pool: 6,
+          playerOxygen: { p1: 2, p2: 1 },
+        }),
+        bunkerTracker: makeProgressTracker({ position: 3, max: 9 }),
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    expect(filtered.campaign!.oxygen).toEqual({
+      pool: 6,
+      playerOxygen: { p1: 2, p2: 1 },
+    });
+    expect(filtered.campaign!.bunkerTracker).toEqual({
+      position: 3,
+      max: 9,
+    });
+  });
+
+  it("preserves visible/discard number cards and redacts only deck cards", () => {
+    const state = makeGameState({
+      campaign: makeCampaignState({
+        numberCards: makeNumberCardState({
+          deck: [makeNumberCard({ id: "d1", value: 10, faceUp: false })],
+          discard: [makeNumberCard({ id: "dc1", value: 4, faceUp: true })],
+          visible: [makeNumberCard({ id: "v1", value: 8, faceUp: true })],
+        }),
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.campaign!.numberCards!.deck[0]).toEqual({
+      id: "d1",
+      value: 0,
+      faceUp: false,
+    });
+    expect(filtered.campaign!.numberCards!.discard[0]).toEqual({
+      id: "dc1",
+      value: 4,
+      faceUp: true,
+    });
+    expect(filtered.campaign!.numberCards!.visible[0]).toEqual({
+      id: "v1",
+      value: 8,
+      faceUp: true,
+    });
+  });
+
+  it("preserves all special marker kinds for client mission hints", () => {
+    const state = makeGameState({
+      campaign: makeCampaignState({
+        specialMarkers: [
+          makeSpecialMarker({ kind: "x", value: 5 }),
+          makeSpecialMarker({ kind: "sequence_pointer", value: 1 }),
+          makeSpecialMarker({ kind: "action_pointer", value: 2 }),
+        ],
+      }),
+    });
+
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.campaign!.specialMarkers).toEqual([
+      { kind: "x", value: 5 },
+      { kind: "sequence_pointer", value: 1 },
+      { kind: "action_pointer", value: 2 },
+    ]);
   });
 });
