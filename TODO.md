@@ -177,7 +177,7 @@ Dependency: blocked by Phase 0C.
 #### Game Logic Layer (mission-aware)
 
 - [ ] Implement mission-specific progression systems (Nano, oxygen, challenge rewards, bunker flow).
-- [ ] Implement remaining alternate failure outcomes for M2/M3 mechanics.
+- [x] Implement remaining alternate failure outcomes for M2/M3 mechanics.
   - [x] Mission 28: failed Dual Cut by captain now explodes immediately.
   - [x] Mission 25: speaking wire numbers (`1`-`12`) in chat advances detonator.
   - [x] Mission 20 setup: mark one unsorted far-right `X` wire per player.
