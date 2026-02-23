@@ -1288,7 +1288,7 @@ Baseline assumption used in this section:
 
 ### Mission 49
 
-- Card title: `Bottles in the sea`
+- Card title: `Message in a Bottle`
 - Setup:
   - Add `2` red wires.
   - Give oxygen tokens to each player as visible personal supply:
@@ -1306,9 +1306,7 @@ Baseline assumption used in this section:
   - If player cannot act due to insufficient oxygen, they pass and detonator advances `1`.
   - Communication restriction:
     - No speaking.
-    - One thumb up/down gesture allowed to indicate oxygen need.
-
-> **FAQ:** When a player has no wires left or reveals RED, their remaining oxygen tokens are removed from the game. A player can voluntarily skip their turn to save oxygen (detonator advances +1).
+    - One sign is allowed: give a thumbs up if you need more oxygen.
 
 ### Mission 50
 
