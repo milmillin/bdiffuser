@@ -1,4 +1,4 @@
-import type { BoardState } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS, type BoardState } from "@bomb-busters/shared";
 
 export function BoardArea({ board }: { board: BoardState }) {
   return (
@@ -160,6 +160,8 @@ function EquipmentRow({
 }: {
   equipment: BoardState["equipment"];
 }) {
+  const defsById = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
+
   const getStatus = (eq: BoardState["equipment"][number]) => {
     if (eq.used) return { label: "Used", className: "bg-black/70 text-gray-200" };
     if (eq.unlocked) {
@@ -172,30 +174,43 @@ function EquipmentRow({
     <div>
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Equipment</div>
       <div className="flex gap-2 overflow-x-auto">
-        {equipment.map((eq) => (
-          <div
-            key={eq.id}
-            className={`relative flex-shrink-0 w-24 rounded-lg overflow-hidden border ${
-              eq.used
-                ? "border-gray-700 opacity-60"
-                : eq.unlocked
-                  ? "border-green-500"
-                  : "border-gray-700"
-            }`}
-          >
-            <img
-              src={`/images/${eq.image}`}
-              alt={eq.name}
-              className={`w-full h-auto block ${eq.used ? "grayscale" : ""}`}
-            />
-            <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${getStatus(eq).className}`}>
-              {getStatus(eq).label}
+        {equipment.map((eq) => {
+          const imageName =
+            (typeof eq.image === "string" && eq.image) ||
+            defsById.get(eq.id)?.image ||
+            "equipment_back.png";
+
+          return (
+            <div
+              key={eq.id}
+              className={`relative flex-shrink-0 w-24 rounded-lg overflow-hidden border ${
+                eq.used
+                  ? "border-gray-700 opacity-60"
+                  : eq.unlocked
+                    ? "border-green-500"
+                    : "border-gray-700"
+              }`}
+            >
+              <img
+                src={`/images/${imageName}`}
+                alt={eq.name}
+                className={`w-full h-auto block ${eq.used ? "grayscale" : ""}`}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.endsWith("/images/equipment_back.png")) {
+                    target.src = "/images/equipment_back.png";
+                  }
+                }}
+              />
+              <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${getStatus(eq).className}`}>
+                {getStatus(eq).label}
+              </div>
+              <div className="absolute inset-x-0 bottom-0 bg-black/70 px-1.5 py-1">
+                <div className="text-[10px] font-bold text-white truncate">{eq.name}</div>
+              </div>
             </div>
-            <div className="absolute inset-x-0 bottom-0 bg-black/70 px-1.5 py-1">
-              <div className="text-[10px] font-bold text-white truncate">{eq.name}</div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

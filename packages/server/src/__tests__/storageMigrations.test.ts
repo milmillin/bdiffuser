@@ -79,5 +79,46 @@ describe("normalizeRoomState", () => {
     expect(normalized.gameState!.board.validationTrack[3]).toBe(1);
     expect(normalized.gameState!.board.validationTrack[12]).toBe(0);
   });
-});
 
+  it("backfills missing equipment image fields from equipment definitions", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [
+            {
+              id: "rewinder",
+              name: "Rewinder",
+              description: "Move detonator back one notch",
+              unlockValue: 6,
+              unlocked: true,
+              used: false,
+            },
+          ],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 1,
+        result: null,
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-d");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.board.equipment).toHaveLength(1);
+    expect(normalized.gameState!.board.equipment[0].image).toBe("equipment_6.png");
+  });
+});

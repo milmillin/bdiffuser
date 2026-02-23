@@ -1,5 +1,6 @@
 import {
   ALL_MISSION_IDS,
+  EQUIPMENT_DEFS,
   type GameState,
   type GamePhase,
   type GameResult,
@@ -7,6 +8,7 @@ import {
   type Player,
   type CharacterId,
   type CampaignState,
+  type EquipmentCard,
 } from "@bomb-busters/shared";
 
 export interface RoomStateSnapshot {
@@ -82,6 +84,49 @@ function normalizeValidationTrack(raw: unknown): Record<number, number> {
     track[value] = toFiniteNumber(obj[String(value)], 0);
   }
   return track;
+}
+
+function normalizeEquipment(raw: unknown): EquipmentCard[] {
+  if (!Array.isArray(raw)) return [];
+
+  const defsById = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
+
+  return raw
+    .map((entry): EquipmentCard | null => {
+      if (!isObject(entry)) return null;
+
+      const id = typeof entry.id === "string" ? entry.id : "";
+      if (!id) return null;
+
+      const def = defsById.get(id);
+      const unlockValue = toFiniteNumber(
+        entry.unlockValue,
+        def?.unlockValue ?? 0,
+      );
+      const name =
+        typeof entry.name === "string" && entry.name
+          ? entry.name
+          : (def?.name ?? id);
+      const description =
+        typeof entry.description === "string"
+          ? entry.description
+          : (def?.description ?? "");
+      const image =
+        typeof entry.image === "string" && entry.image
+          ? entry.image
+          : (def?.image ?? "equipment_back.png");
+
+      return {
+        id,
+        name,
+        description,
+        unlockValue,
+        unlocked: toBool(entry.unlocked, false),
+        used: toBool(entry.used, false),
+        image,
+      };
+    })
+    .filter((card): card is EquipmentCard => card !== null);
 }
 
 function normalizeCampaign(raw: unknown): CampaignState | undefined {
@@ -173,6 +218,7 @@ function normalizeGameState(
     resultRaw === "win" ||
     resultRaw === "loss_red_wire" ||
     resultRaw === "loss_detonator" ||
+    resultRaw === "loss_timer" ||
     resultRaw === null
       ? resultRaw
       : null;
@@ -195,7 +241,7 @@ function normalizeGameState(
       detonatorMax: toFiniteNumber(boardObj.detonatorMax, 3),
       validationTrack: normalizeValidationTrack(boardObj.validationTrack),
       markers: Array.isArray(boardObj.markers) ? boardObj.markers : [],
-      equipment: Array.isArray(boardObj.equipment) ? boardObj.equipment : [],
+      equipment: normalizeEquipment(boardObj.equipment),
     },
     currentPlayerIndex,
     turnNumber: toFiniteNumber(obj.turnNumber, 0),
@@ -204,6 +250,9 @@ function normalizeGameState(
     log: Array.isArray(obj.log) ? obj.log : [],
     chat: Array.isArray(obj.chat) ? obj.chat : [],
     ...(campaign ? { campaign } : {}),
+    ...(typeof obj.timerDeadline === "number" && Number.isFinite(obj.timerDeadline)
+      ? { timerDeadline: obj.timerDeadline }
+      : {}),
   };
 }
 
