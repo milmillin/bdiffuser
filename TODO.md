@@ -421,7 +421,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_12`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `No text changes needed — OCR-clean source image confirms existing GAME_RULES.md entry for equipment_12`).
 - [x] `equipment_22`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: front image OCR confirms text; `GAME_RULES.md` wording updated for card exact wording).
 - [x] `equipment_33`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `No text changes needed; source front image OCR confirmed card text already matches current GAME_RULES.md entry.`).
-- [ ] `equipment_99`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `equipment_99`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Verified front card OCR; existing `GAME_RULES.md` text for `equipment_99` is already correct; no changes needed.`).
 - [ ] `equipment_1010`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_1111`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_yellow`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
