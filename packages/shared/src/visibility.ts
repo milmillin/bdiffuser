@@ -165,9 +165,17 @@ export function filterCampaignState(
   campaign: CampaignState,
   playerId: string,
 ): CampaignState {
+  const isSpectator = playerId === "__spectator__";
   return {
     ...(campaign.numberCards
-      ? { numberCards: filterNumberCards(campaign.numberCards, playerId) }
+      ? {
+          numberCards: isSpectator
+            ? {
+                ...filterNumberCards(campaign.numberCards, playerId),
+                playerHands: campaign.numberCards.playerHands,
+              }
+            : filterNumberCards(campaign.numberCards, playerId),
+        }
       : {}),
     ...(campaign.constraints ? { constraints: campaign.constraints } : {}),
     ...(campaign.challenges
