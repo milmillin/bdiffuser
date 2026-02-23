@@ -224,7 +224,7 @@ function MissionSelector({
           value={selectedMission}
           onChange={handleDropdownChange}
           data-testid="mission-dropdown"
-          className="flex-1 px-3 py-1.5 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-red-400 appearance-none"
+          className="flex-1 min-w-0 px-3 py-1.5 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-red-400 appearance-none"
         >
           {grouped.map((group) => (
             <optgroup key={group.label} label={group.label}>
