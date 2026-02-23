@@ -366,4 +366,42 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       isYellow: false,
     });
   });
+
+  it("mission 52: failed Double Detector places announced-value false token", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 7 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 52,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("none_match");
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(target.infoTokens).toHaveLength(1);
+    expect(target.infoTokens[0]).toMatchObject({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+  });
 });

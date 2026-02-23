@@ -625,15 +625,16 @@ export function executeDualCutDoubleDetector(
 
   const suppressInfoTokens = state.mission === 58;
   if (!suppressInfoTokens) {
-    const mission17FalseToken = state.mission === 17 && target.isCaptain;
+    const usesAnnouncedFalseToken =
+      (state.mission === 17 && target.isCaptain) || state.mission === 52;
     const tokenValue =
-      mission17FalseToken
+      usesAnnouncedFalseToken
         ? guessValue
         : typeof infoTokenTile.gameValue === "number"
           ? infoTokenTile.gameValue
           : 0;
     const tokenIsYellow =
-      mission17FalseToken ? false : infoTokenTile.color === "yellow";
+      usesAnnouncedFalseToken ? false : infoTokenTile.color === "yellow";
 
     target.infoTokens.push(applyMissionInfoTokenVariant(state, {
       value: tokenValue,

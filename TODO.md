@@ -209,7 +209,7 @@ Dependency: blocked by Phase 0C.
 
 #### Token System Parity
 
-- [ ] Implement token variants:
+- [x] Implement token variants:
   - Standard numeric
   - [x] Even/Odd
   - [x] `x1/x2/x3`
