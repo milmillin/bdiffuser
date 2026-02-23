@@ -141,7 +141,11 @@ export function GameBoard({
 
             {/* Board area */}
             <div className="flex-shrink-0">
-              <BoardArea board={gameState.board} />
+              <BoardArea
+                board={gameState.board}
+                missionId={gameState.mission}
+                playerCount={gameState.players.length}
+              />
             </div>
 
             {/* My area */}

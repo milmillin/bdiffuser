@@ -1,6 +1,33 @@
-import { EQUIPMENT_DEFS, type BoardState } from "@bomb-busters/shared";
+import {
+  EQUIPMENT_DEFS,
+  resolveMissionSetup,
+  type BoardState,
+  type MissionId,
+} from "@bomb-busters/shared";
 
-export function BoardArea({ board }: { board: BoardState }) {
+function getBlueRangeForMission(
+  missionId: MissionId,
+  playerCount: number,
+): { minValue: number; maxValue: number } {
+  try {
+    return resolveMissionSetup(missionId, playerCount).setup.blue;
+  } catch {
+    // Fallback keeps the track fully enabled if setup resolution fails.
+    return { minValue: 1, maxValue: 12 };
+  }
+}
+
+export function BoardArea({
+  board,
+  missionId,
+  playerCount,
+}: {
+  board: BoardState;
+  missionId: MissionId;
+  playerCount: number;
+}) {
+  const blueRange = getBlueRangeForMission(missionId, playerCount);
+
   return (
     <div className="bg-[var(--color-bomb-surface)] rounded-xl px-3 py-2 space-y-2" data-testid="board-area">
       <div className="flex items-start gap-3">
@@ -11,6 +38,7 @@ export function BoardArea({ board }: { board: BoardState }) {
         <ValidationTrack
           track={board.validationTrack}
           markers={board.markers}
+          blueRange={blueRange}
         />
       </div>
       {board.equipment.length > 0 && (
@@ -67,28 +95,44 @@ function DetonatorDial({
 function ValidationTrack({
   track,
   markers,
+  blueRange,
 }: {
   track: Record<number, number>;
   markers: { value: number; color: string; confirmed?: boolean }[];
+  blueRange: { minValue: number; maxValue: number };
 }) {
   return (
     <div className="flex-1">
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Validation Track</div>
       <div className="flex items-end gap-0.5">
         {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
+          const isUnused =
+            value < blueRange.minValue || value > blueRange.maxValue;
           const cutCount = track[value] ?? 0;
           const validated = cutCount >= 4;
-          const yellowMarker = markers.find((m) => m.value === value && m.color === "yellow");
-          const redMarker = markers.find((m) => m.value === value && m.color === "red");
+          const yellowMarker = isUnused
+            ? undefined
+            : markers.find((m) => m.value === value && m.color === "yellow");
+          const redMarker = isUnused
+            ? undefined
+            : markers.find((m) => m.value === value && m.color === "red");
 
           return (
             <div key={value} className="flex items-end gap-0.5">
               {/* Blue value column */}
               <div
                 data-testid={`validation-slot-${value}`}
-                className="flex flex-col items-center gap-0.5"
+                className={`flex flex-col items-center gap-0.5 ${isUnused ? "opacity-40" : ""}`}
               >
-                <span className={`text-[10px] font-bold ${validated ? "text-green-400" : "text-gray-400"}`}>
+                <span
+                  className={`text-[10px] font-bold ${
+                    isUnused
+                      ? "text-gray-600"
+                      : validated
+                        ? "text-green-400"
+                        : "text-gray-400"
+                  }`}
+                >
                   {value}
                 </span>
                 <div className="flex gap-0.5">
@@ -96,17 +140,19 @@ function ValidationTrack({
                     <div
                       key={j}
                       className={`w-3.5 h-4 rounded-[1px] transition-all duration-300 ${
-                        j < cutCount
+                        !isUnused && j < cutCount
                           ? validated ? "bg-green-500" : "bg-blue-500"
-                          : "bg-[var(--color-bomb-dark)]"
+                          : isUnused
+                            ? "bg-gray-900/70"
+                            : "bg-[var(--color-bomb-dark)]"
                       }`}
                     />
                   ))}
                 </div>
               </div>
-              {/* Yellow (square) and Red (circle) markers between columns */}
+              {/* Yellow then Red markers between columns */}
               {value <= 11 && (
-                <div className="flex flex-col items-center gap-0.5 pb-0.5">
+                <div className={`flex items-center gap-0.5 px-0.5 pb-0.5 ${isUnused ? "opacity-40" : ""}`}>
                   <MarkerIndicator marker={yellowMarker} shape="square" />
                   <MarkerIndicator marker={redMarker} shape="circle" />
                 </div>
