@@ -58,6 +58,22 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "x_or_y_ray",
 ]);
 
+function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
+  return mission === 52 || (mission === 17 && isCaptain);
+}
+
+function getDefaultFalseSetupTokenValue(tile: VisibleTile | undefined): number | null {
+  if (
+    tile?.color === "blue" &&
+    typeof tile.gameValue === "number" &&
+    tile.gameValue >= 1 &&
+    tile.gameValue <= 12
+  ) {
+    return tile.gameValue === 1 ? 2 : 1;
+  }
+  return 1;
+}
+
 export function GameBoard({
   gameState,
   send,
@@ -108,6 +124,7 @@ export function GameBoard({
 
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
+  const [selectedInfoTokenValue, setSelectedInfoTokenValue] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [missionCardView, setMissionCardView] = useState<"front" | "back" | "text">("front");
   const cycleMissionView = useCallback(
@@ -140,6 +157,8 @@ export function GameBoard({
       gameState.players.length,
       me.isCaptain,
     );
+  const useFalseSetupTokenMode =
+    !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
   const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName =
     gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
@@ -212,6 +231,7 @@ export function GameBoard({
   useEffect(() => {
     if (!requiresSetupToken) {
       setSelectedInfoTile(null);
+      setSelectedInfoTokenValue(null);
     }
   }, [requiresSetupToken]);
 
@@ -357,7 +377,22 @@ export function GameBoard({
                   onTileClick={
                     isSetup && isMyTurn
                       ? (requiresSetupToken
-                        ? (tileIndex) => setSelectedInfoTile(tileIndex)
+                        ? (tileIndex) => {
+                            if (selectedInfoTile === tileIndex) {
+                              setSelectedInfoTile(null);
+                              setSelectedInfoTokenValue(null);
+                              return;
+                            }
+
+                            setSelectedInfoTile(tileIndex);
+                            if (useFalseSetupTokenMode) {
+                              setSelectedInfoTokenValue(
+                                getDefaultFalseSetupTokenValue(me?.hand[tileIndex]),
+                              );
+                            } else {
+                              setSelectedInfoTokenValue(null);
+                            }
+                          }
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
@@ -378,7 +413,17 @@ export function GameBoard({
                   tileSelectableFilter={
                     isSetup && isMyTurn
                       ? (requiresSetupToken
-                        ? (tile: VisibleTile) => tile.color === "blue" && tile.gameValue !== "RED" && tile.gameValue !== "YELLOW"
+                        ? (tile: VisibleTile) => {
+                            if (tile.cut) return false;
+                            if (useFalseSetupTokenMode && gameState.mission === 52) {
+                              return tile.color === "blue" || tile.color === "red";
+                            }
+                            return (
+                              tile.color === "blue" &&
+                              tile.gameValue !== "RED" &&
+                              tile.gameValue !== "YELLOW"
+                            );
+                          }
                         : undefined)
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
@@ -394,9 +439,15 @@ export function GameBoard({
                 <InfoTokenSetup
                   player={me}
                   selectedTileIndex={selectedInfoTile}
+                  selectedTokenValue={selectedInfoTokenValue}
                   requiresToken={requiresSetupToken}
+                  useFalseTokenMode={useFalseSetupTokenMode}
                   send={send}
-                  onPlaced={() => setSelectedInfoTile(null)}
+                  onPlaced={() => {
+                    setSelectedInfoTile(null);
+                    setSelectedInfoTokenValue(null);
+                  }}
+                  onSelectedTokenValueChange={setSelectedInfoTokenValue}
                 />
               )}
 

@@ -213,7 +213,7 @@ Dependency: blocked by Phase 0C.
   - Standard numeric
   - [x] Even/Odd
   - [x] `x1/x2/x3`
-  - False-information
+  - [x] False-information
   - Absent-value
   - No-token missions
   - [x] Mission 21 even/odd token mode for setup placements, failed-cut token placement, and Post-it token placement.

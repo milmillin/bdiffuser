@@ -50,6 +50,37 @@ describe("botPlaceInfoToken", () => {
     }
   });
 
+  it("mission 17 captain: places legal false setup tokens up to required count", () => {
+    const captainBot = makePlayer({
+      id: "captain-bot",
+      isBot: true,
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "b-4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "b-7", color: "blue", gameValue: 7, sortValue: 7 }),
+        makeRedTile({ id: "r-1" }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t-8", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+    const state = makeGameState({
+      mission: 17,
+      phase: "setup_info_tokens",
+      players: [captainBot, teammate],
+    });
+
+    botPlaceInfoToken(state, "captain-bot");
+    botPlaceInfoToken(state, "captain-bot");
+    botPlaceInfoToken(state, "captain-bot");
+
+    expect(captainBot.infoTokens).toHaveLength(2);
+    for (const token of captainBot.infoTokens) {
+      expect(validateSetupInfoTokenPlacement(state, captainBot, token.value, token.position)).toBeNull();
+    }
+  });
+
   it.each([21, 33] as const)("mission %i: places parity setup token", (mission) => {
     const bot = makePlayer({
       id: "bot",

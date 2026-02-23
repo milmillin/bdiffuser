@@ -68,8 +68,12 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
   const requiredTokenCount = requiredSetupInfoTokenCount(state, bot);
   if (bot.infoTokens.length >= requiredTokenCount) return;
 
-  // Mission 52 setup uses false tokens on blue/red wires.
-  if (state.phase === "setup_info_tokens" && state.mission === 52) {
+  // Missions with false setup tokens (mission 52 for all players,
+  // mission 17 for captain only) need non-matching numeric values.
+  const requiresFalseSetupToken =
+    state.phase === "setup_info_tokens" &&
+    (state.mission === 52 || (state.mission === 17 && bot.isCaptain));
+  if (requiresFalseSetupToken) {
     const existingPositions = new Set(bot.infoTokens.map((t) => t.position));
     const tryPlace = (allowUsedPositions: boolean): boolean => {
       for (let tileIndex = 0; tileIndex < bot.hand.length; tileIndex++) {
