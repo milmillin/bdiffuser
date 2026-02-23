@@ -252,7 +252,7 @@ function EquipmentRow({
 
   const charText = character ? CHARACTER_CARD_TEXT[character] : null;
   const charImage = character ? CHARACTER_IMAGES[character] : null;
-  const showPersonalImage = character ? flippedCards.has(`personal-${character}`) : false;
+  const showPersonalImage = character ? !flippedCards.has(`personal-${character}`) : false;
 
   return (
     <div>
@@ -286,11 +286,11 @@ function EquipmentRow({
             </div>
 
             {showPersonalImage && charImage ? (
-              <div className="relative h-full w-full">
+              <div className="relative h-full w-full bg-slate-900">
                 <img
                   src={`/images/${charImage}`}
                   alt={charText.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
                   <div className="text-sm font-bold text-white leading-tight">
@@ -360,7 +360,7 @@ function EquipmentRow({
           const def = EQUIPMENT_DEFS_BY_ID.get(eq.id);
           const rulesText = getEquipmentCardText(eq.id, def);
           const status = getStatus(eq);
-          const showImage = flippedCards.has(eq.id);
+          const showImage = !flippedCards.has(eq.id);
 
           return (
             <button
@@ -380,11 +380,11 @@ function EquipmentRow({
               </div>
 
               {showImage ? (
-                <div className="relative h-full w-full">
+                <div className="relative h-full w-full bg-slate-900">
                   <img
                     src={`/images/${eq.image}`}
                     alt={eq.name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-6">
                     <div className="text-sm font-bold text-white leading-tight">

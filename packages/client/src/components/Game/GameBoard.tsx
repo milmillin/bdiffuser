@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
 import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, MISSION_IMAGES, MISSION_SCHEMAS, MISSIONS, describeWirePoolSpec, wireLabel } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
@@ -88,6 +88,13 @@ export function GameBoard({
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [missionCardShowText, setMissionCardShowText] = useState(false);
+  const missionImageRef = useRef<HTMLImageElement>(null);
+  const [missionImageHeight, setMissionImageHeight] = useState<number | undefined>(undefined);
+  const onMissionImageLoad = useCallback(() => {
+    if (missionImageRef.current) {
+      setMissionImageHeight(missionImageRef.current.clientHeight);
+    }
+  }, []);
 
   // Character card overlay state
   const [viewingCharacter, setViewingCharacter] = useState<{
@@ -625,7 +632,7 @@ export function GameBoard({
                   equipment: override?.equipment ?? schema.setup.equipment,
                 };
                 return (
-                  <div className="rounded-lg border border-gray-700 bg-slate-950 p-3 space-y-2">
+                  <div className="rounded-lg border border-gray-700 bg-slate-950 p-3 space-y-2 overflow-y-auto" style={missionImageHeight ? { minHeight: missionImageHeight } : undefined}>
                     <div className="text-[10px] uppercase tracking-wide text-gray-400">
                       Mission {gameState.mission} — {def.difficulty}
                     </div>
@@ -666,9 +673,11 @@ export function GameBoard({
                 );
               })() : (
                 <img
+                  ref={missionImageRef}
                   src={`/images/${MISSION_IMAGES[gameState.mission]}`}
                   alt={`Mission ${gameState.mission}`}
                   className="w-full h-auto rounded-lg"
+                  onLoad={onMissionImageLoad}
                 />
               )}
               <button
