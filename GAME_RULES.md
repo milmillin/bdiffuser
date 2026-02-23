@@ -1639,6 +1639,10 @@ Baseline assumption used in this section:
 
 - The sum of the first 3 validation tokens used equals 18.
 
+### Challenge 5
+
+- 2 bomb disposal experts consecutively perform the SOLO Cut action.
+
 ---
 
 ## Source

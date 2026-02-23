@@ -431,7 +431,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `challenge_2`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Added: 4 bomb disposal experts consecutively cut EVEN numbers.`).
 - [x] `challenge_3`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Added: Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).`).
 - [x] `challenge_4`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front text: \"The sum of the first 3 validation tokens used equals 18.\``).
-- [ ] `challenge_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `challenge_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Added Challenge 5 entry: 2 bomb disposal experts consecutively perform the SOLO Cut action.`).
 - [ ] `challenge_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `challenge_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
