@@ -217,6 +217,9 @@ Dependency: blocked by Phase 0C.
     - [x] Failed Dual Cut / Double Detector attempts no longer place info tokens.
     - [x] Token-placing equipment (Post-it, Label cards) is blocked.
 - [ ] Implement mission-specific token placement legality.
+  - [x] Mission 52 setup token legality:
+    - [x] Setup tokens may target only blue/red wires.
+    - [x] Setup tokens on blue wires must be false (non-matching value).
 - [ ] Implement remaining mission-specific setup token flows (random draw, captain skip, multi-token placement).
   - [x] Mission 13 random setup-token draw flow:
     - [x] Setup now auto-places one random valid info token for each required player.

@@ -306,5 +306,47 @@ describe("setupTokenRules", () => {
         message: "Captain false setup tokens cannot target red wires",
       });
     });
+
+    it("mission 52: accepts false setup token on blue wire", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-8", gameValue: 8, sortValue: 8, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(52, player), player, 3, 0);
+      expect(error).toBeNull();
+    });
+
+    it("mission 52: accepts setup token on red wire", () => {
+      const player = makePlayer({
+        hand: [makeRedTile()],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(52, player), player, 7, 0);
+      expect(error).toBeNull();
+    });
+
+    it("mission 52: rejects matching setup token on blue wire", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-4", gameValue: 4, sortValue: 4, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(52, player), player, 4, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Mission 52 setup token must be false",
+      });
+    });
+
+    it("mission 52: rejects yellow target wire", () => {
+      const player = makePlayer({
+        hand: [makeYellowTile()],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(52, player), player, 6, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Mission 52 setup tokens can only target blue or red wires",
+      });
+    });
   });
 });

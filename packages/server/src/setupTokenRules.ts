@@ -171,6 +171,23 @@ export function validateSetupInfoTokenPlacement(
     return null;
   }
 
+  // Mission 52: all setup tokens are false and may target blue or red wires.
+  if (state.mission === 52) {
+    if (tile.color === "yellow") {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 52 setup tokens can only target blue or red wires",
+      );
+    }
+    if (tile.color === "blue" && typeof tile.gameValue === "number" && tile.gameValue === value) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 52 setup token must be false",
+      );
+    }
+    return null;
+  }
+
   if (tile.color !== "blue" || typeof tile.gameValue !== "number") {
     return legalityError(
       "MISSION_RULE_VIOLATION",
