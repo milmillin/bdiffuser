@@ -2,7 +2,7 @@ Read `TODO.md` and implement exactly one TODO task in this repository.
 
 Execution rules:
 
-1. Pick exactly one unchecked leaf task (`- [ ]`) from `TODO.md`.
+1. Pick exactly one unchecked leaf task (`- [ ]`) from `TODO.md`. If working on mission card, also use the back and the front of the card.
 2. If there are no unchecked tasks left, print `NO_TODO_TASKS_REMAINING` and exit.
 3. Scope is strictly limited to the one chosen task. Do not work on any later tasks.
 4. Keep changes minimal, production-safe, and directly related to the chosen task.

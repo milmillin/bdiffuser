@@ -750,7 +750,7 @@ Baseline assumption used in this section:
 
 ### Mission 20
 
-- Card title: `The big bad wolf`
+- Card title: `The Big Bad Wolf`
 - Setup:
   - Add `2` red wires.
   - Add `2` yellow wires.
