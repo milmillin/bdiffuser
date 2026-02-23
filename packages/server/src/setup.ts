@@ -208,16 +208,25 @@ function createEquipmentCards(
   }));
 }
 
-function distributeTiles(tiles: WireTile[], players: Player[]): void {
+function distributeTiles(
+  tiles: WireTile[],
+  players: Player[],
+): Record<string, string> {
   shuffle(tiles);
+  const lastDealtTileIdByPlayer: Record<string, string> = {};
 
   for (let i = 0; i < tiles.length; i++) {
-    players[i % players.length].hand.push(tiles[i]);
+    const player = players[i % players.length];
+    const tile = tiles[i];
+    player.hand.push(tile);
+    lastDealtTileIdByPlayer[player.id] = tile.id;
   }
 
   for (const player of players) {
     player.hand.sort((a, b) => a.sortValue - b.sortValue);
   }
+
+  return lastDealtTileIdByPlayer;
 }
 
 export function setupGame(
@@ -269,7 +278,21 @@ export function setupGame(
   const allMarkers = [...red.markers, ...yellow.markers].sort(compareMarkerOrder);
 
   const allTiles = [...blueTiles, ...red.tiles, ...yellow.tiles];
-  distributeTiles(allTiles, players);
+  const lastDealtTileIdByPlayer = distributeTiles(allTiles, players);
+
+  // Mission 20: the last dealt wire on each stand is moved unsorted to the far
+  // right and marked with X.
+  if (mission === 20) {
+    for (const player of players) {
+      const markerTileId = lastDealtTileIdByPlayer[player.id];
+      if (!markerTileId) continue;
+      const markerIndex = player.hand.findIndex((tile) => tile.id === markerTileId);
+      if (markerIndex < 0) continue;
+      const [markerTile] = player.hand.splice(markerIndex, 1);
+      markerTile.isXMarked = true;
+      player.hand.push(markerTile);
+    }
+  }
 
   const validationTrack: Record<number, number> = {};
   for (let i = 1; i <= 12; i++) {

@@ -153,6 +153,34 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.board.equipment[0].unlockValue).toBe(6);
   });
 
+  it("preserves X marker flag for hidden and visible tiles", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({
+          id: "viewer",
+          hand: [
+            { id: "v1", color: "blue", gameValue: 2, sortValue: 2, image: "wire_2.png", cut: false, isXMarked: true },
+          ],
+        }),
+        makePlayer({
+          id: "other",
+          hand: [
+            { id: "o1", color: "blue", gameValue: 7, sortValue: 7, image: "wire_7.png", cut: false, isXMarked: true },
+          ],
+        }),
+      ],
+    });
+
+    const filtered = filterStateForPlayer(state, "viewer");
+    expect(filtered.players[0].hand[0].isXMarked).toBe(true);
+    expect(filtered.players[1].hand[0]).toMatchObject({
+      id: "o1",
+      cut: false,
+      isXMarked: true,
+    });
+    expect(filtered.players[1].hand[0].gameValue).toBeUndefined();
+  });
+
   it("redacts mission-11 hidden blue-as-red setup log from client view", () => {
     const state = makeGameState({
       log: [

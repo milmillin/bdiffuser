@@ -152,6 +152,7 @@ Dependency: blocked by Phase 0C.
 - [ ] Implement remaining alternate failure outcomes for M2/M3 mechanics.
   - [x] Mission 28: failed Dual Cut by captain now explodes immediately.
   - [x] Mission 25: speaking wire numbers (`1`-`12`) in chat advances detonator.
+  - [x] Mission 20 setup: mark one unsorted far-right `X` wire per player.
 
 #### Equipment Runtime Parity
 - [~] Implement special equipment modes (face-down equipment, forced equipment pools, deck/pile modes).

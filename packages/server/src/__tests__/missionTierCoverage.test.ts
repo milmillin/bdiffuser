@@ -55,6 +55,17 @@ describe("mission complexity tier representative coverage", () => {
     expect(yellowMarkers.every((m) => m.possible === true)).toBe(true);
   });
 
+  it("x-marker tier (mission 20): setup marks one unsorted X wire at far right per player", () => {
+    const players = createSetupPlayers(4);
+    const { players: dealtPlayers } = setupGame(players, 20);
+
+    for (const player of dealtPlayers) {
+      const marked = player.hand.filter((tile) => tile.isXMarked === true);
+      expect(marked).toHaveLength(1);
+      expect(player.hand[player.hand.length - 1].isXMarked).toBe(true);
+    }
+  });
+
   it("hooked tier (mission 9): sequence-priority blocks then unlocks", () => {
     const actor = makePlayer({
       id: "actor",

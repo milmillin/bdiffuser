@@ -16,12 +16,16 @@ export interface WireTile {
   image: string;
   /** Whether this tile has been cut (revealed) */
   cut: boolean;
+  /** Mission marker: this wire is marked with X (mission 20 style). */
+  isXMarked?: boolean;
 }
 
 /** What a client sees for a tile — hidden tiles omit color/value/image */
 export interface VisibleTile {
   id: string;
   cut: boolean;
+  /** Public marker shown on this tile position (mission 20 style). */
+  isXMarked?: boolean;
   /** Only present if tile belongs to viewing player or is cut */
   color?: WireColor;
   gameValue?: WireValue;

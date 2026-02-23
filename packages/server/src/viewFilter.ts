@@ -118,6 +118,7 @@ function filterPlayerFullyVisible(player: Player): ClientPlayer {
     hand: player.hand.map((tile) => ({
       id: tile.id,
       cut: tile.cut,
+      ...(tile.isXMarked ? { isXMarked: true } : {}),
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -153,6 +154,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
     return {
       id: tile.id,
       cut: tile.cut,
+      ...(tile.isXMarked ? { isXMarked: true } : {}),
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -164,6 +166,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
   return {
     id: tile.id,
     cut: false,
+    ...(tile.isXMarked ? { isXMarked: true } : {}),
   };
 }
 
