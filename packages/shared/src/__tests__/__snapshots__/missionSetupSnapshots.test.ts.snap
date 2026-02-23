@@ -314,7 +314,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
 exports[`resolved mission setup snapshots > mission 4 1`] = `
 {
   "missionId": 4,
-  "name": "A Sense of Priorities",
+  "name": "First Day in the Field",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -391,7 +391,7 @@ exports[`resolved mission setup snapshots > mission 4 1`] = `
 exports[`resolved mission setup snapshots > mission 5 1`] = `
 {
   "missionId": 5,
-  "name": "First Day in the Field",
+  "name": "Second Day in the Field",
   "setupsByPlayerCount": {
     "2": {
       "blue": {

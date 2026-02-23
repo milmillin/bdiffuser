@@ -43,7 +43,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(4, {
-    name: "A Sense of Priorities",
+    name: "First Day in the Field",
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
@@ -56,7 +56,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(5, {
-    name: "First Day in the Field",
+    name: "Second Day in the Field",
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
