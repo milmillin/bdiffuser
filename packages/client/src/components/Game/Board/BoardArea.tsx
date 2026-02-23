@@ -160,6 +160,14 @@ function EquipmentRow({
 }: {
   equipment: BoardState["equipment"];
 }) {
+  const getStatus = (eq: BoardState["equipment"][number]) => {
+    if (eq.used) return { label: "Used", className: "bg-black/70 text-gray-200" };
+    if (eq.unlocked) {
+      return { label: "Available", className: "bg-green-700/80 text-white" };
+    }
+    return { label: `Lock ${eq.unlockValue}x2`, className: "bg-black/70 text-yellow-200" };
+  };
+
   return (
     <div>
       <div className="text-xs text-gray-400 font-bold uppercase mb-1">Equipment</div>
@@ -167,21 +175,24 @@ function EquipmentRow({
         {equipment.map((eq) => (
           <div
             key={eq.id}
-            className={`flex-shrink-0 w-24 rounded-lg p-2 text-xs ${
+            className={`relative flex-shrink-0 w-24 rounded-lg overflow-hidden border ${
               eq.used
-                ? "bg-gray-800 text-gray-600 opacity-50"
+                ? "border-gray-700 opacity-60"
                 : eq.unlocked
-                  ? "bg-green-900/50 border border-green-600 text-green-300"
-                  : "bg-gray-800 border border-gray-700 text-gray-500"
+                  ? "border-green-500"
+                  : "border-gray-700"
             }`}
           >
-            <div className="font-bold truncate">{eq.name}</div>
-            <div className="text-[10px] mt-1">
-              {eq.used
-                ? "Used"
-                : eq.unlocked
-                  ? "Available"
-                  : `Unlock: cut 2x "${eq.unlockValue}"`}
+            <img
+              src={`/images/${eq.image}`}
+              alt={eq.name}
+              className={`w-full h-auto block ${eq.used ? "grayscale" : ""}`}
+            />
+            <div className={`absolute left-1 top-1 px-1 py-0.5 rounded text-[10px] font-bold ${getStatus(eq).className}`}>
+              {getStatus(eq).label}
+            </div>
+            <div className="absolute inset-x-0 bottom-0 bg-black/70 px-1.5 py-1">
+              <div className="text-[10px] font-bold text-white truncate">{eq.name}</div>
             </div>
           </div>
         ))}

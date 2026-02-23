@@ -1,31 +1,35 @@
 import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
+  BaseEquipmentId,
   ClientMessage,
   ServerMessage,
   Player,
   MissionId,
   CharacterId,
   ChatMessage,
+  UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, createLobbyState } from "./viewFilter.js";
 import {
-  validateDualCut,
-  validateSoloCut,
-  validateRevealReds,
+  validateDualCutWithHooks,
+  validateSoloCutWithHooks,
+  validateRevealRedsWithHooks,
 } from "./validation.js";
 import {
   executeDualCut,
   executeSoloCut,
   executeRevealReds,
 } from "./gameLogic.js";
+import { executeUseEquipment, validateUseEquipment } from "./equipment.js";
 import { dispatchHooks } from "./missionHooks.js";
 import {
   createBotPlayer,
   botPlaceInfoToken,
   getBotAction,
+  botChooseNextPlayer,
 } from "./botController.js";
 import {
   normalizeRoomState,
@@ -129,6 +133,12 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "revealReds":
         this.handleRevealReds(connection);
+        break;
+      case "useEquipment":
+        this.handleUseEquipment(connection, msg.equipmentId, msg.payload);
+        break;
+      case "chooseNextPlayer":
+        this.handleChooseNextPlayer(connection, msg.targetPlayerId);
         break;
       case "addBot":
         this.handleAddBot(connection);
@@ -347,20 +357,19 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    const error = validateDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue);
-    if (error) {
-      this.sendMsg(conn, { type: "error", message: error });
-      return;
-    }
-
-    // Dispatch mission validate hooks
-    const hookResult = dispatchHooks(state.mission, {
-      point: "validate",
+    const error = validateDualCutWithHooks(
       state,
-      action: { type: "dualCut", actorId: conn.id, targetPlayerId, targetTileIndex, guessValue },
-    });
-    if (hookResult.validationError) {
-      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
+      conn.id,
+      targetPlayerId,
+      targetTileIndex,
+      guessValue,
+    );
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
@@ -376,20 +385,13 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    const error = validateSoloCut(state, conn.id, value);
+    const error = validateSoloCutWithHooks(state, conn.id, value);
     if (error) {
-      this.sendMsg(conn, { type: "error", message: error });
-      return;
-    }
-
-    // Dispatch mission validate hooks
-    const hookResult = dispatchHooks(state.mission, {
-      point: "validate",
-      state,
-      action: { type: "soloCut", actorId: conn.id, value },
-    });
-    if (hookResult.validationError) {
-      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
@@ -405,20 +407,13 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    const error = validateRevealReds(state, conn.id);
+    const error = validateRevealRedsWithHooks(state, conn.id);
     if (error) {
-      this.sendMsg(conn, { type: "error", message: error });
-      return;
-    }
-
-    // Dispatch mission validate hooks
-    const hookResult = dispatchHooks(state.mission, {
-      point: "validate",
-      state,
-      action: { type: "revealReds", actorId: conn.id },
-    });
-    if (hookResult.validationError) {
-      this.sendMsg(conn, { type: "error", message: hookResult.validationError });
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
       return;
     }
 
@@ -426,6 +421,68 @@ export class BombBustersServer extends Server<Env> {
 
     this.saveState();
     this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleUseEquipment(
+    conn: Connection,
+    equipmentId: BaseEquipmentId,
+    payload: UseEquipmentPayload,
+  ) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const error = validateUseEquipment(state, conn.id, equipmentId, payload);
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const action = executeUseEquipment(state, conn.id, equipmentId, payload);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleChooseNextPlayer(conn: Connection, targetPlayerId: string) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "chooseNextPlayer") {
+      this.sendMsg(conn, { type: "error", message: "No pending choose-next-player action" });
+      return;
+    }
+
+    if (conn.id !== forced.captainId) {
+      this.sendMsg(conn, { type: "error", message: "Only the captain can choose the next player" });
+      return;
+    }
+
+    const targetIndex = state.players.findIndex((p) => p.id === targetPlayerId);
+    if (targetIndex === -1) {
+      this.sendMsg(conn, { type: "error", message: "Target player not found" });
+      return;
+    }
+
+    const target = state.players[targetIndex];
+    const uncutCount = target.hand.filter((t) => !t.cut).length;
+    if (uncutCount === 0) {
+      this.sendMsg(conn, { type: "error", message: "Target player has no remaining tiles" });
+      return;
+    }
+
+    state.pendingForcedAction = undefined;
+    state.currentPlayerIndex = targetIndex;
+
+    this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
   }
@@ -545,24 +602,69 @@ export class BombBustersServer extends Server<Env> {
     }
   }
 
-  /** Schedule an alarm if it's a bot's turn */
-  scheduleBotTurnIfNeeded() {
+  /** Schedule the next alarm: picks the earliest of bot turn and timer deadline. */
+  scheduleNextAlarm() {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
 
-    const currentPlayer = state.players[state.currentPlayerIndex];
-    if (currentPlayer?.isBot) {
-      this.ctx.storage.setAlarm(Date.now() + 1500).catch((e) => {
-        console.error("Failed to schedule bot turn alarm:", e);
+    let nextAlarmMs: number | null = null;
+
+    // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only)
+    if (state.phase === "playing") {
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      if (currentPlayer?.isBot) {
+        nextAlarmMs = Date.now() + 1500;
+      }
+    }
+
+    // Timer deadline alarm (mission 10) — active from setup through playing
+    if (state.timerDeadline != null) {
+      const timerMs = state.timerDeadline;
+      if (nextAlarmMs === null || timerMs < nextAlarmMs) {
+        nextAlarmMs = timerMs;
+      }
+    }
+
+    if (nextAlarmMs !== null) {
+      this.ctx.storage.setAlarm(nextAlarmMs).catch((e) => {
+        console.error("Failed to schedule alarm:", e);
       });
     }
   }
 
+  /** @deprecated Use scheduleNextAlarm() instead. Kept as alias for clarity. */
+  scheduleBotTurnIfNeeded() {
+    this.scheduleNextAlarm();
+  }
+
   async onAlarm() {
+    const state = this.room.gameState;
+    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
+
     try {
-      await this.executeBotTurn();
+      // Check timer expiry first (takes priority over bot turns)
+      if (state.timerDeadline != null && Date.now() >= state.timerDeadline) {
+        state.result = "loss_timer";
+        state.phase = "finished";
+        state.log.push({
+          turn: state.turnNumber,
+          playerId: "system",
+          action: "timerExpired",
+          detail: "Mission timer expired - mission failed!",
+          timestamp: Date.now(),
+        });
+        this.saveState();
+        this.broadcastAction({ type: "gameOver", result: "loss_timer" });
+        this.broadcastGameState();
+        return;
+      }
+
+      // Otherwise handle bot turn (playing phase only)
+      if (state.phase === "playing") {
+        await this.executeBotTurn();
+      }
     } catch (e) {
-      console.error("Bot turn execution failed:", e);
+      console.error("Alarm handler failed:", e);
     }
   }
 
@@ -574,6 +676,20 @@ export class BombBustersServer extends Server<Env> {
     if (!currentPlayer?.isBot) return;
 
     const botId = currentPlayer.id;
+
+    // Handle forced action: bot captain auto-selects next player
+    if (state.pendingForcedAction?.kind === "chooseNextPlayer") {
+      const nextIdx = botChooseNextPlayer(state, botId);
+      if (nextIdx !== null) {
+        state.pendingForcedAction = undefined;
+        state.currentPlayerIndex = nextIdx;
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+      }
+      return;
+    }
+
     const apiKey = (this.env as Env).ZHIPU_API_KEY;
 
     // Build chat context: messages since this bot's last action
@@ -607,7 +723,7 @@ export class BombBustersServer extends Server<Env> {
     let action: import("@bomb-busters/shared").GameAction;
     switch (botAction.action) {
       case "dualCut": {
-        const error = validateDualCut(
+        const error = validateDualCutWithHooks(
           state,
           botId,
           botAction.targetPlayerId,
@@ -615,7 +731,7 @@ export class BombBustersServer extends Server<Env> {
           botAction.guessValue,
         );
         if (error) {
-          console.log(`Bot ${botId} dualCut validation failed: ${error}`);
+          console.log(`Bot ${botId} dualCut validation failed [${error.code}]: ${error.message}`);
           return;
         }
         action = executeDualCut(
@@ -628,18 +744,18 @@ export class BombBustersServer extends Server<Env> {
         break;
       }
       case "soloCut": {
-        const error = validateSoloCut(state, botId, botAction.value);
+        const error = validateSoloCutWithHooks(state, botId, botAction.value);
         if (error) {
-          console.log(`Bot ${botId} soloCut validation failed: ${error}`);
+          console.log(`Bot ${botId} soloCut validation failed [${error.code}]: ${error.message}`);
           return;
         }
         action = executeSoloCut(state, botId, botAction.value);
         break;
       }
       case "revealReds": {
-        const error = validateRevealReds(state, botId);
+        const error = validateRevealRedsWithHooks(state, botId);
         if (error) {
-          console.log(`Bot ${botId} revealReds validation failed: ${error}`);
+          console.log(`Bot ${botId} revealReds validation failed [${error.code}]: ${error.message}`);
           return;
         }
         action = executeRevealReds(state, botId);

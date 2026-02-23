@@ -66,16 +66,19 @@ export function PlayerStand({
           >
             {/* Row 1: info tokens */}
             {player.hand.map((_, idx) => {
-              const infoToken = player.infoTokens.find((t) => t.position === idx);
+              const infoTokens = player.infoTokens.filter(
+                (t) => t.position === idx || t.positionB === idx,
+              );
               return (
                 <div key={`info-${idx}`} className="flex items-end justify-center">
-                  {infoToken && (
-                    <img
-                      src={`/images/${getInfoTokenImage(infoToken)}`}
-                      alt={`Info: ${infoToken.value}`}
-                      className="w-full h-auto block"
-                    />
-                  )}
+                  <div className="flex flex-col items-center gap-0.5">
+                    {infoTokens.map((token, tokenIndex) => (
+                      <InfoTokenView
+                        key={`${idx}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.value}`}
+                        token={token}
+                      />
+                    ))}
+                  </div>
                 </div>
               );
             })}
@@ -110,6 +113,30 @@ function getInfoTokenImage(token: InfoToken): string {
   if (token.isYellow) return "info_yellow.png";
   if (token.value >= 1 && token.value <= 12) return `info_${token.value}.png`;
   return "info_no.png";
+}
+
+function InfoTokenView({ token }: { token: InfoToken }) {
+  if (token.relation === "eq" || token.relation === "neq") {
+    return (
+      <div
+        className={`px-1 py-0.5 rounded text-[9px] font-black leading-none ${
+          token.relation === "eq"
+            ? "bg-blue-700 text-white"
+            : "bg-orange-700 text-white"
+        }`}
+      >
+        {token.relation === "eq" ? "=" : "!="}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`/images/${getInfoTokenImage(token)}`}
+      alt={`Info: ${token.value}`}
+      className="w-full h-auto block"
+    />
+  );
 }
 
 function WireTileView({

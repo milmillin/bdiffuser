@@ -50,6 +50,10 @@ export interface InfoToken {
   value: number;
   position: number; // index of the tile it points to
   isYellow: boolean;
+  /** Optional relation marker for Label cards. */
+  relation?: "eq" | "neq";
+  /** Secondary index used by relation markers. */
+  positionB?: number;
 }
 
 // ── Characters ──────────────────────────────────────────────
@@ -73,6 +77,52 @@ export interface EquipmentCard {
   used: boolean;
   image: string;
 }
+
+export type BaseEquipmentId =
+  | "label_neq"
+  | "talkies_walkies"
+  | "triple_detector"
+  | "post_it"
+  | "super_detector"
+  | "rewinder"
+  | "emergency_batteries"
+  | "general_radar"
+  | "stabilizer"
+  | "x_or_y_ray"
+  | "coffee_thermos"
+  | "label_eq";
+
+export type EquipmentGuessValue = number | "YELLOW";
+
+export type UseEquipmentPayload =
+  | { kind: "label_neq"; tileIndexA: number; tileIndexB: number }
+  | {
+      kind: "talkies_walkies";
+      teammateId: string;
+      myTileIndex: number;
+      teammateTileIndex: number;
+    }
+  | {
+      kind: "triple_detector";
+      targetPlayerId: string;
+      targetTileIndices: number[];
+      guessValue: number;
+    }
+  | { kind: "post_it"; value: number; tileIndex: number }
+  | { kind: "super_detector"; targetPlayerId: string; guessValue: number }
+  | { kind: "rewinder" }
+  | { kind: "emergency_batteries"; playerIds: string[] }
+  | { kind: "general_radar"; value: number }
+  | { kind: "stabilizer" }
+  | {
+      kind: "x_or_y_ray";
+      targetPlayerId: string;
+      targetTileIndex: number;
+      guessValueA: EquipmentGuessValue;
+      guessValueB: EquipmentGuessValue;
+    }
+  | { kind: "coffee_thermos"; targetPlayerId: string }
+  | { kind: "label_eq"; tileIndexA: number; tileIndexB: number };
 
 // ── Board State ─────────────────────────────────────────────
 
@@ -233,10 +283,57 @@ export interface ChatMessage {
   turnNumber: number;
 }
 
+// ── Forced Actions ───────────────────────────────────────
+
+/** A forced action that must be resolved before normal play resumes. */
+export type ForcedAction = {
+  kind: "chooseNextPlayer";
+  /** The player who must resolve this forced action (typically the captain). */
+  captainId: string;
+};
+
+export interface TurnEffects {
+  /** Stabilizer protection for the specified player's current turn. */
+  stabilizer?: {
+    playerId: string;
+    turnNumber: number;
+  };
+}
+
+// ── Action Validation ─────────────────────────────────────
+
+/** Stable machine-readable legality reasons for action rejection. */
+export type ActionLegalityCode =
+  | "NOT_YOUR_TURN"
+  | "ACTOR_NOT_FOUND"
+  | "TARGET_PLAYER_NOT_FOUND"
+  | "CANNOT_TARGET_SELF"
+  | "INVALID_TILE_INDEX"
+  | "TILE_ALREADY_CUT"
+  | "GUESS_VALUE_NOT_IN_HAND"
+  | "NO_MATCHING_WIRES_IN_HAND"
+  | "SOLO_NOT_ALL_REMAINING_IN_HAND"
+  | "SOLO_REQUIRES_TWO_OR_FOUR"
+  | "NO_WIRES_TO_REVEAL"
+  | "REVEAL_REDS_REQUIRES_ALL_RED"
+  | "EQUIPMENT_NOT_FOUND"
+  | "EQUIPMENT_LOCKED"
+  | "EQUIPMENT_ALREADY_USED"
+  | "EQUIPMENT_TIMING_VIOLATION"
+  | "EQUIPMENT_INVALID_PAYLOAD"
+  | "EQUIPMENT_RULE_VIOLATION"
+  | "FORCED_ACTION_PENDING"
+  | "MISSION_RULE_VIOLATION";
+
+export interface ActionLegalityError {
+  code: ActionLegalityCode;
+  message: string;
+}
+
 // ── Game State ──────────────────────────────────────────────
 
 export type GamePhase = "lobby" | "setup_info_tokens" | "playing" | "finished";
-export type GameResult = "win" | "loss_red_wire" | "loss_detonator" | null;
+export type GameResult = "win" | "loss_red_wire" | "loss_detonator" | "loss_timer" | null;
 
 export interface GameState {
   phase: GamePhase;
@@ -252,6 +349,12 @@ export interface GameState {
   chat: ChatMessage[];
   /** Campaign-specific state; absent for non-campaign missions. */
   campaign?: CampaignState;
+  /** A forced action that must be resolved before normal play resumes. */
+  pendingForcedAction?: ForcedAction;
+  /** Temporary turn-scoped effects from equipment cards. */
+  turnEffects?: TurnEffects;
+  /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */
+  timerDeadline?: number;
 }
 
 export const ALL_MISSION_IDS = [
@@ -287,6 +390,10 @@ export interface ClientGameState {
   chat: ChatMessage[];
   /** Campaign-specific state (visibility-filtered); absent for non-campaign missions. */
   campaign?: CampaignState;
+  /** A forced action that must be resolved before normal play resumes. */
+  pendingForcedAction?: ForcedAction;
+  /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */
+  timerDeadline?: number;
 }
 
 export interface ClientPlayer {

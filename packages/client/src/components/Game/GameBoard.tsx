@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage, ChatMessage, VisibleTile } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
+import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
 import { ActionLog } from "./ActionLog.js";
@@ -25,6 +27,20 @@ export function GameBoard({
   const isMyTurn = !isFinished && currentPlayer?.id === playerId;
   const me = gameState.players.find((p) => p.id === playerId);
   const opponents = gameState.players.filter((p) => p.id !== playerId);
+  const equipmentTiming = new Map(
+    EQUIPMENT_DEFS.map((def) => [def.id, def.useTiming]),
+  );
+  const hasAnytimeEquipment = gameState.board.equipment.some(
+    (equipment) =>
+      equipment.unlocked &&
+      !equipment.used &&
+      equipmentTiming.get(equipment.id) === "anytime",
+  );
+  const showActionPanel =
+    gameState.phase === "playing" &&
+    !gameState.pendingForcedAction &&
+    !!me &&
+    (isMyTurn || hasAnytimeEquipment);
 
   // Dual cut target selection state
   const [selectedTarget, setSelectedTarget] = useState<{
@@ -56,7 +72,7 @@ export function GameBoard({
                 isOpponent={true}
                 isCurrentTurn={opp.id === currentPlayer?.id}
                 onTileClick={
-                  !isSetup && isMyTurn && gameState.phase === "playing"
+                  !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction
                     ? (tileIndex) =>
                         setSelectedTarget({ playerId: opp.id, tileIndex })
                     : undefined
@@ -126,12 +142,34 @@ export function GameBoard({
               </div>
             )}
 
-            {/* Playing phase: actions */}
-            {isMyTurn && gameState.phase === "playing" && me && (
+            {/* Playing phase: forced action (captain chooses next player) */}
+            {gameState.phase === "playing" &&
+              gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
+              gameState.pendingForcedAction.captainId === playerId &&
+              me && (
+              <ChooseNextPlayerPanel
+                gameState={gameState}
+                send={send}
+                playerId={playerId}
+              />
+            )}
+
+            {/* Playing phase: waiting for captain to choose (non-captain view) */}
+            {gameState.phase === "playing" &&
+              gameState.pendingForcedAction?.kind === "chooseNextPlayer" &&
+              gameState.pendingForcedAction.captainId !== playerId && (
+              <div className="text-center py-2 text-gray-400" data-testid="waiting-captain">
+                Waiting for the <span className="text-yellow-400 font-bold">Captain</span> to choose the next player...
+              </div>
+            )}
+
+            {/* Playing phase: actions (including anytime equipment off-turn) */}
+            {showActionPanel && me && (
               <ActionPanel
                 gameState={gameState}
                 send={send}
                 playerId={playerId}
+                isMyTurn={isMyTurn}
                 selectedTarget={selectedTarget}
                 selectedGuessTile={selectedGuessTile}
                 onClearTarget={() => { setSelectedTarget(null); setSelectedGuessTile(null); }}
@@ -139,7 +177,7 @@ export function GameBoard({
               />
             )}
 
-            {!isMyTurn && gameState.phase === "playing" && (
+            {!isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !showActionPanel && (
               <div className="text-center py-2 text-gray-400" data-testid="waiting-turn">
                 {currentPlayer?.isBot ? (
                   <span className="inline-flex items-center gap-2">
@@ -156,12 +194,13 @@ export function GameBoard({
             {isFinished && (
               <div className="rounded-xl p-4 text-center space-y-3" data-testid="game-over-banner">
                 <div className={`text-2xl font-black ${gameState.result === "win" ? "text-green-400" : "text-red-500"}`}>
-                  {gameState.result === "win" ? "MISSION COMPLETE!" : "BOOM!"}
+                  {gameState.result === "win" ? "MISSION COMPLETE!" : gameState.result === "loss_timer" ? "TIME'S UP!" : "BOOM!"}
                 </div>
                 <p className="text-sm text-gray-300">
                   {gameState.result === "win" && "All wires have been safely cut!"}
                   {gameState.result === "loss_red_wire" && "A red wire was cut and the bomb exploded!"}
                   {gameState.result === "loss_detonator" && "The detonator reached the end!"}
+                  {gameState.result === "loss_timer" && "The mission timer expired!"}
                 </p>
                 {onPlayAgain && (
                   <button

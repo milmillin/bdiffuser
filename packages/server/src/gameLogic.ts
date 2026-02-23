@@ -16,6 +16,9 @@ import { dispatchHooks } from "./missionHooks.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
+  // Turn-scoped equipment effects expire once a turn ends.
+  state.turnEffects = undefined;
+
   const playerCount = state.players.length;
   let next = (state.currentPlayerIndex + 1) % playerCount;
   let attempts = 0;
@@ -141,6 +144,11 @@ export function executeDualCut(
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
   const targetTile = getTileByFlatIndex(target, targetTileIndex)!;
+  const stabilizer = state.turnEffects?.stabilizer;
+  const stabilizerActive =
+    stabilizer != null &&
+    stabilizer.playerId === actorId &&
+    stabilizer.turnNumber === state.turnNumber;
 
   const isCorrect = targetTile.gameValue === guessValue;
 
@@ -213,6 +221,28 @@ export function executeDualCut(
   } else {
     // Failure
     if (targetTile.color === "red") {
+      if (stabilizerActive) {
+        addLog(
+          state,
+          actorId,
+          "dualCut",
+          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗ (Stabilizer prevented explosion)`,
+        );
+
+        advanceTurn(state);
+
+        return {
+          type: "dualCutResult",
+          actorId,
+          targetId: targetPlayerId,
+          targetTileIndex,
+          guessValue,
+          success: false,
+          detonatorAdvanced: false,
+          explosion: false,
+        };
+      }
+
       // Red wire cut — explosion!
       targetTile.cut = true;
       updateMarkerConfirmations(state);
@@ -233,8 +263,10 @@ export function executeDualCut(
       };
     }
 
-    // Blue or yellow wire — wrong guess, wire stays uncut
-    state.board.detonatorPosition++;
+    // Blue or yellow wire — wrong guess, wire stays uncut.
+    if (!stabilizerActive) {
+      state.board.detonatorPosition++;
+    }
 
     // Place info token showing the actual value of the incorrectly guessed tile
     target.infoTokens.push({
@@ -247,11 +279,11 @@ export function executeDualCut(
       state,
       actorId,
       "dualCut",
-      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗`,
+      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}`,
     );
 
     // Check detonator loss
-    if (checkDetonatorLoss(state)) {
+    if (!stabilizerActive && checkDetonatorLoss(state)) {
       state.result = "loss_detonator";
       state.phase = "finished";
       return {
@@ -274,7 +306,7 @@ export function executeDualCut(
       targetTileIndex,
       guessValue,
       success: false,
-      detonatorAdvanced: true,
+      detonatorAdvanced: !stabilizerActive,
     };
   }
 }
