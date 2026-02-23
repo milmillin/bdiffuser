@@ -5,6 +5,7 @@ import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
 
 const SESSION_KEY_PREFIX = "bb-session-";
+const LAST_NAME_KEY = "bb-last-name";
 
 interface StoredSession {
   playerId: string;
@@ -29,29 +30,66 @@ function saveSession(roomId: string, session: StoredSession) {
   } catch { /* ignore */ }
 }
 
+function getLastName(): string {
+  try {
+    return localStorage.getItem(LAST_NAME_KEY) ?? "";
+  } catch { return ""; }
+}
+
+function saveLastName(name: string) {
+  try {
+    localStorage.setItem(LAST_NAME_KEY, name);
+  } catch { /* ignore */ }
+}
+
 function getRoomFromPath(): string | null {
   const path = window.location.pathname.replace(/^\//, "").trim();
   return path || null;
 }
 
 export default function App() {
-  const [roomId, setRoomId] = useState<string | null>(getRoomFromPath);
-  const [playerName, setPlayerName] = useState("");
-
-  // Pre-fill name from stored session when loading with a room path
-  const [initialSession] = useState(() => {
-    const hashRoom = getRoomFromPath();
-    return hashRoom ? getSession(hashRoom) : null;
+  const [roomId, setRoomId] = useState<string | null>(() => {
+    // Auto-join if we have a stored session for the URL room
+    const pathRoom = getRoomFromPath();
+    if (pathRoom && getSession(pathRoom)) return pathRoom;
+    return null;
+  });
+  const [pendingRoom, setPendingRoom] = useState<string | null>(() => {
+    // If URL has a room but no stored session, go to step 2
+    const pathRoom = getRoomFromPath();
+    if (pathRoom && !getSession(pathRoom)) return pathRoom;
+    return null;
+  });
+  const [playerName, setPlayerName] = useState(() => {
+    // For auto-join, use the stored session name
+    const pathRoom = getRoomFromPath();
+    if (pathRoom) {
+      const session = getSession(pathRoom);
+      if (session) return session.playerName;
+    }
+    return "";
   });
 
-  const handleJoin = useCallback((room: string, name: string) => {
+  const handleSelectRoom = useCallback((room: string) => {
+    setPendingRoom(room);
+    window.history.pushState(null, "", `/${room}`);
+  }, []);
+
+  const handleConfirmName = useCallback((room: string, name: string) => {
+    saveLastName(name);
+    setPendingRoom(null);
     setRoomId(room);
     setPlayerName(name);
-    window.history.pushState(null, "", `/${room}`);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    setPendingRoom(null);
+    window.history.pushState(null, "", "/");
   }, []);
 
   const handleLeave = useCallback(() => {
     setRoomId(null);
+    setPendingRoom(null);
     setPlayerName("");
     window.history.pushState(null, "", "/");
   }, []);
@@ -59,65 +97,61 @@ export default function App() {
   // Handle browser back/forward
   useEffect(() => {
     const onPopState = () => {
-      const hashRoom = getRoomFromPath();
-      if (!hashRoom) {
+      const pathRoom = getRoomFromPath();
+      if (!pathRoom) {
         setRoomId(null);
+        setPendingRoom(null);
         setPlayerName("");
-      } else if (hashRoom !== roomId) {
-        // User navigated to a different room path — show join screen for it
-        setRoomId(null);
-        setPlayerName("");
-        // Let the next render pick up the path via JoinScreen's initial state
-        // We don't auto-join because we need the player name
+      } else if (pathRoom !== roomId) {
+        // Navigate to a room path — check for stored session
+        if (getSession(pathRoom)) {
+          const session = getSession(pathRoom)!;
+          setRoomId(pathRoom);
+          setPendingRoom(null);
+          setPlayerName(session.playerName);
+        } else {
+          setRoomId(null);
+          setPendingRoom(pathRoom);
+        }
       }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [roomId]);
 
+  let content;
+  if (roomId) {
+    content = <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />;
+  } else if (pendingRoom) {
+    content = <NameEntry roomCode={pendingRoom} onConfirm={handleConfirmName} onBack={handleBack} />;
+  } else {
+    content = <LandingScreen onSelectRoom={handleSelectRoom} />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1">
-        {!roomId
-          ? <JoinScreen
-              onJoin={handleJoin}
-              initialRoom={getRoomFromPath() ?? ""}
-              initialName={initialSession?.playerName ?? ""}
-            />
-          : <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />
-        }
-      </div>
+    <>
+      {content}
       <div
         data-testid="app-version"
-        className="p-3 text-xs font-mono text-gray-500 select-none"
+        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
       >
         {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
       </div>
-    </div>
+    </>
   );
 }
 
-function JoinScreen({
-  onJoin,
-  initialRoom,
-  initialName,
-}: {
-  onJoin: (roomId: string, name: string) => void;
-  initialRoom: string;
-  initialName: string;
-}) {
-  const [name, setName] = useState(initialName);
-  const [room, setRoom] = useState(initialRoom);
+function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void }) {
+  const [room, setRoom] = useState("");
 
   const handleCreate = () => {
-    if (!name.trim()) return;
     const newRoom = Math.random().toString(36).substring(2, 8);
-    onJoin(newRoom, name.trim());
+    onSelectRoom(newRoom);
   };
 
   const handleJoin = () => {
-    if (!name.trim() || !room.trim()) return;
-    onJoin(room.trim().toLowerCase(), name.trim());
+    if (!room.trim()) return;
+    onSelectRoom(room.trim().toLowerCase());
   };
 
   return (
@@ -131,24 +165,10 @@ function JoinScreen({
         </div>
 
         <div className="bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Your Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              maxLength={20}
-              data-testid="name-input"
-              className="w-full px-4 py-2 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
-            />
-          </div>
-
           <button
             onClick={handleCreate}
-            disabled={!name.trim() || !!room.trim()}
             data-testid="create-room"
-            className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+            className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold text-lg transition-colors"
           >
             Create New Room
           </button>
@@ -164,6 +184,7 @@ function JoinScreen({
               type="text"
               value={room}
               onChange={(e) => setRoom(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); }}
               placeholder="Room code"
               maxLength={10}
               data-testid="room-code-input"
@@ -171,13 +192,79 @@ function JoinScreen({
             />
             <button
               onClick={handleJoin}
-              disabled={!name.trim() || !room.trim()}
+              disabled={!room.trim()}
               data-testid="join-room"
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold transition-colors"
             >
               Join
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NameEntry({
+  roomCode,
+  onConfirm,
+  onBack,
+}: {
+  roomCode: string;
+  onConfirm: (room: string, name: string) => void;
+  onBack: () => void;
+}) {
+  const [name, setName] = useState(getLastName);
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onConfirm(roomCode, name.trim());
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4" data-testid="name-entry-screen">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-5xl font-black tracking-tight">
+            BOMB<span className="text-red-500">BUSTERS</span>
+          </h1>
+          <p className="mt-2 text-gray-400">
+            Joining room: <span className="font-mono text-white">{roomCode}</span>
+          </p>
+        </div>
+
+        <div className="bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Your Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+              placeholder="Enter your name"
+              maxLength={20}
+              autoFocus
+              data-testid="name-input"
+              className="w-full px-4 py-2 bg-[var(--color-bomb-dark)] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+            />
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!name.trim()}
+            data-testid="confirm-join"
+            className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+          >
+            Continue
+          </button>
+
+          <button
+            onClick={onBack}
+            data-testid="back-button"
+            className="w-full py-2 text-gray-400 hover:text-white text-sm transition-colors"
+          >
+            &larr; Back
+          </button>
         </div>
       </div>
     </div>
@@ -193,9 +280,10 @@ function GameRoom({
   playerName: string;
   onLeave: () => void;
 }) {
-  // Restore stored playerId for reconnection
-  const storedSession = getSession(roomId);
-  const stableId = storedSession?.playerId;
+  // Restore stored playerId for reconnection (captured once on mount so it
+  // doesn't flip from undefined → id after saveSession, which would re-trigger
+  // the usePartySocket effect and disconnect/reconnect).
+  const [stableId] = useState(() => getSession(roomId)?.playerId);
 
   const handleIdReady = useCallback((id: string) => {
     saveSession(roomId, { playerId: id, playerName });
