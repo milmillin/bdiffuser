@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   BaseEquipmentId,
   CharacterId,
@@ -63,6 +63,14 @@ function DualCutStepIndicator({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
+/* Improvement #4: Timing-to-color map for equipment buttons */
+const TIMING_ORDER = ["anytime", "in_turn", "start_of_turn"] as const;
+const TIMING_COLORS: Record<string, { bg: string; hover: string; label: string }> = {
+  anytime: { bg: "bg-emerald-600", hover: "hover:bg-emerald-700", label: "anytime" },
+  in_turn: { bg: "bg-blue-600", hover: "hover:bg-blue-700", label: "in turn" },
+  start_of_turn: { bg: "bg-amber-600", hover: "hover:bg-amber-700", label: "start of turn" },
+};
+
 export function ActionPanel({
   gameState,
   send,
@@ -123,6 +131,15 @@ export function ActionPanel({
       isBaseEquipmentId(equipment.id),
   );
 
+  // Improvement #4: Sort equipment by timing (anytime -> in_turn -> start_of_turn)
+  const sortedEquipment = [...availableEquipment].sort((a, b) => {
+    const aDef = byId.get(a.id);
+    const bDef = byId.get(b.id);
+    const aIdx = TIMING_ORDER.indexOf((aDef?.useTiming ?? "anytime") as (typeof TIMING_ORDER)[number]);
+    const bIdx = TIMING_ORDER.indexOf((bDef?.useTiming ?? "anytime") as (typeof TIMING_ORDER)[number]);
+    return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+  });
+
   const getCutCountForValue = (value: number): number => {
     let count = 0;
     for (const player of gameState.players) {
@@ -136,6 +153,16 @@ export function ActionPanel({
   const [selectedSoloValue, setSelectedSoloValue] = useState<
     number | "YELLOW" | null
   >(null);
+
+  // Improvement #3: Auto-clear solo cut selection after 3 seconds
+  const soloTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (soloTimerRef.current) clearTimeout(soloTimerRef.current);
+    if (selectedSoloValue != null) {
+      soloTimerRef.current = setTimeout(() => setSelectedSoloValue(null), 3000);
+    }
+    return () => { if (soloTimerRef.current) clearTimeout(soloTimerRef.current); };
+  }, [selectedSoloValue]);
 
   const guessValue =
     selectedGuessTile != null ? me.hand[selectedGuessTile]?.gameValue : null;
@@ -159,6 +186,18 @@ export function ActionPanel({
       typeof prev === "number" && prev !== mission9ActiveValue ? null : prev,
     );
   }, [mission9ActiveValue, gameState.mission]);
+
+  // Improvement #1: Compute turn distance for waiting state
+  const myIndex = gameState.players.findIndex((p) => p.id === playerId);
+  const turnDistance = myIndex >= 0
+    ? (myIndex - gameState.currentPlayerIndex + gameState.players.length) % gameState.players.length
+    : 0;
+
+  // Improvement #5: Game summary stats
+  const validatedCount = Object.values(gameState.board.validationTrack).filter(
+    (count) => count >= BLUE_COPIES_PER_VALUE,
+  ).length;
+  const myUncutCount = me.hand.filter((t) => !t.cut).length;
 
   const handleDualCut = () => {
     if (!isMyTurn || !selectedTarget || guessValue == null) return;
@@ -193,16 +232,16 @@ export function ActionPanel({
       className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
       data-testid="action-panel"
     >
-      {/* Header */}
-      <div className={`flex items-center gap-2 pb-2 ${isMyTurn ? "border-b border-yellow-500/30" : "border-b border-gray-700"}`}>
-        {isMyTurn ? (
-          <>
-            <span className="bg-yellow-500 text-black font-black uppercase text-xs px-2 py-0.5 rounded-full">
-              Your Turn
-            </span>
-            <span className="text-sm font-bold text-yellow-400">Choose an Action</span>
-          </>
-        ) : (
+      {/* Header — Improvement #1: Stronger "Your Turn" + turn distance */}
+      {isMyTurn ? (
+        <div className="flex items-center gap-2 pb-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 -mx-3 -mt-3 px-3 pt-3 rounded-t-xl border-b-2 border-yellow-500">
+          <span className="bg-yellow-500 text-black font-black uppercase text-sm px-2 py-0.5 rounded-full">
+            Your Turn
+          </span>
+          <span className="text-sm font-bold text-yellow-400">Choose an Action</span>
+        </div>
+      ) : (
+        <div className="pb-2 border-b border-gray-700 space-y-2">
           <span className="text-sm text-gray-400" data-testid="waiting-turn">
             {isCurrentPlayerBot ? (
               <span className="inline-flex items-center gap-2">
@@ -210,11 +249,38 @@ export function ActionPanel({
                 <span className="text-purple-300 font-bold">{currentPlayerName}</span> is thinking...
               </span>
             ) : (
-              <>Waiting for <span className="text-white font-bold">{currentPlayerName}</span>&apos;s turn...</>
+              <>
+                Waiting for <span className="text-white font-bold">{currentPlayerName}</span>&apos;s turn
+                {turnDistance === 1 ? (
+                  <span className="text-yellow-400 font-bold"> (you&apos;re next!)</span>
+                ) : turnDistance > 1 ? (
+                  <span className="text-gray-500"> ({turnDistance} more until yours)</span>
+                ) : null}
+              </>
             )}
           </span>
-        )}
-      </div>
+
+          {/* Improvement #5: Game summary stats in waiting state */}
+          <div className="flex items-center gap-3 text-xs" data-testid="game-summary">
+            <span>
+              <span className="text-gray-500">Detonator: </span>
+              <span className={`font-bold ${gameState.board.detonatorPosition >= gameState.board.detonatorMax - 1 ? "text-red-400" : "text-gray-300"}`}>
+                {gameState.board.detonatorPosition}/{gameState.board.detonatorMax}
+              </span>
+            </span>
+            <span className="text-gray-600">|</span>
+            <span>
+              <span className="text-gray-500">Validated: </span>
+              <span className="font-bold text-gray-300">{validatedCount}/12</span>
+            </span>
+            <span className="text-gray-600">|</span>
+            <span>
+              <span className="text-gray-500">My wires: </span>
+              <span className="font-bold text-gray-300">{myUncutCount} uncut</span>
+            </span>
+          </div>
+        </div>
+      )}
 
       {mission11RevealBlockedHint && (
         <p className="text-xs text-sky-300" data-testid="mission11-reveal-hint">
@@ -224,7 +290,7 @@ export function ActionPanel({
 
       {gameState.mission === 9 && typeof mission9ActiveValue === "number" && (
         <div
-          className="rounded-lg border border-emerald-500/40 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100 space-y-1"
+          className="rounded-lg border border-emerald-500/50 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100 space-y-1"
           data-testid="mission9-action-reminder"
         >
           <div className="font-bold uppercase tracking-wide text-emerald-200">
@@ -247,28 +313,29 @@ export function ActionPanel({
         </div>
       )}
 
-      {/* Dual Cut */}
+      {/* Dual Cut — Improvement #2: Collapse to single line in step 1 */}
       {isMyTurn && !forceRevealReds && (
-        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/40 bg-blue-950/15">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-blue-300 uppercase">
-              Dual Cut
-            </div>
-            <DualCutStepIndicator step={dualCutStep} />
+        dualCutStep === 1 ? (
+          <div className="flex items-center gap-2 text-sm text-blue-300 py-1" data-testid="dual-cut-compact">
+            <span className="text-xs font-bold uppercase">Dual Cut</span>
+            <span className="text-gray-400">&mdash; Select a wire on an opponent&apos;s stand</span>
           </div>
-          {!selectedTarget ? (
-            <p className="text-sm text-gray-400">
-              Select a wire on an opponent&apos;s stand
-            </p>
-          ) : (
+        ) : (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-blue-300 uppercase">
+                Dual Cut
+              </div>
+              <DualCutStepIndicator step={dualCutStep} />
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-300" data-testid="dual-cut-target">
                 Targeting{" "}
                 {
-                  gameState.players.find((p) => p.id === selectedTarget.playerId)
+                  gameState.players.find((p) => p.id === selectedTarget!.playerId)
                     ?.name
                 }
-                &apos;s wire {wireLabel(selectedTarget.tileIndex)}
+                &apos;s wire {wireLabel(selectedTarget!.tileIndex)}
               </span>
               <button
                 onClick={onClearTarget}
@@ -298,58 +365,52 @@ export function ActionPanel({
                 </span>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )
       )}
 
-      {/* Solo Cut */}
+      {/* Solo Cut — Improvement #3: Inline confirmation (click-to-select, click-again-to-confirm) */}
       {isMyTurn && !forceRevealReds && soloValues.length > 0 && (
-        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-violet-500/40 bg-violet-950/15">
+        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-violet-500/50 bg-violet-950/15">
           <div className="text-xs font-bold text-violet-300 uppercase">
             Solo Cut
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {soloValues.map((v) => {
               const blockedBySequence = isMission9BlockedValue(v);
+              const isConfirming = selectedSoloValue === v;
               return (
                 <button
                   key={String(v)}
-                  onClick={() =>
-                    setSelectedSoloValue(selectedSoloValue === v ? null : v)
-                  }
+                  onClick={() => {
+                    if (isConfirming) {
+                      send({ type: "soloCut", value: v });
+                      setSelectedSoloValue(null);
+                    } else {
+                      setSelectedSoloValue(v);
+                    }
+                  }}
                   disabled={blockedBySequence}
-                  data-testid={`solo-cut-${String(v).toLowerCase()}`}
+                  data-testid={isConfirming ? "solo-cut-submit" : `solo-cut-${String(v).toLowerCase()}`}
                   className={`px-4 py-2 rounded-lg font-black text-base min-w-[3rem] transition-colors ${
                     blockedBySequence
                       ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : selectedSoloValue === v
-                        ? "bg-yellow-500 text-black"
+                      : isConfirming
+                        ? "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/50"
                         : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                 >
-                  {String(v)}
+                  {isConfirming ? `Confirm ${String(v)}` : String(v)}
                 </button>
               );
             })}
-            {selectedSoloValue != null && !isMission9BlockedValue(selectedSoloValue) && (
-              <button
-                onClick={() => {
-                  send({ type: "soloCut", value: selectedSoloValue });
-                  setSelectedSoloValue(null);
-                }}
-                data-testid="solo-cut-submit"
-                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-lg font-black text-base shadow-lg shadow-green-900/50 transition-colors"
-              >
-                Solo Cut! ({String(selectedSoloValue)})
-              </button>
-            )}
           </div>
         </div>
       )}
 
       {/* Reveal Reds */}
       {isMyTurn && canRevealReds && (
-        <div className={`rounded-lg px-3 py-2.5 space-y-2 border border-red-500/40 bg-red-950/15 ${forceRevealReds ? "animate-pulse" : ""}`}>
+        <div className={`rounded-lg px-3 py-2.5 space-y-2 border border-red-500/50 bg-red-950/15 ${forceRevealReds ? "animate-pulse" : ""}`}>
           <div className="text-xs font-bold text-red-300 uppercase">
             Reveal Reds
           </div>
@@ -368,24 +429,36 @@ export function ActionPanel({
         </div>
       )}
 
-      {/* Personal Skill */}
+      {/* Personal Skill — Improvement #7: Collapse when used */}
       {character != null && (() => {
         const cardText = CHARACTER_CARD_TEXT[character];
         const canUseSkill = isMyTurn && !forceRevealReds && !characterUsed && !!onUseCharacterAbility;
-        return (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-fuchsia-500/40 bg-fuchsia-950/15" data-testid="personal-skill-section">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-fuchsia-300 uppercase">
-                Personal Skill — {cardText.abilityName}
-              </div>
-              {characterUsed && (
-                <span className="bg-gray-600 text-gray-300 text-xs font-bold px-2 py-0.5 rounded-full" data-testid="skill-used-badge">
-                  Used
-                </span>
-              )}
+
+        if (characterUsed) {
+          return (
+            <div className="flex items-center gap-2 text-xs text-gray-500 py-1" data-testid="personal-skill-section">
+              <span className="font-bold uppercase">Personal Skill</span>
+              <span>&mdash; {cardText.abilityName}</span>
+              <span className="bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full text-[10px] font-bold" data-testid="skill-used-badge">Used</span>
             </div>
-            <p className="text-xs text-gray-400">{cardText.timing}</p>
-            {!characterUsed && (
+          );
+        }
+
+        const skillDisabledReason = !canUseSkill
+          ? !isMyTurn
+            ? "Your turn only"
+            : forceRevealReds
+              ? "Reveal reds first"
+              : undefined
+          : undefined;
+
+        return (
+          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-fuchsia-500/50 bg-fuchsia-950/15" data-testid="personal-skill-section">
+            <div className="text-xs font-bold text-fuchsia-300 uppercase">
+              Personal Skill — {cardText.abilityName}
+            </div>
+            {isMyTurn && <p className="text-xs text-gray-400">{cardText.timing}</p>}
+            <div>
               <button
                 onClick={onUseCharacterAbility}
                 disabled={!canUseSkill}
@@ -396,30 +469,31 @@ export function ActionPanel({
                     : "bg-gray-700 text-gray-400 cursor-not-allowed"
                 }`}
                 title={
-                  characterUsed
-                    ? "Already used this mission"
-                    : !isMyTurn
-                      ? "Can only use during your turn"
-                      : forceRevealReds
-                        ? "Reveal your remaining red wires first"
-                        : undefined
+                  !isMyTurn
+                    ? "Can only use during your turn"
+                    : forceRevealReds
+                      ? "Reveal your remaining red wires first"
+                      : undefined
                 }
               >
                 Use Skill
               </button>
-            )}
+              {skillDisabledReason && (
+                <p className="text-[10px] text-gray-500 mt-1">{skillDisabledReason}</p>
+              )}
+            </div>
           </div>
         );
       })()}
 
-      {/* Equipment */}
-      {availableEquipment.length > 0 && (
-        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-emerald-500/40 bg-emerald-950/15">
+      {/* Equipment — Improvement #4: Color-coded by timing, sorted */}
+      {sortedEquipment.length > 0 && (
+        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-emerald-500/50 bg-emerald-950/15">
           <div className="text-xs font-bold text-emerald-300 uppercase">
             Equipment
           </div>
           <div className="flex flex-wrap gap-2">
-            {availableEquipment.map((equipment) => {
+            {sortedEquipment.map((equipment) => {
               const def = byId.get(equipment.id);
               const timing = def?.useTiming ?? "anytime";
               const timingAllowsUse =
@@ -438,31 +512,51 @@ export function ActionPanel({
               const blockedByForcedReveal = forceRevealReds && isMyTurn;
               const canUse = timingAllowsUse && !secondaryLocked && !blockedByForcedReveal;
 
+              const timingColor = TIMING_COLORS[timing] ?? TIMING_COLORS.anytime;
+
+              // Improvement #6: Inline disabled reason
+              const equipDisabledReason = !canUse
+                ? blockedByForcedReveal
+                  ? "Reveal reds first"
+                  : secondaryLocked
+                    ? `${secondaryValue}: ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired}`
+                    : timing === "start_of_turn"
+                      ? "Start of turn only"
+                      : timing === "in_turn"
+                        ? "Your turn only"
+                        : undefined
+                : undefined;
+
               return (
-                <button
-                  key={equipment.id}
-                  onClick={() => useEquipment(equipment.id)}
-                  disabled={!canUse}
-                  className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
-                    canUse
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : secondaryLocked
-                        ? "bg-amber-900/60 text-amber-200 cursor-not-allowed"
-                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                  }`}
-                  title={
-                    blockedByForcedReveal
-                      ? "Reveal your remaining red wires first"
-                      : secondaryLocked
-                      ? `${equipment.name} locked: ${secondaryValue} ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired}`
-                      : canUse
-                        ? `${equipment.name} (${timing})`
-                        : `${equipment.name} is only usable ${timing.replaceAll("_", " ")}`
-                  }
-                >
-                  Use {equipment.name}
-                  {secondaryLocked ? ` (${secondaryValue}: ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired})` : ""}
-                </button>
+                <div key={equipment.id} className="flex flex-col items-start">
+                  <button
+                    onClick={() => useEquipment(equipment.id)}
+                    disabled={!canUse}
+                    className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
+                      canUse
+                        ? `${timingColor.bg} ${timingColor.hover} text-white`
+                        : secondaryLocked
+                          ? "bg-amber-900/60 text-amber-200 cursor-not-allowed"
+                          : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    }`}
+                    title={
+                      blockedByForcedReveal
+                        ? "Reveal your remaining red wires first"
+                        : secondaryLocked
+                        ? `${equipment.name} locked: ${secondaryValue} ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired}`
+                        : canUse
+                          ? `${equipment.name} (${timing})`
+                          : `${equipment.name} is only usable ${timing.replaceAll("_", " ")}`
+                    }
+                  >
+                    Use {equipment.name}
+                    {secondaryLocked ? ` (${secondaryValue}: ${Math.min(secondaryProgress, secondaryRequired)}/${secondaryRequired})` : ""}
+                  </button>
+                  <span className="text-[10px] text-gray-500 mt-0.5">{timingColor.label}</span>
+                  {equipDisabledReason && (
+                    <span className="text-[10px] text-gray-500">{equipDisabledReason}</span>
+                  )}
+                </div>
               );
             })}
           </div>
