@@ -330,7 +330,7 @@ Dependency: starts once each milestone’s Phase 1+2 scope is complete.
 
 ## Definition of Done (Campaign Rules Parity)
 
-- [ ] All missions have schema-accurate setup for all allowed player counts.
+- [x] All missions have schema-accurate setup for all allowed player counts.
 - [x] All hooks referenced in schema are implemented and tested.
 - [x] Shared/server/client typecheck and mission test suites pass.
 - [x] No mission depends on placeholder behavior hooks.
