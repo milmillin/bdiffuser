@@ -115,6 +115,9 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
       },
     },
     behaviorHooks: ["mission_14_intern_failure_explodes"],
+    hookRules: [
+      { kind: "intern_failure_explodes", forbiddenEquipment: ["stabilizer"] },
+    ],
   });
 
   setMission(15, {
@@ -130,6 +133,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
         red: outOf(2, 3),
       },
     },
+    behaviorHooks: ["mission_15_number_deck_equipment_reveal"],
     hookRules: [
       { kind: "number_deck_equipment_reveal" },
     ],
@@ -149,5 +153,9 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
       },
     },
     behaviorHooks: ["mission_16_sequence_priority_face_b"],
+    hookRules: [
+      { kind: "sequence_priority", cardCount: 3, requiredCuts: 4, variant: "face_b" },
+    ],
+    notes: ["FAQ: If a player only has sequence-blocked wires left, the bomb explodes."],
   });
 }

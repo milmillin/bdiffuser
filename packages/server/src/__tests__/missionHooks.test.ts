@@ -771,8 +771,10 @@ describe("missionHooks dispatcher", () => {
       expect(state.phase).toBe("playing");
     });
 
-    it("mission 9: does not explode when another player has uncut wires (dualCut possible)", () => {
-      // Current player only has blocked wires, but other player has uncut wires
+    it("mission 9: explodes when player has only blocked wires even if another player has uncut wires", () => {
+      // Stuck player only has value 8 (blocked — right card, pointer 0).
+      // Even though the target player has uncut wires, a dualCut requires
+      // announcing a value the actor owns, and 8 is blocked.
       const stuck = makePlayer({
         id: "stuck",
         hand: [makeTile({ id: "s1", gameValue: 8, cut: false })],
@@ -802,8 +804,8 @@ describe("missionHooks dispatcher", () => {
 
       dispatchHooks(9, { point: "endTurn", state });
 
-      expect(state.result).toBeNull();
-      expect(state.phase).toBe("playing");
+      expect(state.result).toBe("loss_detonator");
+      expect(state.phase).toBe("finished");
     });
   });
 

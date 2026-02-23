@@ -181,19 +181,33 @@ export interface BunkerFlowRuleDef {
 }
 
 /**
- * Mission 9: Sequence card priority (face A).
+ * Sequence card priority (face A or face B).
  * Three visible number cards define an ordered gating:
  * - Need `requiredCuts` of card[0] before card[1] / card[2] are allowed.
  * - Need `requiredCuts` of card[1] before card[2] is allowed.
+ *
+ * Face A (mission 9): requiredCuts = 2.
+ * Face B (mission 16): requiredCuts = 4.
  */
 export interface SequencePriorityRuleDef {
   kind: "sequence_priority";
   /** Number of visible sequence cards to draw from the number deck. */
   cardCount: 3;
   /** Required global cut count to unlock the next sequence step. */
-  requiredCuts: 2;
+  requiredCuts: 2 | 4;
   /** Printed sequence variant on mission card. */
-  variant: "face_a";
+  variant: "face_a" | "face_b";
+}
+
+/**
+ * Mission 14 — Intern (captain) failure explodes.
+ * If the captain fails a Dual Cut, the bomb explodes immediately.
+ * The captain is also forbidden from using specific equipment.
+ */
+export interface InternFailureExplodesRuleDef {
+  kind: "intern_failure_explodes";
+  /** Equipment IDs the intern is forbidden from using. */
+  forbiddenEquipment: readonly string[];
 }
 
 /**
@@ -211,7 +225,8 @@ export type MissionHookRuleDef =
   | OxygenProgressionRuleDef
   | ChallengeRewardsRuleDef
   | BunkerFlowRuleDef
-  | SequencePriorityRuleDef;
+  | SequencePriorityRuleDef
+  | InternFailureExplodesRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 

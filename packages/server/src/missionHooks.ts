@@ -431,11 +431,12 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-// ── Built-in Hook Handlers (Missions 9/10/11/12/15/23/43+/66) ──────
+// ── Built-in Hook Handlers (Missions 9/10/11/12/14/15/23/43+/66) ──────
 
 import type {
   BunkerFlowRuleDef,
   ChallengeRewardsRuleDef,
+  InternFailureExplodesRuleDef,
   SequencePriorityRuleDef,
   TimerRuleDef,
   DynamicTurnOrderRuleDef,
@@ -844,17 +845,14 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
     const uncutTiles = currentPlayer.hand.filter((t) => !t.cut);
     if (uncutTiles.length === 0) return;
 
-    // Check if every uncut wire is a blocked sequence value (can't solo cut).
+    // Check if every uncut wire is a blocked sequence value.
+    // When allBlocked is true the player cannot solo-cut (blocked) NOR
+    // dual-cut (the guessValue must match one of their own tiles, all of
+    // which are blocked values that the hook rejects).
     const allBlocked = uncutTiles.every(
       (t) => typeof t.gameValue === "number" && blockedValues.includes(t.gameValue),
     );
     if (!allBlocked) return;
-
-    // Check if any other player has uncut wires (could dualCut them instead).
-    const hasOtherTargets = ctx.state.players.some(
-      (p) => p.id !== currentPlayer.id && p.hand.some((t) => !t.cut),
-    );
-    if (hasOtherTargets) return;
 
     // No valid actions: the bomb explodes.
     ctx.state.result = "loss_detonator";
@@ -1444,5 +1442,24 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
       detail: `bunker_flow:${before}->${tracker.position}|cycle=${cycle}`,
       timestamp: Date.now(),
     });
+  },
+});
+
+/**
+ * Mission 14 — Intern failure explodes.
+ *
+ * Validate: Block the captain (intern) from using forbidden equipment
+ *           (e.g. the Stabilizer).
+ *
+ * Note: The "intern fails a Dual Cut → explosion" rule is enforced inline
+ * in gameLogic.ts (same pattern as mission 28's Captain Lazy).
+ */
+registerHookHandler<"intern_failure_explodes">("intern_failure_explodes", {
+  validate(rule: InternFailureExplodesRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+
+    // Equipment blocking is handled separately in equipment.ts validation.
+    // This handler exists so the hook rule is registered and doesn't throw
+    // UnknownHookError in strict mode.
   },
 });

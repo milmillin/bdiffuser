@@ -167,6 +167,14 @@ export function validateUseEquipment(
     );
   }
 
+  // Mission 14: Intern (captain) cannot use the Stabilizer.
+  if (state.mission === 14 && actor.isCaptain && equipmentId === "stabilizer") {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "The Intern cannot use the Stabilizer in mission 14",
+    );
+  }
+
   // Mission 28: Captain Lazy cannot activate equipment cards.
   if (state.mission === 28 && actor.isCaptain) {
     return legalityError(

@@ -28,6 +28,7 @@ export type {
   EquipmentDoubleLockRuleDef,
   ChallengeRewardsRuleDef,
   HiddenEquipmentPileRuleDef,
+  InternFailureExplodesRuleDef,
   BunkerFlowRuleDef,
   NanoProgressionRuleDef,
   NumberDeckEquipmentRevealRuleDef,
