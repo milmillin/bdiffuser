@@ -414,7 +414,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `equipment_5`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `OCR clean for front card image; no text changes needed in `GAME_RULES.md`).
 - [x] `equipment_6`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: source card text says `Move the detonator dial back 1 space`).
 - [x] `equipment_7`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Front image OCR normalized effect copy to source wording; no mechanical rule change.`).
-- [ ] `equipment_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `equipment_8`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Front image OCR matched existing card text; no GAME_RULES updates required.`).
 - [ ] `equipment_9`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_10`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [ ] `equipment_11`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
