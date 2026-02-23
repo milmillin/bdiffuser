@@ -382,9 +382,10 @@ export function executeDualCut(
     // Mission 58 disables all info-token placement.
     const suppressInfoTokens = state.mission === 58;
     if (!suppressInfoTokens) {
-      const mission17FalseToken = state.mission === 17 && target.isCaptain;
+      const usesAnnouncedFalseToken =
+        (state.mission === 17 && target.isCaptain) || state.mission === 52;
       const tokenValue =
-        mission17FalseToken
+        usesAnnouncedFalseToken
           ? typeof guessValue === "number"
             ? guessValue
             : 0
@@ -392,7 +393,7 @@ export function executeDualCut(
             ? targetTile.gameValue
             : 0;
       const tokenIsYellow =
-        mission17FalseToken
+        usesAnnouncedFalseToken
           ? guessValue === "YELLOW"
           : targetTile.color === "yellow";
 

@@ -181,6 +181,7 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 28: failed Dual Cut by captain now explodes immediately.
   - [x] Mission 25: speaking wire numbers (`1`-`12`) in chat advances detonator.
   - [x] Mission 20 setup: mark one unsorted far-right `X` wire per player.
+  - [x] Mission 52: failed Dual Cut now places the announced-value token on the targeted wire (false-information rule).
 
 #### Equipment Runtime Parity
 
