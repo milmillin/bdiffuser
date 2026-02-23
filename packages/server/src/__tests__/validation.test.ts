@@ -4,6 +4,7 @@ import {
   isPlayersTurn,
   validateActionWithHooks,
   validateDualCut,
+  validateDualCutDoubleDetectorLegality,
   validateDualCutLegality,
   validateRevealRedsLegality,
   validateSoloCutLegality,
@@ -203,6 +204,126 @@ describe("mission 9 sequence-priority validation", () => {
 
     expect(error).not.toBeNull();
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("rejects blocked soloCut value in mission 9", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 9,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "c1", value: 2, faceUp: true },
+            { id: "c2", value: 5, faceUp: true },
+            { id: "c3", value: 8, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("allows yellow soloCut value in mission 9 sequence mode", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "a2", color: "yellow", gameValue: "YELLOW" }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 9,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "c1", value: 2, faceUp: true },
+            { id: "c2", value: 5, faceUp: true },
+            { id: "c3", value: 8, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: "YELLOW",
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("allows yellow dualCut value in mission 9 sequence mode", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 9,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "c1", value: 2, faceUp: true },
+            { id: "c2", value: 5, faceUp: true },
+            { id: "c3", value: 8, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: "YELLOW",
+    });
+
+    expect(error).toBeNull();
   });
 });
 
@@ -405,5 +526,81 @@ describe("forced action blocking", () => {
       guessValue: 5,
     });
     expect(error).toBeNull();
+  });
+});
+
+describe("validateDualCutDoubleDetectorLegality", () => {
+  const baseDDSetup = (characterId: string) => {
+    const actor = makePlayer({
+      id: "actor",
+      character: characterId as import("@bomb-busters/shared").CharacterId,
+      characterUsed: false,
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    return { actor, target, state };
+  };
+
+  it("allows character_2 to use Double Detector", () => {
+    const { state } = baseDDSetup("character_2");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
+  it("allows character_3 to use Double Detector", () => {
+    const { state } = baseDDSetup("character_3");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
+  it("allows character_4 to use Double Detector", () => {
+    const { state } = baseDDSetup("character_4");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
+  it("allows character_5 to use Double Detector", () => {
+    const { state } = baseDDSetup("character_5");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
+  it("allows double_detector character to use Double Detector", () => {
+    const { state } = baseDDSetup("double_detector");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
+  it("rejects actor with null character", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: null,
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("CHARACTER_ABILITY_WRONG_CHARACTER");
   });
 });

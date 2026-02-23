@@ -425,7 +425,7 @@ export function executeDualCutDoubleDetector(
       state,
       actorId,
       "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both match! Wire ${wireLabel(tileIndex1)} cut.`,
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(tileIndex1)} cut ✓`,
     );
 
     if (checkWin(state)) {
@@ -471,7 +471,7 @@ export function executeDualCutDoubleDetector(
       state,
       actorId,
       "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(matchingTileIndex)} matches and is cut.`,
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(matchingTileIndex)} cut ✓`,
     );
 
     if (checkWin(state)) {
@@ -530,7 +530,7 @@ export function executeDualCutDoubleDetector(
     state,
     actorId,
     "dualCutDoubleDetector",
-    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — no match. Detonator +1.`,
+    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} ✗`,
   );
 
   if (checkDetonatorLoss(state)) {

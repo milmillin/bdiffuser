@@ -5,6 +5,7 @@ import type {
   Player,
   WireTile,
 } from "@bomb-busters/shared";
+import { DOUBLE_DETECTOR_CHARACTERS } from "@bomb-busters/shared";
 import { dispatchHooks, getBlueAsRedValue } from "./missionHooks.js";
 
 /** Get all uncut tiles in a player's hand */
@@ -131,7 +132,7 @@ export function validateDualCutDoubleDetectorLegality(
   const actor = state.players.find((p) => p.id === actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
 
-  if (actor.character !== "double_detector") {
+  if (!actor.character || !DOUBLE_DETECTOR_CHARACTERS.has(actor.character)) {
     return legalityError(
       "CHARACTER_ABILITY_WRONG_CHARACTER",
       "Only the Double Detector character can use this ability",

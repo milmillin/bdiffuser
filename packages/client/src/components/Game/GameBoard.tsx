@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
+import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, wireLabel } from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
@@ -95,6 +95,19 @@ export function GameBoard({
     gameState.pendingForcedAction.lastPlayerId
       ? gameState.players.find((p) => p.id === gameState.pendingForcedAction?.lastPlayerId)?.name
       : undefined;
+  const activeGlobalConstraints =
+    gameState.campaign?.constraints?.global?.filter((constraint) => constraint.active) ?? [];
+  const activeTurnPlayerConstraints =
+    currentPlayer
+      ? (gameState.campaign?.constraints?.perPlayer?.[currentPlayer.id] ?? []).filter(
+        (constraint) => constraint.active,
+      )
+      : [];
+  const showTurnConstraintReminder =
+    gameState.phase === "playing" &&
+    (activeGlobalConstraints.length > 0 || activeTurnPlayerConstraints.length > 0);
+  const turnConstraintPlayerLabel =
+    currentPlayer?.id === playerId ? "You" : (currentPlayer?.name ?? "Current player");
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -226,10 +239,9 @@ export function GameBoard({
                   }
                   onTileClick={
                     isSetup && isMyTurn
-                      ? (tileIndex) => {
-                          if (!requiresSetupToken) return;
-                          setSelectedInfoTile(tileIndex);
-                        }
+                      ? (requiresSetupToken
+                        ? (tileIndex) => setSelectedInfoTile(tileIndex)
+                        : undefined)
                       : doubleDetectorMode && isMyTurn && ddSelectedTiles.length === 2
                         ? (tileIndex) => {
                             const tile = me.hand[tileIndex];
@@ -300,6 +312,27 @@ export function GameBoard({
                   ) : (
                     <div className="text-sky-100/90">
                       Turn order is captain-selected, not clockwise.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {showTurnConstraintReminder && (
+                <div
+                  className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-100"
+                  data-testid="turn-constraint-reminder"
+                >
+                  <div className="font-bold uppercase tracking-wide text-amber-200">
+                    Mission Constraints
+                  </div>
+                  {activeGlobalConstraints.length > 0 && (
+                    <div className="text-amber-100/90">
+                      Global: {activeGlobalConstraints.map((constraint) => constraint.name || constraint.id).join(", ")}
+                    </div>
+                  )}
+                  {activeTurnPlayerConstraints.length > 0 && (
+                    <div className="text-amber-100/90">
+                      {turnConstraintPlayerLabel}: {activeTurnPlayerConstraints.map((constraint) => constraint.name || constraint.id).join(", ")}
                     </div>
                   )}
                 </div>
@@ -466,7 +499,7 @@ export function GameBoard({
           onClose={() => setViewingCharacter(null)}
           onUseAbility={
             viewingCharacter.playerId === playerId &&
-            viewingCharacter.characterId === "double_detector"
+            DOUBLE_DETECTOR_CHARACTERS.has(viewingCharacter.characterId)
               ? () => {
                   setViewingCharacter(null);
                   setDoubleDetectorMode(true);
