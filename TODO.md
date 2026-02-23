@@ -221,10 +221,14 @@ Dependency: blocked by Phase 0C.
     - [x] Setup token count is zero for all players.
     - [x] Failed Dual Cut / Double Detector attempts no longer place info tokens.
     - [x] Token-placing equipment (Post-it, Label cards) is blocked.
-- [ ] Implement mission-specific token placement legality.
+- [x] Implement mission-specific token placement legality.
   - [x] Mission 52 setup token legality:
     - [x] Setup tokens may target only blue/red wires.
     - [x] Setup tokens on blue wires must be false (non-matching value).
+  - [x] Mission 40 alternating token legality:
+    - [x] 2-player setup captain skip is enforced for setup token requirements.
+    - [x] Alternating seat token variants are enforced for setup/failure/Post-it placements (`x1/x2/x3` vs even/odd).
+    - [x] Post-it cut-wire exception is limited to alternating `x1/x2/x3` seats only.
 - [x] Implement remaining mission-specific setup token flows (random draw, captain skip, multi-token placement).
   - [x] Mission 13 random setup-token draw flow:
     - [x] Setup now auto-places one random valid info token for each required player.

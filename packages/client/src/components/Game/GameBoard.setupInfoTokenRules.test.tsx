@@ -47,6 +47,31 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).not.toContain("Select a blue wire tile on your stand to place an info token.");
   });
 
+  it("shows captain skip message for mission 40 in 2-player setup", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+
+    const state = makeGameState({
+      mission: 40,
+      phase: "setup_info_tokens",
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).toContain("Mission setup rule: you do not place an info token.");
+    expect(html).not.toContain("Select a blue wire tile on your stand to place an info token.");
+  });
+
   it("still shows placement prompt for missions without setup overrides", () => {
     const captain = makePlayer({
       id: "captain",

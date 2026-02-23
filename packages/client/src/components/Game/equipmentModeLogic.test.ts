@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ClientPlayer, VisibleTile } from "@bomb-busters/shared";
+import type { ClientGameState, ClientPlayer, VisibleTile } from "@bomb-busters/shared";
 import {
   getOpponentTileSelectableFilter,
   getOwnTileSelectableFilter,
@@ -30,6 +30,15 @@ function player(overrides: Partial<ClientPlayer> = {}): ClientPlayer {
     remainingTiles: 1,
     ...overrides,
   } as unknown as ClientPlayer;
+}
+
+function mission40State(
+  players: ClientPlayer[],
+): Pick<ClientGameState, "mission" | "players"> {
+  return {
+    mission: 40,
+    players,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +193,42 @@ describe("getOwnTileSelectableFilter", () => {
     const me = player({ hand: [tile({ cut: true, gameValue: 3 })] });
     const filter = getOwnTileSelectableFilter({ kind: "post_it" }, me)!;
     expect(filter(me.hand[0], 0)).toBe(false);
+  });
+
+  it("mission 40: post_it allows cut blue tiles for captain alternating seat", () => {
+    const captain = player({
+      id: "captain",
+      isCaptain: true,
+      hand: [tile({ cut: true, gameValue: 3 })],
+    });
+    const partner = player({
+      id: "partner",
+      hand: [tile({ gameValue: 7 })],
+    });
+    const filter = getOwnTileSelectableFilter(
+      { kind: "post_it" },
+      captain,
+      mission40State([captain, partner]),
+    )!;
+    expect(filter(captain.hand[0], 0)).toBe(true);
+  });
+
+  it("mission 40: post_it still rejects cut blue tiles for parity alternating seat", () => {
+    const captain = player({
+      id: "captain",
+      isCaptain: true,
+      hand: [tile({ gameValue: 3 })],
+    });
+    const partner = player({
+      id: "partner",
+      hand: [tile({ cut: true, gameValue: 7 })],
+    });
+    const filter = getOwnTileSelectableFilter(
+      { kind: "post_it" },
+      partner,
+      mission40State([captain, partner]),
+    )!;
+    expect(filter(partner.hand[0], 0)).toBe(false);
   });
 
   it("double_detector: returns false when fewer than 2 opponent tiles selected", () => {
@@ -838,6 +883,50 @@ describe("handleOwnTileClickEquipment", () => {
       equipmentId: "post_it",
       payload: { kind: "post_it", tileIndex: 0 },
     });
+  });
+
+  it("mission 40: post_it allows sending from a cut blue tile for captain alternating seat", () => {
+    const captain = player({
+      id: "captain",
+      isCaptain: true,
+      hand: [tile({ cut: true, color: "blue", gameValue: 3 })],
+    });
+    const partner = player({
+      id: "partner",
+      hand: [tile({ color: "blue", gameValue: 7 })],
+    });
+    const result = handleOwnTileClickEquipment(
+      { kind: "post_it" },
+      0,
+      captain,
+      mission40State([captain, partner]),
+    );
+    expect(result.newMode).toBeNull();
+    expect(result.sendPayload).toEqual({
+      type: "useEquipment",
+      equipmentId: "post_it",
+      payload: { kind: "post_it", tileIndex: 0 },
+    });
+  });
+
+  it("mission 40: post_it keeps parity alternating seat blocked on cut tile", () => {
+    const captain = player({
+      id: "captain",
+      isCaptain: true,
+      hand: [tile({ color: "blue", gameValue: 3 })],
+    });
+    const partner = player({
+      id: "partner",
+      hand: [tile({ cut: true, color: "blue", gameValue: 7 })],
+    });
+    const result = handleOwnTileClickEquipment(
+      { kind: "post_it" },
+      0,
+      partner,
+      mission40State([captain, partner]),
+    );
+    expect(result.newMode).toEqual({ kind: "post_it" });
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("post_it: ignores red tile", () => {

@@ -18,7 +18,7 @@ import {
 } from "./validation.js";
 import { executeDualCut } from "./gameLogic.js";
 import { dispatchHooks } from "./missionHooks.js";
-import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+import { applyMissionInfoTokenVariant, isMission40CountHintPlayer } from "./infoTokenRules.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -229,7 +229,8 @@ export function validateUseEquipment(
       }
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
-      if (tile.cut) {
+      const mission40CountHintSeat = isMission40CountHintPlayer(state, actor);
+      if (tile.cut && !mission40CountHintSeat) {
         return legalityError("TILE_ALREADY_CUT", "Cannot place Post-it on a cut wire");
       }
       if (state.mission === 20 && isXMarkedWire(tile)) {

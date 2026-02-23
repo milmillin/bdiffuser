@@ -5,6 +5,21 @@
 import type { ClientGameState, ClientMessage, ClientPlayer, VisibleTile } from "@bomb-busters/shared";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
 
+type Mission40Context = Pick<ClientGameState, "mission" | "players">;
+
+function isMission40CountHintSeat(
+  gameState: Mission40Context | undefined,
+  me: ClientPlayer,
+): boolean {
+  if (!gameState || gameState.mission !== 40) return false;
+  const captainIndex = gameState.players.findIndex((player) => player.isCaptain);
+  const meIndex = gameState.players.findIndex((player) => player.id === me.id);
+  if (captainIndex === -1 || meIndex === -1) return false;
+  const seatOffset =
+    (meIndex - captainIndex + gameState.players.length) % gameState.players.length;
+  return seatOffset % 2 === 0;
+}
+
 // --- Selectability filters ---
 
 export function getOpponentTileSelectableFilter(
@@ -33,15 +48,18 @@ export function getOpponentTileSelectableFilter(
 export function getOwnTileSelectableFilter(
   mode: EquipmentMode | null,
   me: ClientPlayer | undefined,
+  gameState?: Mission40Context,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode || !me) return undefined;
   switch (mode.kind) {
-    case "post_it":
+    case "post_it": {
+      const allowCutTile = isMission40CountHintSeat(gameState, me);
       return (tile, idx) =>
-        !tile.cut &&
+        (allowCutTile || !tile.cut) &&
         tile.color === "blue" &&
         typeof tile.gameValue === "number" &&
         !me.infoTokens.some((t) => t.position === idx);
+    }
     case "double_detector":
       if (mode.selectedTiles.length < 2) return () => false;
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
@@ -217,10 +235,13 @@ export function handleOwnTileClickEquipment(
   mode: EquipmentMode | null,
   tileIndex: number,
   me: ClientPlayer | undefined,
+  gameState?: Mission40Context,
 ): OwnTileClickResult {
   if (!mode || !me) return { newMode: mode };
   const tile = me.hand[tileIndex];
-  if (!tile || tile.cut) return { newMode: mode };
+  const allowCutTile =
+    mode.kind === "post_it" && isMission40CountHintSeat(gameState, me);
+  if (!tile || (tile.cut && !allowCutTile)) return { newMode: mode };
 
   switch (mode.kind) {
     case "post_it": {

@@ -420,6 +420,75 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
+  it("expert tier (mission 40): captain seat receives x1/x2/x3 tokens on failed cuts", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c3-a", color: "blue", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "c3-b", color: "blue", gameValue: 3, sortValue: 3, cut: true }),
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 40,
+      players: [captain, partner],
+      currentPlayerIndex: 1,
+    });
+
+    const action = executeDualCut(state, "partner", "captain", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(captain.infoTokens).toEqual([
+      {
+        value: 0,
+        countHint: 2,
+        position: 0,
+        isYellow: false,
+      },
+    ]);
+  });
+
+  it("expert tier (mission 40): alternating non-captain seat receives even/odd tokens on failed cuts", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p6", color: "blue", gameValue: 6, sortValue: 6 })],
+    });
+    const state = makeGameState({
+      mission: 40,
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCut(state, "captain", "partner", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(partner.infoTokens).toEqual([
+      {
+        value: 0,
+        parity: "even",
+        position: 0,
+        isYellow: false,
+      },
+    ]);
+  });
+
   it("system-d tier (mission 58): failed dual cut does not place info token", () => {
     const actor = makePlayer({
       id: "actor",

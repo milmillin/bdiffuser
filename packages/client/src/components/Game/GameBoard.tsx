@@ -258,7 +258,7 @@ export function GameBoard({
   };
 
   const handleOwnTileClickEquipment = (tileIndex: number) => {
-    const result = _handleOwnTileClickEquipment(equipmentMode, tileIndex, me);
+    const result = _handleOwnTileClickEquipment(equipmentMode, tileIndex, me, gameState);
     if (result.sendPayload) send(result.sendPayload);
     if (result.newMode !== equipmentMode) setEquipmentMode(result.newMode);
   };
@@ -269,7 +269,7 @@ export function GameBoard({
     _getOpponentTileSelectableFilter(equipmentMode, oppId);
 
   const getOwnTileSelectableFilter = () =>
-    _getOwnTileSelectableFilter(equipmentMode, me);
+    _getOwnTileSelectableFilter(equipmentMode, me, gameState);
 
   // --- Selection highlights ---
 
