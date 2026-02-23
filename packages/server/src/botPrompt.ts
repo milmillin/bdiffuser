@@ -29,6 +29,7 @@ export function buildSystemPrompt(): string {
 - A numbered info token (e.g., "5") on a tile position means that tile has value 5.
 - A yellow info token means that tile is a yellow wire.
 - During setup, each player places exactly 1 info token on one of their own blue wires with matching value, giving teammates a hint.
+- Some missions disable info tokens entirely (e.g., mission 58). In those missions there are no setup tokens, wrong guesses do not add info tokens, and token-placing equipment is unusable.
 - Use info tokens to make SAFE dualCut guesses — a tile with an info token has a known value!
 
 ## Board Markers
@@ -48,7 +49,7 @@ export function buildSystemPrompt(): string {
 ## Strategy Tips
 - ALWAYS prefer revealReds when eligible (zero risk).
 - ALWAYS prefer soloCut when available (zero risk, cuts multiple tiles).
-- For dualCut, STRONGLY prefer tiles with info tokens — their value is known!
+- For dualCut, STRONGLY prefer tiles with info tokens when the mission uses them.
 - Avoid guessing tiles near red/yellow marker positions unless you have info tokens confirming the value.
 - Consider the validation track: if a value shows 2/4 cut, the remaining 2 copies are still out there.
 - The detonator has limited space — every wrong guess brings you closer to losing.
@@ -104,6 +105,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
   lines.push(`Mission: #${state.mission} — ${mission.name} (${mission.difficulty})`);
   if (mission.specialRules) {
     lines.push(`Mission Rules: ${mission.specialRules}`);
+  }
+  if (state.mission === 58) {
+    lines.push(
+      "Mission Token Rule: Info tokens are disabled (no setup tokens, no failure tokens, no token-placing equipment).",
+    );
   }
   lines.push(
     `Players: ${state.players.length} | Red wires: ${describeWirePoolSpec(resolvedMission.setup.red)} | Yellow wires: ${describeWirePoolSpec(resolvedMission.setup.yellow)}`,

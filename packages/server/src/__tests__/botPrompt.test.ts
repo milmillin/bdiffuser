@@ -16,7 +16,7 @@ import {
   makeEquipmentCard,
 } from "@bomb-busters/shared/testing";
 import { filterStateForPlayer } from "../viewFilter";
-import { buildUserMessage } from "../botPrompt";
+import { buildSystemPrompt, buildUserMessage } from "../botPrompt";
 
 describe("buildUserMessage campaign context", () => {
   afterEach(() => {
@@ -142,6 +142,30 @@ describe("buildUserMessage campaign context", () => {
 
     expect(message).toContain("[Info Token: x2]");
     expect(message).toContain("[Info Token: x1]");
+  });
+
+  it("includes no-token mission guidance for mission 58", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "p1-1", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+
+    const state = makeGameState({
+      mission: 58,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("Mission Token Rule: Info tokens are disabled");
   });
 
   it("does not leak hidden challenge deck names in bot prompt", () => {
@@ -304,5 +328,12 @@ describe("buildUserMessage campaign context", () => {
     const message = buildUserMessage(filtered);
 
     expect(message).toContain("Equipment secondary locks: Rewinder: 6 (2/2)");
+  });
+});
+
+describe("buildSystemPrompt", () => {
+  it("mentions no-token mission caveat", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("Some missions disable info tokens entirely");
   });
 });
