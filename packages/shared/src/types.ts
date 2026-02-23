@@ -290,6 +290,8 @@ export type ForcedAction = {
   kind: "chooseNextPlayer";
   /** The player who must resolve this forced action (typically the captain). */
   captainId: string;
+  /** The player who took the previous turn (used by mission-10 no-consecutive rule). */
+  lastPlayerId?: string;
 };
 
 export interface TurnEffects {
