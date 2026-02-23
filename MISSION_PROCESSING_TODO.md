@@ -80,6 +80,10 @@ and add per-mission setup/special rules into `GAME_RULES.md`.
 - [ ] Mission 65: front `packages/client/public/images/mission_65.png`, back `packages/client/public/images/mission_65_back.png`
 - [ ] Mission 66: front `packages/client/public/images/mission_66.png`, back `packages/client/public/images/mission_66_back.png`
 
+- [ ] Mission 31: front `packages/client/public/images/mission_31.jpg`, back `packages/client/public/images/mission_31_back.jpg`
+- [ ] Mission 32: front `packages/client/public/images/mission_32.jpg`, back `packages/client/public/images/mission_32_back.jpg`
+- [ ] Mission 35: front `packages/client/public/images/mission_35.jpg`, back `packages/client/public/images/mission_35_back.jpg`
+
 ## Numeric Gaps
 
-- Mission numbers missing from assets: 31, 32, 35
+- ~~Mission numbers missing from assets: 31, 32, 35~~ All gaps filled.
