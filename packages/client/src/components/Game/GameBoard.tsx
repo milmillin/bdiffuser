@@ -106,7 +106,11 @@ export function GameBoard({
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
-  const [missionCardShowText, setMissionCardShowText] = useState(false);
+  const [missionCardView, setMissionCardView] = useState<"front" | "back" | "text">("front");
+  const cycleMissionView = useCallback(
+    () => setMissionCardView((v) => (v === "front" ? "back" : v === "back" ? "text" : "front")),
+    [],
+  );
   const missionImageRef = useRef<HTMLImageElement>(null);
   const [missionImageHeight, setMissionImageHeight] = useState<number | undefined>(undefined);
   const onMissionImageLoad = useCallback(() => {
@@ -568,8 +572,8 @@ export function GameBoard({
 
           {/* Sidebar: mission card + action log + chat */}
           <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
-            <div className="flex-shrink-0 relative">
-              {missionCardShowText ? (() => {
+            <div className="flex-shrink-0 relative cursor-pointer" onClick={cycleMissionView}>
+              {missionCardView === "text" ? (() => {
                 const schema = MISSION_SCHEMAS[gameState.mission];
                 const def = MISSIONS[gameState.mission];
                 const playerCount = gameState.players.length;
@@ -623,18 +627,17 @@ export function GameBoard({
               })() : (
                 <img
                   ref={missionImageRef}
-                  src={`/images/${MISSION_IMAGES[gameState.mission]}`}
-                  alt={`Mission ${gameState.mission}`}
+                  src={missionCardView === "back"
+                    ? `/images/mission_${gameState.mission}_back.jpg`
+                    : `/images/${MISSION_IMAGES[gameState.mission]}`}
+                  alt={`Mission ${gameState.mission} (${missionCardView})`}
                   className="w-full h-auto rounded-lg"
                   onLoad={onMissionImageLoad}
                 />
               )}
-              <button
-                onClick={() => setMissionCardShowText((v) => !v)}
-                className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[10px] text-gray-300 hover:text-white hover:bg-black/80 transition-colors"
-              >
-                {missionCardShowText ? "IMG" : "TXT"}
-              </button>
+              <span className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[10px] text-gray-300 pointer-events-none select-none">
+                {missionCardView === "front" ? "FRONT" : missionCardView === "back" ? "BACK" : "TEXT"}
+              </span>
             </div>
             <div className="flex-1 min-h-0 flex flex-col">
               <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
