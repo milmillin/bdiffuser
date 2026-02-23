@@ -563,7 +563,7 @@ Baseline assumption used in this section:
 
 ### Mission 9
 
-- Card title: `The sense of priorities`
+- Card title: `A sense of priorities`
 - Setup:
   - Add `1` red wire and `2` yellow wires.
   - Shuffle Number cards, draw `3`, place face up in a row.
