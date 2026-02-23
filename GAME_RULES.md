@@ -1630,6 +1630,10 @@ Baseline assumption used in this section:
 
 - You must cut only odd wires.
 
+### Constraint C
+
+- You must cut only wires 1 to 6.
+
 ## Challenge Cards
 
 ### Challenge 1
