@@ -34,13 +34,19 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
     reminders: [
       "Any uncut wire color can be exchanged, including yellow and red.",
       "Everyone sees where these wires are taken and replaced.",
+      "If the swapped wire has an info token, the token follows the wire to its new stand.",
+      "Players cannot communicate or request a specific value during the swap.",
     ],
   },
   triple_detector: {
     timing: "To be used in turn.",
     effect:
       "During a Duo Cut action, announce one value (not yellow) and designate 3 wires from a teammate stand.",
-    reminders: ["Works like Double Detector 2000, but with 3 wires."],
+    reminders: [
+      "Works like Double Detector 2000, but with 3 wires.",
+      "Success: at least one of the 3 wires matches; teammate cuts one matching wire without revealing if multiple match.",
+      "Failure: none match; teammate places an info token on one of the 3 wires (their choice).",
+    ],
   },
   post_it: {
     timing: "Can be used at any time.",
@@ -51,7 +57,10 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
     timing: "To be used in turn.",
     effect:
       "During a Duo Cut action, announce one value (not yellow) and designate an entire teammate stand.",
-    reminders: ["Works like Double Detector 2000, but with all wires in that stand."],
+    reminders: [
+      "Works like Double Detector 2000, but with all wires in that stand.",
+      "Same success/failure rules as Triple Detector but for the entire stand.",
+    ],
   },
   rewinder: {
     timing: "Can be used at any time.",
@@ -68,7 +77,11 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
     timing: "Can be used at any time.",
     effect:
       "Announce a number (1-12). All players answer yes if they have at least one uncut blue wire of that value.",
-    reminders: ["If a player has 2 stands, they answer for each stand."],
+    reminders: [
+      "If a player has 2 stands, they answer for each stand.",
+      "Only reveal yes/no, not location or quantity.",
+      "YELLOW and RED wires have no numeric value — a 7.5 red wire does NOT count as '7'.",
+    ],
   },
   stabilizer: {
     timing: "To be used at the start of your turn.",
@@ -76,13 +89,18 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
       "Use before a Duo Cut. If that Duo Cut fails this turn, the detonator does not advance and the bomb does not explode.",
     reminders: [
       "If a wrong wire was designated, the targeted player still places the usual Info token.",
+      "If the chosen wire is RED, do not place an info token.",
     ],
   },
   x_or_y_ray: {
     timing: "To be used in turn.",
     effect:
       "During a Duo Cut action, designate one wire and announce 2 possible values (yellow included).",
-    reminders: ["You must have both announced values in your own hand."],
+    reminders: [
+      "You must have both announced values in your own hand.",
+      "Success if the wire matches either announced value; both that wire and your matching wire are revealed.",
+      "The two announced values need not be consecutive.",
+    ],
   },
   coffee_thermos: {
     timing: "To be used in turn.",
@@ -133,7 +151,10 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
     timing: "Can be used at any time.",
     effect:
       "Designate a teammate wire, take it without revealing it, and file it into your own hand.",
-    reminders: ["Everyone sees where the wire is taken from and where it is placed."],
+    reminders: [
+      "Everyone sees where the wire is taken from and where it is placed.",
+      "If the receiving player has 2 stands, they choose which stand to place the wire on.",
+    ],
   },
 };
 

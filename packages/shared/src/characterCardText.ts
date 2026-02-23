@@ -30,6 +30,10 @@ const DOUBLE_DETECTOR_ABILITY = {
   reminders: [
     "You must have the declared value as an uncut blue wire in your own hand.",
     "If exactly one of the two pointed wires is red, the bomb does not explode; the info token is placed on the non-red wire.",
+    "The 2 designated wires need not be adjacent.",
+    "Both wires must be on the same stand (cannot span 2 stands of one player).",
+    "If both designated wires are red, the bomb explodes.",
+    "Cannot announce YELLOW or RED — only values 1–12.",
   ],
   comingSoon: false,
 } as const satisfies Omit<CharacterCardText, "name">;

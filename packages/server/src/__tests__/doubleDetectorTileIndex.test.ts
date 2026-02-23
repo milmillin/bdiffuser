@@ -3,6 +3,7 @@ import {
   makeGameState,
   makePlayer,
   makeTile,
+  makeRedTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCutDoubleDetector } from "../gameLogic";
 
@@ -174,5 +175,70 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(actor.hand[0].cut).toBe(false);
     expect(actor.hand[1].cut).toBe(true);
     expect(actor.hand[2].cut).toBe(false);
+  });
+
+  it("explodes when both designated wires are red", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeRedTile({ id: "r2" }),
+        makeTile({ id: "t3", color: "blue", gameValue: 3 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("none_match");
+    expect(action.explosion).toBe(true);
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
+  });
+
+  it("places info token when both designated wires are non-red and neither matches", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("none_match");
+    expect(action.explosion).toBeUndefined();
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(action.infoTokenPlacedIndex).toBe(0); // first wire
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    // No explosion — game continues
+    expect(state.phase).not.toBe("finished");
   });
 });

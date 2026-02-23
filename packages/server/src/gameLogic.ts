@@ -12,7 +12,11 @@ import {
   getAllTiles,
   getTileByFlatIndex,
 } from "./validation.js";
-import { dispatchHooks, getBlueAsRedValue } from "./missionHooks.js";
+import {
+  dispatchHooks,
+  emitMissionFailureTelemetry,
+  getBlueAsRedValue,
+} from "./missionHooks.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -253,6 +257,7 @@ export function executeDualCut(
     if (checkDetonatorLoss(state)) {
       state.result = "loss_detonator";
       state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
       addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓ (but detonator triggered)`);
       return {
         type: "dualCutResult",
@@ -324,6 +329,7 @@ export function executeDualCut(
       updateMarkerConfirmations(state);
       state.result = "loss_red_wire";
       state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
       addLog(
         state,
         actorId,
@@ -369,6 +375,7 @@ export function executeDualCut(
     if (!stabilizerActive && checkDetonatorLoss(state)) {
       state.result = "loss_detonator";
       state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
       return {
         type: "dualCutResult",
         actorId,
@@ -530,6 +537,32 @@ export function executeDualCutDoubleDetector(
   // If exactly one is red, place on the non-red wire per rule text
   const tile1IsRed = tile1.color === "red";
   const tile2IsRed = tile2.color === "red";
+
+  // Both red → bomb explodes (FAQ)
+  if (tile1IsRed && tile2IsRed) {
+    updateMarkerConfirmations(state);
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+    addLog(
+      state,
+      actorId,
+      "dualCutDoubleDetector",
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED! BOOM!`,
+    );
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "none_match",
+      detonatorAdvanced: true,
+      explosion: true,
+    };
+  }
+
   let infoTokenTileIndex: number;
   let infoTokenTile: WireTile;
   if (tile1IsRed && !tile2IsRed) {
@@ -539,7 +572,7 @@ export function executeDualCutDoubleDetector(
     infoTokenTileIndex = tileIndex1;
     infoTokenTile = tile1;
   } else {
-    // Both non-red or both red: place on the first wire
+    // Both non-red: place on the first wire
     infoTokenTileIndex = tileIndex1;
     infoTokenTile = tile1;
   }
@@ -565,6 +598,7 @@ export function executeDualCutDoubleDetector(
   if (checkDetonatorLoss(state)) {
     state.result = "loss_detonator";
     state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
     return {
       type: "dualCutDoubleDetectorResult",
       actorId,
