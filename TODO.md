@@ -194,7 +194,7 @@ Dependency: blocked by Phase 0C.
   - [x] Mission 23: hidden equipment pile setup mode.
     - [x] Added hook rule `hidden_equipment_pile` and Mission 23 hook wiring.
     - [x] Mission 23 setup now creates a face-down pile of 7 random base equipment cards (replacing normal setup draw).
-- [ ] Implement remaining campaign equipment behavior variants.
+- [x] Implement remaining campaign equipment behavior variants.
   - [x] Mission 17: Sergio (captain) cannot activate equipment cards.
     - [x] Setup clears Sergio/captain character card (no personal equipment).
     - [x] Enforced mission-aware equipment validation rule (`MISSION_RULE_VIOLATION`) for mission 17 captain actor.
