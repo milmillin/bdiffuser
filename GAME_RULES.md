@@ -1167,11 +1167,11 @@ Baseline assumption used in this section:
 - Setup:
   - Red setup: `1 out of 3`.
   - Add `4` yellow wires.
-  - Card indicates external mission audio (smartphone/QR).
 - Mission rule (back):
-  - Before first round, play mission sound file.
-  - Card otherwise provides fail/success narrative outcome.
-  - On success, open box `Missions 43 to 54`.
+  - Clear space around your table and let the show begin.
+  - Before the first round, play the mission 42 sound file.
+  - Failure outcome is a broken/interrupted show as described on card text.
+  - Success outcome is `The show must go on (again)!` and then open the `Missions 43 to 54` box.
 
 ### Mission 43
 
