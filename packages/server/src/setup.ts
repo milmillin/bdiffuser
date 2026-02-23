@@ -69,6 +69,12 @@ function createMarkers(
   }));
 }
 
+function compareMarkerOrder(a: BoardMarker, b: BoardMarker): number {
+  if (a.value !== b.value) return a.value - b.value;
+  if (a.color === b.color) return 0;
+  return a.color === "yellow" ? -1 : 1;
+}
+
 function createRedTiles(
   spec: WirePoolSpec,
 ): { tiles: WireTile[]; markers: BoardMarker[] } {
@@ -234,7 +240,7 @@ export function setupGame(
 
   const red = createRedTiles(setup.red);
   const yellow = createYellowTiles(setup.yellow);
-  const allMarkers = [...red.markers, ...yellow.markers];
+  const allMarkers = [...red.markers, ...yellow.markers].sort(compareMarkerOrder);
 
   const allTiles = [...blueTiles, ...red.tiles, ...yellow.tiles];
   distributeTiles(allTiles, players);
