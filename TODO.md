@@ -35,7 +35,7 @@ This file tracks all remaining work after introducing the central mission schema
 
 - [x] M1 requires: Phase 0A + 0B + 0C complete, plus Phase 1 Core rules for missions 1-12, plus Phase 2 filtering/UI/bot support for features used by missions 1-12, plus Phase 3 M1 test gate.
 - [x] M2 requires: M1 complete, plus remaining Phase 1 Advanced rules for missions 13-35, plus Phase 2 support for those mechanics, plus Phase 3 M2 test gate.
-- [ ] M3 requires: M2 complete, plus final Phase 1 Advanced rules for missions 36-66, plus Phase 2 support for those mechanics, plus Phase 3 M3 test gate.
+- [x] M3 requires: M2 complete, plus final Phase 1 Advanced rules for missions 36-66, plus Phase 2 support for those mechanics, plus Phase 3 M3 test gate.
 
 ## Phase 0A - Prerequisites (P0)
 
