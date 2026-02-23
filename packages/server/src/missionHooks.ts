@@ -822,6 +822,52 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
       });
     }
   },
+
+  endTurn(rule: SequencePriorityRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+
+    const values = getSequenceVisibleValues(ctx.state, rule.cardCount);
+    if (!values) return;
+
+    const pointer = Math.min(getSequencePointer(ctx.state), rule.cardCount - 1);
+    const blockedValues: number[] =
+      pointer === 0
+        ? [values[1], values[2]].filter((v): v is number => v != null)
+        : pointer === 1
+          ? [values[2]].filter((v): v is number => v != null)
+          : [];
+    if (blockedValues.length === 0) return;
+
+    const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    const uncutTiles = currentPlayer.hand.filter((t) => !t.cut);
+    if (uncutTiles.length === 0) return;
+
+    // Check if every uncut wire is a blocked sequence value (can't solo cut).
+    const allBlocked = uncutTiles.every(
+      (t) => typeof t.gameValue === "number" && blockedValues.includes(t.gameValue),
+    );
+    if (!allBlocked) return;
+
+    // Check if any other player has uncut wires (could dualCut them instead).
+    const hasOtherTargets = ctx.state.players.some(
+      (p) => p.id !== currentPlayer.id && p.hand.some((t) => !t.cut),
+    );
+    if (hasOtherTargets) return;
+
+    // No valid actions: the bomb explodes.
+    ctx.state.result = "loss_detonator";
+    ctx.state.phase = "finished";
+    emitMissionFailureTelemetry(ctx.state, "loss_detonator", currentPlayer.id, null);
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: currentPlayer.id,
+      action: "hookEffect",
+      detail: "sequence_priority:stuck:all_wires_blocked",
+      timestamp: Date.now(),
+    });
+  },
 });
 
 /**

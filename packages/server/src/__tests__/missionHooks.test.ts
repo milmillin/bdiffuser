@@ -691,6 +691,120 @@ describe("missionHooks dispatcher", () => {
       expect(state.pendingForcedAction).toBeUndefined();
       expect(result.nextPlayerIndex).toBeUndefined();
     });
+
+    it("mission 9: explodes when current player has only blocked wires and no dualCut targets", () => {
+      // Cards [2, 5, 8], pointer=0 → blocked: 5, 8
+      // Current player (index 0) only has value-5 wires (blocked)
+      // Other player has no uncut wires → no dualCut target
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [
+          makeTile({ id: "s1", gameValue: 5, cut: false }),
+          makeTile({ id: "s2", gameValue: 5, cut: false }),
+        ],
+      });
+      const done = makePlayer({
+        id: "done",
+        hand: [makeTile({ id: "d1", gameValue: 3, cut: true })],
+      });
+      const state = makeGameState({
+        mission: 9,
+        players: [stuck, done],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(9, { point: "endTurn", state });
+
+      expect(state.result).toBe("loss_detonator");
+      expect(state.phase).toBe("finished");
+      const effectLog = state.log.find(
+        (e) => e.action === "hookEffect" && e.detail.includes("stuck"),
+      );
+      expect(effectLog).toBeDefined();
+    });
+
+    it("mission 9: does not explode when current player has a non-blocked wire", () => {
+      // Cards [2, 5, 8], pointer=0 → blocked: 5, 8
+      // Player has value 3 (not blocked)
+      const player = makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "a1", gameValue: 5, cut: false }),
+          makeTile({ id: "a2", gameValue: 3, cut: false }),
+        ],
+      });
+      const state = makeGameState({
+        mission: 9,
+        players: [player],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(9, { point: "endTurn", state });
+
+      expect(state.result).toBeNull();
+      expect(state.phase).toBe("playing");
+    });
+
+    it("mission 9: does not explode when another player has uncut wires (dualCut possible)", () => {
+      // Current player only has blocked wires, but other player has uncut wires
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [makeTile({ id: "s1", gameValue: 8, cut: false })],
+      });
+      const target = makePlayer({
+        id: "target",
+        hand: [makeTile({ id: "t1", gameValue: 2, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 9,
+        players: [stuck, target],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(9, { point: "endTurn", state });
+
+      expect(state.result).toBeNull();
+      expect(state.phase).toBe("playing");
+    });
   });
 
   describe("validate hooks", () => {

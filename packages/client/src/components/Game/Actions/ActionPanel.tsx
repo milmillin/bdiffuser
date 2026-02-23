@@ -183,11 +183,9 @@ export function ActionPanel({
   const dualCutStep: 1 | 2 | 3 = guessValue == null ? 1 : !selectedTarget ? 2 : 3;
 
   useEffect(() => {
-    if (!(gameState.mission === 9 && typeof mission9ActiveValue === "number")) {
-      return;
-    }
+    if (gameState.mission !== 9) return;
     setSelectedSoloValue((prev) =>
-      typeof prev === "number" && prev !== mission9ActiveValue ? null : prev,
+      prev != null && isMission9BlockedCutValue(gameState, prev) ? null : prev,
     );
   }, [mission9ActiveValue, gameState.mission]);
 

@@ -69,8 +69,26 @@ export function isMission9BlockedCutValue(
   gameState: Mission9StateLike,
   value: Mission9CutValue,
 ): boolean {
-  const gate = getMission9SequenceGate(gameState);
-  if (!gate || typeof gate.activeValue !== "number") return false;
+  if (gameState.mission !== 9) return false;
   if (typeof value !== "number") return false;
-  return value !== gate.activeValue;
+
+  const pointer =
+    gameState.campaign?.specialMarkers?.find(
+      (marker) => marker.kind === "sequence_pointer",
+    )?.value ?? 0;
+  const visibleValues =
+    (gameState.campaign?.numberCards?.visible ?? []).map((card) => card.value);
+
+  // Only block the later sequence card values, matching server validation.
+  // pointer=0: values[1] and values[2] are blocked.
+  // pointer=1: values[2] is blocked.
+  // pointer>=2: nothing blocked.
+  const blockedValues =
+    pointer === 0
+      ? [visibleValues[1], visibleValues[2]]
+      : pointer === 1
+        ? [visibleValues[2]]
+        : [];
+
+  return blockedValues.includes(value);
 }

@@ -52,14 +52,36 @@ describe("actionPanelMissionRules", () => {
     });
   });
 
-  it("blocks numeric values that are not currently active in mission 9", () => {
+  it("blocks later sequence card values when pointer is 0", () => {
     const state = makeMission9State(0);
+    // Cards are [2, 5, 8] — pointer=0 blocks values[1]=5 and values[2]=8
     expect(isMission9BlockedCutValue(state, 5)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 8)).toBe(true);
   });
 
-  it("allows the currently active numeric value in mission 9", () => {
+  it("allows the active value and non-sequence values when pointer is 0", () => {
     const state = makeMission9State(0);
+    // Active value (2) is allowed
     expect(isMission9BlockedCutValue(state, 2)).toBe(false);
+    // Non-sequence values (e.g. 3, 7) are also allowed
+    expect(isMission9BlockedCutValue(state, 3)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 7)).toBe(false);
+  });
+
+  it("only blocks the last card value when pointer is 1", () => {
+    const state = makeMission9State(1);
+    // Cards are [2, 5, 8] — pointer=1 blocks only values[2]=8
+    expect(isMission9BlockedCutValue(state, 8)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 2)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 5)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 3)).toBe(false);
+  });
+
+  it("blocks nothing when pointer is 2", () => {
+    const state = makeMission9State(2);
+    expect(isMission9BlockedCutValue(state, 2)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 5)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 8)).toBe(false);
   });
 
   it("allows yellow values in mission 9 sequence gate", () => {
