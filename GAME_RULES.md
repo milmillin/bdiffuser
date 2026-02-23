@@ -208,6 +208,97 @@ Cutting yellow wires:
 
 - X-ray or Y-ray equipment can be combined with Double/Triple/Super Detector style effects (as noted in rulebook).
 
+### 13.4 Standard Equipment Card Reference (1-12)
+
+Card text extracted from equipment cards `1` through `12`:
+
+- Equipment `1` (`Label !=`)
+  - Timing: can be used at any time.
+  - Effect: place the `!=` token in front of 2 adjacent wires of different values.
+  - Card reminders:
+    - One of the 2 wires may already be cut.
+    - Two yellow wires or two red wires are considered identical, so they are not `different` for this effect.
+- Equipment `2` (`Talkies-walkies`)
+  - Timing: can be used at any time.
+  - Effect: swap 2 wires.
+    - You take one of your uncut wires and place it face down in front of a teammate.
+    - Teammate does the same.
+    - Each player then takes the new wire and files it into their own hand.
+  - Card reminders:
+    - Any uncut wire color can be exchanged (including yellow and red).
+    - Everyone sees where these wires are taken and replaced.
+- Equipment `3` (`Triple detector 3000`)
+  - Timing: to be used in turn.
+  - Effect: during a Duo Cut action, announce one value (not yellow) and designate 3 wires from a teammate's stand.
+  - Card reminder: this works like Double Detector 2000, but with 3 wires.
+- Equipment `4` (`Post-it`)
+  - Timing: can be used at any time.
+  - Effect: place an Info token in front of one of your blue wires.
+- Equipment `5` (`Super detector`)
+  - Timing: to be used in turn.
+  - Effect: during a Duo Cut action, announce one value (not yellow) and designate an entire stand of a teammate.
+  - Card reminder: this works like Double Detector 2000, but with all wires in that stand.
+- Equipment `6` (`Rewinder`)
+  - Timing: can be used at any time.
+  - Effect: move the detonator back one notch.
+- Equipment `7` (`Emergency Batteries`)
+  - Timing: can be used at any time.
+  - Effect: turn one or two used Character cards face up; their personal equipment becomes available again for this mission.
+- Equipment `8` (`General Radar`)
+  - Timing: can be used at any time.
+  - Effect: announce a number (`1`-`12`); all players (including you) answer `yes` if they have at least one uncut blue wire of that value.
+  - Card reminder: if a player has 2 stands, they answer for each stand.
+- Equipment `9` (`Stabilizer`)
+  - Timing: to be used at the start of your turn.
+  - Effect: use before a Duo Cut. For that turn, if your Duo Cut fails:
+    - The detonator does not advance.
+    - The bomb does not explode (including red-wire failure case).
+  - Card reminder: if a wrong wire was designated, the targeted player still places the usual Info token (number or yellow).
+- Equipment `10` (`X or Y ray`)
+  - Timing: to be used in turn.
+  - Effect: during a Duo Cut action, by designating one wire you may announce 2 possible values (yellow included).
+  - Card reminder: you must have both announced values in your own hand.
+- Equipment `11` (`Coffee thermos`)
+  - Timing: to be used in turn.
+  - Effect: pass your turn and choose the next active Minesweeper (without consultation).
+  - Card reminder: play continues clockwise from the designated Minesweeper.
+- Equipment `12` (`Label =`)
+  - Timing: can be used at any time.
+  - Effect: place the `=` token in front of 2 adjacent wires of the same value.
+  - Card reminders:
+    - One of the 2 wires may already be cut.
+    - Two yellow wires or two red wires are considered identical for this effect.
+
+### 13.5 Additional Equipment Card Assets (Campaign/Later Missions)
+
+Additional card text extracted from later-mission equipment cards:
+
+- Yellow equipment - `Double fond`
+  - Timing: immediate effect.
+  - Effect: draw 2 Equipment cards and put them into play with the others.
+  - Card reminder: depending on values already cut, those new equipment cards may be immediately usable.
+- Equipment `22` (`Single thread label`)
+  - Timing: can be used at any time.
+  - Effect: place a token in front of one of your blue wires (cut or uncut).
+  - Card reminder: it indicates that this value appears only once on that stand (including already-cut wires).
+- Equipment `33` (`Emergency fund`)
+  - Timing: immediate effect.
+  - Effect: return already-used Equipment cards immediately; they become available again for this mission.
+- Equipment `99` (`Thread cutter card`)
+  - Timing: to use in turn.
+  - Effect: when performing a Solo Cut action, cut 2 identical wires even if they are not the last remaining ones of that value.
+- Equipment `10-10` (`Disintegrator`)
+  - Timing: immediate effect.
+  - Effect: draw a random numbered Info token (`1`-`12`); all players cut their possible remaining wires of that value.
+- Equipment `11-11` (`Grapple`)
+  - Timing: can be used at any time.
+  - Effect: designate a teammate's wire, take it without revealing it, and file it into your own hand.
+  - Card reminder: everyone sees where the wire is taken from and where it is placed.
+
+### 13.6 Equipment Back Art
+
+- Equipment back card art has no rules text.
+
 ## 14. Character Cards (Personal Equipment)
 
 - Each player's character has one personal equipment power usable once per mission.
@@ -298,12 +389,7 @@ Win/Loss summary:
   - Quick reference says "once per game."
   - For campaign play, the detailed character-rules wording ("once per mission") is typically interpreted as authoritative unless a mission says otherwise.
 
-## 20. Mission Cards 1-8 (Processed from Images)
-
-Source images:
-
-- Fronts: `packages/client/public/images/mission_1.png` through `packages/client/public/images/mission_8.png`
-- Backs: `packages/client/public/images/mission_1_back.png` through `packages/client/public/images/mission_8_back.png`
+## 20. Mission Cards 1-8
 
 Normalization note:
 
@@ -444,12 +530,7 @@ Normalization note:
   - Campaign progression note:
     - On success, open the `Missions 9 to 19` box.
 
-## 21. Mission Cards 9-16 (Processed from Images)
-
-Source images:
-
-- Fronts: `packages/client/public/images/mission_9.png` through `packages/client/public/images/mission_16.png`
-- Backs: `packages/client/public/images/mission_9_back.png` through `packages/client/public/images/mission_16_back.png`
+## 21. Mission Cards 9-16
 
 Baseline assumption used in this section:
 
@@ -580,12 +661,7 @@ Baseline assumption used in this section:
   - Other values can be cut at any time.
   - After all `4` wires of the left value are cut, flip/remove that Number card and shift the Sequence marker; then repeat for the next step.
 
-## 22. Mission Cards 17-24 (Processed from Images)
-
-Source images:
-
-- Fronts: `packages/client/public/images/mission_17.png` through `packages/client/public/images/mission_24.png`
-- Backs: `packages/client/public/images/mission_17_back.png` through `packages/client/public/images/mission_24_back.png`
+## 22. Mission Cards 17-24
 
 ### Mission 17
 
@@ -726,22 +802,7 @@ Source images:
   - Applies to mistake info placement and Equipment `4` (Post-it).
   - With Equipment `4`, token may be placed in front of an already cut wire.
 
-## 23. Mission Cards 25-34 (Processed from Images, Next 8 Available)
-
-Source images processed in this batch:
-
-- `mission_25(.png/_back.png)`
-- `mission_26(.png/_back.png)`
-- `mission_27(.png/_back.png)`
-- `mission_28(.png/_back.png)`
-- `mission_29(.png/_back.png)`
-- `mission_30(.png/_back.png)`
-- `mission_33(.png/_back.png)`
-- `mission_34(.png/_back.png)`
-
-Note:
-
-- `mission_31` and `mission_32` images are not present in `packages/client/public/images/`.
+## 23. Mission Cards 25-34
 
 ### Mission 25
 
@@ -879,22 +940,7 @@ Note:
         - Reveal all character cards and enable them.
         - Weak link no longer applies constraint; mission continues normally.
 
-## 24. Mission Cards 36-43 (Processed from Images, Next 8 Available)
-
-Source images processed in this batch:
-
-- `mission_36(.png/_back.png)`
-- `mission_37(.png/_back.png)`
-- `mission_38(.png/_back.png)`
-- `mission_39(.png/_back.png)`
-- `mission_40(.png/_back.png)`
-- `mission_41(.png/_back.png)`
-- `mission_42(.png/_back.png)`
-- `mission_43(.png/_back.png)`
-
-Note:
-
-- `mission_35` image is not present in `packages/client/public/images/`.
+## 24. Mission Cards 36-43
 
 ### Mission 36
 
@@ -1048,18 +1094,7 @@ Note:
   - Mission win requires cutting/revealing all wires including Nano's wires.
   - Equipment `11` (Coffee Thermos) does not prevent Nano from moving.
 
-## 25. Mission Cards 44-51 (Processed from Images)
-
-Source images processed in this batch:
-
-- `mission_44(.png/_back.png)`
-- `mission_45(.png/_back.png)`
-- `mission_46(.png/_back.png)`
-- `mission_47(.png/_back.png)`
-- `mission_48(.png/_back.png)`
-- `mission_49(.png/_back.png)`
-- `mission_50(.png/_back.png)`
-- `mission_51(.png/_back.png)`
+## 25. Mission Cards 44-51
 
 ### Mission 44
 
@@ -1216,18 +1251,7 @@ Source images processed in this batch:
   - Number card is discarded once all 4 matching wires are cut; when deck is empty, reshuffle Number cards.
   - If player starts turn with only red wires remaining, they perform `Reveal Your Red Wires`.
 
-## 26. Mission Cards 52-59 (Processed from Images)
-
-Source images processed in this batch:
-
-- `mission_52(.png/_back.png)`
-- `mission_53(.png/_back.png)`
-- `mission_54(.png/_back.png)`
-- `mission_55(.png/_back.png)`
-- `mission_56(.png/_back.png)`
-- `mission_57(.png/_back.png)`
-- `mission_58(.png/_back.png)`
-- `mission_59(.png/_back.png)`
+## 26. Mission Cards 52-59
 
 ### Mission 52
 
@@ -1368,10 +1392,187 @@ Source images processed in this batch:
   - When all 4 wires of a number are cut, turn that Number card face down.
   - Card note: Equipment `11` (Coffee Thermos) passes its entire turn.
 
+## 27. Mission Cards 60-66
+
+### Mission 60
+
+- Card title: `The Return of Doctor No`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Draw random Challenge cards equal to player count and place face up on table.
+  - Place detonator on opposite notch (as indicated on mission card).
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - As soon as an in-game challenge is completed, discard it and move detonator back `1`.
+  - Challenge cards define conditions for either one player or whole-team objectives.
+
+### Mission 61
+
+- Card title: `Quiet, we're filming!`
+- Setup:
+  - Add `1` red wire.
+  - Use Constraint cards `A-E`:
+    - Each player randomly receives one and places it face up in front of them.
+    - 2 players: add 2 additional constraints to table (left and right of Captain).
+    - 3 players: add 1 additional constraint to table (left of Captain).
+  - 2-player override shown on card:
+    - `2` red wires.
+- Mission rule (back):
+  - Everyone must apply their current constraint.
+  - If player cannot apply constraint, they pass (no detonator movement).
+  - If all players pass for a full round, bomb explodes.
+  - Before Captain's turn each round, team may rotate all table constraints clockwise or counterclockwise.
+  - A player may discard own constraint any time and draw random replacement from `F-L`, then detonator advances `1`.
+  - Constraints do not apply to `Reveal Your Red Wires`.
+
+### Mission 62
+
+- Card title: `Armageddon Dumpling`
+- Setup:
+  - Add `2` red wires.
+  - Draw random Number cards equal to player count and place face up on table.
+  - Place detonator on opposite notch (as indicated on mission card).
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - Each time all 4 wires of one visible Number card are cut, move detonator back `1`.
+
+### Mission 63
+
+- Card title: `Titanic II`
+- Setup:
+  - Add `2` red wires.
+  - Captain receives oxygen tokens:
+    - 2 players: `14`
+    - 3 players: `18`
+    - 4 players: `24`
+    - 5 players: `30`
+  - Replace Equipment `10` (X/Y Ray) if drawn.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - To perform cut action, active player first puts oxygen into reserve equal to designated wire value.
+  - At end of turn, active player passes all remaining oxygen to left neighbor.
+  - After each round, Captain starts turn by taking all oxygen from reserve.
+    - If Captain does not play (for example empty hand or uses Equipment `11`), tokens go to next player.
+  - If player cannot play due to insufficient oxygen, they pass and detonator advances `1`.
+  - Communication restriction:
+    - No talking.
+    - One thumb up/down gesture allowed to signal oxygen need.
+
+### Mission 64
+
+- Card title: `The return of the rebel sons!`
+- Setup:
+  - Add `1` red wire.
+  - During distribution, each player places `2` own wires upside down (facing teammates), without looking.
+  - Under direction of a teammate, each player places:
+    - smallest upside-down rebel value at far left,
+    - largest upside-down rebel value at far right.
+  - 2-player override shown on card:
+    - `2` red wires.
+- Mission rule (back):
+  - Each player must cut upside-down wires with normal cut action, without equipment or Double Detector 2000.
+  - Failure explodes bomb.
+  - Duo Cut on teammate's upside-down wire is allowed by choice/necessity, but detonator advances `1`.
+
+### Mission 65
+
+- Card title: `Good thread and not good thread`
+- Setup:
+  - Add `3` red wires.
+  - Randomly distribute all Number cards to players; keep them face up in front of each player.
+  - With 5 players, Captain and player to Captain's left each receive one extra Number card.
+  - Replace Equipment `10` (X/Y Ray) if drawn.
+  - Do not use character equipped with X/Y Ray.
+  - 2-player note on card:
+    - Mission impossible (not playable with 2 players).
+- Mission rule (back):
+  - To perform cut action, active player must cut a value matching one of their own Number cards.
+  - If active player has no matching wire for any own Number card, they pass and detonator advances `1`.
+  - At end of every turn, active player must give one of their Number cards to any teammate.
+  - When all 4 wires of a value are cut, turn that Number card face down.
+    - Face-up cards = values still required to cut.
+    - Face-down cards can still be transferred.
+  - Card note: Equipment `11` (Coffee Thermos) `passes all around` (wording as printed).
+
+### Mission 66
+
+- Card title: `The final boss!`
+- Setup:
+  - Add `2` red wires and `2` yellow wires.
+  - Place `BUNKER` card next to board.
+  - Place Bomb Busters standee/pawn on helicopter space.
+  - Shuffle Constraint cards `A-E` and place `4` face up around bunker sides.
+  - Place 5th constraint face up next to bunker as `ACTION` constraint.
+- Mission rule (back):
+  - After every cut action (success or failure), active player must move Bomb Busters pawn in direction of a satisfied constraint, choosing among valid options.
+  - Yellow wires are cut only when instructed by mission flow.
+  - Walls are impassable; if all possible moves hit walls, pawn stays in place.
+  - On hatched squares, a cut that matches `ACTION` constraint allows a mission action (explained during mission flow).
+  - Solo Cut of 4 wires counts as two separate cuts for movement/action resolution.
+  - Mission card also specifies:
+    - succeed on an `ACTION`-constraint cut without movement,
+    - then flip/advance floor and place pawn on staircase space while preserving `N` orientation,
+    - and a printed `+1 detonator notch` effect tied to this flow (as shown on card icon line).
+  - Before first round, play mission sound file.
+  - Card includes final fail/success narrative text.
+
+## 28. Mission Cards 31, 32, 35
+
+### Mission 31
+
+- Card title: `Everyone has their own constraints`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Use Constraint cards `A-E` face up on table.
+  - Before info-token placement, starting with Captain then clockwise, each player chooses one constraint card and places it face up in front of them.
+  - If fewer than 5 players, unchosen constraint cards are discarded.
+  - 2-player advice on card:
+    - avoid choosing pairs `A+B` or `C+D`.
+- Mission rule (back):
+  - Everyone must apply their own constraint.
+  - When player can no longer apply their constraint at start of turn, they flip it and then play normally for rest of mission.
+
+### Mission 32
+
+- Card title: `Prank attack!`
+- Setup:
+  - Add `2` red wires.
+  - Shuffle and stack `12` Constraint cards face down, then reveal the top one.
+  - 2-player override shown on card:
+    - `3` red wires.
+- Mission rule (back):
+  - All players must apply visible constraint.
+  - At start of each turn, Captain may (after consultation) replace visible constraint with next card.
+  - If active player cannot play due to constraint, they pass (no detonator movement).
+  - Constraints do not apply to `Reveal Your Red Wires`.
+
+### Mission 35
+
+- Card title: `No ties, single thread`
+- Setup:
+  - Red setup: `2 out of 3`.
+  - Add `4` yellow wires.
+  - Use `X` marker rule:
+    - Before mixing red/yellow with blue, give each player one face-down blue wire per stand.
+    - This wire is unranked and placed far right regardless of value.
+    - Place `X` token in front of each such wire.
+    - Then mix remaining wires and deal normally.
+  - Replace Equipment `2` (Walkie-Talkies) if drawn.
+  - 2-player override shown on card:
+    - `3` red wires and `4` yellow wires.
+- Mission rule (back):
+  - `X`-marked wires can be cut normally (Duo/Solo) only after all 4 yellow wires are cut.
+  - Equipment restrictions:
+    - No equipment can be used on `X` wires.
+    - `X` wires are ignored by all equipment, including personal equipment, Equipment `5` (Super Detector), and Equipment `8` (General Radar).
+
 ---
 
 ## Source
 
-- PDF processed: `tmp/pdfs/BombBusters_rules_EN-web.pdf`
 - Upstream URL: `https://tesera.ru/images/items/2386644/BombBusters_rules_EN-web.pdf`
 - Rulebook edition in document footer: US edition 2024, version `v1.0`.
