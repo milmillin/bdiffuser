@@ -92,6 +92,8 @@ export interface BoardState {
 export interface BoardMarker {
   value: number;
   color: "red" | "yellow";
+  /** Whether the wire has been successfully cut */
+  confirmed?: boolean;
 }
 
 // ── Chat ────────────────────────────────────────────────────

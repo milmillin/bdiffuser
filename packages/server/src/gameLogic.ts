@@ -88,6 +88,24 @@ function checkDetonatorLoss(state: GameState): boolean {
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 
+/** Update marker confirmed status based on cut tiles */
+function updateMarkerConfirmations(state: GameState): void {
+  for (const marker of state.board.markers) {
+    const sortValue = marker.color === "red" ? marker.value + 0.5 : marker.value + 0.1;
+    let found = false;
+    for (const player of state.players) {
+      for (const tile of getAllTiles(player)) {
+        if (tile.color === marker.color && Math.abs(tile.sortValue - sortValue) < 0.01 && tile.cut) {
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+    marker.confirmed = found;
+  }
+}
+
 function addLog(state: GameState, playerId: string, action: string, detail: string): void {
   state.log.push({
     turn: state.turnNumber,
@@ -125,6 +143,7 @@ export function executeDualCut(
       checkValidation(state, guessValue);
       checkEquipmentUnlock(state, guessValue);
     }
+    updateMarkerConfirmations(state);
 
     addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓`);
 
@@ -153,6 +172,7 @@ export function executeDualCut(
     if (targetTile.color === "red") {
       // Red wire cut — explosion!
       targetTile.cut = true;
+      updateMarkerConfirmations(state);
       state.result = "loss_red_wire";
       state.phase = "finished";
       addLog(state, actorId, "dualCut", `cut a RED wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`);
@@ -234,6 +254,7 @@ export function executeSoloCut(
     checkValidation(state, value);
     checkEquipmentUnlock(state, value);
   }
+  updateMarkerConfirmations(state);
 
   addLog(state, actorId, "soloCut", `solo cut ${matchingTiles.length} wire(s) of value ${value}`);
 
@@ -266,6 +287,7 @@ export function executeRevealReds(
     tile.cut = true;
     revealed++;
   }
+  updateMarkerConfirmations(state);
 
   addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
 
