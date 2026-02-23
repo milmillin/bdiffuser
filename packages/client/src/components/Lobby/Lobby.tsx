@@ -84,7 +84,7 @@ export function Lobby({
         {isHost && (
           <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-400 uppercase mb-3">Mission</h2>
-            <div className="grid grid-cols-6 gap-2 max-h-80 overflow-y-auto pr-1">
+            <div className="grid grid-cols-3 gap-2 overflow-y-auto pr-1">
               {ALL_MISSION_IDS.map((id) => {
                 const allowed = MISSION_SCHEMAS[id].allowedPlayerCounts;
                 const disabled = allowed != null && !allowed.includes(lobby.players.length as PlayerCount);
