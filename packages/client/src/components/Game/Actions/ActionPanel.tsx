@@ -31,6 +31,37 @@ function isBaseEquipmentId(id: string): id is BaseEquipmentId {
   return BASE_EQUIPMENT_SET.has(id);
 }
 
+const DUAL_CUT_STEPS = [
+  { num: 1, label: "Target" },
+  { num: 2, label: "Guess" },
+  { num: 3, label: "Cut" },
+] as const;
+
+function DualCutStepIndicator({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      {DUAL_CUT_STEPS.map((s, i) => (
+        <span key={s.num} className="flex items-center gap-1">
+          {i > 0 && <span className="text-gray-600">&mdash;</span>}
+          <span
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-bold ${
+              s.num < step
+                ? "bg-blue-500/20 text-blue-400"
+                : s.num === step
+                  ? step === 3
+                    ? "bg-green-500 text-white"
+                    : "bg-blue-500 text-white"
+                  : "bg-gray-700 text-gray-500"
+            }`}
+          >
+            {s.num} {s.label}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function ActionPanel({
   gameState,
   send,
@@ -107,6 +138,8 @@ export function ActionPanel({
     guessValue != null &&
     isMission9BlockedCutValue(gameState, guessValue);
 
+  const dualCutStep: 1 | 2 | 3 = !selectedTarget ? 1 : guessValue == null ? 2 : 3;
+
   useEffect(() => {
     if (!(gameState.mission === 9 && typeof mission9ActiveValue === "number")) {
       return;
@@ -149,19 +182,23 @@ export function ActionPanel({
       className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
       data-testid="action-panel"
     >
-      <div className="text-sm font-bold text-yellow-400">
-        {isMyTurn ? "Your Turn - Choose an Action" : "Equipment Actions"}
+      {/* Header */}
+      <div className={`flex items-center gap-2 pb-2 ${isMyTurn ? "border-b border-yellow-500/30" : "border-b border-gray-700"}`}>
+        {isMyTurn ? (
+          <>
+            <span className="bg-yellow-500 text-black font-black uppercase text-xs px-2 py-0.5 rounded-full">
+              Your Turn
+            </span>
+            <span className="text-sm font-bold text-yellow-400">Choose an Action</span>
+          </>
+        ) : (
+          <span className="text-sm font-bold text-gray-400">Equipment Actions</span>
+        )}
       </div>
-
-      {forceRevealReds && (
-        <p className="text-sm text-amber-300">
-          You must reveal your remaining red wires before taking other actions.
-        </p>
-      )}
 
       {mission11RevealBlockedHint && (
         <p className="text-xs text-sky-300" data-testid="mission11-reveal-hint">
-          Mission 11: Reveal Reds is only legal when all your remaining wires match the hidden red-like value.
+          Mission 11: Reveal Reds requires all remaining wires to match the hidden red value.
         </p>
       )}
 
@@ -192,13 +229,16 @@ export function ActionPanel({
 
       {/* Dual Cut */}
       {isMyTurn && !forceRevealReds && (
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-gray-400 uppercase">
-            Dual Cut
+        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/40 bg-blue-950/15">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-blue-300 uppercase">
+              Dual Cut
+            </div>
+            <DualCutStepIndicator step={dualCutStep} />
           </div>
           {!selectedTarget ? (
             <p className="text-sm text-gray-400">
-              Click a wire on an opponent&apos;s stand to target it
+              Select a wire on an opponent&apos;s stand
             </p>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
@@ -222,10 +262,10 @@ export function ActionPanel({
                   onClick={handleDualCut}
                   disabled={mission9DualCutBlocked}
                   data-testid="dual-cut-submit"
-                  className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+                  className={`px-5 py-2.5 rounded-lg font-black text-base transition-colors ${
                     mission9DualCutBlocked
                       ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/50"
                   }`}
                 >
                   {mission9DualCutBlocked
@@ -234,7 +274,7 @@ export function ActionPanel({
                 </button>
               ) : (
                 <span className="text-sm text-gray-400">
-                  - click one of your wires below to guess its value
+                  Now select one of your wires as your guess
                 </span>
               )}
             </div>
@@ -244,8 +284,8 @@ export function ActionPanel({
 
       {/* Solo Cut */}
       {isMyTurn && !forceRevealReds && soloValues.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-gray-400 uppercase">
+        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-violet-500/40 bg-violet-950/15">
+          <div className="text-xs font-bold text-violet-300 uppercase">
             Solo Cut
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -259,7 +299,7 @@ export function ActionPanel({
                   }
                   disabled={blockedBySequence}
                   data-testid={`solo-cut-${String(v).toLowerCase()}`}
-                  className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-black text-base min-w-[3rem] transition-colors ${
                     blockedBySequence
                       ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                       : selectedSoloValue === v
@@ -278,7 +318,7 @@ export function ActionPanel({
                   setSelectedSoloValue(null);
                 }}
                 data-testid="solo-cut-submit"
-                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded font-bold text-sm transition-colors"
+                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-lg font-black text-base shadow-lg shadow-green-900/50 transition-colors"
               >
                 Solo Cut! ({String(selectedSoloValue)})
               </button>
@@ -289,11 +329,19 @@ export function ActionPanel({
 
       {/* Reveal Reds */}
       {isMyTurn && canRevealReds && (
-        <div>
+        <div className={`rounded-lg px-3 py-2.5 space-y-2 border border-red-500/40 bg-red-950/15 ${forceRevealReds ? "animate-pulse" : ""}`}>
+          <div className="text-xs font-bold text-red-300 uppercase">
+            Reveal Reds
+          </div>
+          {forceRevealReds && (
+            <p className="text-sm text-amber-300">
+              You must reveal your remaining red wires before taking other actions.
+            </p>
+          )}
           <button
             onClick={() => send({ type: "revealReds" })}
             data-testid="reveal-reds"
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-bold text-sm transition-colors"
+            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg font-black text-base shadow-lg shadow-red-900/50 transition-colors"
           >
             Reveal All Red Wires
           </button>
@@ -302,8 +350,8 @@ export function ActionPanel({
 
       {/* Equipment */}
       {availableEquipment.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-gray-400 uppercase">
+        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-emerald-500/40 bg-emerald-950/15">
+          <div className="text-xs font-bold text-emerald-300 uppercase">
             Equipment
           </div>
           <div className="flex flex-wrap gap-2">
