@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 
@@ -26,6 +27,8 @@ export function ActionPanel({
 
   // Check if reveal reds is available
   const canRevealReds = checkCanRevealReds(gameState, playerId);
+
+  const [selectedSoloValue, setSelectedSoloValue] = useState<number | "YELLOW" | null>(null);
 
   const guessValue = selectedGuessTile != null ? me.hand[selectedGuessTile]?.gameValue : null;
 
@@ -84,17 +87,33 @@ export function ActionPanel({
       {soloValues.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-bold text-gray-400 uppercase">Solo Cut</div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {soloValues.map((v) => (
               <button
                 key={String(v)}
-                onClick={() => send({ type: "soloCut", value: v })}
+                onClick={() => setSelectedSoloValue(selectedSoloValue === v ? null : v)}
                 data-testid={`solo-cut-${String(v).toLowerCase()}`}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded font-bold text-sm transition-colors"
+                className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
+                  selectedSoloValue === v
+                    ? "bg-yellow-500 text-black"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
               >
-                Solo Cut {String(v)}
+                {String(v)}
               </button>
             ))}
+            {selectedSoloValue != null && (
+              <button
+                onClick={() => {
+                  send({ type: "soloCut", value: selectedSoloValue });
+                  setSelectedSoloValue(null);
+                }}
+                data-testid="solo-cut-submit"
+                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded font-bold text-sm transition-colors"
+              >
+                Solo Cut! ({String(selectedSoloValue)})
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -128,35 +147,35 @@ function getSoloCutValues(
   // Group my uncut tiles by game value
   const valueCounts = new Map<string, number>();
   for (const tile of myUncut) {
-    if (tile.gameValue == null) continue;
+    if (tile.gameValue == null || tile.gameValue === "RED") continue;
     const key = String(tile.gameValue);
     valueCounts.set(key, (valueCounts.get(key) ?? 0) + 1);
   }
 
-  for (const [key, count] of valueCounts) {
+  for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
 
     if (typeof value === "number") {
-      // Blue wire: check if all remaining copies are in my hand (need 2 or 4)
-      // Count how many are cut across all players
-      let totalInGame = 0;
-      for (const p of state.players) {
-        for (const tile of p.hand) {
-          if (tile.gameValue === value && !tile.cut) {
-            totalInGame++;
-          }
-        }
-      }
-      // But we can't see opponents' values, so only check if we have pairs
-      if ((count === 2 || count === 4) && count === totalInGame) {
+      // Blue wire: 4 copies total in the game.
+      // Remaining = 4 - already cut (from validation track).
+      // Solo cut requires all remaining copies to be in my hand.
+      const alreadyCut = state.board.validationTrack[value] ?? 0;
+      const remaining = 4 - alreadyCut;
+      if (myCount >= remaining && remaining > 0) {
         values.push(value);
       }
     } else {
-      // Yellow: all remaining yellow must be in my hand
-      // We can check if we have all of them since we can see our own
-      // We can't see opponents' values — server will validate
-      // Just offer it and let server validate
-      if (count >= 1) {
+      // Yellow: count total uncut yellow across all players.
+      // We can see our own + cut tiles on opponents.
+      // Any opponent uncut tile is hidden, so if opponents have any
+      // uncut tiles that could be yellow, we can't be sure.
+      // Only offer if no opponents have any uncut tiles at all,
+      // or let server validate. For safety, check if opponents
+      // have any uncut tiles with unknown values.
+      const opponentsHaveUncut = state.players.some(
+        (p) => p.id !== playerId && p.hand.some((t) => !t.cut && t.gameValue == null),
+      );
+      if (!opponentsHaveUncut && myCount >= 1) {
         values.push("YELLOW");
       }
     }
