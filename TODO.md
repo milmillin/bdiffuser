@@ -402,7 +402,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `mission_61`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `front/back OCR verified cleanly; no text changes needed — existing GAME_RULES.md entry already matched.`).
 - [x] `mission_62`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to \`Armageddon Roulette\`; setup/rule wording confirmed with front/back OCR and aligned where needed.`).
 - [x] `mission_63`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No changes needed — source front/back verified cleanly and matches existing GAME_RULES.md entry.`).
-- [ ] `mission_64`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `mission_64`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `No update needed — setup/rules already match clean source card text from OCR verification`).
 - [ ] `mission_65`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
 - [x] `mission_66`: verify corresponding setup/rules text and update `GAME_RULES.md` using Codex-read source images (diff: `Card title corrected to \`The Final Countdown\`; ACTION-constraint square wording aligned from "hatched" to "striped" using source OCR.`).
 
