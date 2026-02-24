@@ -1070,7 +1070,7 @@ export class BombBustersServer extends Server<Env> {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m22:token_pass:value=${value}|to=${recipient.id}|position=${position}`,
+      detail: `m22:token_pass:value=${value}|to=${recipient.id}|position=${wireLabel(position)}`,
       timestamp: Date.now(),
     });
 

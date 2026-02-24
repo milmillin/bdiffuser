@@ -535,7 +535,7 @@ export function executeDualCut(
       const tokenIsYellow =
         usesAnnouncedFalseToken
           ? guessedYellow
-          : targetTile.color === "yellow" || guessedYellow;
+          : targetTile.color === "yellow";
 
       // Place mission-specific failure info token (actual value by default).
       target.infoTokens.push(applyMissionInfoTokenVariant(state, {

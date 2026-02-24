@@ -1144,7 +1144,7 @@ export function executeUseEquipment(
         position: payload.tileIndex,
         isYellow: false,
       }, actor));
-      addLog(state, actorId, "useEquipment", `used Post-it on wire ${payload.tileIndex} with value ${value}`);
+      addLog(state, actorId, "useEquipment", `used Post-it on wire ${wireLabel(payload.tileIndex)} with value ${value}`);
       return {
         type: "equipmentUsed",
         equipmentId,
@@ -1165,7 +1165,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used ${payload.kind === "label_eq" ? "Label =" : "Label !="} on ${payload.tileIndexA} and ${payload.tileIndexB}`,
+        `used ${payload.kind === "label_eq" ? "Label =" : "Label !="} on wire ${wireLabel(payload.tileIndexA)} and wire ${wireLabel(payload.tileIndexB)}`,
       );
       return {
         type: "equipmentUsed",
@@ -1188,7 +1188,7 @@ export function executeUseEquipment(
           state,
           actorId,
           "useEquipment",
-          `used Talkies-Walkies with ${teammate.name} (selected wire ${payload.myTileIndex}; waiting for ${teammate.name} to choose)`,
+          `used Talkies-Walkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
         );
         return {
           type: "equipmentUsed",
@@ -1210,7 +1210,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Talkies-Walkies with ${teammate.name} (swapped wires ${payload.myTileIndex}/${payload.teammateTileIndex})`,
+        `used Talkies-Walkies with ${teammate.name} (swapped wires ${wireLabel(payload.myTileIndex)}/${wireLabel(payload.teammateTileIndex)})`,
       );
       return {
         type: "equipmentUsed",
@@ -1411,7 +1411,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Single Wire Label on wire ${payload.tileIndex} (value ${value} appears once)`,
+        `used Single Wire Label on wire ${wireLabel(payload.tileIndex)} (value ${value} appears once)`,
       );
       return {
         type: "equipmentUsed",
@@ -1528,18 +1528,66 @@ export function executeUseEquipment(
       // Draw random value 1-12
       const drawnValue = Math.floor(Math.random() * 12) + 1;
       let totalCut = 0;
+
+      // Collect all matching uncut blue wires
+      const toCutDisintegrator: { tile: WireTile; playerId: string }[] = [];
       for (const player of state.players) {
         for (const tile of player.hand) {
           if (!tile.cut && tile.color === "blue" && tile.gameValue === drawnValue) {
-            tile.cut = true;
-            totalCut++;
+            toCutDisintegrator.push({ tile, playerId: player.id });
           }
         }
       }
 
+      // Cut wires one at a time, dispatching resolve hooks after each
+      let resolveResultDisintegrator: ReturnType<typeof dispatchHooks> = {};
+      for (const { tile } of toCutDisintegrator) {
+        tile.cut = true;
+        totalCut++;
+
+        resolveResultDisintegrator = dispatchHooks(state.mission, {
+          point: "resolve",
+          state,
+          action: { type: "soloCut", actorId, value: drawnValue, tilesCut: totalCut },
+          cutValue: drawnValue,
+          cutSuccess: true,
+        });
+
+        // If hooks ended the game (e.g. blue_as_red explosion), stop immediately
+        if (state.phase === "finished" && state.result) {
+          updateMarkerConfirmations(state);
+          addLog(
+            state,
+            actorId,
+            "useEquipment",
+            `used Disintegrator — drew value ${drawnValue}, triggered a hook effect!`,
+          );
+          return { type: "gameOver", result: state.result };
+        }
+      }
+
       updateValidationTrack(state, drawnValue);
-      checkEquipUnlock(state, drawnValue);
+      if (!resolveResultDisintegrator.overrideEquipmentUnlock) {
+        checkEquipUnlock(state, drawnValue);
+      } else {
+        checkEquipUnlock(state, drawnValue, resolveResultDisintegrator.equipmentUnlockThreshold ?? 2);
+      }
+      clearSatisfiedSecondaryEquipmentLocks(state);
       updateMarkerConfirmations(state);
+
+      // Check detonator loss (hooks may have advanced the detonator)
+      if (checkDetonatorLoss(state)) {
+        state.result = "loss_detonator";
+        state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+        addLog(
+          state,
+          actorId,
+          "useEquipment",
+          `used Disintegrator — drew value ${drawnValue}, detonator triggered!`,
+        );
+        return { type: "gameOver", result: "loss_detonator" };
+      }
 
       addLog(
         state,
@@ -1607,7 +1655,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Grappling Hook — took wire from ${target.name}'s stand (position ${payload.targetTileIndex})`,
+        `used Grappling Hook — took wire from ${target.name}'s stand (position ${wireLabel(payload.targetTileIndex)})`,
       );
 
       return {
@@ -1862,7 +1910,7 @@ export function executeCharacterAbility(
           state,
           actorId,
           "characterAbility",
-          `used Walkie-Talkies with ${teammate.name} (selected wire ${payload.myTileIndex}; waiting for ${teammate.name} to choose)`,
+          `used Walkie-Talkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
         );
         return {
           type: "equipmentUsed",
@@ -1884,7 +1932,7 @@ export function executeCharacterAbility(
         state,
         actorId,
         "characterAbility",
-        `used Walkie-Talkies with ${teammate.name} (swapped wires ${payload.myTileIndex}/${payload.teammateTileIndex})`,
+        `used Walkie-Talkies with ${teammate.name} (swapped wires ${wireLabel(payload.myTileIndex)}/${wireLabel(payload.teammateTileIndex)})`,
       );
       return {
         type: "equipmentUsed",
@@ -1983,7 +2031,7 @@ export function resolveTalkiesWalkiesTileChoice(
     state,
     forced.actorId,
     forced.source === "equipment" ? "useEquipment" : "characterAbility",
-    `used Walkie-Talkies with ${teammate.name} (swapped wires ${forced.actorTileIndex}/${teammateTileIndex})`,
+    `used Walkie-Talkies with ${teammate.name} (swapped wires ${wireLabel(forced.actorTileIndex)}/${wireLabel(teammateTileIndex)})`,
   );
 
   return {

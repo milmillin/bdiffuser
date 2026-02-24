@@ -8,7 +8,7 @@ import {
 import { executeDualCut } from "../gameLogic";
 
 describe("executeDualCut actorTileIndex (yellow wire fix)", () => {
-  it("places a yellow info token when a yellow guess targets a non-yellow wire", () => {
+  it("reveals the target's true value token when a yellow guess targets a non-yellow wire", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeYellowTile({ id: "y1" })],
@@ -34,7 +34,7 @@ describe("executeDualCut actorTileIndex (yellow wire fix)", () => {
     expect(target.infoTokens[0]).toMatchObject({
       value: 4,
       position: 0,
-      isYellow: true,
+      isYellow: false,
     });
   });
 
