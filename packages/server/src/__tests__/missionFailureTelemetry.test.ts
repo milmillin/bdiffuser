@@ -11,6 +11,7 @@ import {
   executeDualCut,
   executeDualCutDoubleDetector,
   executeSoloCut,
+  resolveDetectorTileChoice,
 } from "../gameLogic";
 import {
   clearTelemetrySink,
@@ -118,6 +119,10 @@ describe("mission failure telemetry integration", () => {
     });
 
     executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    // Now creates pending forced action — resolve to trigger explosion
+    expect(state.pendingForcedAction).toBeDefined();
+    resolveDetectorTileChoice(state);
 
     expect(state.result).toBe("loss_red_wire");
     expect(events).toHaveLength(1);

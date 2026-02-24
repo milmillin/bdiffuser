@@ -11,6 +11,7 @@ import {
   validateCharacterAbility,
   validateUseEquipment,
 } from "../equipment";
+import { resolveDetectorTileChoice } from "../gameLogic";
 
 describe("Character E1-E4 abilities", () => {
   describe("E1 - General Radar", () => {
@@ -242,10 +243,17 @@ describe("Character E1-E4 abilities", () => {
       });
 
       expect(state.players[0].characterUsed).toBe(true);
-      expect(action.type).toBe("dualCutResult");
-      if (action.type === "dualCutResult") {
-        expect(action.targetTileIndex).toBe(0);
-        expect(action.success).toBe(true);
+      // Now creates a pending forced action instead of resolving immediately
+      expect(action.type).toBe("equipmentUsed");
+      expect(state.pendingForcedAction).toBeDefined();
+      expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+      // Resolve: auto-selects the single match (tile 0)
+      const resolveAction = resolveDetectorTileChoice(state);
+      expect(resolveAction.type).toBe("dualCutResult");
+      if (resolveAction.type === "dualCutResult") {
+        expect(resolveAction.targetTileIndex).toBe(0);
+        expect(resolveAction.success).toBe(true);
       }
     });
   });

@@ -178,7 +178,7 @@ describe("mission 11 game logic", () => {
       const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 7);
       expect(action.type).toBe("dualCutDoubleDetectorResult");
       if (action.type !== "dualCutDoubleDetectorResult") return;
-      expect(action.outcome).toBe("both_match");
+      expect(action.outcome).toBe("pending");
       // Forced action is set; explosion happens on resolution
       expect(state.pendingForcedAction).toBeDefined();
       expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
@@ -215,9 +215,16 @@ describe("mission 11 game logic", () => {
       const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 7);
       expect(action.type).toBe("dualCutDoubleDetectorResult");
       if (action.type !== "dualCutDoubleDetectorResult") return;
+      expect(action.outcome).toBe("pending");
+      expect(state.pendingForcedAction).toBeDefined();
 
-      expect(action.explosion).toBe(true);
-      expect(action.outcome).toBe("one_match");
+      // Resolve: auto-selects the single match (tile 0)
+      const resolveAction = resolveDetectorTileChoice(state);
+      expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+      if (resolveAction.type === "dualCutDoubleDetectorResult") {
+        expect(resolveAction.explosion).toBe(true);
+        expect(resolveAction.outcome).toBe("match");
+      }
       expect(state.result).toBe("loss_red_wire");
       expect(state.phase).toBe("finished");
     });
@@ -245,9 +252,16 @@ describe("mission 11 game logic", () => {
       const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
       expect(action.type).toBe("dualCutDoubleDetectorResult");
       if (action.type !== "dualCutDoubleDetectorResult") return;
+      expect(action.outcome).toBe("pending");
+      expect(state.pendingForcedAction).toBeDefined();
 
-      expect(action.explosion).toBe(true);
-      expect(action.outcome).toBe("none_match");
+      // Resolve: target confirms (0-match double detector)
+      const resolveAction = resolveDetectorTileChoice(state);
+      expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+      if (resolveAction.type === "dualCutDoubleDetectorResult") {
+        expect(resolveAction.explosion).toBe(true);
+        expect(resolveAction.outcome).toBe("no_match");
+      }
       expect(state.result).toBe("loss_red_wire");
       expect(state.phase).toBe("finished");
     });
@@ -278,9 +292,16 @@ describe("mission 11 game logic", () => {
       const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
       expect(action.type).toBe("dualCutDoubleDetectorResult");
       if (action.type !== "dualCutDoubleDetectorResult") return;
+      expect(action.outcome).toBe("pending");
+      expect(state.pendingForcedAction).toBeDefined();
 
-      expect(action.explosion).toBeUndefined();
-      expect(action.outcome).toBe("one_match");
+      // Resolve: auto-selects the single match (tile 0)
+      const resolveAction = resolveDetectorTileChoice(state);
+      expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+      if (resolveAction.type === "dualCutDoubleDetectorResult") {
+        expect(resolveAction.explosion).toBeUndefined();
+        expect(resolveAction.outcome).toBe("match");
+      }
       expect(state.result).toBeNull();
       expect(state.phase).toBe("playing");
     });

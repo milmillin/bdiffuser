@@ -16,7 +16,7 @@ import {
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { executeDualCut, executeSoloCut } from "../gameLogic";
+import { executeDualCut, executeSoloCut, resolveDetectorTileChoice } from "../gameLogic";
 import { executeUseEquipment, validateUseEquipment } from "../equipment";
 
 const BASE_EQUIPMENT_IDS = [
@@ -1451,12 +1451,19 @@ describe("equipment execution", () => {
       guessValue: 5,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
-      expect(action.targetTileIndex).toBe(1);
-      expect(action.success).toBe(true);
-    }
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
     expect(state.board.equipment[0].used).toBe(true);
+
+    // Resolve: auto-selects the single match (tile 1)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(1);
+      expect(resolveAction.success).toBe(true);
+    }
   });
 
   it("super detector resolves by selecting an uncut tile from target stand", () => {
@@ -1482,12 +1489,19 @@ describe("equipment execution", () => {
       guessValue: 6,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
-      expect(action.targetTileIndex).toBe(0);
-      expect(action.success).toBe(true);
-    }
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
     expect(state.board.equipment[0].used).toBe(true);
+
+    // Resolve: auto-selects the single match (tile 0)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(0);
+      expect(resolveAction.success).toBe(true);
+    }
   });
 
   it("x or y ray resolves with either announced value", () => {

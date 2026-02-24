@@ -8,7 +8,7 @@ import {
   makeRedTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { executeDualCut } from "../gameLogic";
+import { executeDualCut, resolveDetectorTileChoice } from "../gameLogic";
 import { executeUseEquipment, validateUseEquipment } from "../equipment";
 
 function unlockedEquipment(id: string, name: string, unlockValue: number) {
@@ -399,11 +399,18 @@ describe("equipment post-usage effects", () => {
       guessValue: 5,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Resolve: auto-selects the single match (tile 1)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
       // Should pick index 1 (the match)
-      expect(action.targetTileIndex).toBe(1);
-      expect(action.success).toBe(true);
+      expect(resolveAction.targetTileIndex).toBe(1);
+      expect(resolveAction.success).toBe(true);
     }
   });
 
@@ -437,12 +444,18 @@ describe("equipment post-usage effects", () => {
       guessValue: 5,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: 0-match triple detector picks fallback non-red tile
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
       // Should pick a non-red index (0 or 2), not index 1 (red)
-      expect([0, 2]).toContain(action.targetTileIndex);
+      expect([0, 2]).toContain(resolveAction.targetTileIndex);
       // It will be a wrong guess (no tile has value 5), so success is false
-      expect(action.success).toBe(false);
+      expect(resolveAction.success).toBe(false);
     }
   });
 
@@ -476,12 +489,18 @@ describe("equipment post-usage effects", () => {
       guessValue: 5,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: 0-match, all red → falls back to first index
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
       // Falls back to first index (0) since all are red
-      expect(action.targetTileIndex).toBe(0);
+      expect(resolveAction.targetTileIndex).toBe(0);
       // This will cause an explosion since it's red
-      expect(action.explosion).toBe(true);
+      expect(resolveAction.explosion).toBe(true);
     }
   });
 
@@ -514,10 +533,16 @@ describe("equipment post-usage effects", () => {
       guessValue: 6,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
-      expect(action.targetTileIndex).toBe(0);
-      expect(action.success).toBe(true);
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: auto-selects the single match (tile 0)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(0);
+      expect(resolveAction.success).toBe(true);
     }
   });
 
@@ -550,10 +575,16 @@ describe("equipment post-usage effects", () => {
       guessValue: 5,
     });
 
-    expect(action.type).toBe("dualCutResult");
-    if (action.type === "dualCutResult") {
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: 0-match, picks non-red fallback tile
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
       // Should pick a non-red index (1 or 2), not index 0 (red)
-      expect([1, 2]).toContain(action.targetTileIndex);
+      expect([1, 2]).toContain(resolveAction.targetTileIndex);
     }
   });
 

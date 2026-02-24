@@ -36,7 +36,7 @@ export type ClientMessage =
   | { type: "designateCutter"; targetPlayerId: string }
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "mission22TokenPassChoice"; value: number }
-  | { type: "detectorTileChoice"; tileIndex: number }
+  | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
   | {
       type: "missionAudioControl";
       command: "play" | "pause";
@@ -106,7 +106,7 @@ export type GameAction =
       tileIndex1: number;
       tileIndex2: number;
       guessValue: number;
-      outcome: "both_match" | "one_match" | "none_match";
+      outcome: "pending" | "match" | "no_match";
       cutTileIndex?: number;
       detonatorAdvanced?: boolean;
       explosion?: boolean;

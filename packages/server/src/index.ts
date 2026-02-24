@@ -280,11 +280,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleMission22TokenPassChoice(connection, msg.value);
         break;
       case "detectorTileChoice":
-        if (msg.tileIndex == null) {
-          this.sendMsg(connection, { type: "error", message: "Missing detector tile index" });
-          break;
-        }
-        this.handleDetectorTileChoice(connection, msg.tileIndex);
+        this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
       case "missionAudioControl":
         this.handleMissionAudioControl(
@@ -1054,7 +1050,7 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
-  handleDetectorTileChoice(conn: Connection, tileIndex: number) {
+  handleDetectorTileChoice(conn: Connection, tileIndex?: number, infoTokenTileIndex?: number) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
@@ -1069,13 +1065,25 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    if (!forced.matchingTileIndices.includes(tileIndex)) {
-      this.sendMsg(conn, { type: "error", message: "Invalid tile choice" });
-      return;
+    const matchCount = forced.matchingTileIndices.length;
+
+    if (matchCount >= 2) {
+      if (tileIndex == null || !forced.matchingTileIndices.includes(tileIndex)) {
+        this.sendMsg(conn, { type: "error", message: "Invalid tile choice" });
+        return;
+      }
+    }
+
+    if (matchCount === 0 && forced.source === "doubleDetector" && infoTokenTileIndex != null) {
+      const validIndices = [forced.originalTileIndex1, forced.originalTileIndex2].filter((i): i is number => i != null);
+      if (!validIndices.includes(infoTokenTileIndex)) {
+        this.sendMsg(conn, { type: "error", message: "Invalid info token tile choice" });
+        return;
+      }
     }
 
     const previousResult = state.result;
-    const action = resolveDetectorTileChoice(state, tileIndex);
+    const action = resolveDetectorTileChoice(state, tileIndex, infoTokenTileIndex);
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
@@ -1380,13 +1388,29 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    // Detector tile choice: if a bot is the target, auto-pick the first matching tile
+    // Detector tile choice: if a bot is the target, auto-resolve
     const detectorForced = state.pendingForcedAction;
     if (detectorForced?.kind === "detectorTileChoice") {
       const targetPlayer = state.players.find((p) => p.id === detectorForced.targetPlayerId);
       if (targetPlayer?.isBot) {
+        const matchCount = detectorForced.matchingTileIndices.length;
+        let tileIndex: number | undefined;
+        let infoTokenTileIndex: number | undefined;
+
+        if (matchCount >= 1) {
+          tileIndex = detectorForced.matchingTileIndices[0];
+        } else if (detectorForced.source === "doubleDetector") {
+          // 0 match: pick first non-red tile for info token
+          const tile1Idx = detectorForced.originalTileIndex1!;
+          const tile2Idx = detectorForced.originalTileIndex2!;
+          const tile1 = targetPlayer.hand[tile1Idx];
+          const tile2 = targetPlayer.hand[tile2Idx];
+          infoTokenTileIndex = (tile1 && tile1.color !== "red") ? tile1Idx : tile2Idx;
+        }
+        // else: triple/super 0-match, no choice needed
+
         const previousResult = state.result;
-        const action = resolveDetectorTileChoice(state, detectorForced.matchingTileIndices[0]);
+        const action = resolveDetectorTileChoice(state, tileIndex, infoTokenTileIndex);
         this.maybeRecordMissionFailure(previousResult, state);
         this.saveState();
         this.broadcastAction(action);

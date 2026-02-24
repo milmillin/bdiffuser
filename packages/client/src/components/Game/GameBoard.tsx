@@ -859,7 +859,7 @@ export function GameBoard({
                       <span className="text-yellow-400 font-bold">
                         {forcedActionCaptainName ?? "the target player"}
                       </span>{" "}
-                      to choose which wire to cut...
+                      to confirm...
                     </div>
                   )}
 

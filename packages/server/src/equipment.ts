@@ -952,49 +952,29 @@ export function executeUseEquipment(
         payload.targetTileIndices,
         payload.guessValue,
       );
-      if (matchingIndices.length >= 2) {
-        // Multiple matches: target player must choose
-        state.pendingForcedAction = {
-          kind: "detectorTileChoice",
-          targetPlayerId: payload.targetPlayerId,
-          actorId,
-          matchingTileIndices: matchingIndices,
-          guessValue: payload.guessValue,
-          source: "tripleDetector",
-          originalTargetTileIndices: payload.targetTileIndices,
-          equipmentId,
-        };
-        addLog(
-          state,
-          actorId,
-          "useEquipment",
-          `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — multiple matches! Waiting for ${target.name} to choose...`,
-        );
-        return {
-          type: "equipmentUsed",
-          equipmentId,
-          playerId: actorId,
-          effect: "triple_detector_pending",
-        };
-      }
-      const chosenTileIndex = chooseDetectorTarget(
-        target,
-        payload.targetTileIndices,
-        payload.guessValue,
-      );
+      // Always create forced action — hides match count from other players
+      state.pendingForcedAction = {
+        kind: "detectorTileChoice",
+        targetPlayerId: payload.targetPlayerId,
+        actorId,
+        matchingTileIndices: matchingIndices,
+        guessValue: payload.guessValue,
+        source: "tripleDetector",
+        originalTargetTileIndices: payload.targetTileIndices,
+        equipmentId,
+      };
       addLog(
         state,
         actorId,
         "useEquipment",
-        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")})`,
+        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
-      return executeDualCut(
-        state,
-        actorId,
-        payload.targetPlayerId,
-        chosenTileIndex,
-        payload.guessValue,
-      );
+      return {
+        type: "equipmentUsed",
+        equipmentId,
+        playerId: actorId,
+        effect: "triple_detector_pending",
+      };
     }
     case "super_detector": {
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
@@ -1011,48 +991,29 @@ export function executeUseEquipment(
         uncutIndices,
         payload.guessValue,
       );
-      if (matchingIndices.length >= 2) {
-        // Multiple matches: target player must choose
-        state.pendingForcedAction = {
-          kind: "detectorTileChoice",
-          targetPlayerId: payload.targetPlayerId,
-          actorId,
-          matchingTileIndices: matchingIndices,
-          guessValue: payload.guessValue,
-          source: "superDetector",
-          equipmentId,
-        };
-        addLog(
-          state,
-          actorId,
-          "useEquipment",
-          `used Super Detector on ${target.name} guessing ${payload.guessValue} — multiple matches! Waiting for ${target.name} to choose...`,
-        );
-        return {
-          type: "equipmentUsed",
-          equipmentId,
-          playerId: actorId,
-          effect: "super_detector_pending",
-        };
-      }
-      const chosenTileIndex = chooseDetectorTarget(
-        target,
-        uncutIndices,
-        payload.guessValue,
-      );
+      // Always create forced action — hides match count from other players
+      state.pendingForcedAction = {
+        kind: "detectorTileChoice",
+        targetPlayerId: payload.targetPlayerId,
+        actorId,
+        matchingTileIndices: matchingIndices,
+        guessValue: payload.guessValue,
+        source: "superDetector",
+        originalTargetTileIndices: uncutIndices,
+        equipmentId,
+      };
       addLog(
         state,
         actorId,
         "useEquipment",
-        `used Super Detector on ${target.name}`,
+        `used Super Detector on ${target.name} guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
-      return executeDualCut(
-        state,
-        actorId,
-        payload.targetPlayerId,
-        chosenTileIndex,
-        payload.guessValue,
-      );
+      return {
+        type: "equipmentUsed",
+        equipmentId,
+        playerId: actorId,
+        effect: "super_detector_pending",
+      };
     }
     case "x_or_y_ray": {
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
@@ -1519,48 +1480,28 @@ export function executeCharacterAbility(
         payload.targetTileIndices,
         payload.guessValue,
       );
-      if (matchingIndices.length >= 2) {
-        // Multiple matches: target player must choose
-        state.pendingForcedAction = {
-          kind: "detectorTileChoice",
-          targetPlayerId: payload.targetPlayerId,
-          actorId,
-          matchingTileIndices: matchingIndices,
-          guessValue: payload.guessValue,
-          source: "tripleDetector",
-          originalTargetTileIndices: payload.targetTileIndices,
-        };
-        addLog(
-          state,
-          actorId,
-          "characterAbility",
-          `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — multiple matches! Waiting for ${target.name} to choose...`,
-        );
-        return {
-          type: "equipmentUsed",
-          equipmentId: "triple_detector",
-          playerId: actorId,
-          effect: "triple_detector_pending",
-        };
-      }
-      const chosenTileIndex = chooseDetectorTarget(
-        target,
-        payload.targetTileIndices,
-        payload.guessValue,
-      );
+      // Always create forced action — hides match count from other players
+      state.pendingForcedAction = {
+        kind: "detectorTileChoice",
+        targetPlayerId: payload.targetPlayerId,
+        actorId,
+        matchingTileIndices: matchingIndices,
+        guessValue: payload.guessValue,
+        source: "tripleDetector",
+        originalTargetTileIndices: payload.targetTileIndices,
+      };
       addLog(
         state,
         actorId,
         "characterAbility",
-        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")})`,
+        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
-      return executeDualCut(
-        state,
-        actorId,
-        payload.targetPlayerId,
-        chosenTileIndex,
-        payload.guessValue,
-      );
+      return {
+        type: "equipmentUsed",
+        equipmentId: "triple_detector",
+        playerId: actorId,
+        effect: "triple_detector_pending",
+      };
     }
 
     case "x_or_y_ray": {

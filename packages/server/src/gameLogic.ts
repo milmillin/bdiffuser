@@ -496,235 +496,29 @@ export function executeDualCutDoubleDetector(
   const match1 = tile1.gameValue === guessValue;
   const match2 = tile2.gameValue === guessValue;
 
-  if (match1 && match2) {
-    // Both match: target player must choose which tile to cut
-    state.pendingForcedAction = {
-      kind: "detectorTileChoice",
-      targetPlayerId,
-      actorId,
-      matchingTileIndices: [tileIndex1, tileIndex2],
-      guessValue,
-      source: "doubleDetector",
-      originalTileIndex1: tileIndex1,
-      originalTileIndex2: tileIndex2,
-      actorTileIndex,
-    };
+  const matchingTileIndices: number[] = [];
+  if (match1) matchingTileIndices.push(tileIndex1);
+  if (match2) matchingTileIndices.push(tileIndex2);
 
-    addLog(
-      state,
-      actorId,
-      "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both match! Waiting for ${target.name} to choose...`,
-    );
-
-    return {
-      type: "dualCutDoubleDetectorResult",
-      actorId,
-      targetId: targetPlayerId,
-      tileIndex1,
-      tileIndex2,
-      guessValue,
-      outcome: "both_match",
-    };
-  }
-
-  if (match1 || match2) {
-    // One match: cut the matching tile + actor's matching tile
-    const matchingTileIndex = match1 ? tileIndex1 : tileIndex2;
-    const matchingTile = match1 ? tile1 : tile2;
-    matchingTile.cut = true;
-
-    // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
-    const resolveResult = dispatchHooks(state.mission, {
-      point: "resolve",
-      state,
-      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: matchingTileIndex, guessValue },
-      cutValue: guessValue,
-      cutSuccess: true,
-    });
-
-    // Mission hooks may turn a successful cut into an immediate loss
-    if (state.phase === "finished" && state.result) {
-      updateMarkerConfirmations(state);
-      if (state.result === "loss_red_wire") {
-        addLog(
-          state,
-          actorId,
-          "dualCutDoubleDetector",
-          `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — cut a RED-like hidden wire! BOOM!`,
-        );
-        return {
-          type: "dualCutDoubleDetectorResult",
-          actorId,
-          targetId: targetPlayerId,
-          tileIndex1,
-          tileIndex2,
-          guessValue,
-          outcome: "one_match",
-          cutTileIndex: matchingTileIndex,
-          explosion: true,
-        };
-      }
-      return { type: "gameOver", result: state.result };
-    }
-
-    const actorUncut = getUncutTiles(actor);
-    let actorTile: WireTile | undefined;
-    if (actorTileIndex != null) {
-      const candidate = getTileByFlatIndex(actor, actorTileIndex);
-      if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
-        actorTile = candidate;
-      }
-    }
-    if (!actorTile) {
-      actorTile = actorUncut.find(
-        (t) => t.color === "blue" && t.gameValue === guessValue,
-      );
-    }
-    if (actorTile) actorTile.cut = true;
-
-    if (typeof guessValue === "number") {
-      checkValidation(state, guessValue);
-      if (!resolveResult.overrideEquipmentUnlock) {
-        checkEquipmentUnlock(state, guessValue);
-      } else {
-        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
-      }
-    }
-    clearSatisfiedSecondaryEquipmentLocks(state);
-    updateMarkerConfirmations(state);
-
-    addLog(
-      state,
-      actorId,
-      "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(matchingTileIndex)} cut ✓`,
-    );
-
-    if (checkWin(state)) {
-      state.result = "win";
-      state.phase = "finished";
-      return { type: "gameOver", result: "win" };
-    }
-
-    advanceTurn(state);
-
-    return {
-      type: "dualCutDoubleDetectorResult",
-      actorId,
-      targetId: targetPlayerId,
-      tileIndex1,
-      tileIndex2,
-      guessValue,
-      outcome: "one_match",
-      cutTileIndex: matchingTileIndex,
-    };
-  }
-
-  // None match: detonator +1, place info token on one of the two wires
-  state.board.detonatorPosition++;
-
-  // Determine which wire gets the info token:
-  // If exactly one is red, place on the non-red wire per rule text
-  const hiddenBlueAsRedValue =
-    state.mission === 11 ? getBlueAsRedValue(state) : null;
-  const isHiddenRed = (tile: WireTile) =>
-    hiddenBlueAsRedValue != null &&
-    typeof tile.gameValue === "number" &&
-    tile.gameValue === hiddenBlueAsRedValue;
-  const tile1IsRed = tile1.color === "red" || isHiddenRed(tile1);
-  const tile2IsRed = tile2.color === "red" || isHiddenRed(tile2);
-
-  // Both red (or hidden-red-like) → bomb explodes (FAQ)
-  if (tile1IsRed && tile2IsRed) {
-    updateMarkerConfirmations(state);
-    state.result = "loss_red_wire";
-    state.phase = "finished";
-    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
-    const bothActualRed = tile1.color === "red" && tile2.color === "red";
-    addLog(
-      state,
-      actorId,
-      "dualCutDoubleDetector",
-      bothActualRed
-        ? `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED! BOOM!`
-        : `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both RED-like hidden wires! BOOM!`,
-    );
-    return {
-      type: "dualCutDoubleDetectorResult",
-      actorId,
-      targetId: targetPlayerId,
-      tileIndex1,
-      tileIndex2,
-      guessValue,
-      outcome: "none_match",
-      detonatorAdvanced: true,
-      explosion: true,
-    };
-  }
-
-  let infoTokenTileIndex: number;
-  let infoTokenTile: WireTile;
-  if (tile1IsRed && !tile2IsRed) {
-    infoTokenTileIndex = tileIndex2;
-    infoTokenTile = tile2;
-  } else if (!tile1IsRed && tile2IsRed) {
-    infoTokenTileIndex = tileIndex1;
-    infoTokenTile = tile1;
-  } else {
-    // Both non-red: place on the first wire
-    infoTokenTileIndex = tileIndex1;
-    infoTokenTile = tile1;
-  }
-
-  const suppressInfoTokens = state.mission === 58;
-  if (!suppressInfoTokens) {
-    const usesAnnouncedFalseToken =
-      (state.mission === 17 && target.isCaptain) || state.mission === 52;
-    const tokenValue =
-      usesAnnouncedFalseToken
-        ? guessValue
-        : typeof infoTokenTile.gameValue === "number"
-          ? infoTokenTile.gameValue
-          : 0;
-    const tokenIsYellow =
-      usesAnnouncedFalseToken ? false : infoTokenTile.color === "yellow";
-
-    target.infoTokens.push(applyMissionInfoTokenVariant(state, {
-      value: tokenValue,
-      position: infoTokenTileIndex,
-      isYellow: tokenIsYellow,
-    }, target));
-  }
-
-  updateMarkerConfirmations(state);
+  // Always create a forced action — hides match count from other players
+  state.pendingForcedAction = {
+    kind: "detectorTileChoice",
+    targetPlayerId,
+    actorId,
+    matchingTileIndices,
+    guessValue,
+    source: "doubleDetector",
+    originalTileIndex1: tileIndex1,
+    originalTileIndex2: tileIndex2,
+    actorTileIndex,
+  };
 
   addLog(
     state,
     actorId,
     "dualCutDoubleDetector",
-    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} ✗` +
-      `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
+    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — Waiting for ${target.name} to confirm...`,
   );
-
-  if (checkDetonatorLoss(state)) {
-    state.result = "loss_detonator";
-    state.phase = "finished";
-    emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
-    return {
-      type: "dualCutDoubleDetectorResult",
-      actorId,
-      targetId: targetPlayerId,
-      tileIndex1,
-      tileIndex2,
-      guessValue,
-      outcome: "none_match",
-      detonatorAdvanced: true,
-      ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
-    };
-  }
-
-  advanceTurn(state);
 
   return {
     type: "dualCutDoubleDetectorResult",
@@ -733,9 +527,7 @@ export function executeDualCutDoubleDetector(
     tileIndex1,
     tileIndex2,
     guessValue,
-    outcome: "none_match",
-    detonatorAdvanced: true,
-    ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
+    outcome: "pending" as const,
   };
 }
 
@@ -988,15 +780,38 @@ export function executeRevealReds(
 /** Resolve a pending detectorTileChoice forced action. */
 export function resolveDetectorTileChoice(
   state: GameState,
-  chosenTileIndex: number,
+  chosenTileIndex?: number,
+  infoTokenTileIndexOverride?: number,
 ): GameAction {
   const forced = state.pendingForcedAction as Extract<ForcedAction, { kind: "detectorTileChoice" }>;
   state.pendingForcedAction = undefined;
 
   const { actorId, targetPlayerId, guessValue, source } = forced;
+  const matchCount = forced.matchingTileIndices.length;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
-  const chosenTile = getTileByFlatIndex(target, chosenTileIndex)!;
+
+  // ── 0 matches: failure path ──────────────────────────────
+  if (matchCount === 0) {
+    if (source === "doubleDetector") {
+      return resolveDoubleDetectorNoMatch(state, forced, actor, target, infoTokenTileIndexOverride);
+    }
+    // Triple/Super detector 0-match: pick fallback tile, then executeDualCut handles failure
+    const origIndices = forced.originalTargetTileIndices ?? [];
+    const fallbackTile = origIndices.find((idx) => {
+      const t = getTileByFlatIndex(target, idx);
+      return t && !t.cut && t.color !== "red";
+    }) ?? origIndices[0] ?? 0;
+    addLog(state, actorId, "useEquipment", `${target.name} confirmed detector result`);
+    return executeDualCut(state, actorId, targetPlayerId, fallbackTile, guessValue);
+  }
+
+  // ── 1 match: auto-select the single matching tile ────────
+  const effectiveTileIndex = matchCount === 1
+    ? forced.matchingTileIndices[0]
+    : chosenTileIndex!;
+
+  const chosenTile = getTileByFlatIndex(target, effectiveTileIndex)!;
 
   // Cut the chosen target tile
   chosenTile.cut = true;
@@ -1005,7 +820,7 @@ export function resolveDetectorTileChoice(
   const resolveResult = dispatchHooks(state.mission, {
     point: "resolve",
     state,
-    action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: chosenTileIndex, guessValue },
+    action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: effectiveTileIndex, guessValue },
     cutValue: guessValue,
     cutSuccess: true,
   });
@@ -1018,7 +833,7 @@ export function resolveDetectorTileChoice(
         state,
         actorId,
         source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment",
-        `${target.name} chose wire ${wireLabel(chosenTileIndex)} — cut a RED-like hidden wire! BOOM!`,
+        `${target.name} confirmed — cut a RED-like hidden wire! BOOM!`,
       );
       if (source === "doubleDetector") {
         return {
@@ -1028,8 +843,8 @@ export function resolveDetectorTileChoice(
           tileIndex1: forced.originalTileIndex1!,
           tileIndex2: forced.originalTileIndex2!,
           guessValue,
-          outcome: "both_match",
-          cutTileIndex: chosenTileIndex,
+          outcome: "match" as const,
+          cutTileIndex: effectiveTileIndex,
           explosion: true,
         };
       }
@@ -1037,7 +852,7 @@ export function resolveDetectorTileChoice(
         type: "dualCutResult",
         actorId,
         targetId: targetPlayerId,
-        targetTileIndex: chosenTileIndex,
+        targetTileIndex: effectiveTileIndex,
         guessValue,
         success: false,
         revealedColor: "red",
@@ -1082,7 +897,7 @@ export function resolveDetectorTileChoice(
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
     const logAction = source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment";
-    addLog(state, actorId, logAction, `${target.name} chose wire ${wireLabel(chosenTileIndex)} ✓ (but detonator triggered)`);
+    addLog(state, actorId, logAction, `${target.name} confirmed wire ${wireLabel(effectiveTileIndex)} ✓ (but detonator triggered)`);
     if (source === "doubleDetector") {
       return {
         type: "dualCutDoubleDetectorResult",
@@ -1091,8 +906,8 @@ export function resolveDetectorTileChoice(
         tileIndex1: forced.originalTileIndex1!,
         tileIndex2: forced.originalTileIndex2!,
         guessValue,
-        outcome: "both_match",
-        cutTileIndex: chosenTileIndex,
+        outcome: "match" as const,
+        cutTileIndex: effectiveTileIndex,
         detonatorAdvanced: true,
       };
     }
@@ -1100,7 +915,7 @@ export function resolveDetectorTileChoice(
       type: "dualCutResult",
       actorId,
       targetId: targetPlayerId,
-      targetTileIndex: chosenTileIndex,
+      targetTileIndex: effectiveTileIndex,
       guessValue,
       success: true,
       detonatorAdvanced: true,
@@ -1112,7 +927,7 @@ export function resolveDetectorTileChoice(
     state,
     actorId,
     logAction,
-    `${target.name} chose wire ${wireLabel(chosenTileIndex)} to cut ✓`,
+    `${target.name} confirmed wire ${wireLabel(effectiveTileIndex)} to cut ✓`,
   );
 
   // Check win
@@ -1132,16 +947,149 @@ export function resolveDetectorTileChoice(
       tileIndex1: forced.originalTileIndex1!,
       tileIndex2: forced.originalTileIndex2!,
       guessValue,
-      outcome: "both_match",
-      cutTileIndex: chosenTileIndex,
+      outcome: "match" as const,
+      cutTileIndex: effectiveTileIndex,
     };
   }
   return {
     type: "dualCutResult",
     actorId,
     targetId: targetPlayerId,
-    targetTileIndex: chosenTileIndex,
+    targetTileIndex: effectiveTileIndex,
     guessValue,
     success: true,
+  };
+}
+
+/** Resolve double detector 0-match: detonator +1, info token, possible explosion. */
+function resolveDoubleDetectorNoMatch(
+  state: GameState,
+  forced: Extract<ForcedAction, { kind: "detectorTileChoice" }>,
+  _actor: Player,
+  target: Player,
+  infoTokenTileIndexOverride?: number,
+): GameAction {
+  const { actorId, targetPlayerId, guessValue } = forced;
+  const tileIndex1 = forced.originalTileIndex1!;
+  const tileIndex2 = forced.originalTileIndex2!;
+  const tile1 = getTileByFlatIndex(target, tileIndex1)!;
+  const tile2 = getTileByFlatIndex(target, tileIndex2)!;
+
+  state.board.detonatorPosition++;
+
+  const hiddenBlueAsRedValue =
+    state.mission === 11 ? getBlueAsRedValue(state) : null;
+  const isHiddenRed = (tile: WireTile) =>
+    hiddenBlueAsRedValue != null &&
+    typeof tile.gameValue === "number" &&
+    tile.gameValue === hiddenBlueAsRedValue;
+  const tile1IsRed = tile1.color === "red" || isHiddenRed(tile1);
+  const tile2IsRed = tile2.color === "red" || isHiddenRed(tile2);
+
+  // Both red (or hidden-red-like) → bomb explodes (FAQ)
+  if (tile1IsRed && tile2IsRed) {
+    updateMarkerConfirmations(state);
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+    const bothActualRed = tile1.color === "red" && tile2.color === "red";
+    addLog(
+      state,
+      actorId,
+      "dualCutDoubleDetector",
+      bothActualRed
+        ? `${target.name} confirmed — both RED! BOOM!`
+        : `${target.name} confirmed — both RED-like hidden wires! BOOM!`,
+    );
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "no_match" as const,
+      detonatorAdvanced: true,
+      explosion: true,
+    };
+  }
+
+  // Determine which wire gets the info token
+  let infoTokenTileIndex: number;
+  let infoTokenTile: WireTile;
+
+  if (infoTokenTileIndexOverride != null && (infoTokenTileIndexOverride === tileIndex1 || infoTokenTileIndexOverride === tileIndex2)) {
+    infoTokenTileIndex = infoTokenTileIndexOverride;
+    infoTokenTile = infoTokenTileIndexOverride === tileIndex1 ? tile1 : tile2;
+  } else if (tile1IsRed && !tile2IsRed) {
+    infoTokenTileIndex = tileIndex2;
+    infoTokenTile = tile2;
+  } else if (!tile1IsRed && tile2IsRed) {
+    infoTokenTileIndex = tileIndex1;
+    infoTokenTile = tile1;
+  } else {
+    infoTokenTileIndex = tileIndex1;
+    infoTokenTile = tile1;
+  }
+
+  const suppressInfoTokens = state.mission === 58;
+  if (!suppressInfoTokens) {
+    const usesAnnouncedFalseToken =
+      (state.mission === 17 && target.isCaptain) || state.mission === 52;
+    const tokenValue =
+      usesAnnouncedFalseToken
+        ? guessValue
+        : typeof infoTokenTile.gameValue === "number"
+          ? infoTokenTile.gameValue
+          : 0;
+    const tokenIsYellow =
+      usesAnnouncedFalseToken ? false : infoTokenTile.color === "yellow";
+
+    target.infoTokens.push(applyMissionInfoTokenVariant(state, {
+      value: tokenValue,
+      position: infoTokenTileIndex,
+      isYellow: tokenIsYellow,
+    }, target));
+  }
+
+  updateMarkerConfirmations(state);
+
+  addLog(
+    state,
+    actorId,
+    "dualCutDoubleDetector",
+    `${target.name} confirmed — no match ✗` +
+      `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
+  );
+
+  if (checkDetonatorLoss(state)) {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "no_match" as const,
+      detonatorAdvanced: true,
+      ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
+    };
+  }
+
+  advanceTurn(state);
+
+  return {
+    type: "dualCutDoubleDetectorResult",
+    actorId,
+    targetId: targetPlayerId,
+    tileIndex1,
+    tileIndex2,
+    guessValue,
+    outcome: "no_match" as const,
+    detonatorAdvanced: true,
+    ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
   };
 }

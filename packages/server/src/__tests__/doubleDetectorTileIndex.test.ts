@@ -87,7 +87,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("both_match");
+    expect(action.outcome).toBe("pending");
     // No tiles cut yet — pending choice
     expect(target.hand[0].cut).toBe(false);
     expect(target.hand[1].cut).toBe(false);
@@ -131,7 +131,18 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("one_match");
+    expect(action.outcome).toBe("pending");
+    // No tiles cut yet — pending confirmation
+    expect(target.hand[0].cut).toBe(false);
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Resolve: auto-selects the single match (tile 0)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("match");
+    }
     // The specified tile (index 1, b2) should be cut
     expect(actor.hand[1].cut).toBe(true);
     // The other blue tiles should NOT be cut
@@ -164,7 +175,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("both_match");
+    expect(action.outcome).toBe("pending");
     // No tiles cut yet
     expect(target.hand[0].cut).toBe(false);
     expect(target.hand[1].cut).toBe(false);
@@ -207,7 +218,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("both_match");
+    expect(action.outcome).toBe("pending");
     expect(state.pendingForcedAction).toBeDefined();
 
     // Resolve
@@ -245,7 +256,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("both_match");
+    expect(action.outcome).toBe("pending");
     expect(state.pendingForcedAction).toBeDefined();
 
     // Resolve
@@ -281,8 +292,18 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("none_match");
-    expect(action.explosion).toBe(true);
+    expect(action.outcome).toBe("pending");
+    // No immediate explosion — pending confirmation
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Resolve: target confirms (no tile choice for 0-match)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.explosion).toBe(true);
+    }
     expect(state.result).toBe("loss_red_wire");
     expect(state.phase).toBe("finished");
   });
@@ -312,10 +333,18 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("none_match");
-    expect(action.explosion).toBeUndefined();
-    expect(action.detonatorAdvanced).toBe(true);
-    expect(action.infoTokenPlacedIndex).toBe(0); // first wire
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: target confirms (no tile choice for 0-match)
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.explosion).toBeUndefined();
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBe(0); // first wire
+    }
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
     // No explosion — game continues
     expect(state.phase).not.toBe("finished");
@@ -347,9 +376,17 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("none_match");
-    expect(action.detonatorAdvanced).toBe(true);
-    expect(action.infoTokenPlacedIndex).toBeUndefined();
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: target confirms
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBeUndefined();
+    }
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
     expect(target.infoTokens).toHaveLength(0);
     expect(state.phase).not.toBe("finished");
@@ -383,8 +420,11 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("none_match");
-    expect(action.detonatorAdvanced).toBe(true);
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: target confirms
+    resolveDetectorTileChoice(state);
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
     expect(captain.infoTokens).toHaveLength(1);
     expect(captain.infoTokens[0]).toMatchObject({
@@ -421,8 +461,11 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
-    expect(action.outcome).toBe("none_match");
-    expect(action.detonatorAdvanced).toBe(true);
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: target confirms
+    resolveDetectorTileChoice(state);
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
     expect(target.infoTokens).toHaveLength(1);
     expect(target.infoTokens[0]).toMatchObject({
