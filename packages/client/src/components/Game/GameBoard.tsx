@@ -364,81 +364,6 @@ export function GameBoard({
 
             {/* My area */}
             <div className="flex-1 flex flex-col gap-2 min-h-0">
-              {me && (
-                <PlayerStand
-                  player={me}
-                  isOpponent={false}
-                  isCurrentTurn={me.id === currentPlayer?.id}
-                  turnOrder={myOrder}
-                  onCharacterClick={
-                    me.character
-                      ? () => setViewingCharacter({ playerId: me.id, characterId: me.character! })
-                      : undefined
-                  }
-                  onTileClick={
-                    isSetup && isMyTurn
-                      ? (requiresSetupToken
-                        ? (tileIndex) => {
-                            if (selectedInfoTile === tileIndex) {
-                              setSelectedInfoTile(null);
-                              setSelectedInfoTokenValue(null);
-                              return;
-                            }
-
-                            setSelectedInfoTile(tileIndex);
-                            if (useFalseSetupTokenMode) {
-                              setSelectedInfoTokenValue(
-                                getDefaultFalseSetupTokenValue(me?.hand[tileIndex]),
-                              );
-                            } else {
-                              setSelectedInfoTokenValue(null);
-                            }
-                          }
-                        : undefined)
-                      : equipmentMode && gameState.phase === "playing"
-                        ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
-                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
-                          ? (tileIndex) => {
-                              const tile = me.hand[tileIndex];
-                              if (!tile || tile.cut || tile.color === "red") return;
-                              if (selectedGuessTile === tileIndex) {
-                                setSelectedGuessTile(null);
-                              } else {
-                                setSelectedGuessTile(tileIndex);
-                              }
-                            }
-                          : undefined
-                  }
-                  selectedTileIndex={getOwnSelectedTileIndex()}
-                  selectedTileIndices={getOwnSelectedTileIndices()}
-                  tileSelectableFilter={
-                    isSetup && isMyTurn
-                      ? (requiresSetupToken
-                        ? (tile: VisibleTile) => {
-                            if (tile.cut) return false;
-                            if (useFalseSetupTokenMode) {
-                              if (gameState.mission === 52) {
-                                return tile.color === "blue" || tile.color === "red";
-                              }
-                              // Mission 17: captain false tokens can target any non-red wire.
-                              return tile.color !== "red";
-                            }
-                            return (
-                              tile.color === "blue" &&
-                              tile.gameValue !== "RED" &&
-                              tile.gameValue !== "YELLOW"
-                            );
-                          }
-                        : undefined)
-                      : equipmentMode && gameState.phase === "playing"
-                        ? getOwnTileSelectableFilter()
-                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
-                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
-                          : undefined
-                  }
-                />
-              )}
-
               {/* Setup phase: info token placement */}
               {isSetup && isMyTurn && me && (
                 <InfoTokenSetup
@@ -680,6 +605,84 @@ export function GameBoard({
                       Play Again
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Player stand — always at the bottom */}
+              {me && (
+                <div className="mt-auto">
+                <PlayerStand
+                  player={me}
+                  isOpponent={false}
+                  isCurrentTurn={me.id === currentPlayer?.id}
+                  turnOrder={myOrder}
+                  onCharacterClick={
+                    me.character
+                      ? () => setViewingCharacter({ playerId: me.id, characterId: me.character! })
+                      : undefined
+                  }
+                  onTileClick={
+                    isSetup && isMyTurn
+                      ? (requiresSetupToken
+                        ? (tileIndex) => {
+                            if (selectedInfoTile === tileIndex) {
+                              setSelectedInfoTile(null);
+                              setSelectedInfoTokenValue(null);
+                              return;
+                            }
+
+                            setSelectedInfoTile(tileIndex);
+                            if (useFalseSetupTokenMode) {
+                              setSelectedInfoTokenValue(
+                                getDefaultFalseSetupTokenValue(me?.hand[tileIndex]),
+                              );
+                            } else {
+                              setSelectedInfoTokenValue(null);
+                            }
+                          }
+                        : undefined)
+                      : equipmentMode && gameState.phase === "playing"
+                        ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
+                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
+                          ? (tileIndex) => {
+                              const tile = me.hand[tileIndex];
+                              if (!tile || tile.cut || tile.color === "red") return;
+                              if (selectedGuessTile === tileIndex) {
+                                setSelectedGuessTile(null);
+                              } else {
+                                setSelectedGuessTile(tileIndex);
+                              }
+                            }
+                          : undefined
+                  }
+                  selectedTileIndex={getOwnSelectedTileIndex()}
+                  selectedTileIndices={getOwnSelectedTileIndices()}
+                  tileSelectableFilter={
+                    isSetup && isMyTurn
+                      ? (requiresSetupToken
+                        ? (tile: VisibleTile) => {
+                            if (tile.cut) return false;
+                            if (useFalseSetupTokenMode) {
+                              if (gameState.mission === 52) {
+                                return tile.color === "blue" || tile.color === "red";
+                              }
+                              // Mission 17: captain false tokens can target any non-red wire.
+                              return tile.color !== "red";
+                            }
+                            return (
+                              tile.color === "blue" &&
+                              tile.gameValue !== "RED" &&
+                              tile.gameValue !== "YELLOW"
+                            );
+                          }
+                        : undefined)
+                      : equipmentMode && gameState.phase === "playing"
+                        ? getOwnTileSelectableFilter()
+                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
+                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                          : undefined
+                  }
+                />
                 </div>
               )}
             </div>
