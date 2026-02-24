@@ -588,6 +588,59 @@ describe("executeSimultaneousFourCut", () => {
     ]);
   });
 
+  it("mission 39: grants at most one post-success token per player", () => {
+    const state = makeGameState({
+      mission: 39,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-5a", gameValue: 5 }),
+            makeTile({ id: "p1-5b", gameValue: 5 }),
+          ],
+          isCaptain: true,
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-5a", gameValue: 5 }),
+            makeTile({ id: "p2-5b", gameValue: 5 }),
+            makeTile({ id: "p2-3", gameValue: 3 }),
+            makeTile({ id: "p2-4", gameValue: 4 }),
+          ],
+          isCaptain: false,
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "visible-5", value: 5, faceUp: true })],
+          deck: [
+            makeNumberCard({ id: "d1", value: 1, faceUp: true }),
+            makeNumberCard({ id: "d2", value: 3, faceUp: true }),
+            makeNumberCard({ id: "d3", value: 2, faceUp: true }),
+            makeNumberCard({ id: "d4", value: 4, faceUp: true }),
+          ],
+        }),
+      },
+    });
+
+    const action = executeSimultaneousFourCut(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p1", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+    ]);
+
+    expect(action.type).toBe("simultaneousFourCutResult");
+    expect(state.players[1].infoTokens).toHaveLength(1);
+    expect([3, 4]).toContain(state.players[1].infoTokens[0]?.value);
+    expect(state.players[1].infoTokens[0]).toMatchObject({
+      position: -1,
+      isYellow: false,
+    });
+  });
+
   it("mission 46 success: cuts sevens without mission-23 equipment unlock side effects", () => {
     const eq1 = makeEquipmentCard({ id: "eq1", faceDown: true, unlocked: false });
     const eq2 = makeEquipmentCard({ id: "eq2", faceDown: true, unlocked: false });

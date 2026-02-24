@@ -819,6 +819,7 @@ export function executeSimultaneousFourCut(
           const playerCount = state.players.length;
           const captainIndex = state.players.findIndex((player) => player.isCaptain);
           const startIndex = captainIndex >= 0 ? captainIndex : 0;
+          const mission39TokenGranted = new Set<string>();
 
           numberCards.playerHands = {};
           for (const player of state.players) {
@@ -832,26 +833,29 @@ export function executeSimultaneousFourCut(
             card.faceUp = false;
             numberCards.playerHands[recipient.id].push(card);
 
-            // Mission 39 FAQ: grant token when the dealt value is in the
-            // recipient's hand (cut or uncut), but ignore values no longer in game.
-            const hasMatchingValueInHand = recipient.hand.some(
-              (tile) => tile.gameValue === card.value,
-            );
-            const valueStillInGame = state.players.some((player) =>
-              player.hand.some((tile) => !tile.cut && tile.gameValue === card.value),
-            );
-            if (hasMatchingValueInHand && valueStillInGame) {
-              recipient.infoTokens.push(
-                applyMissionInfoTokenVariant(
-                  state,
-                  {
-                    value: card.value,
-                    position: -1,
-                    isYellow: false,
-                  },
-                  recipient,
-                ),
+            // Mission 39: each player places at most one token after dealing.
+            // FAQ: ignore dealt values not in-hand or no longer present in the game.
+            if (!mission39TokenGranted.has(recipient.id)) {
+              const hasMatchingValueInHand = recipient.hand.some(
+                (tile) => tile.gameValue === card.value,
               );
+              const valueStillInGame = state.players.some((player) =>
+                player.hand.some((tile) => !tile.cut && tile.gameValue === card.value),
+              );
+              if (hasMatchingValueInHand && valueStillInGame) {
+                recipient.infoTokens.push(
+                  applyMissionInfoTokenVariant(
+                    state,
+                    {
+                      value: card.value,
+                      position: -1,
+                      isYellow: false,
+                    },
+                    recipient,
+                  ),
+                );
+                mission39TokenGranted.add(recipient.id);
+              }
             }
             dealt++;
           }
