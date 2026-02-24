@@ -2534,8 +2534,9 @@ registerHookHandler<"no_spoken_numbers">("no_spoken_numbers", {
 
 /**
  * Mission 50: No markers / memory mode.
- * On failed cuts, no info tokens are placed. This is enforced in gameLogic.ts
- * via the campaign state flag. The hook sets it up.
+ * On failed cuts, info tokens are placed beside the stand (non-positional).
+ * This is enforced in gameLogic.ts via the campaign state flag. The hook
+ * sets that mode.
  */
 registerHookHandler<"no_markers_memory_mode">("no_markers_memory_mode", {
   setup(_rule: NoMarkersMemoryModeRuleDef, ctx: SetupHookContext): void {

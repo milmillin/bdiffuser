@@ -778,7 +778,7 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
-  it("expansion tier (mission 50): failed dual cut does not place positional info token", () => {
+  it("expansion tier (mission 50): failed dual cut places non-positional info token", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
@@ -803,7 +803,13 @@ describe("mission complexity tier representative coverage", () => {
       expect(action.detonatorAdvanced).toBe(true);
     }
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
-    expect(target.infoTokens).toHaveLength(0);
+    expect(target.infoTokens).toEqual([
+      {
+        value: 3,
+        position: -1,
+        isYellow: false,
+      },
+    ]);
   });
 
   it("system-d tier (mission 58): failed dual cut does not place info token", () => {

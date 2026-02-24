@@ -139,11 +139,22 @@ function checkDetonatorLoss(state: GameState): boolean {
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 
-function isFailureInfoTokenSuppressed(state: Readonly<GameState>): boolean {
+type FailureInfoTokenMode = "wire" | "stand" | "none";
+
+function getFailureInfoTokenMode(state: Readonly<GameState>): FailureInfoTokenMode {
   const campaignState = state.campaign as
     | (Record<string, unknown> & { noMarkersMemoryMode?: unknown })
     | undefined;
-  return state.mission === 58 || campaignState?.noMarkersMemoryMode === true;
+
+  if (state.mission === 58) {
+    return "none";
+  }
+
+  if (campaignState?.noMarkersMemoryMode === true) {
+    return "stand";
+  }
+
+  return "wire";
 }
 
 /** Update marker confirmed status based on cut tiles */
@@ -423,7 +434,8 @@ export function executeDualCut(
       state.board.detonatorPosition++;
     }
 
-    const suppressInfoTokens = isFailureInfoTokenSuppressed(state);
+    const failureInfoTokenMode = getFailureInfoTokenMode(state);
+    const suppressInfoTokens = failureInfoTokenMode === "none";
     if (!suppressInfoTokens) {
       const usesAnnouncedFalseToken =
         (state.mission === 17 && target.isCaptain) || state.mission === 52;
@@ -443,7 +455,7 @@ export function executeDualCut(
       // Place mission-specific failure info token (actual value by default).
       target.infoTokens.push(applyMissionInfoTokenVariant(state, {
         value: tokenValue,
-        position: targetTileIndex,
+        position: failureInfoTokenMode === "stand" ? -1 : targetTileIndex,
         isYellow: tokenIsYellow,
       }, target));
     }
@@ -1131,7 +1143,8 @@ function resolveDoubleDetectorNoMatch(
     infoTokenTile = tile1;
   }
 
-  const suppressInfoTokens = isFailureInfoTokenSuppressed(state);
+  const failureInfoTokenMode = getFailureInfoTokenMode(state);
+  const suppressInfoTokens = failureInfoTokenMode === "none";
   if (!suppressInfoTokens) {
     const usesAnnouncedFalseToken =
       (state.mission === 17 && target.isCaptain) || state.mission === 52;
@@ -1146,7 +1159,7 @@ function resolveDoubleDetectorNoMatch(
 
     target.infoTokens.push(applyMissionInfoTokenVariant(state, {
       value: tokenValue,
-      position: infoTokenTileIndex,
+      position: failureInfoTokenMode === "stand" ? -1 : infoTokenTileIndex,
       isYellow: tokenIsYellow,
     }, target));
   }
@@ -1174,7 +1187,9 @@ function resolveDoubleDetectorNoMatch(
       guessValue,
       outcome: "no_match" as const,
       detonatorAdvanced: true,
-      ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
+      ...(suppressInfoTokens || failureInfoTokenMode === "stand"
+        ? {}
+        : { infoTokenPlacedIndex: infoTokenTileIndex }),
     };
   }
 
@@ -1189,6 +1204,8 @@ function resolveDoubleDetectorNoMatch(
     guessValue,
     outcome: "no_match" as const,
     detonatorAdvanced: true,
-    ...(suppressInfoTokens ? {} : { infoTokenPlacedIndex: infoTokenTileIndex }),
+    ...(suppressInfoTokens || failureInfoTokenMode === "stand"
+      ? {}
+      : { infoTokenPlacedIndex: infoTokenTileIndex }),
   };
 }

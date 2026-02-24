@@ -393,7 +393,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(state.phase).not.toBe("finished");
   });
 
-  it("mission 50: no-markers mode does not place info token when neither designated wire matches", () => {
+  it("mission 50: no-markers mode places non-positional info token when neither designated wire matches", () => {
     const actor = makePlayer({
       id: "actor",
       character: "double_detector",
@@ -432,7 +432,13 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       expect(resolveAction.infoTokenPlacedIndex).toBeUndefined();
     }
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
-    expect(target.infoTokens).toHaveLength(0);
+    expect(target.infoTokens).toEqual([
+      {
+        value: 3,
+        position: -1,
+        isYellow: false,
+      },
+    ]);
     expect(state.phase).not.toBe("finished");
   });
 
