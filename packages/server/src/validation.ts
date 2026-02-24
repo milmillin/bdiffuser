@@ -133,6 +133,9 @@ function legalityError(
   return { code, message };
 }
 
+const MISSION_46_PENDING_SEVENS_MESSAGE =
+  "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously";
+
 function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
   return state.mission === 20 || state.mission === 35;
 }
@@ -668,10 +671,11 @@ export function validateSimultaneousFourCutLegality(
   actorId: string,
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): ActionLegalityError | null {
-  if (state.mission !== 23 && state.mission !== 39) {
+  const isMission46 = state.mission === 46;
+  if (!isMission46 && state.mission !== 23 && state.mission !== 39) {
     return legalityError(
       "SIMULTANEOUS_FOUR_CUT_WRONG_MISSION",
-      "Simultaneous four-of-value cut is only available in mission 23 or 39",
+      "Simultaneous four-of-value cut is only available in mission 23, 39, or 46",
     );
   }
 
@@ -686,8 +690,21 @@ export function validateSimultaneousFourCutLegality(
     );
   }
 
-  const numberCard = state.campaign?.numberCards?.visible?.[0];
-  if (!numberCard) {
+  if (isMission46) {
+    const pendingId = state.campaign?.mission46PendingSevensPlayerId;
+    if (!pendingId) {
+      return legalityError("MISSION_RULE_VIOLATION", MISSION_46_PENDING_SEVENS_MESSAGE);
+    }
+    if (pendingId !== actorId) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 46: only the player with only 7s remaining may trigger the special cut",
+      );
+    }
+  }
+
+  const numberCard = isMission46 ? undefined : state.campaign?.numberCards?.visible?.[0];
+  if (!isMission46 && !numberCard) {
     return legalityError(
       "SIMULTANEOUS_FOUR_CUT_INVALID_TARGETS",
       "No Number card is in play",
@@ -776,16 +793,36 @@ export function validateActionWithHooks(
   action: ValidatableAction,
 ): ActionLegalityError | null {
   // Block all cut actions while a forced action is pending
-  if (state.pendingForcedAction) {
-    return legalityError(
-      "FORCED_ACTION_PENDING",
-      "A forced action must be resolved before you can act",
-    );
+  const pendingForcedAction = state.pendingForcedAction;
+  if (pendingForcedAction) {
+    if (
+      pendingForcedAction.kind === "mission46SevensCut" &&
+      action.type === "simultaneousFourCut" &&
+      pendingForcedAction.playerId === action.actorId
+    ) {
+      // allow the forced simultaneous four-cut to resolve
+    } else {
+      return legalityError(
+        "FORCED_ACTION_PENDING",
+        "A forced action must be resolved before you can act",
+      );
+    }
   }
 
   const actor = state.players.find((p) => p.id === action.actorId);
   if (!actor) {
     return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+  }
+
+  if (
+    state.mission === 46 &&
+    state.campaign?.mission46PendingSevensPlayerId === action.actorId &&
+    action.type !== "simultaneousFourCut"
+  ) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      MISSION_46_PENDING_SEVENS_MESSAGE,
+    );
   }
 
   if (action.type !== "revealReds" && action.type !== "simultaneousRedCut" && isRevealRedsForced(state, actor)) {

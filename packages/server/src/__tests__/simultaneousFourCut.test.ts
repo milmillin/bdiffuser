@@ -94,6 +94,34 @@ describe("validateSimultaneousFourCutLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("accepts mission 46 when pending sevens action belongs to the actor", () => {
+    const state = makeGameState({
+      mission: 46,
+      players: [
+        makePlayer({ id: "p1", hand: [
+          makeTile({ id: "p1-1", gameValue: 7 }),
+          makeTile({ id: "p1-2", gameValue: 7 }),
+        ] }),
+        makePlayer({ id: "p2", hand: [
+          makeTile({ id: "p2-1", gameValue: 7 }),
+          makeTile({ id: "p2-2", gameValue: 7 }),
+        ] }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission46PendingSevensPlayerId: "p1",
+      },
+    });
+
+    const error = validateSimultaneousFourCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p1", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+    ]);
+    expect(error).toBeNull();
+  });
+
   it("rejects when not actor's turn", () => {
     const state = makeGameState({
       mission: 23,
@@ -253,6 +281,87 @@ describe("validateSimultaneousFourCutLegality", () => {
     expect(error).not.toBeNull();
     expect(error!.code).toBe("TILE_ALREADY_CUT");
   });
+
+  it("rejects mission 46 simultaneous cut when pending player is missing", () => {
+    const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 7 })] });
+    const teammates = [
+      makePlayer({ id: "p2", hand: [makeTile({ id: "t2", gameValue: 7 })] }),
+      makePlayer({ id: "p3", hand: [makeTile({ id: "t3", gameValue: 7 })] }),
+      makePlayer({ id: "p4", hand: [makeTile({ id: "t4", gameValue: 7 })] }),
+    ];
+
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, ...teammates],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousFourCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.message).toBe(
+      "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously",
+    );
+  });
+
+  it("rejects mission 46 simultaneous cut when actor is not designated", () => {
+    const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 7 })] });
+    const teammates = [
+      makePlayer({ id: "p2", hand: [makeTile({ id: "t2", gameValue: 7 })] }),
+      makePlayer({ id: "p3", hand: [makeTile({ id: "t3", gameValue: 7 })] }),
+      makePlayer({ id: "p4", hand: [makeTile({ id: "t4", gameValue: 7 })] }),
+    ];
+
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, ...teammates],
+      currentPlayerIndex: 0,
+      campaign: { mission46PendingSevensPlayerId: "p2" },
+    });
+
+    const error = validateSimultaneousFourCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.message).toBe(
+      "Mission 46: only the player with only 7s remaining may trigger the special cut",
+    );
+  });
+
+  it("allows mission 46 simultaneous cut for the designated player", () => {
+    const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 7 })] });
+    const teammates = [
+      makePlayer({ id: "p2", hand: [makeTile({ id: "t2", gameValue: 7 })] }),
+      makePlayer({ id: "p3", hand: [makeTile({ id: "t3", gameValue: 7 })] }),
+      makePlayer({ id: "p4", hand: [makeTile({ id: "t4", gameValue: 7 })] }),
+    ];
+
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, ...teammates],
+      currentPlayerIndex: 0,
+      campaign: { mission46PendingSevensPlayerId: "p1" },
+      pendingForcedAction: { kind: "mission46SevensCut", playerId: "p1" },
+    });
+
+    const error = validateSimultaneousFourCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
+    ]);
+
+    expect(error).toBeNull();
+  });
 });
 
 describe("validateSimultaneousFourCutWithHooks", () => {
@@ -411,6 +520,43 @@ describe("executeSimultaneousFourCut", () => {
     expect(allDealt).toHaveLength(5);
     expect(allDealt.every((card) => card.faceUp === false)).toBe(true);
     expect(state.campaign?.numberCards?.visible[0]?.value).toBe(5);
+  });
+
+  it("mission 46 success: cuts sevens without mission-23 equipment unlock side effects", () => {
+    const eq1 = makeEquipmentCard({ id: "eq1", faceDown: true, unlocked: false });
+    const eq2 = makeEquipmentCard({ id: "eq2", faceDown: true, unlocked: false });
+    const state = makeGameState({
+      mission: 46,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 7 })] }),
+        makePlayer({ id: "p2", hand: [
+          makeTile({ id: "p2-1", gameValue: 7 }),
+          makeTile({ id: "p2-2", gameValue: 7 }),
+          makeTile({ id: "p2-3", gameValue: 7 }),
+          makeTile({ id: "p2-4", gameValue: 3 }),
+        ] }),
+      ],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: makeBoardState({ equipment: [eq1, eq2] }),
+      campaign: {
+        mission46PendingSevensPlayerId: "p1",
+      },
+    });
+
+    const action = executeSimultaneousFourCut(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 2 },
+    ]);
+
+    expect(action.type).toBe("simultaneousFourCutResult");
+    expect(eq1.faceDown).toBe(true);
+    expect(eq1.unlocked).toBe(false);
+    expect(eq2.faceDown).toBe(true);
+    expect(eq2.unlocked).toBe(false);
+    expect(state.campaign?.mission23SpecialActionDone).not.toBe(true);
   });
 
   it("failure: mismatch causes explosion", () => {

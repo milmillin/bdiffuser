@@ -3572,6 +3572,48 @@ function actorHasUncutNonSevenCuttableWire(
   );
 }
 
+function playerHasOnlySevenCuttableWires(
+  state: Readonly<GameState>,
+  playerId: string,
+): boolean {
+  if (state.mission !== 46) return false;
+  const player = state.players.find((player) => player.id === playerId);
+  if (!player) return false;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  return uncutTiles.every((tile) => tile.gameValue === 7);
+}
+
+function updateMission46SevensPendingAction(state: GameState): void {
+  if (state.mission !== 46) return;
+  const current = state.players[state.currentPlayerIndex];
+  if (!current) return;
+
+  const needsSevensAction = playerHasOnlySevenCuttableWires(state, current.id);
+  state.campaign ??= {};
+
+  if (needsSevensAction) {
+    state.campaign.mission46PendingSevensPlayerId = current.id;
+    if (
+      !state.pendingForcedAction ||
+      state.pendingForcedAction.kind === "mission46SevensCut"
+    ) {
+      state.pendingForcedAction = {
+        kind: "mission46SevensCut",
+        playerId: current.id,
+      };
+    }
+    return;
+  }
+
+  state.campaign.mission46PendingSevensPlayerId = undefined;
+  if (state.pendingForcedAction?.kind === "mission46SevensCut") {
+    state.pendingForcedAction = undefined;
+  }
+}
+
 registerHookHandler<"sevens_last">("sevens_last", {
   validate(_rule: SevensLastRuleDef, ctx: ValidateHookContext): HookResult | void {
     if (!actionAttemptsSevenCut(ctx.action)) return;
@@ -3584,6 +3626,7 @@ registerHookHandler<"sevens_last">("sevens_last", {
   },
 
   setup(_rule: SevensLastRuleDef, ctx: SetupHookContext): void {
+    updateMission46SevensPendingAction(ctx.state);
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
@@ -3591,6 +3634,11 @@ registerHookHandler<"sevens_last">("sevens_last", {
       detail: "sevens_last:active",
       timestamp: Date.now(),
     });
+  },
+
+  endTurn(_rule: SevensLastRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    updateMission46SevensPendingAction(ctx.state);
   },
 });
 

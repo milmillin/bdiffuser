@@ -967,6 +967,72 @@ describe("mission 46 sevens-last validation", () => {
 
     expect(error).toBeNull();
   });
+
+  it("blocks other actions while mission 46 forced simultaneous cut is pending", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 7 })],
+    });
+    const teammates = [
+      makePlayer({ id: "p2", hand: [makeTile({ id: "t2", gameValue: 7 })] }),
+      makePlayer({ id: "p3", hand: [makeTile({ id: "t3", gameValue: 7 })] }),
+      makePlayer({ id: "p4", hand: [makeTile({ id: "t4", gameValue: 7 })] }),
+    ];
+
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, ...teammates],
+      currentPlayerIndex: 0,
+      campaign: { mission46PendingSevensPlayerId: "actor" },
+      pendingForcedAction: { kind: "mission46SevensCut", playerId: "actor" },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "p2",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("FORCED_ACTION_PENDING");
+  });
+
+  it("allows the simultaneous four-cut when mission 46 forced action is active", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 7 })],
+    });
+    const teammates = [
+      makePlayer({ id: "p2", hand: [makeTile({ id: "t2", gameValue: 7 })] }),
+      makePlayer({ id: "p3", hand: [makeTile({ id: "t3", gameValue: 7 })] }),
+      makePlayer({ id: "p4", hand: [makeTile({ id: "t4", gameValue: 7 })] }),
+    ];
+
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, ...teammates],
+      currentPlayerIndex: 0,
+      campaign: { mission46PendingSevensPlayerId: "actor" },
+      pendingForcedAction: { kind: "mission46SevensCut", playerId: "actor" },
+    });
+
+    const targets = [
+      { playerId: "actor", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
+    ];
+
+    const error = validateActionWithHooks(state, {
+      type: "simultaneousFourCut",
+      actorId: "actor",
+      targets,
+    });
+
+    expect(error).toBeNull();
+  });
 });
 
 describe("mission 38 captain flipped-wire validation", () => {

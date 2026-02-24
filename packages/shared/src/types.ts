@@ -305,6 +305,10 @@ export interface CampaignState {
   equipmentReserve?: EquipmentCard[];
   /** Mission 23: whether the simultaneous four-of-value cut has been completed. */
   mission23SpecialActionDone?: boolean;
+  /** Mission 46: which player must trigger the simultaneous sevens cut this turn. */
+  mission46PendingSevensPlayerId?: string;
+  /** Mission 17: Rhett Herrings places false info tokens. */
+  falseInfoTokenMode?: boolean;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────
@@ -365,7 +369,7 @@ export type ForcedAction =
       value: number;
       /** General Radar results: per-player boolean (true = has at least one uncut wire of this value). */
       radarResults: Record<string, boolean>;
-    }
+  }
   | {
       kind: "mission22TokenPass";
       /** Index of the player who currently must choose a token value to pass. */
@@ -376,6 +380,11 @@ export type ForcedAction =
       passingOrder: number[];
       /** How many players have completed their token pass. */
       completedCount: number;
+    }
+  | {
+      kind: "mission46SevensCut";
+      /** Player ID required to perform the simultaneous four-cut of all 7s. */
+      playerId: string;
     }
   | {
       kind: "detectorTileChoice";

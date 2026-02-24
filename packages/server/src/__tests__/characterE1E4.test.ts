@@ -14,6 +14,39 @@ import {
 import { resolveDetectorTileChoice } from "../gameLogic";
 
 describe("Character E1-E4 abilities", () => {
+  it("mission 46: rejects character ability while simultaneous sevens cut is pending", () => {
+    const state = makeGameState({
+      mission: 46,
+      players: [
+        makePlayer({
+          id: "p1",
+          character: "character_e1",
+          characterUsed: false,
+          hand: [
+            makeTile({ id: "a1", gameValue: 7 }),
+            makeTile({ id: "a2", gameValue: 7 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "b1", gameValue: 7 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission46PendingSevensPlayerId: "p1",
+      },
+    });
+
+    const error = validateCharacterAbility(state, "p1", {
+      kind: "general_radar",
+      value: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   describe("E1 - General Radar", () => {
     it("validates successfully with valid payload", () => {
       const state = makeGameState({

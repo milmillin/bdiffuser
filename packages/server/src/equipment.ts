@@ -60,6 +60,19 @@ function legalityError(
   return { code, message };
 }
 
+const MISSION_46_PENDING_SEVENS_MESSAGE =
+  "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously";
+
+function isMission46PendingSevensCut(
+  state: Readonly<GameState>,
+  actorId: string,
+): boolean {
+  return (
+    state.mission === 46 &&
+    state.campaign?.mission46PendingSevensPlayerId === actorId
+  );
+}
+
 function isIntegerInRange(value: number, min: number, max: number): boolean {
   return Number.isInteger(value) && value >= min && value <= max;
 }
@@ -288,6 +301,13 @@ export function validateUseEquipment(
 
   const actor = getPlayer(state, actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  if (isMission46PendingSevensCut(state, actorId)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      MISSION_46_PENDING_SEVENS_MESSAGE,
+    );
+  }
 
   if (isRevealRedsForced(state, actor)) {
     return legalityError(
@@ -1560,6 +1580,13 @@ export function validateCharacterAbility(
 
   const actor = getPlayer(state, actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  if (isMission46PendingSevensCut(state, actorId)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      MISSION_46_PENDING_SEVENS_MESSAGE,
+    );
+  }
 
   if (isRevealRedsForced(state, actor)) {
     return legalityError(

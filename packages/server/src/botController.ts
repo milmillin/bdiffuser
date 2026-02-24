@@ -226,6 +226,11 @@ export async function getBotAction(
     return { action: forcedChooseAction, reasoning: null };
   }
 
+  const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
+  if (forcedMission46Action) {
+    return { action: forcedMission46Action, reasoning: null };
+  }
+
   const filtered = filterStateForPlayer(state, botId);
   const systemPrompt = buildSystemPrompt();
   const userMessage = buildUserMessage(filtered, chatContext || undefined);
@@ -515,6 +520,20 @@ function getForcedChooseNextAction(
   return { action: "chooseNextPlayer", targetPlayerId: target.id };
 }
 
+function getForcedMission46SevensCutAction(
+  state: GameState,
+  botId: string,
+): BotAction | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission46SevensCut") return null;
+  if (forced.playerId !== botId) return null;
+
+  const targets = buildSimultaneousFourCutValidationTargets(state);
+  if (!targets) return null;
+
+  return { action: "simultaneousFourCut" };
+}
+
 function collectBotGuessValues(
   uncutTiles: ReturnType<typeof getUncutTiles>,
 ): (number | "YELLOW")[] {
@@ -551,7 +570,8 @@ function pickGuessValueFromParity(
 function buildSimultaneousFourCutValidationTargets(
   state: GameState,
 ): Array<{ playerId: string; tileIndex: number }> | null {
-  const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  const targetValue =
+    state.mission === 46 ? 7 : state.campaign?.numberCards?.visible?.[0]?.value;
   if (typeof targetValue !== "number") return null;
 
   const targets: Array<{ playerId: string; tileIndex: number }> = [];
@@ -603,6 +623,11 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
     return forcedChooseAction;
+  }
+
+  const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
+  if (forcedMission46Action) {
+    return forcedMission46Action;
   }
 
   const bot = state.players.find((p) => p.id === botId)!;

@@ -750,13 +750,21 @@ export function executeSimultaneousFourCut(
   actorId: string,
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): GameAction {
-  const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  const isMission46 = state.mission === 46;
+  const numberCardValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  const targetValue = numberCardValue ?? (isMission46 ? 7 : undefined);
   if (targetValue == null) {
     // Should never happen if validation passed, but guard against it
     state.result = "loss_red_wire";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
     return { type: "gameOver", result: "loss_red_wire" };
+  }
+
+  if (state.mission === 46) {
+    state.campaign ??= {};
+    state.pendingForcedAction = undefined;
+    state.campaign.mission46PendingSevensPlayerId = undefined;
   }
 
   // Check all target tiles
@@ -780,40 +788,42 @@ export function executeSimultaneousFourCut(
       cuts.push({ playerId: target.playerId, tileIndex: target.tileIndex });
     }
 
-    // Mark special action as done
-    state.campaign ??= {};
-    state.campaign.mission23SpecialActionDone = true;
+    if (!isMission46) {
+      // Mark mission 23/39 special action as done.
+      state.campaign ??= {};
+      state.campaign.mission23SpecialActionDone = true;
 
-    // Mission 39: after the special action succeeds, deal all remaining
-    // Number cards equally starting from the captain, clockwise.
-    if (state.mission === 39) {
-      const numberCards = state.campaign.numberCards;
-      if (numberCards) {
-        const playerCount = state.players.length;
-        const captainIndex = state.players.findIndex((player) => player.isCaptain);
-        const startIndex = captainIndex >= 0 ? captainIndex : 0;
+      // Mission 39: after the special action succeeds, deal all remaining
+      // Number cards equally starting from the captain, clockwise.
+      if (state.mission === 39) {
+        const numberCards = state.campaign.numberCards;
+        if (numberCards) {
+          const playerCount = state.players.length;
+          const captainIndex = state.players.findIndex((player) => player.isCaptain);
+          const startIndex = captainIndex >= 0 ? captainIndex : 0;
 
-        numberCards.playerHands = {};
-        for (const player of state.players) {
-          numberCards.playerHands[player.id] = [];
-        }
+          numberCards.playerHands = {};
+          for (const player of state.players) {
+            numberCards.playerHands[player.id] = [];
+          }
 
-        let dealt = 0;
-        while (numberCards.deck.length > 0 && playerCount > 0) {
-          const recipient = state.players[(startIndex + dealt) % playerCount];
-          const card = numberCards.deck.shift()!;
-          card.faceUp = false;
-          numberCards.playerHands[recipient.id].push(card);
-          dealt++;
+          let dealt = 0;
+          while (numberCards.deck.length > 0 && playerCount > 0) {
+            const recipient = state.players[(startIndex + dealt) % playerCount];
+            const card = numberCards.deck.shift()!;
+            card.faceUp = false;
+            numberCards.playerHands[recipient.id].push(card);
+            dealt++;
+          }
         }
       }
-    }
 
-    // Unlock all remaining face-down equipment
-    for (const card of state.board.equipment) {
-      if (card.faceDown) {
-        card.faceDown = false;
-        card.unlocked = true;
+      // Mission 23/39: unlock all remaining face-down equipment.
+      for (const card of state.board.equipment) {
+        if (card.faceDown) {
+          card.faceDown = false;
+          card.unlocked = true;
+        }
       }
     }
 
@@ -827,7 +837,9 @@ export function executeSimultaneousFourCut(
       "simultaneousFourCut",
       state.mission === 39
         ? `designated 4 wires of value ${targetValue} — all match! Remaining Number cards dealt.`
-        : `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
+        : state.mission === 46
+          ? `designated 4 wires of value ${targetValue} — all match!`
+          : `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
     );
 
     if (checkWin(state)) {

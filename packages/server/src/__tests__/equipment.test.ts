@@ -601,6 +601,16 @@ describe("equipment validation matrix across shared game states", () => {
     },
   );
 
+  it("mission 46: rejects equipment use while simultaneous sevens cut is pending", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 46;
+    state.campaign = {
+      mission46PendingSevensPlayerId: "actor",
+    };
+
+    expectLegalityCode(state, "actor", "rewinder", "MISSION_RULE_VIOLATION");
+  });
+
   it("rejects equipment use when Constraint G is active for the actor", () => {
     const state = buildStateForEquipmentMatrix("rewinder");
     state.mission = 32;

@@ -11,6 +11,7 @@ import { makePlayer, withSeededRandom } from "@bomb-busters/shared/testing";
 import {
   executeDualCut,
   executeRevealReds,
+  executeSimultaneousFourCut,
   executeSimultaneousRedCut,
   executeSoloCut,
 } from "../gameLogic";
@@ -325,6 +326,32 @@ function resolveForcedAction(state: GameState): boolean {
         completedCount: nextCompleted,
       };
     }
+    return true;
+  }
+
+  if (forced.kind === "mission46SevensCut") {
+    const targets: Array<{ playerId: string; tileIndex: number }> = [];
+    for (const player of state.players) {
+      for (let i = 0; i < player.hand.length; i++) {
+        const tile = player.hand[i];
+        if (tile.cut || tile.gameValue !== 7) continue;
+        targets.push({ playerId: player.id, tileIndex: i });
+      }
+    }
+
+    const error = validateActionWithHooks(state, {
+      type: "simultaneousFourCut",
+      actorId: forced.playerId,
+      targets,
+    });
+    if (error) {
+      throw new Error(
+        `Mission ${state.mission}: mission46SevensCut forced action invalid ` +
+        `for ${forced.playerId}: ${error.code} ${error.message}`,
+      );
+    }
+
+    executeSimultaneousFourCut(state, forced.playerId, targets);
     return true;
   }
 
