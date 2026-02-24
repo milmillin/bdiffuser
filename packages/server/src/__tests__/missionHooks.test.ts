@@ -520,6 +520,65 @@ describe("missionHooks dispatcher", () => {
       expect(renderLogDetail(effectLog!.detail)).toContain("explosion");
     });
 
+    it("mission 65: flips a completed value card face down", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "p1-5a", gameValue: 5, cut: true }),
+          makeTile({ id: "p1-5b", gameValue: 5, cut: false }),
+        ],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-5", gameValue: 5, cut: true })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [makeTile({ id: "p3-5", gameValue: 5, cut: true })],
+      });
+
+      const state = makeGameState({
+        mission: 65,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 0,
+        turnNumber: 9,
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [],
+            discard: [],
+            playerHands: {
+              p1: [
+                { id: "c-p1-5", value: 5, faceUp: true },
+                { id: "c-p1-8", value: 8, faceUp: true },
+              ],
+              p2: [{ id: "c-p2-9", value: 9, faceUp: true }],
+              p3: [{ id: "c-p3-2", value: 2, faceUp: true }],
+            },
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(65, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "p1", value: 5, tilesCut: 2 },
+        cutValue: 5,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.numberCards?.playerHands["p1"]?.[0]?.faceUp).toBe(false);
+      expect(state.campaign?.numberCards?.playerHands["p1"]?.[1]?.faceUp).toBe(true);
+
+      const completionLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("personal_number_cards:completed=5|flipped=1"),
+      );
+      expect(completionLog).toBeDefined();
+    });
+
     it("mission 11: does not trigger loss for non-matching blue value", () => {
       const state = makeGameState({
         mission: 11,

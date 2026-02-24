@@ -3299,6 +3299,36 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
     }
   },
 
+  resolve(_rule: PersonalNumberCardsRuleDef, ctx: ResolveHookContext): void {
+    if (!ctx.cutSuccess || typeof ctx.cutValue !== "number") return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    const playerHands = numberCards?.playerHands;
+    if (!numberCards || !playerHands) return;
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+    if (projectedCutCount < 4) return;
+
+    let flippedCount = 0;
+    for (const hand of Object.values(playerHands)) {
+      for (const card of hand) {
+        if (card.value === ctx.cutValue && card.faceUp) {
+          card.faceUp = false;
+          flippedCount++;
+        }
+      }
+    }
+    if (flippedCount === 0) return;
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `personal_number_cards:completed=${ctx.cutValue}|flipped=${flippedCount}`,
+      timestamp: Date.now(),
+    });
+  },
+
   endTurn(_rule: PersonalNumberCardsRuleDef, ctx: EndTurnHookContext): void {
     if (ctx.state.phase === "finished") return;
 
