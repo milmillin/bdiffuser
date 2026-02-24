@@ -2830,11 +2830,25 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
 
     ctx.state.campaign ??= {};
     const playerHands: Record<string, { id: string; value: number; faceUp: boolean }[]> = {};
-    const cardsPerPlayer = Math.max(1, Math.floor(deckValues.length / ctx.state.players.length));
+    const playerCount = ctx.state.players.length;
+    const baseCardsPerPlayer = Math.floor(deckValues.length / playerCount);
+    const extraCards = deckValues.length % playerCount;
+    const captainIndex = Math.max(0, ctx.state.players.findIndex((player) => player.isCaptain));
+    const cardsByPlayerIndex = Array.from(
+      { length: playerCount },
+      () => baseCardsPerPlayer,
+    );
 
-    for (let i = 0; i < ctx.state.players.length; i++) {
+    // Mission 65 setup deals as equally as possible, with the extra cards
+    // starting from captain and then clockwise.
+    for (let offset = 0; offset < extraCards; offset++) {
+      const recipientIndex = (captainIndex + offset) % playerCount;
+      cardsByPlayerIndex[recipientIndex]++;
+    }
+
+    for (let i = 0; i < playerCount; i++) {
       const player = ctx.state.players[i];
-      const hand = deckValues.splice(0, cardsPerPlayer);
+      const hand = deckValues.splice(0, cardsByPlayerIndex[i]);
       playerHands[player.id] = hand.map((value, idx) => ({
         id: `m65-${player.id}-${idx}-${value}`,
         value,
@@ -2857,7 +2871,9 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `personal_number_cards:init|players=${ctx.state.players.length}|cardsPerPlayer=${cardsPerPlayer}`,
+      detail:
+        `personal_number_cards:init|players=${playerCount}` +
+        `|baseCardsPerPlayer=${baseCardsPerPlayer}|extraCards=${extraCards}`,
       timestamp: Date.now(),
     });
   },
