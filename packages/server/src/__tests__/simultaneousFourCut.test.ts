@@ -531,6 +531,63 @@ describe("executeSimultaneousFourCut", () => {
     expect(state.players[2].infoTokens).toEqual([]);
   });
 
+  it("mission 39: grants dealt-value token when value is in hand even if only cut on that stand", () => {
+    const state = makeGameState({
+      mission: 39,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-5", gameValue: 5 }),
+            makeTile({ id: "p1-3", gameValue: 3 }),
+          ],
+          isCaptain: false,
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-5", gameValue: 5 }),
+            makeTile({ id: "p2-3-cut", gameValue: 3, cut: true }),
+            makeTile({ id: "p2-8", gameValue: 8 }),
+          ],
+          isCaptain: true,
+        }),
+        makePlayer({
+          id: "p3",
+          hand: [
+            makeTile({ id: "p3-5a", gameValue: 5 }),
+            makeTile({ id: "p3-5b", gameValue: 5 }),
+            makeTile({ id: "p3-9", gameValue: 9 }),
+          ],
+          isCaptain: false,
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "visible-5", value: 5, faceUp: true })],
+          deck: [
+            makeNumberCard({ id: "d1", value: 3, faceUp: true }),
+            makeNumberCard({ id: "d2", value: 1, faceUp: true }),
+            makeNumberCard({ id: "d3", value: 2, faceUp: true }),
+          ],
+        }),
+      },
+    });
+
+    const action = executeSimultaneousFourCut(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 1 },
+    ]);
+
+    expect(action.type).toBe("simultaneousFourCutResult");
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 3, position: -1, isYellow: false },
+    ]);
+  });
+
   it("mission 46 success: cuts sevens without mission-23 equipment unlock side effects", () => {
     const eq1 = makeEquipmentCard({ id: "eq1", faceDown: true, unlocked: false });
     const eq2 = makeEquipmentCard({ id: "eq2", faceDown: true, unlocked: false });

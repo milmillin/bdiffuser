@@ -831,12 +831,15 @@ export function executeSimultaneousFourCut(
             card.faceUp = false;
             numberCards.playerHands[recipient.id].push(card);
 
-            // Mission 39: each dealt Number card can grant an off-stand info token
-            // if the recipient still has that value in hand.
+            // Mission 39 FAQ: grant token when the dealt value is in the
+            // recipient's hand (cut or uncut), but ignore values no longer in game.
             const hasMatchingValueInHand = recipient.hand.some(
-              (tile) => !tile.cut && tile.gameValue === card.value,
+              (tile) => tile.gameValue === card.value,
             );
-            if (hasMatchingValueInHand) {
+            const valueStillInGame = state.players.some((player) =>
+              player.hand.some((tile) => !tile.cut && tile.gameValue === card.value),
+            );
+            if (hasMatchingValueInHand && valueStillInGame) {
               recipient.infoTokens.push(
                 applyMissionInfoTokenVariant(
                   state,
