@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeGameState,
@@ -28,7 +29,7 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.nanoTracker).toEqual({ position: 0, max: 6 });
     expect(
       state.log.some(
-        (entry) => entry.action === "hookSetup" && entry.detail.startsWith("nano_progression:"),
+        (entry) => entry.action === "hookSetup" && renderLogDetail(entry.detail).startsWith("nano_progression:"),
       ),
     ).toBe(true);
   });

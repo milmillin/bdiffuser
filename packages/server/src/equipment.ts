@@ -6,12 +6,18 @@ import type {
   CharacterId,
   EquipmentGuessValue,
   GameAction,
+  GameLogDetail,
   GameState,
   Player,
   UseEquipmentPayload,
   WireTile,
 } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS, DOUBLE_DETECTOR_CHARACTERS, wireLabel } from "@bomb-busters/shared";
+import {
+  EQUIPMENT_DEFS,
+  DOUBLE_DETECTOR_CHARACTERS,
+  logTemplate,
+  wireLabel,
+} from "@bomb-busters/shared";
 import {
   getTileByFlatIndex,
   getUncutTiles,
@@ -23,6 +29,7 @@ import {
 import { executeDualCut, advanceTurn } from "./gameLogic.js";
 import { dispatchHooks } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, isMission40CountHintPlayer } from "./infoTokenRules.js";
+import { pushGameLog } from "./gameLog.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -647,13 +654,16 @@ export function validateUseEquipment(
   }
 }
 
-function addLog(state: GameState, playerId: string, action: string, detail: string): void {
-  state.log.push({
-    turn: state.turnNumber,
+function addLog(
+  state: GameState,
+  playerId: string,
+  action: string,
+  detail: GameLogDetail | string,
+): void {
+  pushGameLog(state, {
     playerId,
     action,
     detail,
-    timestamp: Date.now(),
   });
 }
 
@@ -919,7 +929,14 @@ export function executeUseEquipment(
       };
     }
     case "coffee_mug": {
-      addLog(state, actorId, "useEquipment", `used Coffee Mug and passed turn to ${payload.targetPlayerId}`);
+      addLog(
+        state,
+        actorId,
+        "useEquipment",
+        logTemplate("equipment.coffee_mug.pass_turn", {
+          targetPlayerId: payload.targetPlayerId,
+        }),
+      );
       setNextPlayerFromCoffee(state, payload.targetPlayerId);
       return {
         type: "equipmentUsed",

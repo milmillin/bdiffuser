@@ -12,7 +12,7 @@ import type {
   GameResult,
   MissionAudioState,
 } from "@bomb-busters/shared";
-import { MISSION_SCHEMAS, wireLabel } from "@bomb-busters/shared";
+import { MISSION_SCHEMAS, logTemplate, wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
@@ -61,6 +61,7 @@ import {
 } from "./setupTokenRules.js";
 import { applyMission25ChatPenalty } from "./mission25.js";
 import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRules.js";
+import { pushGameLog } from "./gameLog.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -279,6 +280,10 @@ export class BombBustersServer extends Server<Env> {
         this.handleMission22TokenPassChoice(connection, msg.value);
         break;
       case "detectorTileChoice":
+        if (msg.tileIndex == null) {
+          this.sendMsg(connection, { type: "error", message: "Missing detector tile index" });
+          break;
+        }
         this.handleDetectorTileChoice(connection, msg.tileIndex);
         break;
       case "missionAudioControl":
@@ -538,7 +543,7 @@ export class BombBustersServer extends Server<Env> {
 
     const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(this.room.gameState);
     for (const placement of autoPlacements) {
-      this.room.gameState.log.push({
+      pushGameLog(this.room.gameState, {
         turn: 0,
         playerId: placement.playerId,
         action: "placeInfoToken",
@@ -613,7 +618,7 @@ export class BombBustersServer extends Server<Env> {
     }, player);
     player.infoTokens.push(token);
 
-    state.log.push({
+    pushGameLog(state, {
       turn: 0,
       playerId: conn.id,
       action: "placeInfoToken",
@@ -948,11 +953,13 @@ export class BombBustersServer extends Server<Env> {
     state.currentPlayerIndex = targetIndex;
     state.pendingForcedAction = undefined;
 
-    state.log.push({
+    pushGameLog(state, {
       turn: state.turnNumber,
       playerId: forced.designatorId,
       action: "designateCutter",
-      detail: `designated ${target.name} (${targetPlayerId}) to cut`,
+      detail: logTemplate("designate_cutter.selected", {
+        targetPlayerId,
+      }),
       timestamp: Date.now(),
     });
 
@@ -1016,7 +1023,7 @@ export class BombBustersServer extends Server<Env> {
     }, recipient);
     recipient.infoTokens.push(token);
 
-    state.log.push({
+    pushGameLog(state, {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
@@ -1257,7 +1264,7 @@ export class BombBustersServer extends Server<Env> {
 
         const token = player.infoTokens[player.infoTokens.length - 1];
         if (token) {
-          state.log.push({
+          pushGameLog(state, {
             turn: 0,
             playerId: player.id,
             action: "placeInfoToken",
@@ -1347,7 +1354,7 @@ export class BombBustersServer extends Server<Env> {
         state.phase = "finished";
         emitMissionFailureTelemetry(state, "loss_timer", "system");
         this.maybeRecordMissionFailure(previousResult, state);
-        state.log.push({
+        pushGameLog(state, {
           turn: state.turnNumber,
           playerId: "system",
           action: "timerExpired",
@@ -1470,11 +1477,13 @@ export class BombBustersServer extends Server<Env> {
         state.currentPlayerIndex = targetIndex;
         state.pendingForcedAction = undefined;
 
-        state.log.push({
+        pushGameLog(state, {
           turn: state.turnNumber,
           playerId: forced.designatorId,
           action: "designateCutter",
-          detail: `designated ${target.name} (${botAction.targetPlayerId}) to cut`,
+          detail: logTemplate("designate_cutter.selected", {
+            targetPlayerId: botAction.targetPlayerId,
+          }),
           timestamp: Date.now(),
         });
 

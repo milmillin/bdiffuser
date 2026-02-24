@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -27,7 +28,7 @@ describe("mission 11 game logic", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: 1000,
         },
       ],
@@ -67,7 +68,7 @@ describe("mission 11 game logic", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: 1000,
         },
       ],
@@ -97,7 +98,7 @@ describe("mission 11 game logic", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: 1000,
         },
       ],
@@ -132,7 +133,7 @@ describe("mission 11 game logic", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: 1000,
         },
       ],
@@ -150,7 +151,7 @@ describe("mission 11 game logic", () => {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: "blue_as_red:7",
+      detail: logText("blue_as_red:7"),
       timestamp: 1000,
     };
 

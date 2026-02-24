@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   EQUIPMENT_DEFS,
+  logText,
+  renderLogDetail,
   type ActionLegalityCode,
   type BaseEquipmentId,
   type GameState,
@@ -599,7 +601,7 @@ describe("equipment validation matrix across shared game states", () => {
         turn: 0,
         playerId: "system",
         action: "hookSetup",
-        detail: "blue_as_red:7",
+        detail: logText("blue_as_red:7"),
         timestamp: 1000,
       },
     ];
@@ -1537,14 +1539,17 @@ describe("equipment execution", () => {
   it("coffee thermos passes turn to selected player", () => {
     const actor = makePlayer({
       id: "actor",
+      name: "Actor",
       hand: [makeTile({ id: "a1", gameValue: 5 })],
     });
     const p2 = makePlayer({
       id: "p2",
+      name: "Bob",
       hand: [makeTile({ id: "p2-1", gameValue: 4 })],
     });
     const p3 = makePlayer({
       id: "p3",
+      name: "Cara",
       hand: [makeTile({ id: "p3-1", gameValue: 6 })],
     });
 
@@ -1576,6 +1581,19 @@ describe("equipment execution", () => {
     expect(state.currentPlayerIndex).toBe(2);
     expect(state.turnNumber).toBe(2);
     expect(state.board.equipment[0].used).toBe(true);
+
+    const lastLog = state.log[state.log.length - 1];
+    expect(lastLog?.detail).toEqual({
+      type: "template",
+      template: "equipment.coffee_mug.pass_turn",
+      params: { targetPlayerId: "p3" },
+    });
+    expect(
+      renderLogDetail(
+        lastLog!.detail,
+        (playerId) => state.players.find((player) => player.id === playerId)?.name ?? playerId,
+      ),
+    ).toBe("used Coffee Mug and passed turn to Cara");
   });
 });
 

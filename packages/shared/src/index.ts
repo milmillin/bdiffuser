@@ -11,3 +11,4 @@ export * from "./visibility.js";
 export * from "./setupInfoTokenRules.js";
 export * from "./constraintCards.js";
 export * from "./challengeCards.js";
+export * from "./logDetail.js";

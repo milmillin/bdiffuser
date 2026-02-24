@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { renderLogDetail } from "@bomb-busters/shared";
 import type { GameLogEntry, ClientPlayer, GameResult } from "@bomb-busters/shared";
 
 export function ActionLog({
@@ -34,7 +35,7 @@ export function ActionLog({
           <div key={i} className="text-xs text-gray-300 leading-snug">
             <span className="text-gray-500 font-mono mr-1">T{entry.turn}</span>
             <span className="text-gray-400">{playerName(entry.playerId)}:</span>{" "}
-            <FormattedDetail detail={entry.detail} />
+            <FormattedDetail detail={renderLogDetail(entry.detail, playerName)} />
           </div>
         ))}
         {result && (

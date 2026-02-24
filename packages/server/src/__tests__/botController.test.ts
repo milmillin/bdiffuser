@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logText } from "@bomb-busters/shared";
 import {
   makeCampaignState,
   makeGameState,
@@ -196,7 +197,7 @@ describe("getBotAction fallback", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: Date.now(),
         },
       ],

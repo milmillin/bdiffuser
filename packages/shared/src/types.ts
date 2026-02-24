@@ -488,11 +488,28 @@ export const ALL_MISSION_IDS = [
 
 export type MissionId = (typeof ALL_MISSION_IDS)[number];
 
+export type LogTemplateKey =
+  | "equipment.coffee_mug.pass_turn"
+  | "designate_cutter.selected";
+
+export interface LogTextDetail {
+  type: "text";
+  text: string;
+}
+
+export interface LogTemplateDetail {
+  type: "template";
+  template: LogTemplateKey;
+  params: Record<string, string | number | boolean>;
+}
+
+export type GameLogDetail = LogTextDetail | LogTemplateDetail;
+
 export interface GameLogEntry {
   turn: number;
   playerId: string;
   action: string;
-  detail: string;
+  detail: GameLogDetail;
   timestamp: number;
 }
 

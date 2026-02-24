@@ -2,6 +2,7 @@ import type { ClientGameState } from "@bomb-busters/shared";
 import {
   MISSIONS,
   describeWirePoolSpec,
+  renderLogDetail,
   resolveMissionSetup,
 } from "@bomb-busters/shared";
 
@@ -355,7 +356,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
       const playerName =
         state.players.find((p) => p.id === entry.playerId)?.name ??
         entry.playerId;
-      lines.push(`  Turn ${entry.turn}: ${playerName} - ${entry.detail}`);
+      const detailText = renderLogDetail(
+        entry.detail,
+        (playerId) => state.players.find((p) => p.id === playerId)?.name ?? playerId,
+      );
+      lines.push(`  Turn ${entry.turn}: ${playerName} - ${detailText}`);
     }
   }
 

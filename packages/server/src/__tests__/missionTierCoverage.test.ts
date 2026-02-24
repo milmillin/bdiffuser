@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BaseEquipmentId } from "@bomb-busters/shared";
-import { requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
+import { logText, requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeEquipmentCard,
@@ -218,7 +218,7 @@ describe("mission complexity tier representative coverage", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "blue_as_red:7",
+          detail: logText("blue_as_red:7"),
           timestamp: 1000,
         },
       ],
@@ -939,7 +939,7 @@ describe("mission complexity tier representative coverage", () => {
         turn: 0,
         playerId: "system",
         action: "hookSetup",
-        detail: "blue_as_red:7",
+        detail: logText("blue_as_red:7"),
         timestamp: 1000,
       },
     ];

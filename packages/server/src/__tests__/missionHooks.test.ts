@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { logText, renderLogDetail } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -108,11 +109,11 @@ describe("missionHooks dispatcher", () => {
       dispatchHooks(10, { point: "setup", state });
 
       const timerLog = state.log.find(
-        (e) => e.action === "hookSetup" && e.detail.startsWith("timer:"),
+        (e) => e.action === "hookSetup" && renderLogDetail(e.detail).startsWith("timer:"),
       );
       expect(timerLog).toBeDefined();
-      expect(timerLog!.detail).toContain("900s");
-      expect(timerLog!.detail).toContain("audio:true");
+      expect(renderLogDetail(timerLog!.detail)).toContain("900s");
+      expect(renderLogDetail(timerLog!.detail)).toContain("audio:true");
     });
 
     it("mission 10: sets timerDeadline on game state (900s from now)", () => {
@@ -145,9 +146,9 @@ describe("missionHooks dispatcher", () => {
       expect(state.timerDeadline!).toBeLessThanOrEqual(after + 720_000);
 
       const timerLog = state.log.find(
-        (e) => e.action === "hookSetup" && e.detail.startsWith("timer:"),
+        (e) => e.action === "hookSetup" && renderLogDetail(e.detail).startsWith("timer:"),
       );
-      expect(timerLog?.detail).toContain("720s");
+      expect(renderLogDetail(timerLog!.detail)).toContain("720s");
     });
 
     it("mission 10: timerDeadline is not set for non-timer missions", () => {
@@ -161,10 +162,10 @@ describe("missionHooks dispatcher", () => {
       dispatchHooks(10, { point: "setup", state });
 
       const turnOrderLog = state.log.find(
-        (e) => e.action === "hookSetup" && e.detail.includes("dynamic_turn_order"),
+        (e) => e.action === "hookSetup" && renderLogDetail(e.detail).includes("dynamic_turn_order"),
       );
       expect(turnOrderLog).toBeDefined();
-      expect(turnOrderLog!.detail).toContain("captain");
+      expect(renderLogDetail(turnOrderLog!.detail)).toContain("captain");
     });
 
     it("mission 11: records hidden red value in log", () => {
@@ -172,10 +173,10 @@ describe("missionHooks dispatcher", () => {
       dispatchHooks(11, { point: "setup", state });
 
       const blueAsRedLog = state.log.find(
-        (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:"),
+        (e) => e.action === "hookSetup" && renderLogDetail(e.detail).startsWith("blue_as_red:"),
       );
       expect(blueAsRedLog).toBeDefined();
-      const value = parseInt(blueAsRedLog!.detail.split(":")[1], 10);
+      const value = parseInt(renderLogDetail(blueAsRedLog!.detail).split(":")[1], 10);
       expect(value).toBeGreaterThanOrEqual(1);
       expect(value).toBeLessThanOrEqual(12);
     });
@@ -208,7 +209,7 @@ describe("missionHooks dispatcher", () => {
 
         expect(state.board.equipment.some((eq) => eq.unlockValue === 7)).toBe(false);
         const replaceLog = state.log.find(
-          (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:equipment_replaced:"),
+          (e) => e.action === "hookSetup" && renderLogDetail(e.detail).startsWith("blue_as_red:equipment_replaced:"),
         );
         expect(replaceLog).toBeDefined();
       } finally {
@@ -285,10 +286,10 @@ describe("missionHooks dispatcher", () => {
       }
 
       const setupLog = state.log.find(
-        (entry) => entry.action === "hookSetup" && entry.detail.startsWith("hidden_equipment_pile:"),
+        (entry) => entry.action === "hookSetup" && renderLogDetail(entry.detail).startsWith("hidden_equipment_pile:"),
       );
       expect(setupLog).toBeDefined();
-      expect(setupLog?.detail).toBe("hidden_equipment_pile:7");
+      expect(renderLogDetail(setupLog!.detail)).toBe("hidden_equipment_pile:7");
     });
 
     it("mission 9: initializes sequence cards and pointer", () => {
@@ -317,7 +318,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "blue_as_red:7",
+            detail: logText("blue_as_red:7"),
             timestamp: 1000,
           },
         ],
@@ -337,7 +338,7 @@ describe("missionHooks dispatcher", () => {
       // Hook effect should be logged
       const effectLog = state.log.find((e) => e.action === "hookEffect");
       expect(effectLog).toBeDefined();
-      expect(effectLog!.detail).toContain("explosion");
+      expect(renderLogDetail(effectLog!.detail)).toContain("explosion");
     });
 
     it("mission 11: does not trigger loss for non-matching blue value", () => {
@@ -349,7 +350,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "blue_as_red:7",
+            detail: logText("blue_as_red:7"),
             timestamp: 1000,
           },
         ],
@@ -376,7 +377,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "blue_as_red:7",
+            detail: logText("blue_as_red:7"),
             timestamp: 1000,
           },
         ],
@@ -434,7 +435,7 @@ describe("missionHooks dispatcher", () => {
       );
       expect(marker?.value).toBe(1);
       const effectLog = state.log.find(
-        (e) => e.action === "hookEffect" && e.detail.startsWith("sequence_priority:advance:"),
+        (e) => e.action === "hookEffect" && renderLogDetail(e.detail).startsWith("sequence_priority:advance:"),
       );
       expect(effectLog).toBeDefined();
     });
@@ -733,7 +734,7 @@ describe("missionHooks dispatcher", () => {
       expect(state.result).toBe("loss_detonator");
       expect(state.phase).toBe("finished");
       const effectLog = state.log.find(
-        (e) => e.action === "hookEffect" && e.detail.includes("stuck"),
+        (e) => e.action === "hookEffect" && renderLogDetail(e.detail).includes("stuck"),
       );
       expect(effectLog).toBeDefined();
     });
@@ -974,7 +975,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "ordering_marker",
+            detail: logText("ordering_marker"),
             timestamp: 1,
           });
         },
@@ -983,7 +984,7 @@ describe("missionHooks dispatcher", () => {
         setup(_rule, ctx) {
           // Should see the log entry added by timer (index 0)
           const markerExists = ctx.state.log.some(
-            (e) => e.detail === "ordering_marker",
+            (e) => renderLogDetail(e.detail) === "ordering_marker",
           );
           executionLog.push(`marker_visible:${markerExists}`);
         },
@@ -1173,7 +1174,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "timer:trace_test",
+            detail: logText("timer:trace_test"),
             timestamp: 1,
           });
         },
@@ -1184,7 +1185,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "dto:trace_test",
+            detail: logText("dto:trace_test"),
             timestamp: 1,
           });
         },
@@ -1341,7 +1342,7 @@ describe("missionHooks dispatcher", () => {
             turn: 0,
             playerId: "system",
             action: "hookSetup",
-            detail: "blue_as_red:5",
+            detail: logText("blue_as_red:5"),
             timestamp: 1,
           });
         },

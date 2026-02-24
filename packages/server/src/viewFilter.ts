@@ -10,7 +10,7 @@ import type {
   LobbyState,
   GameLogEntry,
 } from "@bomb-busters/shared";
-import { filterCampaignState } from "@bomb-busters/shared";
+import { filterCampaignState, isLogTextDetail, logText } from "@bomb-busters/shared";
 
 /**
  * Filter game state for a specific player.
@@ -36,7 +36,13 @@ export function filterStateForPlayer(
       ? { campaign: filterCampaignState(state.campaign, playerId) }
       : {}),
     ...(state.pendingForcedAction
-      ? { pendingForcedAction: state.pendingForcedAction }
+      ? {
+          pendingForcedAction:
+            state.pendingForcedAction.kind === "detectorTileChoice" &&
+            state.pendingForcedAction.targetPlayerId !== playerId
+              ? { ...state.pendingForcedAction, matchingTileIndices: [] }
+              : state.pendingForcedAction,
+        }
       : {}),
     ...(state.missionAudio
       ? { missionAudio: state.missionAudio }
@@ -79,12 +85,20 @@ function filterLog(log: GameLogEntry[]): GameLogEntry[] {
   // Keep hidden card values server-side only.
   return log
     .filter(
-      (entry) => !(entry.action === "hookSetup" && entry.detail.startsWith("blue_as_red:")),
+      (entry) =>
+        !(
+          entry.action === "hookSetup"
+          && isLogTextDetail(entry.detail)
+          && entry.detail.text.startsWith("blue_as_red:")
+        ),
     )
     .map((entry) => {
-      const detail = redactHiddenCardNumbers(entry.action, entry.detail);
-      if (detail === entry.detail) return entry;
-      return { ...entry, detail };
+      if (!isLogTextDetail(entry.detail)) return entry;
+
+      const text = redactHiddenCardNumbers(entry.action, entry.detail.text);
+      if (text === entry.detail.text) return entry;
+
+      return { ...entry, detail: logText(text) };
     });
 }
 
@@ -155,7 +169,12 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
       ? { campaign: filterCampaignState(state.campaign, "__spectator__") }
       : {}),
     ...(state.pendingForcedAction
-      ? { pendingForcedAction: state.pendingForcedAction }
+      ? {
+          pendingForcedAction:
+            state.pendingForcedAction.kind === "detectorTileChoice"
+              ? { ...state.pendingForcedAction, matchingTileIndices: [] }
+              : state.pendingForcedAction,
+        }
       : {}),
     ...(state.missionAudio
       ? { missionAudio: state.missionAudio }

@@ -39,8 +39,10 @@ import type {
 import {
   EQUIPMENT_DEFS,
   MISSION_SCHEMAS,
+  isLogTextDetail,
   type MissionHookRuleDef,
 } from "@bomb-busters/shared";
+import { pushGameLog } from "./gameLog.js";
 
 // ── Hook Point ─────────────────────────────────────────────
 
@@ -429,12 +431,14 @@ export function dispatchHooks(
  * Returns null if the setup marker is missing or malformed.
  */
 export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
-  const setupEntry = state.log.find(
-    (e) => e.action === "hookSetup" && e.detail.startsWith("blue_as_red:"),
-  );
-  if (!setupEntry) return null;
+  const setupEntry = state.log.find((e) => {
+    if (e.action !== "hookSetup") return false;
+    if (!isLogTextDetail(e.detail)) return false;
+    return e.detail.text.startsWith("blue_as_red:");
+  });
+  if (!setupEntry || !isLogTextDetail(setupEntry.detail)) return null;
 
-  const value = Number.parseInt(setupEntry.detail.split(":")[1] ?? "", 10);
+  const value = Number.parseInt(setupEntry.detail.text.split(":")[1] ?? "", 10);
   return Number.isFinite(value) ? value : null;
 }
 
@@ -564,7 +568,7 @@ function applyNanoDelta(
   const before = tracker.position;
   tracker.position = clampProgress(before + delta, tracker.max);
 
-  state.log.push({
+  pushGameLog(state, {
     turn: state.turnNumber,
     playerId: actorId,
     action: "hookEffect",
@@ -787,7 +791,7 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
     };
     setSequencePointer(ctx.state, 0);
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -856,7 +860,7 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
     if (pointer < rule.cardCount - 1) {
       const nextPointer = pointer + 1;
       setSequencePointer(ctx.state, nextPointer);
-      ctx.state.log.push({
+      pushGameLog(ctx.state, {
         turn: ctx.state.turnNumber,
         playerId: ctx.action.actorId,
         action: "hookEffect",
@@ -900,7 +904,7 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
     ctx.state.result = "loss_detonator";
     ctx.state.phase = "finished";
     emitMissionFailureTelemetry(ctx.state, "loss_detonator", currentPlayer.id, null);
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: currentPlayer.id,
       action: "hookEffect",
@@ -925,7 +929,7 @@ registerHookHandler<"timer">("timer", {
     ctx.state.timerDeadline = Date.now() + durationSeconds * 1000;
 
     // Store timer config in the log so downstream systems can read it.
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -942,7 +946,7 @@ registerHookHandler<"timer">("timer", {
  */
 registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
   setup(rule: DynamicTurnOrderRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1013,7 +1017,7 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
       replacedCount++;
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1021,7 +1025,7 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
       timestamp: Date.now(),
     });
     if (replacedCount > 0) {
-      ctx.state.log.push({
+      pushGameLog(ctx.state, {
         turn: 0,
         playerId: "system",
         action: "hookSetup",
@@ -1047,7 +1051,7 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
           ? ctx.action.targetPlayerId
           : null;
       emitMissionFailureTelemetry(ctx.state, "loss_red_wire", ctx.action.actorId, targetPlayerId);
-      ctx.state.log.push({
+      pushGameLog(ctx.state, {
         turn: ctx.state.turnNumber,
         playerId: ctx.action.actorId,
         action: "hookEffect",
@@ -1096,7 +1100,7 @@ registerHookHandler<"equipment_double_lock">("equipment_double_lock", {
       card.secondaryLockCutsRequired = requiredSecondaryCuts;
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1146,7 +1150,7 @@ registerHookHandler<"number_deck_equipment_reveal">("number_deck_equipment_revea
     }
 
     const firstVisible = ctx.state.campaign.numberCards.visible[0]?.value;
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1203,7 +1207,7 @@ registerHookHandler<"number_deck_equipment_reveal">("number_deck_equipment_revea
     const skippedValues = revealMission15NextNumberCard(ctx, numberCards);
     const nextVisibleValue = numberCards.visible[0]?.value;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
@@ -1231,7 +1235,7 @@ registerHookHandler<"hidden_equipment_pile">("hidden_equipment_pile", {
   setup(rule: HiddenEquipmentPileRuleDef, ctx: SetupHookContext): void {
     ctx.state.board.equipment = buildHiddenEquipmentPile(rule.pileSize);
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1254,7 +1258,7 @@ registerHookHandler<"nano_progression">("nano_progression", {
     const start = clampProgress(rule.start, max);
     ctx.state.campaign!.nanoTracker = { position: start, max };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1312,7 +1316,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
       playerOxygen,
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1343,7 +1347,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
       }
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: actorId,
       action: "hookEffect",
@@ -1376,7 +1380,7 @@ registerHookHandler<"challenge_rewards">("challenge_rewards", {
       completed: [],
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1425,7 +1429,7 @@ registerHookHandler<"challenge_rewards">("challenge_rewards", {
       );
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
@@ -1453,7 +1457,7 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     setActionPointer(ctx.state, position % cycle);
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1477,7 +1481,7 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     setActionPointer(ctx.state, tracker.position % cycle);
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
@@ -1608,7 +1612,7 @@ function setupMission18ForcedAction(state: GameState, activePlayer: import("@bom
     radarResults,
   };
 
-  state.log.push({
+  pushGameLog(state, {
     turn: state.turnNumber,
     playerId: "system",
     action: "hookEffect",
@@ -1659,7 +1663,7 @@ registerHookHandler<"forced_general_radar_flow">("forced_general_radar_flow", {
       }
     }
 
-    state.log.push({
+    pushGameLog(state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1766,7 +1770,7 @@ registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
       playerHands: {},
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -1789,7 +1793,7 @@ registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
 
     const discarded = ctx.state.board.equipment.splice(eqIndex, 1)[0];
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: "system",
       action: "hookEffect",
@@ -1864,7 +1868,7 @@ registerHookHandler<"yellow_trigger_token_pass">("yellow_trigger_token_pass", {
       completedCount: 0,
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: "system",
       action: "hookEffect",
@@ -1971,7 +1975,7 @@ function autoFlipStuckConstraints(state: GameState, playerId: string): void {
 
   const flipConstraint = (c: { id: string; active: boolean }) => {
     c.active = false;
-    state.log.push({
+    pushGameLog(state, {
       turn: state.turnNumber,
       playerId,
       action: "hookEffect",
@@ -2056,7 +2060,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
       };
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2201,7 +2205,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
       // The base game already advanced detonator by 1; advance by 1 more
       ctx.state.board.detonatorPosition += 1;
 
-      ctx.state.log.push({
+      pushGameLog(ctx.state, {
         turn: ctx.state.turnNumber,
         playerId: actorId,
         action: "hookEffect",
@@ -2228,7 +2232,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
  */
 registerHookHandler<"audio_prompt">("audio_prompt", {
   setup(_rule: AudioPromptRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "",
       action: "hook",
@@ -2245,7 +2249,7 @@ registerHookHandler<"audio_prompt">("audio_prompt", {
  */
 registerHookHandler<"no_spoken_numbers">("no_spoken_numbers", {
   setup(_rule: NoSpokenNumbersRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "",
       action: "hook",
@@ -2267,7 +2271,7 @@ registerHookHandler<"no_markers_memory_mode">("no_markers_memory_mode", {
     }
     // Set a flag that gameLogic will check when placing info tokens on failure.
     (ctx.state.campaign as Record<string, unknown>).noMarkersMemoryMode = true;
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "",
       action: "hook",
@@ -2288,7 +2292,7 @@ registerHookHandler<"even_odd_tokens">("even_odd_tokens", {
   setup(_rule: EvenOddTokensRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).evenOddTokenMode = true;
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2307,7 +2311,7 @@ registerHookHandler<"count_tokens">("count_tokens", {
   setup(_rule: CountTokensRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).countTokenMode = true;
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2324,7 +2328,7 @@ registerHookHandler<"false_tokens">("false_tokens", {
   setup(_rule: FalseTokensRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).falseTokenMode = true;
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2350,7 +2354,7 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
       (lastTile as unknown as Record<string, unknown>).xMarked = true;
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2384,7 +2388,7 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
       }
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2417,7 +2421,7 @@ registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
       playerHands: {},
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2448,7 +2452,7 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
       playerHands: {},
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2464,7 +2468,7 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
  */
 registerHookHandler<"squeak_number_challenge">("squeak_number_challenge", {
   setup(_rule: SqueakNumberChallengeRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2494,7 +2498,7 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
       playerHands: {},
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2526,7 +2530,7 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
       playerHands: {},
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2564,7 +2568,7 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
       numberCards.visible = [next];
     }
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
@@ -2607,7 +2611,7 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
       playerHands,
     };
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2628,7 +2632,7 @@ registerHookHandler<"no_character_cards">("no_character_cards", {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).noCharacterCards = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2647,7 +2651,7 @@ registerHookHandler<"captain_lazy_constraints">("captain_lazy_constraints", {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).captainLazy = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2666,7 +2670,7 @@ registerHookHandler<"false_info_tokens">("false_info_tokens", {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).falseInfoTokenMode = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2682,7 +2686,7 @@ registerHookHandler<"false_info_tokens">("false_info_tokens", {
  */
 registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
   setup(rule: SimultaneousMultiCutRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2698,7 +2702,7 @@ registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
  */
 registerHookHandler<"sevens_last">("sevens_last", {
   setup(_rule: SevensLastRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2714,7 +2718,7 @@ registerHookHandler<"sevens_last">("sevens_last", {
  */
 registerHookHandler<"boss_designates_value">("boss_designates_value", {
   setup(_rule: BossDesignatesValueRuleDef, ctx: SetupHookContext): void {
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2734,7 +2738,7 @@ registerHookHandler<"no_info_unlimited_dd">("no_info_unlimited_dd", {
     (ctx.state.campaign as Record<string, unknown>).noInfoUnlimitedDD = true;
     (ctx.state.campaign as Record<string, unknown>).noMarkersMemoryMode = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2753,7 +2757,7 @@ registerHookHandler<"random_setup_info_tokens">("random_setup_info_tokens", {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).randomSetupInfoTokens = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
@@ -2773,7 +2777,7 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
     ctx.state.campaign ??= {};
     (ctx.state.campaign as Record<string, unknown>).iberianYellowMode = true;
 
-    ctx.state.log.push({
+    pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { logText } from "@bomb-busters/shared";
 import {
   makePlayer,
   makeGameState,
@@ -157,14 +158,14 @@ describe("mission 10 advanceTurn integration", () => {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "timer:900s,audio:true",
+          detail: logText("timer:900s,audio:true"),
           timestamp: 1000,
         },
         {
           turn: 0,
           playerId: "system",
           action: "hookSetup",
-          detail: "dynamic_turn_order:selector=captain",
+          detail: logText("dynamic_turn_order:selector=captain"),
           timestamp: 1001,
         },
       ],

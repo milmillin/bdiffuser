@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeTile,
   makePlayer,
@@ -474,7 +475,7 @@ describe("simultaneous_four_cut hook", () => {
     expect(card.value).toBeLessThanOrEqual(12);
 
     const setupLog = state.log.find(
-      (e) => e.action === "hookSetup" && e.detail.startsWith("m23:number_card:init:"),
+      (e) => e.action === "hookSetup" && renderLogDetail(e.detail).startsWith("m23:number_card:init:"),
     );
     expect(setupLog).toBeDefined();
   });
@@ -500,7 +501,7 @@ describe("simultaneous_four_cut hook", () => {
 
     expect(state.board.equipment).toHaveLength(2);
     const discardLog = state.log.find(
-      (e) => e.action === "hookEffect" && e.detail.startsWith("m23:equipment_discard:"),
+      (e) => e.action === "hookEffect" && renderLogDetail(e.detail).startsWith("m23:equipment_discard:"),
     );
     expect(discardLog).toBeDefined();
   });

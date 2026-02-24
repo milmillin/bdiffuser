@@ -1,5 +1,6 @@
 import type {
   ForcedAction,
+  GameLogDetail,
   GameState,
   Player,
   WireTile,
@@ -19,6 +20,7 @@ import {
   getBlueAsRedValue,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+import { pushGameLog } from "./gameLog.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -155,13 +157,16 @@ function updateMarkerConfirmations(state: GameState): void {
   }
 }
 
-function addLog(state: GameState, playerId: string, action: string, detail: string): void {
-  state.log.push({
-    turn: state.turnNumber,
+function addLog(
+  state: GameState,
+  playerId: string,
+  action: string,
+  detail: GameLogDetail | string,
+): void {
+  pushGameLog(state, {
     playerId,
     action,
     detail,
-    timestamp: Date.now(),
   });
 }
 

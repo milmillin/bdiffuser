@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeCampaignState,
   makeConstraintCard,
@@ -233,7 +234,7 @@ describe("constraint enforcement validation", () => {
     expect(state.board.detonatorPosition).toBe(before + 1);
     expect(
       state.log.some(
-        (entry) => entry.detail === "constraint_L:double_detonator:+1_extra",
+        (entry) => renderLogDetail(entry.detail) === "constraint_L:double_detonator:+1_extra",
       ),
     ).toBe(true);
   });
@@ -250,7 +251,7 @@ describe("constraint enforcement validation", () => {
       false,
     );
     expect(
-      state.log.some((entry) => entry.detail === "constraint_auto_flip:A:stuck"),
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:A:stuck"),
     ).toBe(true);
   });
 });

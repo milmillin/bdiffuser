@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { renderLogDetail } from "@bomb-busters/shared";
 import type { ClientGameState, GameLogEntry } from "@bomb-busters/shared";
 
 interface PlayerStats {
@@ -179,21 +180,22 @@ function analyzeLog(log: GameLogEntry[]): Map<string, Omit<PlayerStats, "id" | "
   };
 
   for (const entry of log) {
+    const detailText = renderLogDetail(entry.detail);
     const s = ensure(entry.playerId);
     s.totalActions++;
 
-    if (entry.detail.includes("BOOM!")) {
+    if (detailText.includes("BOOM!")) {
       s.explosions++;
     }
-    if (entry.detail.includes("✗")) {
+    if (detailText.includes("✗")) {
       s.failedCuts++;
     }
-    if (entry.detail.includes("detonator triggered")) {
+    if (detailText.includes("detonator triggered")) {
       s.detonatorAdvances++;
     }
-    if (entry.detail.includes("✓")) {
+    if (detailText.includes("✓")) {
       s.successfulCuts++;
-      if (entry.detail.includes("detonator triggered")) {
+      if (detailText.includes("detonator triggered")) {
         s.detonatorAdvances++;
       }
     }
