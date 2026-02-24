@@ -384,21 +384,24 @@ describe("executeSimultaneousRedCut", () => {
     expect(action.type).toBe("simultaneousRedCutResult");
   });
 
-  it("mission 48: explodes when at least one designated wire is not yellow", () => {
+  it("mission 48: on mismatch, places info tokens on all designated wires and advances detonator by 1", () => {
+    const y1 = makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" });
+    const b1 = makeTile({ id: "b1", gameValue: 3 });
+    const y2 = makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" });
+    const y3 = makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" });
+
     const state = makeGameState({
       mission: 48,
       players: [
         makePlayer({
           id: "p1",
-          hand: [
-            makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
-            makeTile({ id: "b1", gameValue: 3 }),
-          ],
+          hand: [y1, b1],
         }),
-        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
-        makePlayer({ id: "p3", hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p2", hand: [y2] }),
+        makePlayer({ id: "p3", hand: [y3] }),
       ],
       currentPlayerIndex: 0,
+      turnNumber: 1,
     });
 
     const action = executeSimultaneousRedCut(state, "p1", [
@@ -407,8 +410,31 @@ describe("executeSimultaneousRedCut", () => {
       { playerId: "p3", tileIndex: 0 },
     ]);
 
-    expect(action).toEqual({ type: "gameOver", result: "loss_red_wire" });
-    expect(state.result).toBe("loss_red_wire");
-    expect(state.phase).toBe("finished");
+    expect(action.type).toBe("simultaneousRedCutResult");
+    if (action.type === "simultaneousRedCutResult") {
+      expect(action.totalCut).toBe(0);
+      expect(action.cuts).toEqual([]);
+    }
+
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+    expect(state.turnNumber).toBe(2);
+    expect(state.currentPlayerIndex).toBe(1);
+
+    expect(y1.cut).toBe(false);
+    expect(b1.cut).toBe(false);
+    expect(y2.cut).toBe(false);
+    expect(y3.cut).toBe(false);
+
+    expect(state.players[0].infoTokens).toHaveLength(1);
+    expect(state.players[1].infoTokens).toHaveLength(1);
+    expect(state.players[2].infoTokens).toHaveLength(1);
+    expect(state.players[0].infoTokens[0]?.position).toBe(1);
+    expect(state.players[0].infoTokens[0]?.isYellow).toBe(false);
+    expect(state.players[1].infoTokens[0]?.position).toBe(0);
+    expect(state.players[1].infoTokens[0]?.isYellow).toBe(true);
+    expect(state.players[2].infoTokens[0]?.position).toBe(0);
+    expect(state.players[2].infoTokens[0]?.isYellow).toBe(true);
   });
 });

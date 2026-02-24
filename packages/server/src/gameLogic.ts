@@ -644,6 +644,47 @@ export function executeSimultaneousRedCut(
   }
 
   if (!allMatch) {
+    if (requiredColor === "yellow") {
+      // Mission 48 failure handling: place info tokens on all designated wires
+      // and advance detonator by exactly one instead of exploding immediately.
+      for (const target of targets) {
+        const player = state.players.find((p) => p.id === target.playerId);
+        const tile = player ? getTileByFlatIndex(player, target.tileIndex) : null;
+        if (!player || !tile || tile.cut) continue;
+
+        player.infoTokens.push(applyMissionInfoTokenVariant(state, {
+          value: typeof tile.gameValue === "number" ? tile.gameValue : 0,
+          position: target.tileIndex,
+          isYellow: tile.color === "yellow",
+        }, player));
+      }
+
+      state.board.detonatorPosition++;
+
+      addLog(
+        state,
+        actorId,
+        "simultaneousRedCut",
+        `designated 3 wires for ${actionLabel} — mismatch. Info tokens placed and detonator advanced by 1`,
+      );
+
+      if (checkDetonatorLoss(state)) {
+        state.result = "loss_detonator";
+        state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+        return { type: "gameOver", result: "loss_detonator" };
+      }
+
+      advanceTurn(state);
+
+      return {
+        type: "simultaneousRedCutResult",
+        actorId,
+        cuts: [],
+        totalCut: 0,
+      };
+    }
+
     state.result = "loss_red_wire";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
