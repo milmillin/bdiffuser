@@ -23,6 +23,7 @@ import {
   validateRevealRedsWithHooks,
   validateSimultaneousRedCutWithHooks,
   validateSimultaneousFourCutWithHooks,
+  getTileByFlatIndex,
 } from "./validation.js";
 import {
   executeDualCut,
@@ -1065,10 +1066,20 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    const matchCount = forced.matchingTileIndices.length;
+    const target = state.players.find((p) => p.id === forced.targetPlayerId);
+    if (!target) {
+      this.sendMsg(conn, { type: "error", message: "Target player not found" });
+      return;
+    }
+
+    const availableMatches = forced.matchingTileIndices.filter((idx) => {
+      const tile = getTileByFlatIndex(target, idx);
+      return !!tile && !tile.cut && tile.gameValue === forced.guessValue;
+    });
+    const matchCount = availableMatches.length;
 
     if (matchCount >= 2) {
-      if (tileIndex == null || !forced.matchingTileIndices.includes(tileIndex)) {
+      if (tileIndex == null || !availableMatches.includes(tileIndex)) {
         this.sendMsg(conn, { type: "error", message: "Invalid tile choice" });
         return;
       }

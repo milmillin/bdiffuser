@@ -434,6 +434,44 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     });
   });
 
+  it("revalidates matches when targeted wires change before resolution", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Change the wires so that none of the originally matched indices still match the guess.
+    target.hand[0].gameValue = 3;
+    target.hand[1].gameValue = 4;
+
+    const resolveAction = resolveDetectorTileChoice(state, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+  });
+
   it("mission 52: failed Double Detector places announced-value false token", () => {
     const actor = makePlayer({
       id: "actor",
@@ -473,5 +511,46 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       position: 0,
       isYellow: false,
     });
+  });
+
+  it("treats non-blue numeric legacy tiles as non-matches", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [makeTile({ id: "b1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "legacy-red", color: "red", gameValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction?.kind).toBe("detectorTileChoice");
+    if (state.pendingForcedAction?.kind === "detectorTileChoice") {
+      expect(state.pendingForcedAction.matchingTileIndices).toEqual([]);
+    }
+
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBe(1);
+    }
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.hand[1].cut).toBe(false);
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
   });
 });

@@ -493,8 +493,15 @@ export function executeDualCutDoubleDetector(
     actor.characterUsed = true;
   }
 
-  const match1 = tile1.gameValue === guessValue;
-  const match2 = tile2.gameValue === guessValue;
+  // Defensive: only blue numeric wires can be detector matches.
+  // This avoids false positives in legacy/corrupted states where non-blue
+  // tiles may carry numeric game values.
+  const isMatchingBlueTile = (tile: WireTile): boolean =>
+    tile.color === "blue" &&
+    typeof tile.gameValue === "number" &&
+    tile.gameValue === guessValue;
+  const match1 = isMatchingBlueTile(tile1);
+  const match2 = isMatchingBlueTile(tile2);
 
   const matchingTileIndices: number[] = [];
   if (match1) matchingTileIndices.push(tileIndex1);
@@ -787,9 +794,13 @@ export function resolveDetectorTileChoice(
   state.pendingForcedAction = undefined;
 
   const { actorId, targetPlayerId, guessValue, source } = forced;
-  const matchCount = forced.matchingTileIndices.length;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
+  const availableMatches = forced.matchingTileIndices.filter((idx) => {
+    const tile = getTileByFlatIndex(target, idx);
+    return !!tile && !tile.cut && tile.gameValue === guessValue;
+  });
+  const matchCount = availableMatches.length;
 
   // ── 0 matches: failure path ──────────────────────────────
   if (matchCount === 0) {
@@ -808,8 +819,10 @@ export function resolveDetectorTileChoice(
 
   // ── 1 match: auto-select the single matching tile ────────
   const effectiveTileIndex = matchCount === 1
-    ? forced.matchingTileIndices[0]
-    : chosenTileIndex!;
+    ? availableMatches[0]
+    : (chosenTileIndex != null && availableMatches.includes(chosenTileIndex)
+      ? chosenTileIndex
+      : availableMatches[0]);
 
   const chosenTile = getTileByFlatIndex(target, effectiveTileIndex)!;
 
