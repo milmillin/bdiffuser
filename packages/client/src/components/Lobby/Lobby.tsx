@@ -6,7 +6,7 @@ const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-point
 const btnFull = `${btnBase} px-7 py-3.5 text-base`;
 const btnSmall = `${btnBase} px-4 py-2 text-sm`;
 const btnDisabled = "disabled:bg-gray-800 disabled:border-gray-900 disabled:text-gray-500 disabled:shadow-none disabled:active:border-b-4 disabled:active:translate-y-0";
-const COLOR_CARD_LOCK_MAX_MISSION = 6;
+const COLOR_CARD_LOCK_MAX_MISSION = 8;
 
 function isYellowOrRedMissionLocked(id: MissionId): boolean {
   const difficulty = MISSION_SCHEMAS[id].difficulty;
