@@ -151,8 +151,8 @@ describe("ActionPanel equipment button rendering", () => {
         markers: [],
         equipment: [
           makeEquipmentCard({
-            id: "coffee_thermos",
-            name: "Coffee Thermos",
+            id: "coffee_mug",
+            name: "Coffee Mug",
             unlockValue: 11,
             unlocked: true,
             used: false,
@@ -162,7 +162,7 @@ describe("ActionPanel equipment button rendering", () => {
     }) as unknown as ClientGameState;
 
     const html = renderPanel(state, { isMyTurn: false });
-    expect(html).toContain("Use Coffee Thermos");
+    expect(html).toContain("Use Coffee Mug");
     expect(html).toMatch(/disabled=""/);
   });
 

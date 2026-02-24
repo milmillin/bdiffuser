@@ -23,7 +23,7 @@ const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "general_radar",
   "stabilizer",
   "x_or_y_ray",
-  "coffee_thermos",
+  "coffee_mug",
   "label_eq",
 ] as const;
 const BASE_EQUIPMENT_SET = new Set<string>(BASE_EQUIPMENT_IDS);
@@ -625,8 +625,8 @@ function getInitialEquipmentMode(equipmentId: BaseEquipmentId): EquipmentMode | 
       return { kind: "talkies_walkies", teammateId: null, teammateTileIndex: null, myTileIndex: null };
     case "emergency_batteries":
       return { kind: "emergency_batteries", selectedPlayerIds: [] };
-    case "coffee_thermos":
-      return { kind: "coffee_thermos" };
+    case "coffee_mug":
+      return { kind: "coffee_mug" };
     case "triple_detector":
       return { kind: "triple_detector", targetPlayerId: null, targetTileIndices: [], guessTileIndex: null };
     case "super_detector":

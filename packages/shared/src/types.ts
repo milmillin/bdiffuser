@@ -62,6 +62,8 @@ export interface InfoToken {
   relation?: "eq" | "neq";
   /** Secondary index used by relation markers. */
   positionB?: number;
+  /** Single-wire-label marker: this value appears only once on the stand. */
+  singleWire?: boolean;
 }
 
 // ── Characters ──────────────────────────────────────────────
@@ -71,7 +73,11 @@ export type CharacterId =
   | "character_2"
   | "character_3"
   | "character_4"
-  | "character_5";
+  | "character_5"
+  | "character_e1"
+  | "character_e2"
+  | "character_e3"
+  | "character_e4";
 
 // ── Equipment ───────────────────────────────────────────────
 
@@ -103,8 +109,18 @@ export type BaseEquipmentId =
   | "general_radar"
   | "stabilizer"
   | "x_or_y_ray"
-  | "coffee_thermos"
+  | "coffee_mug"
   | "label_eq";
+
+export type CampaignEquipmentId =
+  | "false_bottom"
+  | "single_wire_label"
+  | "emergency_drop"
+  | "fast_pass"
+  | "disintegrator"
+  | "grappling_hook";
+
+export type AnyEquipmentId = BaseEquipmentId | CampaignEquipmentId;
 
 export type EquipmentGuessValue = number | "YELLOW";
 
@@ -135,8 +151,19 @@ export type UseEquipmentPayload =
       guessValueA: EquipmentGuessValue;
       guessValueB: EquipmentGuessValue;
     }
-  | { kind: "coffee_thermos"; targetPlayerId: string }
-  | { kind: "label_eq"; tileIndexA: number; tileIndexB: number };
+  | { kind: "coffee_mug"; targetPlayerId: string }
+  | { kind: "label_eq"; tileIndexA: number; tileIndexB: number }
+  // Campaign equipment payloads
+  | { kind: "false_bottom" }
+  | { kind: "single_wire_label"; tileIndex: number }
+  | { kind: "emergency_drop" }
+  | { kind: "fast_pass"; value: number }
+  | { kind: "disintegrator" }
+  | {
+      kind: "grappling_hook";
+      targetPlayerId: string;
+      targetTileIndex: number;
+    };
 
 // ── Board State ─────────────────────────────────────────────
 
@@ -260,6 +287,8 @@ export interface CampaignState {
   mission18DesignatorIndex?: number;
   /** Mission 22: whether the yellow-trigger token pass has been triggered. */
   mission22TokenPassTriggered?: boolean;
+  /** Reserve pool of undealt equipment cards for False Bottom. */
+  equipmentReserve?: EquipmentCard[];
   /** Mission 23: whether the simultaneous four-of-value cut has been completed. */
   mission23SpecialActionDone?: boolean;
 }

@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerMidCampaignMissions(setMission: MissionSetter): void {
   setMission(17, {
-    name: "Sergio El Mytho",
+    name: "Rhett Herrings",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -18,7 +18,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(18, {
-    name: "BAT-helping hand",
+    name: "BAT-Helping-Hand",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -60,7 +60,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(21, {
-    name: "Kouign Amann Mortal",
+    name: "Death by Haggis",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 2),
@@ -83,7 +83,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(23, {
-    name: "Mission in Sevenans",
+    name: "Defusing in Fordwich",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
@@ -100,7 +100,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(24, {
-    name: "The Count Is Good!",
+    name: "Tally Ho!",
     setup: {
       ...defaultSetup(),
       red: exact(2),

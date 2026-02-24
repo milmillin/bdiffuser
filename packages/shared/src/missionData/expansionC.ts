@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerExpansionCMissions(setMission: MissionSetter): void {
   setMission(58, {
-    name: "System D",
+    name: "Double and/or Nothing",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -38,7 +38,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(60, {
-    name: "The Return of Doctor No",
+    name: "Yep, it's Doctor Nope!",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -51,7 +51,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(61, {
-    name: "Quiet, We're Filming!",
+    name: "Sharing is Caring",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -61,7 +61,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(62, {
-    name: "Armageddon Dumpling",
+    name: "Armageddon Roulette",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -71,7 +71,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(63, {
-    name: "Titanic II",
+    name: "It is Positively Titanic",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -92,7 +92,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(64, {
-    name: "The Return of the Rebel Sons!",
+    name: "Return of the Tripwires",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -103,7 +103,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(65, {
-    name: "Good Thread and Not Good Thread",
+    name: "Hand-Me-Downs",
     setup: {
       ...defaultSetup(),
       red: exact(3),
@@ -114,7 +114,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
   });
 
   setMission(66, {
-    name: "The Final Boss!",
+    name: "The Final Countdown",
     setup: {
       ...defaultSetup(),
       red: exact(2),

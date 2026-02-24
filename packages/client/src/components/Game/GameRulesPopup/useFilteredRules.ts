@@ -12,7 +12,7 @@ interface FilterInput {
  *
  * Equipment items in GAME_RULES.md start with patterns like:
  *   - Equipment `1` (`Label !=`)
- *   - Yellow equipment - `Double fond`
+ *   - Yellow equipment - `False Bottom`
  *
  * We check whether the first inline token text contains "Equipment `{label}`"
  * or "Yellow equipment" depending on the label.

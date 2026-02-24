@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerExpansionBMissions(setMission: MissionSetter): void {
   setMission(49, {
-    name: "Bottles in the Sea",
+    name: "Message in a Bottle",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -30,7 +30,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(50, {
-    name: "The Black Sea",
+    name: "The Blackest Sea",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -41,7 +41,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(51, {
-    name: "Unlucky Day",
+    name: "It's Your (Un)Lucky Day!",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -52,7 +52,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(52, {
-    name: "All Traitors!",
+    name: "Dirty Double-crossers",
     setup: {
       ...defaultSetup(),
       red: exact(3),
@@ -64,7 +64,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(53, {
-    name: "Nano Is Back",
+    name: "Nano Nano",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -78,7 +78,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(54, {
-    name: "The Attack of Red Rabbit",
+    name: "The Attack of Rabbit the Red",
     setup: {
       ...defaultSetup(),
       red: fixed(redAll),
@@ -98,7 +98,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(55, {
-    name: "Doctor No's Challenge",
+    name: "Doctor Nope's Challenge",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -111,7 +111,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(56, {
-    name: "The Rebel Sons",
+    name: "Tripwires",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -125,7 +125,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
   });
 
   setMission(57, {
-    name: "Mission Impossible",
+    name: "An Impossible Mission",
     setup: {
       ...defaultSetup(),
       red: exact(1),

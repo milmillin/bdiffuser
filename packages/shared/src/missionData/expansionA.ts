@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerExpansionAMissions(setMission: MissionSetter): void {
   setMission(41, {
-    name: "Bomba latina",
+    name: "Latin Bombshell",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
@@ -14,7 +14,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       equipment: {
         mode: "default",
         includeCampaignEquipment: true,
-        excludedEquipmentIds: ["double_fond"],
+        excludedEquipmentIds: ["false_bottom"],
       },
     },
     overrides: {
@@ -27,7 +27,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(42, {
-    name: "What Is This Circus?",
+    name: "Time to Run Away and Join The Circus...",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
@@ -37,7 +37,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(43, {
-    name: "Nano and Robot",
+    name: "Nano the Robot",
     setup: {
       ...defaultSetup(),
       red: exact(3),
@@ -66,7 +66,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(45, {
-    name: "My Thread, My Battle!",
+    name: "Seeking Volunteers",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -77,7 +77,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(46, {
-    name: "Agent 007",
+    name: "Secret Agent",
     setup: {
       ...defaultSetup(),
       red: none(),
@@ -88,7 +88,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(47, {
-    name: "L'addition SVP!",
+    name: "Calculate the Odds",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -99,7 +99,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
   });
 
   setMission(48, {
-    name: "3-wire Plan",
+    name: "Lethal Wires 3",
     setup: {
       ...defaultSetup(),
       red: exact(2),

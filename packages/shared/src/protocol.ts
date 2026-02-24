@@ -1,5 +1,6 @@
 import type {
   ActionLegalityCode,
+  AnyEquipmentId,
   BaseEquipmentId,
   CharacterId,
   ChatMessage,
@@ -29,7 +30,8 @@ export type ClientMessage =
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut" }
-  | { type: "useEquipment"; equipmentId: BaseEquipmentId; payload: UseEquipmentPayload }
+  | { type: "useEquipment"; equipmentId: AnyEquipmentId; payload: UseEquipmentPayload }
+  | { type: "useCharacterAbility"; payload: UseEquipmentPayload }
   | { type: "chooseNextPlayer"; targetPlayerId: string }
   | { type: "designateCutter"; targetPlayerId: string }
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }

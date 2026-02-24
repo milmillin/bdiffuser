@@ -9,17 +9,17 @@ describe("equipment pool resolution", () => {
 
     expect(ids).toContain("rewinder");
     expect(ids).toContain("x_or_y_ray");
-    expect(ids).not.toContain("double_fond");
+    expect(ids).not.toContain("false_bottom");
     expect(ids).not.toContain("disintegrator");
   });
 
-  it("mission 41 excludes only campaign double_fond (not base rewinder)", () => {
+  it("mission 41 excludes only campaign false_bottom (not base rewinder)", () => {
     const { setup } = resolveMissionSetup(41, 4);
     const ids = resolveEquipmentPoolIds(setup.equipment);
 
     expect(ids).toContain("rewinder");
     expect(ids).toContain("x_or_y_ray");
-    expect(ids).not.toContain("double_fond");
+    expect(ids).not.toContain("false_bottom");
   });
 
   it("mission 57 excludes only campaign disintegrator (not base X/Y Ray)", () => {
@@ -27,7 +27,7 @@ describe("equipment pool resolution", () => {
     const ids = resolveEquipmentPoolIds(setup.equipment);
 
     expect(ids).toContain("x_or_y_ray");
-    expect(ids).toContain("double_fond");
+    expect(ids).toContain("false_bottom");
     expect(ids).not.toContain("disintegrator");
   });
 

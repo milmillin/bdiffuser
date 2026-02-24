@@ -28,7 +28,7 @@ const BASE_EQUIPMENT_IDS = [
   "general_radar",
   "stabilizer",
   "x_or_y_ray",
-  "coffee_thermos",
+  "coffee_mug",
   "label_eq",
 ] as const satisfies readonly BaseEquipmentId[];
 
@@ -108,8 +108,8 @@ function buildValidPayload(equipmentId: BaseEquipmentId): UseEquipmentPayload {
         guessValueA: 4,
         guessValueB: 7,
       };
-    case "coffee_thermos":
-      return { kind: "coffee_thermos", targetPlayerId: "observer" };
+    case "coffee_mug":
+      return { kind: "coffee_mug", targetPlayerId: "observer" };
     case "label_eq":
       return { kind: "label_eq", tileIndexA: 2, tileIndexB: 3 };
   }
@@ -406,7 +406,7 @@ describe("equipment validation", () => {
     expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
   });
 
-  it("rejects Coffee Thermos self-targeting", () => {
+  it("rejects Coffee Mug self-targeting", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", gameValue: 1 })],
@@ -417,11 +417,11 @@ describe("equipment validation", () => {
     });
     const state = stateWithEquipment(
       [actor, teammate],
-      unlockedEquipmentCard("coffee_thermos", "Coffee Thermos", 11),
+      unlockedEquipmentCard("coffee_mug", "Coffee Mug", 11),
     );
 
-    const error = validateUseEquipment(state, "actor", "coffee_thermos", {
-      kind: "coffee_thermos",
+    const error = validateUseEquipment(state, "actor", "coffee_mug", {
+      kind: "coffee_mug",
       targetPlayerId: "actor",
     });
 
@@ -1556,8 +1556,8 @@ describe("equipment execution", () => {
         ...makeGameState().board,
         equipment: [
           makeEquipmentCard({
-            id: "coffee_thermos",
-            name: "Coffee Thermos",
+            id: "coffee_mug",
+            name: "Coffee Mug",
             unlockValue: 11,
             unlocked: true,
             used: false,
@@ -1566,13 +1566,13 @@ describe("equipment execution", () => {
       },
     });
 
-    const action = executeUseEquipment(state, "actor", "coffee_thermos", {
-      kind: "coffee_thermos",
+    const action = executeUseEquipment(state, "actor", "coffee_mug", {
+      kind: "coffee_mug",
       targetPlayerId: "p3",
     });
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
-    expect(action.effect).toBe("coffee_thermos");
+    expect(action.effect).toBe("coffee_mug");
     expect(state.currentPlayerIndex).toBe(2);
     expect(state.turnNumber).toBe(2);
     expect(state.board.equipment[0].used).toBe(true);

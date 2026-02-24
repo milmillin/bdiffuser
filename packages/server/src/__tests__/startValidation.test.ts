@@ -29,7 +29,7 @@ describe("validateMissionPlayerCount", () => {
 
   it("includes the mission name in the error message", () => {
     const error = validateMissionPlayerCount(34, 2);
-    expect(error).toContain("The Weak Link");
+    expect(error).toContain("The Weakest Link");
   });
 
   it("includes the actual player count in the error message", () => {

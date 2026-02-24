@@ -61,7 +61,11 @@ function toCharacterId(value: unknown): CharacterId | null {
     value === "character_2" ||
     value === "character_3" ||
     value === "character_4" ||
-    value === "character_5"
+    value === "character_5" ||
+    value === "character_e1" ||
+    value === "character_e2" ||
+    value === "character_e3" ||
+    value === "character_e4"
   ) {
     return value;
   }

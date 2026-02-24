@@ -65,7 +65,7 @@ const ALL_MODES: EquipmentMode[] = [
     myTileIndex: null,
   },
   { kind: "emergency_batteries", selectedPlayerIds: [] },
-  { kind: "coffee_thermos" },
+  { kind: "coffee_mug" },
   {
     kind: "triple_detector",
     targetPlayerId: null,
@@ -94,7 +94,7 @@ const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   label_neq: "Label ≠ Mode",
   talkies_walkies: "Talkies-Walkies",
   emergency_batteries: "Emergency Batteries",
-  coffee_thermos: "Coffee Thermos",
+  coffee_mug: "Coffee Mug",
   triple_detector: "Triple Detector",
   super_detector: "Super Detector",
   x_or_y_ray: "X or Y Ray",
@@ -286,21 +286,21 @@ describe("EquipmentModePanel — emergency_batteries", () => {
   });
 });
 
-// ── coffee_thermos ───────────────────────────────────────────────────────────
+// ── coffee_mug ───────────────────────────────────────────────────────────
 
-describe("EquipmentModePanel — coffee_thermos", () => {
+describe("EquipmentModePanel — coffee_mug", () => {
   it("shows player buttons excluding self", () => {
-    const html = renderMode({ kind: "coffee_thermos" });
+    const html = renderMode({ kind: "coffee_mug" });
     expect(html).toContain("Opp1");
     expect(html).toContain("Opp2");
     // "Me" should not appear as a selectable button (self is excluded)
-    // The title "Coffee Thermos" contains no "Me", and the buttons are only opponents
+    // The title "Coffee Mug" contains no "Me", and the buttons are only opponents
     expect(html).toContain("Choose a player to give the next turn to");
   });
 
   it("excludes players whose tiles are all cut", () => {
     const html = renderMode(
-      { kind: "coffee_thermos" },
+      { kind: "coffee_mug" },
       {
         players: [
           makePlayer({

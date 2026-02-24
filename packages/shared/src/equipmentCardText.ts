@@ -102,11 +102,11 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
       "The two announced values need not be consecutive.",
     ],
   },
-  coffee_thermos: {
+  coffee_mug: {
     timing: "To be used in turn.",
     effect:
-      "Pass your turn and choose the next active Minesweeper (without consultation).",
-    reminders: ["Play then continues clockwise from that designated player."],
+      "Skip your turn and choose who the next active bomb disposal expert will be (without consulting teammates).",
+    reminders: ["The game then continues clockwise from the chosen bomb disposal expert."],
   },
   label_eq: {
     timing: "Can be used at any time.",
@@ -116,29 +116,29 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
       "Two yellow wires or two red wires are considered identical for this effect.",
     ],
   },
-  double_fond: {
+  false_bottom: {
     timing: "Immediate effect.",
-    effect: "Draw 2 Equipment cards and put them into play with the others.",
+    effect: "Take 2 Equipment cards and put them in the game with the others.",
     reminders: [
-      "Depending on already-cut values, those new cards may be immediately usable.",
+      "Depending on the wire values already cut, it is possible for these cards to be used immediately.",
     ],
   },
-  single_thread_label: {
+  single_wire_label: {
     timing: "Can be used at any time.",
     effect:
-      "Place a token in front of one of your blue wires (cut or uncut) to indicate this value appears once on that stand.",
-    reminders: ["Includes already-cut wires when checking that stand."],
-  },
-  emergency_fund: {
-    timing: "Immediate effect.",
-    effect:
-      "Return already-used Equipment cards immediately so they become available again this mission.",
+      "Put a x1 token in front of 1 of your blue wires (either cut or uncut). This shows the indicated value is represented only once on the tile stand (cut wires included).",
     reminders: [],
   },
-  thread_cutter: {
+  emergency_drop: {
+    timing: "Immediate effect.",
+    effect:
+      "Immediately flip all used Equipment cards faceup. They can now be used again during this mission.",
+    reminders: [],
+  },
+  fast_pass: {
     timing: "To be used in turn.",
     effect:
-      "During a Solo Cut action, cut 2 identical wires even if they are not the last remaining copies of that value.",
+      "You can do a Solo Cut action to cut 2 identical wires — even if they are not the last remaining wires of that value.",
     reminders: [],
   },
   disintegrator: {
@@ -147,12 +147,12 @@ export const EQUIPMENT_CARD_TEXT: Record<string, EquipmentCardText> = {
       "Draw a random Info token (1-12); all players cut their possible remaining wires of that value.",
     reminders: [],
   },
-  grapple: {
+  grappling_hook: {
     timing: "Can be used at any time.",
     effect:
-      "Designate a teammate wire, take it without revealing it, and file it into your own hand.",
+      "Point at a teammate's wire, take it without revealing it, and put it in order in your hand.",
     reminders: [
-      "Everyone sees where the wire is taken from and where it is placed.",
+      "Everyone sees where this wire comes from and ends up.",
       "If the receiving player has 2 stands, they choose which stand to place the wire on.",
     ],
   },

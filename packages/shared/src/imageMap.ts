@@ -65,6 +65,10 @@ export const CHARACTER_IMAGES: Record<string, string> = {
   character_3: "character_3.png",
   character_4: "character_4.png",
   character_5: "character_5.png",
+  character_e1: "character_e1.png",
+  character_e2: "character_e2.png",
+  character_e3: "character_e3.png",
+  character_e4: "character_e4.png",
 };
 
 // ── Equipment Card Images ───────────────────────────────────
@@ -108,8 +112,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "base",
   },
   {
-    id: "coffee_thermos",
-    name: "Coffee Thermos",
+    id: "coffee_mug",
+    name: "Coffee Mug",
     description: "Pass your turn and choose the next active player (without consultation).",
     unlockValue: 11,
     image: "equipment_11.png",
@@ -189,8 +193,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "base",
   },
   {
-    id: "double_fond",
-    name: "Double fond",
+    id: "false_bottom",
+    name: "False Bottom",
     description: "Draw 2 Equipment cards and put them into play with the others.",
     unlockValue: 6,
     image: "equipment_yellow.png",
@@ -198,8 +202,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "campaign",
   },
   {
-    id: "single_thread_label",
-    name: "Single thread label",
+    id: "single_wire_label",
+    name: "Single Wire Label",
     description: "Place a token in front of one of your blue wires (cut or uncut) to show this value appears once on that stand.",
     unlockValue: 2,
     image: "equipment_22.png",
@@ -207,8 +211,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "campaign",
   },
   {
-    id: "emergency_fund",
-    name: "Emergency fund",
+    id: "emergency_drop",
+    name: "Emergency Drop",
     description: "Return already-used Equipment cards immediately so they become available again this mission.",
     unlockValue: 3,
     image: "equipment_33.png",
@@ -216,8 +220,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "campaign",
   },
   {
-    id: "thread_cutter",
-    name: "Thread cutter card",
+    id: "fast_pass",
+    name: "Fast Pass",
     description: "During a Solo Cut action, cut 2 identical wires even if they are not the last remaining ones of that value.",
     unlockValue: 9,
     image: "equipment_99.png",
@@ -234,8 +238,8 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     pool: "campaign",
   },
   {
-    id: "grapple",
-    name: "Grapple",
+    id: "grappling_hook",
+    name: "Grappling Hook",
     description: "Take a designated teammate wire without revealing it and file it into your own hand.",
     unlockValue: 11,
     image: "equipment_1111.png",

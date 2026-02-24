@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerExpertCampaignMissions(setMission: MissionSetter): void {
   setMission(33, {
-    name: "Ce qui se passe a Vegas...",
+    name: "What Happens in Vegas...",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -16,7 +16,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(34, {
-    name: "The Weak Link",
+    name: "The Weakest Link",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -26,7 +26,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(35, {
-    name: "No Ties, Single Thread",
+    name: "No Link, Single Wire",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -40,7 +40,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(36, {
-    name: "Panic in the Tropics",
+    name: "Panic under the Palm Trees",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
@@ -53,14 +53,14 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(37, {
-    name: "The Boss of the Farce!",
+    name: "Joker's Gone Wild",
     setup: { ...defaultSetup(), red: exact(2) },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_37_rolling_constraint"],
   });
 
   setMission(38, {
-    name: "One Thread Upside Down...",
+    name: "Knit a Wire, Purl a Wire...",
     setup: { ...defaultSetup(), red: exact(2) },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_38_captain_upside_down_wire"],
@@ -68,7 +68,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(39, {
-    name: "The Doctor's 4 Sons Walk",
+    name: "The 4 Noble Wires",
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
@@ -83,7 +83,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
   });
 
   setMission(40, {
-    name: "Christmas Trap",
+    name: "Hard to Die (A Christmas Tale)",
     setup: {
       ...defaultSetup(),
       red: exact(3),

@@ -1,6 +1,6 @@
 import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
-  BaseEquipmentId,
+  AnyEquipmentId,
   ClientMessage,
   ServerMessage,
   Player,
@@ -31,7 +31,7 @@ import {
   executeSimultaneousRedCut,
   executeSimultaneousFourCut,
 } from "./gameLogic.js";
-import { executeUseEquipment, validateUseEquipment } from "./equipment.js";
+import { executeUseEquipment, validateUseEquipment, validateCharacterAbility, executeCharacterAbility } from "./equipment.js";
 import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
 import {
   createBotPlayer,
@@ -210,6 +210,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "useEquipment":
         this.handleUseEquipment(connection, msg.equipmentId, msg.payload);
+        break;
+      case "useCharacterAbility":
+        this.handleUseCharacterAbility(connection, msg.payload);
         break;
       case "chooseNextPlayer":
         this.handleChooseNextPlayer(connection, msg.targetPlayerId);
@@ -714,7 +717,7 @@ export class BombBustersServer extends Server<Env> {
 
   handleUseEquipment(
     conn: Connection,
-    equipmentId: BaseEquipmentId,
+    equipmentId: AnyEquipmentId,
     payload: UseEquipmentPayload,
   ) {
     const state = this.room.gameState;
@@ -732,6 +735,33 @@ export class BombBustersServer extends Server<Env> {
 
     const previousResult = state.result;
     const action = executeUseEquipment(state, conn.id, equipmentId, payload);
+    this.maybeRecordMissionFailure(previousResult, state);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleUseCharacterAbility(
+    conn: Connection,
+    payload: UseEquipmentPayload,
+  ) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const error = validateCharacterAbility(state, conn.id, payload);
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const action = executeCharacterAbility(state, conn.id, payload);
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();

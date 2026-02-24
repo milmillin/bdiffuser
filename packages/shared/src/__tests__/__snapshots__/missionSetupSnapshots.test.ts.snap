@@ -3,7 +3,7 @@
 exports[`resolved mission setup snapshots > mission 1 1`] = `
 {
   "missionId": 1,
-  "name": "Training, Day 1",
+  "name": "TRAINING, Day 1",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -72,7 +72,7 @@ exports[`resolved mission setup snapshots > mission 1 1`] = `
 exports[`resolved mission setup snapshots > mission 2 1`] = `
 {
   "missionId": 2,
-  "name": "Training, Day 2",
+  "name": "TRAINING, Day 2",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -181,7 +181,7 @@ exports[`resolved mission setup snapshots > mission 2 1`] = `
 exports[`resolved mission setup snapshots > mission 3 1`] = `
 {
   "missionId": 3,
-  "name": "Training, Day 3",
+  "name": "TRAINING, Day 3",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -314,7 +314,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
 exports[`resolved mission setup snapshots > mission 4 1`] = `
 {
   "missionId": 4,
-  "name": "First Day in the Field",
+  "name": "TRAINING: First Day in the Field",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -391,7 +391,7 @@ exports[`resolved mission setup snapshots > mission 4 1`] = `
 exports[`resolved mission setup snapshots > mission 5 1`] = `
 {
   "missionId": 5,
-  "name": "Second Day in the Field",
+  "name": "TRAINING: Second Day in the Field",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -472,7 +472,7 @@ exports[`resolved mission setup snapshots > mission 5 1`] = `
 exports[`resolved mission setup snapshots > mission 6 1`] = `
 {
   "missionId": 6,
-  "name": "Under Pressure",
+  "name": "TRAINING: Third Day in the Field",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -549,7 +549,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
 exports[`resolved mission setup snapshots > mission 7 1`] = `
 {
   "missionId": 7,
-  "name": "Completing the Training",
+  "name": "TRAINING: Last Day of Class",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -626,7 +626,7 @@ exports[`resolved mission setup snapshots > mission 7 1`] = `
 exports[`resolved mission setup snapshots > mission 8 1`] = `
 {
   "missionId": 8,
-  "name": "Final Exam",
+  "name": "FINAL EXAM",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -710,7 +710,7 @@ exports[`resolved mission setup snapshots > mission 8 1`] = `
 exports[`resolved mission setup snapshots > mission 9 1`] = `
 {
   "missionId": 9,
-  "name": "The Sense of Priorities",
+  "name": "A Sense of Priorities",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -787,7 +787,7 @@ exports[`resolved mission setup snapshots > mission 9 1`] = `
 exports[`resolved mission setup snapshots > mission 10 1`] = `
 {
   "missionId": 10,
-  "name": "A Bad Quarter of an Hour",
+  "name": "A Rough Patch",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -876,7 +876,7 @@ exports[`resolved mission setup snapshots > mission 10 1`] = `
 exports[`resolved mission setup snapshots > mission 11 1`] = `
 {
   "missionId": 11,
-  "name": "Blue on Red, Nothing Moves",
+  "name": "Blue on Red, Looks Like We Are Dead",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1099,7 +1099,7 @@ exports[`resolved mission setup snapshots > mission 13 1`] = `
 exports[`resolved mission setup snapshots > mission 14 1`] = `
 {
   "missionId": 14,
-  "name": "High Risk Mine Clearance",
+  "name": "High-Risk Bomb Disposal Expert (aka. NOOB)",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1179,7 +1179,7 @@ exports[`resolved mission setup snapshots > mission 14 1`] = `
 exports[`resolved mission setup snapshots > mission 15 1`] = `
 {
   "missionId": 15,
-  "name": "Mission NOVOSIBIRSK CK",
+  "name": "Mission in НОВОСИБИРСК",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1256,7 +1256,7 @@ exports[`resolved mission setup snapshots > mission 15 1`] = `
 exports[`resolved mission setup snapshots > mission 16 1`] = `
 {
   "missionId": 16,
-  "name": "A Story of Common Sense",
+  "name": "Time to Reprioritize (Is this déjà vu?)",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1336,7 +1336,7 @@ exports[`resolved mission setup snapshots > mission 16 1`] = `
 exports[`resolved mission setup snapshots > mission 17 1`] = `
 {
   "missionId": 17,
-  "name": "Sergio El Mytho",
+  "name": "Rhett Herrings",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1412,7 +1412,7 @@ exports[`resolved mission setup snapshots > mission 17 1`] = `
 exports[`resolved mission setup snapshots > mission 18 1`] = `
 {
   "missionId": 18,
-  "name": "BAT-helping hand",
+  "name": "BAT-Helping-Hand",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1668,7 +1668,7 @@ exports[`resolved mission setup snapshots > mission 20 1`] = `
 exports[`resolved mission setup snapshots > mission 21 1`] = `
 {
   "missionId": 21,
-  "name": "Kouign Amann Mortal",
+  "name": "Death by Haggis",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1821,7 +1821,7 @@ exports[`resolved mission setup snapshots > mission 22 1`] = `
 exports[`resolved mission setup snapshots > mission 23 1`] = `
 {
   "missionId": 23,
-  "name": "Mission in Sevenans",
+  "name": "Defusing in Fordwich",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1898,7 +1898,7 @@ exports[`resolved mission setup snapshots > mission 23 1`] = `
 exports[`resolved mission setup snapshots > mission 24 1`] = `
 {
   "missionId": 24,
-  "name": "The Count Is Good!",
+  "name": "Tally Ho!",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -1971,7 +1971,7 @@ exports[`resolved mission setup snapshots > mission 24 1`] = `
 exports[`resolved mission setup snapshots > mission 25 1`] = `
 {
   "missionId": 25,
-  "name": "It's to Hear You Better...",
+  "name": "The Better to Hear You with...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2044,7 +2044,7 @@ exports[`resolved mission setup snapshots > mission 25 1`] = `
 exports[`resolved mission setup snapshots > mission 26 1`] = `
 {
   "missionId": 26,
-  "name": "When We Talk About the Wolf...",
+  "name": "Speaking of the Wolf...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2129,7 +2129,7 @@ exports[`resolved mission setup snapshots > mission 26 1`] = `
 exports[`resolved mission setup snapshots > mission 27 1`] = `
 {
   "missionId": 27,
-  "name": "Dough Threads",
+  "name": "Playing with Wire",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2218,7 +2218,7 @@ exports[`resolved mission setup snapshots > mission 27 1`] = `
 exports[`resolved mission setup snapshots > mission 28 1`] = `
 {
   "missionId": 28,
-  "name": "Captain Lazy",
+  "name": "Captain Careless",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2295,7 +2295,7 @@ exports[`resolved mission setup snapshots > mission 28 1`] = `
 exports[`resolved mission setup snapshots > mission 29 1`] = `
 {
   "missionId": 29,
-  "name": "Number Error",
+  "name": "Guessing Game",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2368,7 +2368,7 @@ exports[`resolved mission setup snapshots > mission 29 1`] = `
 exports[`resolved mission setup snapshots > mission 30 1`] = `
 {
   "missionId": 30,
-  "name": "A Very Speedy Mission!",
+  "name": "Speed Mission!",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2449,7 +2449,7 @@ exports[`resolved mission setup snapshots > mission 30 1`] = `
 exports[`resolved mission setup snapshots > mission 31 1`] = `
 {
   "missionId": 31,
-  "name": "Everyone Has Their Own Constraints",
+  "name": "With One Hand Tied Behind My Back...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2526,7 +2526,7 @@ exports[`resolved mission setup snapshots > mission 31 1`] = `
 exports[`resolved mission setup snapshots > mission 32 1`] = `
 {
   "missionId": 32,
-  "name": "Prank Attack!",
+  "name": "Pranks-A-Plenty",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2599,7 +2599,7 @@ exports[`resolved mission setup snapshots > mission 32 1`] = `
 exports[`resolved mission setup snapshots > mission 33 1`] = `
 {
   "missionId": 33,
-  "name": "Ce qui se passe a Vegas...",
+  "name": "What Happens in Vegas...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2675,7 +2675,7 @@ exports[`resolved mission setup snapshots > mission 33 1`] = `
 exports[`resolved mission setup snapshots > mission 34 1`] = `
 {
   "missionId": 34,
-  "name": "The Weak Link",
+  "name": "The Weakest Link",
   "setupsByPlayerCount": {
     "3": {
       "blue": {
@@ -2732,7 +2732,7 @@ exports[`resolved mission setup snapshots > mission 34 1`] = `
 exports[`resolved mission setup snapshots > mission 35 1`] = `
 {
   "missionId": 35,
-  "name": "No Ties, Single Thread",
+  "name": "No Link, Single Wire",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2824,7 +2824,7 @@ exports[`resolved mission setup snapshots > mission 35 1`] = `
 exports[`resolved mission setup snapshots > mission 36 1`] = `
 {
   "missionId": 36,
-  "name": "Panic in the Tropics",
+  "name": "Panic under the Palm Trees",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2905,7 +2905,7 @@ exports[`resolved mission setup snapshots > mission 36 1`] = `
 exports[`resolved mission setup snapshots > mission 37 1`] = `
 {
   "missionId": 37,
-  "name": "The Boss of the Farce!",
+  "name": "Joker's Gone Wild",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -2978,7 +2978,7 @@ exports[`resolved mission setup snapshots > mission 37 1`] = `
 exports[`resolved mission setup snapshots > mission 38 1`] = `
 {
   "missionId": 38,
-  "name": "One Thread Upside Down...",
+  "name": "Knit a Wire, Purl a Wire...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3051,7 +3051,7 @@ exports[`resolved mission setup snapshots > mission 38 1`] = `
 exports[`resolved mission setup snapshots > mission 39 1`] = `
 {
   "missionId": 39,
-  "name": "The Doctor's 4 Sons Walk",
+  "name": "The 4 Noble Wires",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3131,7 +3131,7 @@ exports[`resolved mission setup snapshots > mission 39 1`] = `
 exports[`resolved mission setup snapshots > mission 40 1`] = `
 {
   "missionId": 40,
-  "name": "Christmas Trap",
+  "name": "Hard to Die (A Christmas Tale)",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3204,7 +3204,7 @@ exports[`resolved mission setup snapshots > mission 40 1`] = `
 exports[`resolved mission setup snapshots > mission 41 1`] = `
 {
   "missionId": 41,
-  "name": "Bomba latina",
+  "name": "Latin Bombshell",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3213,7 +3213,7 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
       },
       "equipment": {
         "excludedEquipmentIds": [
-          "double_fond",
+          "false_bottom",
         ],
         "includeCampaignEquipment": true,
         "mode": "default",
@@ -3235,7 +3235,7 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
       },
       "equipment": {
         "excludedEquipmentIds": [
-          "double_fond",
+          "false_bottom",
         ],
         "includeCampaignEquipment": true,
         "mode": "default",
@@ -3257,7 +3257,7 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
       },
       "equipment": {
         "excludedEquipmentIds": [
-          "double_fond",
+          "false_bottom",
         ],
         "includeCampaignEquipment": true,
         "mode": "default",
@@ -3279,7 +3279,7 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
       },
       "equipment": {
         "excludedEquipmentIds": [
-          "double_fond",
+          "false_bottom",
         ],
         "includeCampaignEquipment": true,
         "mode": "default",
@@ -3301,7 +3301,7 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
 exports[`resolved mission setup snapshots > mission 42 1`] = `
 {
   "missionId": 42,
-  "name": "What Is This Circus?",
+  "name": "Time to Run Away and Join The Circus...",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3382,7 +3382,7 @@ exports[`resolved mission setup snapshots > mission 42 1`] = `
 exports[`resolved mission setup snapshots > mission 43 1`] = `
 {
   "missionId": 43,
-  "name": "Nano and Robot",
+  "name": "Nano the Robot",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3544,7 +3544,7 @@ exports[`resolved mission setup snapshots > mission 44 1`] = `
 exports[`resolved mission setup snapshots > mission 45 1`] = `
 {
   "missionId": 45,
-  "name": "My Thread, My Battle!",
+  "name": "Seeking Volunteers",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3633,7 +3633,7 @@ exports[`resolved mission setup snapshots > mission 45 1`] = `
 exports[`resolved mission setup snapshots > mission 46 1`] = `
 {
   "missionId": 46,
-  "name": "Agent 007",
+  "name": "Secret Agent",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3738,7 +3738,7 @@ exports[`resolved mission setup snapshots > mission 46 1`] = `
 exports[`resolved mission setup snapshots > mission 47 1`] = `
 {
   "missionId": 47,
-  "name": "L'addition SVP!",
+  "name": "Calculate the Odds",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3826,7 +3826,7 @@ exports[`resolved mission setup snapshots > mission 47 1`] = `
 exports[`resolved mission setup snapshots > mission 48 1`] = `
 {
   "missionId": 48,
-  "name": "3-wire Plan",
+  "name": "Lethal Wires 3",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3903,7 +3903,7 @@ exports[`resolved mission setup snapshots > mission 48 1`] = `
 exports[`resolved mission setup snapshots > mission 49 1`] = `
 {
   "missionId": 49,
-  "name": "Bottles in the Sea",
+  "name": "Message in a Bottle",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -3988,7 +3988,7 @@ exports[`resolved mission setup snapshots > mission 49 1`] = `
 exports[`resolved mission setup snapshots > mission 50 1`] = `
 {
   "missionId": 50,
-  "name": "The Black Sea",
+  "name": "The Blackest Sea",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4065,7 +4065,7 @@ exports[`resolved mission setup snapshots > mission 50 1`] = `
 exports[`resolved mission setup snapshots > mission 51 1`] = `
 {
   "missionId": 51,
-  "name": "Unlucky Day",
+  "name": "It's Your (Un)Lucky Day!",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4150,7 +4150,7 @@ exports[`resolved mission setup snapshots > mission 51 1`] = `
 exports[`resolved mission setup snapshots > mission 52 1`] = `
 {
   "missionId": 52,
-  "name": "All Traitors!",
+  "name": "Dirty Double-crossers",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4240,7 +4240,7 @@ exports[`resolved mission setup snapshots > mission 52 1`] = `
 exports[`resolved mission setup snapshots > mission 53 1`] = `
 {
   "missionId": 53,
-  "name": "Nano Is Back",
+  "name": "Nano Nano",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4329,7 +4329,7 @@ exports[`resolved mission setup snapshots > mission 53 1`] = `
 exports[`resolved mission setup snapshots > mission 54 1`] = `
 {
   "missionId": 54,
-  "name": "The Attack of Red Rabbit",
+  "name": "The Attack of Rabbit the Red",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4462,7 +4462,7 @@ exports[`resolved mission setup snapshots > mission 54 1`] = `
 exports[`resolved mission setup snapshots > mission 55 1`] = `
 {
   "missionId": 55,
-  "name": "Doctor No's Challenge",
+  "name": "Doctor Nope's Challenge",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4536,7 +4536,7 @@ exports[`resolved mission setup snapshots > mission 55 1`] = `
 exports[`resolved mission setup snapshots > mission 56 1`] = `
 {
   "missionId": 56,
-  "name": "The Rebel Sons",
+  "name": "Tripwires",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4612,7 +4612,7 @@ exports[`resolved mission setup snapshots > mission 56 1`] = `
 exports[`resolved mission setup snapshots > mission 57 1`] = `
 {
   "missionId": 57,
-  "name": "Mission Impossible",
+  "name": "An Impossible Mission",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4701,7 +4701,7 @@ exports[`resolved mission setup snapshots > mission 57 1`] = `
 exports[`resolved mission setup snapshots > mission 58 1`] = `
 {
   "missionId": 58,
-  "name": "System D",
+  "name": "Double and/or Nothing",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4878,7 +4878,7 @@ exports[`resolved mission setup snapshots > mission 59 1`] = `
 exports[`resolved mission setup snapshots > mission 60 1`] = `
 {
   "missionId": 60,
-  "name": "The Return of Doctor No",
+  "name": "Yep, it's Doctor Nope!",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -4954,7 +4954,7 @@ exports[`resolved mission setup snapshots > mission 60 1`] = `
 exports[`resolved mission setup snapshots > mission 61 1`] = `
 {
   "missionId": 61,
-  "name": "Quiet, We're Filming!",
+  "name": "Sharing is Caring",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -5027,7 +5027,7 @@ exports[`resolved mission setup snapshots > mission 61 1`] = `
 exports[`resolved mission setup snapshots > mission 62 1`] = `
 {
   "missionId": 62,
-  "name": "Armageddon Dumpling",
+  "name": "Armageddon Roulette",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -5100,7 +5100,7 @@ exports[`resolved mission setup snapshots > mission 62 1`] = `
 exports[`resolved mission setup snapshots > mission 63 1`] = `
 {
   "missionId": 63,
-  "name": "Titanic II",
+  "name": "It is Positively Titanic",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -5185,7 +5185,7 @@ exports[`resolved mission setup snapshots > mission 63 1`] = `
 exports[`resolved mission setup snapshots > mission 64 1`] = `
 {
   "missionId": 64,
-  "name": "The Return of the Rebel Sons!",
+  "name": "Return of the Tripwires",
   "setupsByPlayerCount": {
     "2": {
       "blue": {
@@ -5258,7 +5258,7 @@ exports[`resolved mission setup snapshots > mission 64 1`] = `
 exports[`resolved mission setup snapshots > mission 65 1`] = `
 {
   "missionId": 65,
-  "name": "Good Thread and Not Good Thread",
+  "name": "Hand-Me-Downs",
   "setupsByPlayerCount": {
     "3": {
       "blue": {
@@ -5324,7 +5324,7 @@ exports[`resolved mission setup snapshots > mission 65 1`] = `
 exports[`resolved mission setup snapshots > mission 66 1`] = `
 {
   "missionId": 66,
-  "name": "The Final Boss!",
+  "name": "The Final Countdown",
   "setupsByPlayerCount": {
     "2": {
       "blue": {

@@ -6,7 +6,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   setMission(9, {
-    name: "The Sense of Priorities",
+    name: "A Sense of Priorities",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -26,7 +26,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(10, {
-    name: "A Bad Quarter of an Hour",
+    name: "A Rough Patch",
     setup: {
       ...defaultSetup(),
       red: exact(1),
@@ -47,7 +47,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(11, {
-    name: "Blue on Red, Nothing Moves",
+    name: "Blue on Red, Looks Like We Are Dead",
     setup: {
       ...defaultSetup(),
       red: none(),
@@ -102,7 +102,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(14, {
-    name: "High Risk Mine Clearance",
+    name: "High-Risk Bomb Disposal Expert (aka. NOOB)",
     setup: {
       ...defaultSetup(),
       red: exact(2),
@@ -121,7 +121,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(15, {
-    name: "Mission NOVOSIBIRSK CK",
+    name: "Mission in \u041D\u041E\u0412\u041E\u0421\u0418\u0411\u0418\u0420\u0421\u041A",
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
@@ -140,7 +140,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
   });
 
   setMission(16, {
-    name: "A Story of Common Sense",
+    name: "Time to Reprioritize (Is this d\u00e9j\u00e0 vu?)",
     setup: {
       ...defaultSetup(),
       red: exact(1),

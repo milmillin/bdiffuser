@@ -14,7 +14,7 @@ type MissionSetter = (id: MissionId, patch: Omit<Partial<MissionRuleSchema>, "id
 
 export function registerTrainingMissions(setMission: MissionSetter): void {
   setMission(1, {
-    name: "Training, Day 1",
+    name: "TRAINING, Day 1",
     setup: {
       blue: blueRange(1, 6),
       red: none(),
@@ -24,7 +24,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(2, {
-    name: "Training, Day 2",
+    name: "TRAINING, Day 2",
     setup: {
       blue: blueRange(1, 8),
       red: none(),
@@ -34,7 +34,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(3, {
-    name: "Training, Day 3",
+    name: "TRAINING, Day 3",
     setup: {
       blue: blueRange(1, 10),
       red: exact(1, redUpTo9_5),
@@ -44,7 +44,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(4, {
-    name: "First Day in the Field",
+    name: "TRAINING: First Day in the Field",
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
@@ -57,7 +57,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(5, {
-    name: "Second Day in the Field",
+    name: "TRAINING: Second Day in the Field",
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
@@ -73,7 +73,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(6, {
-    name: "Under Pressure",
+    name: "TRAINING: Third Day in the Field",
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
@@ -89,7 +89,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(7, {
-    name: "Completing the Training",
+    name: "TRAINING: Last Day of Class",
     setup: {
       blue: blueRange(1, 12),
       red: outOf(1, 2),
@@ -104,7 +104,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
   });
 
   setMission(8, {
-    name: "Final Exam",
+    name: "FINAL EXAM",
     setup: {
       blue: blueRange(1, 12),
       red: outOf(1, 2),

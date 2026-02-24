@@ -24,7 +24,7 @@ export type EquipmentMode =
       myTileIndex: number | null;
     }
   | { kind: "emergency_batteries"; selectedPlayerIds: string[] }
-  | { kind: "coffee_thermos" }
+  | { kind: "coffee_mug" }
   | {
       kind: "triple_detector";
       targetPlayerId: string | null;
@@ -90,7 +90,7 @@ const MODE_COLORS: Record<
     title: "text-amber-400",
     confirm: "bg-amber-600 hover:bg-amber-500 text-black",
   },
-  coffee_thermos: {
+  coffee_mug: {
     border: "border-lime-600/60",
     bg: "bg-lime-900/20",
     title: "text-lime-400",
@@ -124,7 +124,7 @@ const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   label_neq: "Label ≠ Mode",
   talkies_walkies: "Talkies-Walkies",
   emergency_batteries: "Emergency Batteries",
-  coffee_thermos: "Coffee Thermos",
+  coffee_mug: "Coffee Mug",
   triple_detector: "Triple Detector",
   super_detector: "Super Detector",
   x_or_y_ray: "X or Y Ray",
@@ -396,7 +396,7 @@ export function EquipmentModePanel({
       break;
     }
 
-    case "coffee_thermos": {
+    case "coffee_mug": {
       const candidates = gameState.players.filter(
         (p) => p.id !== playerId && p.hand.some((t) => !t.cut),
       );
@@ -411,9 +411,9 @@ export function EquipmentModePanel({
                 onClick={() =>
                   sendAndCancel({
                     type: "useEquipment",
-                    equipmentId: "coffee_thermos",
+                    equipmentId: "coffee_mug",
                     payload: {
-                      kind: "coffee_thermos",
+                      kind: "coffee_mug",
                       targetPlayerId: player.id,
                     },
                   })

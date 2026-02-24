@@ -187,12 +187,12 @@ describe("equipment post-usage effects", () => {
       board: {
         ...makeGameState().board,
         detonatorMax: 10,
-        equipment: [unlockedEquipment("coffee_thermos", "Coffee Thermos", 11)],
+        equipment: [unlockedEquipment("coffee_mug", "Coffee Mug", 11)],
       },
     });
 
-    const action = executeUseEquipment(state, "p1", "coffee_thermos", {
-      kind: "coffee_thermos",
+    const action = executeUseEquipment(state, "p1", "coffee_mug", {
+      kind: "coffee_mug",
       targetPlayerId: "p3",
     });
 
@@ -219,12 +219,12 @@ describe("equipment post-usage effects", () => {
       board: {
         ...makeGameState().board,
         detonatorMax: 10,
-        equipment: [unlockedEquipment("coffee_thermos", "Coffee Thermos", 11)],
+        equipment: [unlockedEquipment("coffee_mug", "Coffee Mug", 11)],
       },
     });
 
-    const error = validateUseEquipment(state, "actor", "coffee_thermos", {
-      kind: "coffee_thermos",
+    const error = validateUseEquipment(state, "actor", "coffee_mug", {
+      kind: "coffee_mug",
       targetPlayerId: "target",
     });
 
