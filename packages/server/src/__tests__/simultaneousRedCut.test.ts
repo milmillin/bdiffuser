@@ -136,6 +136,52 @@ describe("validateSimultaneousRedCutLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("mission 13: with 3 players, rejects actor with no uncut red wire", () => {
+    const state = makeGameState({
+      mission: 13,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({
+          id: "p2",
+          hand: [makeRedTile({ id: "red-1" }), makeRedTile({ id: "red-2" })],
+        }),
+        makePlayer({ id: "p3", hand: [makeRedTile({ id: "red-3" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("uncut red wire");
+  });
+
+  it("mission 13: with 4 players, allows actor with no uncut red wire", () => {
+    const state = makeGameState({
+      mission: 13,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [makeRedTile({ id: "red-1" })] }),
+        makePlayer({ id: "p3", hand: [makeRedTile({ id: "red-2" })] }),
+        makePlayer({ id: "p4", hand: [makeRedTile({ id: "red-3" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
+    ]);
+
+    expect(error).toBeNull();
+  });
+
   it("accepts mission 48 simultaneous yellow target designation", () => {
     const state = makeGameState({
       mission: 48,
@@ -157,6 +203,55 @@ describe("validateSimultaneousRedCutLegality", () => {
       { playerId: "p1", tileIndex: 0 },
       { playerId: "p2", tileIndex: 0 },
       { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(error).toBeNull();
+  });
+
+  it("mission 48: with 3 players, rejects actor with no uncut yellow wire", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
+            makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" }),
+          ],
+        }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("uncut yellow wire");
+  });
+
+  it("mission 48: with 4 players, allows actor with no uncut yellow wire", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p4", hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+      { playerId: "p4", tileIndex: 0 },
     ]);
 
     expect(error).toBeNull();

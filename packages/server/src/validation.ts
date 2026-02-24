@@ -616,6 +616,11 @@ export function validateSimultaneousRedCutLegality(
     return legalityError("NOT_YOUR_TURN", "Not your turn");
   }
 
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) {
+    return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+  }
+
   // Check if any player has uncut target-color wires.
   const anyUncutTargetColor = state.players.some((p) =>
     p.hand.some((t) => !t.cut && t.color === requiredColor),
@@ -627,6 +632,22 @@ export function validateSimultaneousRedCutLegality(
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "No player has uncut yellow wires",
+    );
+  }
+
+  // Mission 13/48 rulebook exception:
+  // In 4-5 player games, an actor may perform the simultaneous action even
+  // with no matching-color wire in hand. For 2-3 players, they must have one.
+  const isLargeTeam = state.players.length >= 4;
+  const actorHasMatchingColor = actor.hand.some(
+    (tile) => !tile.cut && tile.color === requiredColor,
+  );
+  if (!isLargeTeam && !actorHasMatchingColor) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      requiredColor === "red"
+        ? "Mission 13: with 2-3 players, only a player with an uncut red wire can perform the simultaneous red cut"
+        : "Mission 48: with 2-3 players, only a player with an uncut yellow wire can perform the simultaneous yellow cut",
     );
   }
 
