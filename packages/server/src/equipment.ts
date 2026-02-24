@@ -1121,6 +1121,8 @@ export function executeUseEquipment(
         payload.targetPlayerId,
         payload.targetTileIndex,
         guessed,
+        undefined,
+        `${String(payload.guessValueA)}|${String(payload.guessValueB)}`,
       );
     }
     case "false_bottom": {

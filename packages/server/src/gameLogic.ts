@@ -178,6 +178,7 @@ export function executeDualCut(
   targetTileIndex: number,
   guessValue: number | "YELLOW",
   actorTileIndex?: number,
+  guessLabel?: string,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -187,6 +188,8 @@ export function executeDualCut(
     stabilizer != null &&
     stabilizer.playerId === actorId &&
     stabilizer.turnNumber === state.turnNumber;
+
+  const displayGuess = guessLabel ?? String(guessValue);
 
   const isCorrect = targetTile.gameValue === guessValue;
 
@@ -265,7 +268,7 @@ export function executeDualCut(
       state.result = "loss_detonator";
       state.phase = "finished";
       emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
-      addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓ (but detonator triggered)`);
+      addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✓ (but detonator triggered)`);
       return {
         type: "dualCutResult",
         actorId,
@@ -277,7 +280,7 @@ export function executeDualCut(
       };
     }
 
-    addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✓`);
+    addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✓`);
 
     // Check win
     if (checkWin(state)) {
@@ -314,7 +317,7 @@ export function executeDualCut(
           state,
           actorId,
           "dualCut",
-          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗ (Stabilizer prevented explosion)`,
+          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗ (Stabilizer prevented explosion)`,
         );
 
         advanceTurn(state);
@@ -438,7 +441,7 @@ export function executeDualCut(
       state,
       actorId,
       "dualCut",
-      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${guessValue} ✗` +
+      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗` +
         `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
         `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
     );
