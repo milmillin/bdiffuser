@@ -71,9 +71,6 @@ export function PlayerStand({
             <span className="ml-1 text-yellow-500 text-xs">(Captain)</span>
           )}
         </span>
-        <span className="text-xs text-gray-500">
-          {player.remainingTiles} tiles left
-        </span>
         {player.character && (
           <span
             data-testid={`character-skill-status-${player.id}`}
@@ -83,7 +80,7 @@ export function PlayerStand({
                 : "bg-emerald-900/70 text-emerald-200"
             }`}
           >
-            Skill {player.characterUsed ? "Used" : "Ready"}
+            Skill {player.characterUsed ? "Used" : "Available"}
           </span>
         )}
         {isCurrentTurn && (

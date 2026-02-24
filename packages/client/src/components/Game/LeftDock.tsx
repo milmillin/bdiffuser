@@ -310,7 +310,7 @@ function CardModal({
                 <div className={`absolute left-2 top-2 z-10 px-1.5 py-0.5 rounded text-xs font-bold ${
                   characterUsed ? "bg-rose-700/80 text-white" : "bg-emerald-700/80 text-white"
                 }`}>
-                  {characterUsed ? "Skill Used" : "Skill Ready"}
+                  {characterUsed ? "Skill Used" : "Skill Available"}
                 </div>
                 <div className="absolute right-2 top-2 z-10 px-1.5 py-0.5 rounded bg-violet-700/80 text-xs font-bold text-violet-100">
                   Personal

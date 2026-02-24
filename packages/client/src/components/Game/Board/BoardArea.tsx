@@ -158,7 +158,6 @@ export function DetonatorDial({
 
   return (
     <div className="flex items-center gap-2 flex-shrink-0" data-testid="detonator-dial">
-      <div className="text-xs font-bold uppercase text-gray-400">Detonator</div>
       <div className="flex gap-0.5">
         {Array.from({ length: TOTAL }, (_, i) => {
           const colors = SQUARE_COLORS[i];
