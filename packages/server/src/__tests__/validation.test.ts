@@ -877,6 +877,118 @@ describe("mission 9 sequence-priority validation", () => {
   });
 });
 
+describe("mission 23/39 simultaneous four target protection", () => {
+  it("mission 23: rejects regular cuts of the Number-card value before special action", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 23,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m23-target", value: 5, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 23");
+    expect(error!.message).toContain("simultaneous four-wire special action");
+  });
+
+  it("mission 23: still allows cuts of non-protected values", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 3 }), makeTile({ id: "a2", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 }), makeTile({ id: "t2", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 23,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m23-target", value: 5, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 3,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("mission 39: rejects Double Detector cuts of the Number-card value before special action", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 6 })],
+      character: "double_detector",
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 6 }), makeTile({ id: "t2", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 39,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m39-target", value: 6, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 6,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 39");
+    expect(error!.message).toContain("simultaneous four-wire special action");
+  });
+});
+
 describe("mission 46 sevens-last validation", () => {
   it("rejects dual cut of value 7 while actor still has other cuttable wires", () => {
     const actor = makePlayer({

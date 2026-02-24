@@ -1893,6 +1893,21 @@ registerHookHandler<"forced_general_radar_flow">("forced_general_radar_flow", {
  *   equipment card from the hidden pile until the special action succeeds.
  */
 registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
+  validate(_rule: SimultaneousFourCutRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.mission !== 23) return;
+    if (ctx.action.type === "simultaneousFourCut") return;
+
+    const targetValue = getProtectedSimultaneousFourValue(ctx.state);
+    if (targetValue == null) return;
+    if (!actionAttemptsCutValue(ctx.action, targetValue)) return;
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError:
+        `Mission 23: wires of value ${targetValue} can only be cut using the simultaneous four-wire special action`,
+    };
+  },
+
   setup(_rule: SimultaneousFourCutRuleDef, ctx: SetupHookContext): void {
     const value = MISSION_NUMBER_VALUES[Math.floor(Math.random() * MISSION_NUMBER_VALUES.length)];
 
@@ -2056,6 +2071,36 @@ function extractCutValue(action: ValidateHookContext["action"]): number | "YELLO
     return action.value as number | "YELLOW";
   }
   return null;
+}
+
+/**
+ * Whether a validate action attempts to cut a specific numeric value.
+ */
+function actionAttemptsCutValue(
+  action: ValidateHookContext["action"],
+  targetValue: number,
+): boolean {
+  const directValue = extractCutValue(action);
+  if (directValue === targetValue) return true;
+
+  if (action.type === "simultaneousCut") {
+    const cuts = Array.isArray(action.cuts) ? action.cuts : [];
+    return cuts.some(
+      (cut) => (cut as { guessValue?: number | "YELLOW" }).guessValue === targetValue,
+    );
+  }
+
+  return false;
+}
+
+/**
+ * Current protected value for missions that require a simultaneous 4-cut.
+ * Returns null once the special action has been completed.
+ */
+function getProtectedSimultaneousFourValue(state: Readonly<GameState>): number | null {
+  if (state.campaign?.mission23SpecialActionDone) return null;
+  const visibleValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  return typeof visibleValue === "number" ? visibleValue : null;
 }
 
 /**
@@ -3539,6 +3584,20 @@ registerHookHandler<"false_info_tokens">("false_info_tokens", {
  */
 registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
   validate(rule: SimultaneousMultiCutRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.mission === 39) {
+      if (ctx.action.type === "simultaneousFourCut") return;
+
+      const targetValue = getProtectedSimultaneousFourValue(ctx.state);
+      if (targetValue == null) return;
+      if (!actionAttemptsCutValue(ctx.action, targetValue)) return;
+
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          `Mission 39: wires of value ${targetValue} can only be cut using the simultaneous four-wire special action`,
+      };
+    }
+
     // Mission 48: yellow wires cannot be cut via normal dual/solo actions.
     // They must be cut through the dedicated simultaneous 3-yellow action.
     if (ctx.state.mission !== 48) return;

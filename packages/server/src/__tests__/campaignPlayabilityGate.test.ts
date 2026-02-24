@@ -17,6 +17,7 @@ import {
 } from "../gameLogic";
 import { applyMissionInfoTokenVariant } from "../infoTokenRules";
 import { dispatchHooks } from "../missionHooks";
+import { buildSimultaneousFourCutTargets } from "../simultaneousFourCutTargets";
 import { setupGame } from "../setup";
 import {
   advanceToNextSetupPlayer,
@@ -55,6 +56,11 @@ type ChosenAction =
     }
   | {
       kind: "simultaneousRedCut";
+      actorId: string;
+      targets: Array<{ playerId: string; tileIndex: number }>;
+    }
+  | {
+      kind: "simultaneousFourCut";
       actorId: string;
       targets: Array<{ playerId: string; tileIndex: number }>;
     };
@@ -145,6 +151,22 @@ function buildSimultaneousRedCutTargets(
 }
 
 function pickAction(state: GameState, actor: Player): ChosenAction | null {
+  const simultaneousFourTargets = buildSimultaneousFourCutTargets(state);
+  if (simultaneousFourTargets) {
+    const simultaneousFourError = validateActionWithHooks(state, {
+      type: "simultaneousFourCut",
+      actorId: actor.id,
+      targets: simultaneousFourTargets,
+    });
+    if (!simultaneousFourError) {
+      return {
+        kind: "simultaneousFourCut",
+        actorId: actor.id,
+        targets: simultaneousFourTargets,
+      };
+    }
+  }
+
   const actorValueToTileIndex = new Map<number | "YELLOW", number>();
   for (let i = 0; i < actor.hand.length; i++) {
     const tile = actor.hand[i];
@@ -487,6 +509,8 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
         );
       } else if (action.kind === "soloCut") {
         executeSoloCut(state, action.actorId, action.value);
+      } else if (action.kind === "simultaneousFourCut") {
+        executeSimultaneousFourCut(state, action.actorId, action.targets);
       } else if (action.kind === "simultaneousRedCut") {
         executeSimultaneousRedCut(state, action.actorId, action.targets);
       } else {
