@@ -282,6 +282,17 @@ export function GameBoard({
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const mission11RevealBlockedHint =
     isMyTurn && gameState.mission === 11 && !revealRedsAvailable;
+  const mission11RevealAttemptAvailable =
+    isMyTurn &&
+    gameState.phase === "playing" &&
+    gameState.mission === 11 &&
+    !gameState.pendingForcedAction &&
+    !equipmentMode &&
+    pendingAction == null &&
+    selectedGuessTile == null &&
+    !forceRevealReds &&
+    !!me &&
+    me.hand.some((tile) => !tile.cut);
   const soloValues = me ? getSoloCutValues(gameState, playerId) : [];
   const soloValueSet = new Set<number | "YELLOW">(soloValues);
   const mission9Gate = getMission9SequenceGate(gameState);
@@ -553,6 +564,22 @@ export function GameBoard({
 
   const cancelPendingAction = () => {
     setPendingAction(null);
+    setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
+  };
+
+  const stageMission11RevealAttempt = () => {
+    if (!isMyTurn || gameState.phase !== "playing" || gameState.mission !== 11 || !me) {
+      return;
+    }
+
+    const actorTileIndex = me.hand.findIndex((tile) => !tile.cut);
+    if (actorTileIndex === -1) return;
+
+    setPendingAction({
+      kind: "reveal_reds",
+      actorTileIndex,
+    });
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
   };
@@ -916,6 +943,7 @@ export function GameBoard({
                     selectedGuessValue={selectedGuessValue}
                     mission9SelectedGuessBlocked={mission9SelectedGuessBlocked}
                     mission9ActiveValue={mission9ActiveValue}
+                    mission11RevealAttemptAvailable={mission11RevealAttemptAvailable}
                     canConfirm={
                       pendingAction != null &&
                       !(
@@ -923,6 +951,7 @@ export function GameBoard({
                         mission9PendingDualBlocked
                       )
                     }
+                    onMission11RevealAttempt={stageMission11RevealAttempt}
                     onCancel={cancelPendingAction}
                     onConfirm={confirmPendingAction}
                   />
@@ -1347,7 +1376,9 @@ function PendingActionStrip({
   selectedGuessValue,
   mission9SelectedGuessBlocked,
   mission9ActiveValue,
+  mission11RevealAttemptAvailable,
   canConfirm,
+  onMission11RevealAttempt,
   onConfirm,
   onCancel,
 }: {
@@ -1357,12 +1388,36 @@ function PendingActionStrip({
   selectedGuessValue: ClientGameState["players"][number]["hand"][number]["gameValue"] | null;
   mission9SelectedGuessBlocked: boolean;
   mission9ActiveValue?: number;
+  mission11RevealAttemptAvailable: boolean;
   canConfirm: boolean;
+  onMission11RevealAttempt: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   if (!pendingAction) {
-    if (selectedGuessTile == null) return null;
+    if (selectedGuessTile == null) {
+      if (!mission11RevealAttemptAvailable) return null;
+      return (
+        <div
+          className="rounded-lg border border-sky-500/50 bg-sky-950/25 px-3 py-2 text-xs space-y-2"
+          data-testid="mission11-reveal-attempt"
+        >
+          <div className="font-bold text-sky-300 uppercase tracking-wide">
+            Mission 11 Reveal Check
+          </div>
+          <div className="text-sky-100">
+            If your remaining wires match the hidden red-like value, stage Reveal Reds to confirm.
+          </div>
+          <button
+            type="button"
+            onClick={onMission11RevealAttempt}
+            className="px-3 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white font-bold transition-colors"
+          >
+            Attempt Reveal Reds
+          </button>
+        </div>
+      );
+    }
     return (
       <div
         className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs"
