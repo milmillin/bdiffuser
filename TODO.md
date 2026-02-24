@@ -12,7 +12,7 @@ This file tracks all remaining work after introducing the central mission schema
 
 ## Status Legend
 
-- [ ] Not started
+- [x] Not started
 - [~] In progress
 - [x] Done
 
