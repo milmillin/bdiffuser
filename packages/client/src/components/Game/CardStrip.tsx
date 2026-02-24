@@ -65,7 +65,7 @@ function LockIcon({ className }: { className?: string }) {
   );
 }
 
-export function LeftDock({
+export function CardStrip({
   equipment,
   character,
   characterUsed,

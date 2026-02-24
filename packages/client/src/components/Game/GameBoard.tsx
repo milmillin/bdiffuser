@@ -44,7 +44,7 @@ import {
 } from "./equipmentModeLogic.js";
 import { stopMissionAudio } from "../../audio/audio.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
-import { LeftDock } from "./LeftDock.js";
+import { CardStrip } from "./CardStrip.js";
 import {
   canRevealReds,
   getImmediateEquipmentPayload,
@@ -479,7 +479,7 @@ export function GameBoard({
     return count;
   };
 
-  const canUseSkillFromLeftDock =
+  const canUseSkillFromCardStrip =
     !!me &&
     !!me.character &&
     !me.characterUsed &&
@@ -489,7 +489,7 @@ export function GameBoard({
     !forceRevealReds &&
     DOUBLE_DETECTOR_CHARACTERS.has(me.character);
 
-  const stageEquipmentActionFromLeftDock = (equipmentId: string): boolean => {
+  const stageEquipmentActionFromCardStrip = (equipmentId: string): boolean => {
     if (!me || gameState.phase !== "playing" || gameState.pendingForcedAction) {
       return false;
     }
@@ -539,8 +539,8 @@ export function GameBoard({
     return true;
   };
 
-  const stageSkillFromLeftDock = (): boolean => {
-    if (!me?.character || !canUseSkillFromLeftDock) return false;
+  const stageSkillFromCardStrip = (): boolean => {
+    if (!me?.character || !canUseSkillFromCardStrip) return false;
     setEquipmentMode({
       kind: "double_detector",
       targetPlayerId: null,
@@ -719,7 +719,7 @@ export function GameBoard({
                 {me && (
                   <div className="w-full flex justify-center">
                     <div className="w-full max-w-6xl">
-                      <LeftDock
+                      <CardStrip
                         equipment={gameState.board.equipment}
                         character={me.character}
                         characterUsed={me.characterUsed}
@@ -728,8 +728,8 @@ export function GameBoard({
                         selectedCardId={selectedDockCardId}
                         onSelectCard={setSelectedDockCardId}
                         onDeselectCard={cancelSelectedDockCard}
-                        onSelectEquipmentAction={stageEquipmentActionFromLeftDock}
-                        onSelectPersonalSkill={stageSkillFromLeftDock}
+                        onSelectEquipmentAction={stageEquipmentActionFromCardStrip}
+                        onSelectPersonalSkill={stageSkillFromCardStrip}
                       />
                     </div>
                   </div>
