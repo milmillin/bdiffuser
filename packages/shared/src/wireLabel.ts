@@ -8,3 +8,13 @@ export function wireLabel(index: number): string {
   } while (n >= 0);
   return label;
 }
+
+/** Wire label with swap indicator: appends `*` if the tile is not on its original owner's stand. */
+export function wireLabelOf(
+  player: { id: string; hand: readonly { originalOwnerId?: string }[] },
+  index: number,
+): string {
+  const tile = player.hand[index];
+  const isSwapped = tile?.originalOwnerId != null && tile.originalOwnerId !== player.id;
+  return wireLabel(index) + (isSwapped ? "*" : "");
+}

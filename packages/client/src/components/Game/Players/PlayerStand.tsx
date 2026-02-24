@@ -174,11 +174,15 @@ export function PlayerStand({
                       </div>
                     ))}
                     {/* Row 3: wire labels */}
-                    {segment.indices.map((flatIndex) => (
-                      <div key={`label-${flatIndex}`} className="text-center text-[10px] text-gray-500 font-mono leading-tight">
-                        {wireLabel(flatIndex)}
-                      </div>
-                    ))}
+                    {segment.indices.map((flatIndex) => {
+                      const tile = player.hand[flatIndex];
+                      const isSwapped = tile.originalOwnerId != null && tile.originalOwnerId !== player.id;
+                      return (
+                        <div key={`label-${flatIndex}`} className="text-center text-[10px] text-gray-500 font-mono leading-tight">
+                          {wireLabel(flatIndex)}{isSwapped && <span className="text-yellow-400">*</span>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

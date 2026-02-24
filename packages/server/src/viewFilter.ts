@@ -187,6 +187,7 @@ function filterPlayerFullyVisible(player: Player): ClientPlayer {
       id: tile.id,
       cut: tile.cut,
       ...(tile.isXMarked ? { isXMarked: true } : {}),
+      ...(tile.originalOwnerId != null ? { originalOwnerId: tile.originalOwnerId } : {}),
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -228,6 +229,7 @@ function getNormalizedStandSizes(player: Player): number[] {
 
 function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
   const upsideDown = (tile as WireTile & { upsideDown?: boolean }).upsideDown === true;
+  const ownerSpread = tile.originalOwnerId != null ? { originalOwnerId: tile.originalOwnerId } : {};
 
   // Cut wires are public.
   if (tile.cut) {
@@ -235,6 +237,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
       id: tile.id,
       cut: tile.cut,
       ...(tile.isXMarked ? { isXMarked: true } : {}),
+      ...ownerSpread,
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -250,6 +253,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
         id: tile.id,
         cut: false,
         ...(tile.isXMarked ? { isXMarked: true } : {}),
+        ...ownerSpread,
       };
     }
 
@@ -257,6 +261,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
       id: tile.id,
       cut: false,
       ...(tile.isXMarked ? { isXMarked: true } : {}),
+      ...ownerSpread,
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -270,6 +275,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
       id: tile.id,
       cut: tile.cut,
       ...(tile.isXMarked ? { isXMarked: true } : {}),
+      ...ownerSpread,
       color: tile.color,
       gameValue: tile.gameValue,
       sortValue: tile.sortValue,
@@ -281,6 +287,7 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
     id: tile.id,
     cut: false,
     ...(tile.isXMarked ? { isXMarked: true } : {}),
+    ...ownerSpread,
   };
 }
 

@@ -12,7 +12,7 @@ import type {
   GameResult,
   MissionAudioState,
 } from "@bomb-busters/shared";
-import { MISSION_SCHEMAS, logTemplate, wireLabel } from "@bomb-busters/shared";
+import { MISSION_SCHEMAS, logTemplate, wireLabel, wireLabelOf } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
@@ -89,8 +89,12 @@ interface Env {
   ZHIPU_API_KEY: string;
 }
 
-function describeInfoTokenLocation(position: number): string {
-  return position < 0 ? "beside stand" : `wire ${wireLabel(position)}`;
+function describeInfoTokenLocation(
+  position: number,
+  player?: { id: string; hand: readonly { originalOwnerId?: string }[] },
+): string {
+  if (position < 0) return "beside stand";
+  return player ? `wire ${wireLabelOf(player, position)}` : `wire ${wireLabel(position)}`;
 }
 
 export class BombBustersServer extends Server<Env> {
@@ -569,11 +573,12 @@ export class BombBustersServer extends Server<Env> {
 
     const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(this.room.gameState);
     for (const placement of autoPlacements) {
+      const placementPlayer = this.room.gameState.players.find((p) => p.id === placement.playerId);
       pushGameLog(this.room.gameState, {
         turn: 0,
         playerId: placement.playerId,
         action: "placeInfoToken",
-        detail: `placed random info token ${describeInfoToken(placement.token)} on ${describeInfoTokenLocation(placement.token.position)}`,
+        detail: `placed random info token ${describeInfoToken(placement.token)} on ${describeInfoTokenLocation(placement.token.position, placementPlayer)}`,
         timestamp: Date.now(),
       });
     }
@@ -648,7 +653,7 @@ export class BombBustersServer extends Server<Env> {
       turn: 0,
       playerId: conn.id,
       action: "placeInfoToken",
-      detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(tileIndex)}`,
+      detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(tileIndex, player)}`,
       timestamp: Date.now(),
     });
 
@@ -1070,7 +1075,7 @@ export class BombBustersServer extends Server<Env> {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m22:token_pass:value=${value}|to=${recipient.id}|position=${wireLabel(position)}`,
+      detail: `m22:token_pass:value=${value}|to=${recipient.id}|position=${wireLabelOf(recipient, position)}`,
       timestamp: Date.now(),
     });
 
@@ -1379,7 +1384,7 @@ export class BombBustersServer extends Server<Env> {
             turn: 0,
             playerId: player.id,
             action: "placeInfoToken",
-            detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(token.position)}`,
+            detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(token.position, player)}`,
             timestamp: Date.now(),
           });
         }

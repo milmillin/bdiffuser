@@ -8,7 +8,7 @@ import type {
   GameLogEntry,
 } from "@bomb-busters/shared";
 import type { GameAction } from "@bomb-busters/shared";
-import { wireLabel } from "@bomb-busters/shared";
+import { wireLabel, wireLabelOf } from "@bomb-busters/shared";
 import {
   getUncutTiles,
   getAllTiles,
@@ -304,7 +304,7 @@ export function executeDualCut(
           state,
           actorId,
           "dualCut",
-          `cut a RED-like hidden wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
+          `cut a RED-like hidden wire (${wireLabelOf(target, targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
         );
         return {
           type: "dualCutResult",
@@ -345,7 +345,7 @@ export function executeDualCut(
       state.result = "loss_detonator";
       state.phase = "finished";
       emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
-      addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✓ (but detonator triggered)`);
+      addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✓ (but detonator triggered)`);
       return {
         type: "dualCutResult",
         actorId,
@@ -357,7 +357,7 @@ export function executeDualCut(
       };
     }
 
-    addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✓`);
+    addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✓`);
 
     // Check win
     if (checkWin(state)) {
@@ -399,7 +399,7 @@ export function executeDualCut(
           state,
           actorId,
           "dualCut",
-          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗ (Stabilizer prevented explosion)`,
+          `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✗ (Stabilizer prevented explosion)`,
         );
 
         advanceTurn(state);
@@ -427,8 +427,8 @@ export function executeDualCut(
         actorId,
         "dualCut",
         targetTile.color === "red"
-          ? `cut a RED wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`
-          : `cut a RED-like hidden wire (${wireLabel(targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
+          ? `cut a RED wire (${wireLabelOf(target, targetTileIndex)}) on ${target.name}'s stand! BOOM!`
+          : `cut a RED-like hidden wire (${wireLabelOf(target, targetTileIndex)}) on ${target.name}'s stand! BOOM!`,
       );
 
       return {
@@ -453,7 +453,7 @@ export function executeDualCut(
         state,
         actorId,
         "dualCut",
-        `The Intern failed a Dual Cut on ${target.name}'s wire ${wireLabel(targetTileIndex)}. BOOM!`,
+        `The Intern failed a Dual Cut on ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)}. BOOM!`,
       );
       return {
         type: "dualCutResult",
@@ -475,7 +475,7 @@ export function executeDualCut(
         state,
         actorId,
         "dualCut",
-        `Captain Lazy failed a Dual Cut on ${target.name}'s wire ${wireLabel(targetTileIndex)}. BOOM!`,
+        `Captain Lazy failed a Dual Cut on ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)}. BOOM!`,
       );
       return {
         type: "dualCutResult",
@@ -498,7 +498,7 @@ export function executeDualCut(
           state,
           actorId,
           "dualCut",
-          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗ while attempting to cut their own flipped wire. BOOM!`,
+          `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✗ while attempting to cut their own flipped wire. BOOM!`,
         );
         return {
           type: "dualCutResult",
@@ -549,7 +549,7 @@ export function executeDualCut(
       state,
       actorId,
       "dualCut",
-      `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗` +
+      `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✗` +
         `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
         `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
     );
@@ -635,7 +635,7 @@ export function executeDualCutDoubleDetector(
     state,
     actorId,
     "dualCutDoubleDetector",
-    `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — Waiting for ${target.name} to confirm...`,
+    `used Double Detector on ${target.name}'s wires ${wireLabelOf(target, tileIndex1)} & ${wireLabelOf(target, tileIndex2)} guessing ${guessValue} — Waiting for ${target.name} to confirm...`,
   );
 
   return {
@@ -1161,7 +1161,7 @@ export function resolveDetectorTileChoice(
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
     const logAction = source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment";
-    addLog(state, actorId, logAction, `${target.name} confirmed wire ${wireLabel(effectiveTileIndex)} ✓ (but detonator triggered)`);
+    addLog(state, actorId, logAction, `${target.name} confirmed wire ${wireLabelOf(target, effectiveTileIndex)} ✓ (but detonator triggered)`);
     if (source === "doubleDetector") {
       return {
         type: "dualCutDoubleDetectorResult",
@@ -1191,7 +1191,7 @@ export function resolveDetectorTileChoice(
     state,
     actorId,
     logAction,
-    `${target.name} confirmed wire ${wireLabel(effectiveTileIndex)} to cut ✓`,
+    `${target.name} confirmed wire ${wireLabelOf(target, effectiveTileIndex)} to cut ✓`,
   );
 
   // Check win

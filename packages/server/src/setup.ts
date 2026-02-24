@@ -397,6 +397,9 @@ function flattenStandSeatsToPlayers(players: Player[], standSeats: StandSeat[]):
     player.standSizes = playerStandSeats.length
       ? playerStandSeats.map((standSeat) => standSeat.tiles.length)
       : [0];
+    for (const tile of player.hand) {
+      tile.originalOwnerId = player.id;
+    }
   }
 }
 

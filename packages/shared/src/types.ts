@@ -18,6 +18,8 @@ export interface WireTile {
   cut: boolean;
   /** Mission marker: this wire is marked with X (mission 20 style). */
   isXMarked?: boolean;
+  /** The player ID who originally owned this tile at game setup. */
+  originalOwnerId?: string;
 }
 
 /** What a client sees for a tile — hidden tiles omit color/value/image */
@@ -31,6 +33,8 @@ export interface VisibleTile {
   gameValue?: WireValue;
   sortValue?: number;
   image?: string;
+  /** The player ID who originally owned this tile at game setup. */
+  originalOwnerId?: string;
 }
 
 // ── Players ─────────────────────────────────────────────────

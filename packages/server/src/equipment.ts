@@ -18,6 +18,7 @@ import {
   DOUBLE_DETECTOR_CHARACTERS,
   logTemplate,
   wireLabel,
+  wireLabelOf,
 } from "@bomb-busters/shared";
 import {
   areFlatIndicesAdjacentWithinStand,
@@ -1150,7 +1151,7 @@ export function executeUseEquipment(
         position: payload.tileIndex,
         isYellow: false,
       }, actor));
-      addLog(state, actorId, "useEquipment", `used Post-it on wire ${wireLabel(payload.tileIndex)} with value ${value}`);
+      addLog(state, actorId, "useEquipment", `used Post-it on wire ${wireLabelOf(actor, payload.tileIndex)} with value ${value}`);
       return {
         type: "equipmentUsed",
         equipmentId,
@@ -1171,7 +1172,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used ${payload.kind === "label_eq" ? "Label =" : "Label !="} on wire ${wireLabel(payload.tileIndexA)} and wire ${wireLabel(payload.tileIndexB)}`,
+        `used ${payload.kind === "label_eq" ? "Label =" : "Label !="} on wire ${wireLabelOf(actor, payload.tileIndexA)} and wire ${wireLabelOf(actor, payload.tileIndexB)}`,
       );
       return {
         type: "equipmentUsed",
@@ -1370,7 +1371,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used X or Y Ray on ${target.name}'s wire ${wireLabel(payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
+        `used X or Y Ray on ${target.name}'s wire ${wireLabelOf(target, payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
       );
 
       return executeDualCut(
@@ -1417,7 +1418,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Single Wire Label on wire ${wireLabel(payload.tileIndex)} (value ${value} appears once)`,
+        `used Single Wire Label on wire ${wireLabelOf(actor, payload.tileIndex)} (value ${value} appears once)`,
       );
       return {
         type: "equipmentUsed",
@@ -1665,7 +1666,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Grappling Hook — took wire from ${target.name}'s stand (position ${wireLabel(payload.targetTileIndex)})`,
+        `used Grappling Hook — took wire from ${target.name}'s stand (position ${wireLabelOf(target, payload.targetTileIndex)})`,
       );
 
       return {
@@ -1997,7 +1998,7 @@ export function executeCharacterAbility(
         state,
         actorId,
         "characterAbility",
-        `used X or Y Ray on ${target.name}'s wire ${wireLabel(payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
+        `used X or Y Ray on ${target.name}'s wire ${wireLabelOf(target, payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
       );
       return executeDualCut(
         state,
