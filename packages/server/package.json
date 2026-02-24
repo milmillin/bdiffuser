@@ -1,6 +1,6 @@
 {
   "name": "@bomb-busters/server",
-  "version": "1.0.196",
+  "version": "1.0.197",
   "type": "module",
   "scripts": {
     "dev": "npx wrangler dev --port 1999",

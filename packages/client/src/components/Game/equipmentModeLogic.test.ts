@@ -273,19 +273,27 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile(), 4)).toBe(false); // idx 4 is not adjacent
   });
 
-  it("label_neq step 1: allows all uncut tiles", () => {
+  it("label_neq step 1: allows cut and uncut tiles", () => {
     const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 0)).toBe(true);
-    expect(filter(tile({ cut: true }), 0)).toBe(false);
+    expect(filter(tile({ cut: true }), 0)).toBe(true);
   });
 
-  it("label_neq step 2: allows only adjacent tiles", () => {
+  it("label_neq step 2: allows adjacent tiles unless both selected tiles are cut", () => {
+    const me = player({
+      hand: [
+        tile({ cut: true }),
+        tile({ cut: true }),
+        tile({ cut: false }),
+        tile({ cut: false }),
+      ],
+    });
     const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1 };
-    const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(true);
-    expect(filter(tile(), 2)).toBe(true);
-    expect(filter(tile(), 3)).toBe(false);
+    const filter = getOwnTileSelectableFilter(mode, me)!;
+    expect(filter(tile({ cut: true }), 0)).toBe(false);
+    expect(filter(tile({ cut: false }), 2)).toBe(true);
+    expect(filter(tile({ cut: false }), 3)).toBe(false);
   });
 
   it("talkies_walkies: allows uncut tiles even when no teammate selected", () => {
@@ -985,6 +993,13 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 1 });
   });
 
+  it("label_neq step 1: allows selecting a cut tile as firstTileIndex", () => {
+    const me = player({ hand: [tile({ cut: true }), tile()] });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0 });
+  });
+
   it("label_neq step 2: sends useEquipment for adjacent tile", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
     const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0 };
@@ -995,6 +1010,14 @@ describe("handleOwnTileClickEquipment", () => {
       equipmentId: "label_neq",
       payload: { kind: "label_neq", tileIndexA: 0, tileIndexB: 1 },
     });
+  });
+
+  it("label_neq step 2: blocks sending when both selected tiles are cut", () => {
+    const me = player({ hand: [tile({ cut: true }), tile({ cut: true }), tile()] });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0 };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual(mode);
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("talkies_walkies: sets myTileIndex when teammate is selected", () => {

@@ -76,10 +76,61 @@ function filterEquipmentCardForClient(
 }
 
 function filterLog(log: GameLogEntry[]): GameLogEntry[] {
-  // Keep mission-11 hidden blue-as-red setup value server-side only.
-  return log.filter(
-    (entry) => !(entry.action === "hookSetup" && entry.detail.startsWith("blue_as_red:")),
-  );
+  // Keep hidden card values server-side only.
+  return log
+    .filter(
+      (entry) => !(entry.action === "hookSetup" && entry.detail.startsWith("blue_as_red:")),
+    )
+    .map((entry) => {
+      const detail = redactHiddenCardNumbers(entry.action, entry.detail);
+      if (detail === entry.detail) return entry;
+      return { ...entry, detail };
+    });
+}
+
+function redactHiddenCardNumbers(action: string, detail: string): string {
+  if (
+    action === "hookSetup"
+    && detail.startsWith("equipment_double_lock:number_cards:")
+    && isNumericList(detail.slice("equipment_double_lock:number_cards:".length))
+  ) {
+    return "equipment_double_lock:number_cards:[redacted]";
+  }
+
+  if (
+    action === "hookSetup"
+    && detail.startsWith("m15:number_deck:init:")
+    && isNumericList(detail.slice("m15:number_deck:init:".length))
+  ) {
+    return "m15:number_deck:init:[redacted]";
+  }
+
+  if (action === "hookEffect" && detail.startsWith("m15:number_complete:")) {
+    const parts = detail.split("|");
+    return parts.map((part) => redactMission15Part(part)).join("|");
+  }
+
+  return detail;
+}
+
+function redactMission15Part(part: string): string {
+  if (part.startsWith("m15:number_complete:")) {
+    const value = part.slice("m15:number_complete:".length);
+    return isNumericList(value) ? "m15:number_complete:[redacted]" : part;
+  }
+  if (part.startsWith("next:")) {
+    const value = part.slice("next:".length);
+    return isNumericList(value) ? "next:[redacted]" : part;
+  }
+  if (part.startsWith("skipped:")) {
+    const value = part.slice("skipped:".length);
+    return isNumericList(value) ? "skipped:[redacted]" : part;
+  }
+  return part;
+}
+
+function isNumericList(value: string): boolean {
+  return /^-?\d+(,-?\d+)*$/.test(value);
 }
 
 /**

@@ -1736,6 +1736,54 @@ describe("equipment validation edge cases", () => {
     expect(error).toBeNull();
   });
 
+  it("accepts label_neq when one selected tile is already cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1", cut: true }),
+        makeTile({ id: "b1", gameValue: 5 }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects label_neq when both selected tiles are already cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeRedTile({ id: "r1", cut: true }),
+        makeTile({ id: "b1", gameValue: 5, cut: true }),
+      ],
+      infoTokens: [],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("label_neq", "Label !=", 1),
+    );
+
+    const error = validateUseEquipment(state, "actor", "label_neq", {
+      kind: "label_neq",
+      tileIndexA: 0,
+      tileIndexB: 1,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+    expect(error?.message).toBe("Label != cannot target two cut wires");
+  });
+
   it("rejects label_neq on adjacent red + red tiles", () => {
     const actor = makePlayer({
       id: "actor",

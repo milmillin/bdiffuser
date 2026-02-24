@@ -310,6 +310,12 @@ export function validateUseEquipment(
           "Label != requires two adjacent wires with different values",
         );
       }
+      if (payload.kind === "label_neq" && tileA.cut && tileB.cut) {
+        return legalityError(
+          "EQUIPMENT_RULE_VIOLATION",
+          "Label != cannot target two cut wires",
+        );
+      }
       return null;
     }
     case "talkies_walkies": {

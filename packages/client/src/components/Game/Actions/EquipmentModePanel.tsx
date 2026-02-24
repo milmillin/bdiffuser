@@ -373,7 +373,9 @@ export function EquipmentModePanel({
     case "label_eq":
     case "label_neq": {
       if (mode.firstTileIndex === null) {
-        content = "Click one of your uncut wires to select the first wire.";
+        content = mode.kind === "label_neq"
+          ? "Click one of your wires to select the first wire."
+          : "Click one of your uncut wires to select the first wire.";
       } else {
         const adjacentLabels: string[] = [];
         if (mode.firstTileIndex > 0)
@@ -384,6 +386,9 @@ export function EquipmentModePanel({
           <>
             Selected wire {wireLabel(mode.firstTileIndex)}. Now click an
             adjacent wire ({adjacentLabels.join(" or ")}).
+            {mode.kind === "label_neq"
+              ? " You can include at most one cut wire."
+              : ""}
           </>
         );
       }

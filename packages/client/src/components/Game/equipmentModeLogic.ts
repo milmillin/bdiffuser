@@ -65,9 +65,16 @@ export function getOwnTileSelectableFilter(
     case "double_detector":
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "label_eq":
-    case "label_neq":
       if (mode.firstTileIndex === null) return (tile) => !tile.cut;
       return (tile, idx) => !tile.cut && Math.abs(idx - mode.firstTileIndex!) === 1;
+    case "label_neq":
+      if (mode.firstTileIndex === null) return () => true;
+      return (tile, idx) => {
+        if (Math.abs(idx - mode.firstTileIndex!) !== 1) return false;
+        const firstTile = me.hand[mode.firstTileIndex!];
+        if (!firstTile) return false;
+        return !(firstTile.cut && tile.cut);
+      };
     case "talkies_walkies":
       return (tile) => !tile.cut;
     case "triple_detector":
@@ -253,7 +260,8 @@ export function handleOwnTileClickEquipment(
   if (!mode || !me) return { newMode: mode };
   const tile = me.hand[tileIndex];
   const allowCutTile =
-    mode.kind === "post_it" && isMission40CountHintSeat(gameState, me);
+    (mode.kind === "post_it" && isMission40CountHintSeat(gameState, me))
+    || mode.kind === "label_neq";
   if (!tile || (tile.cut && !allowCutTile)) return { newMode: mode };
 
   switch (mode.kind) {
@@ -274,7 +282,27 @@ export function handleOwnTileClickEquipment(
       if (mode.guessTileIndex === tileIndex) return { newMode: { ...mode, guessTileIndex: null } };
       return { newMode: { ...mode, guessTileIndex: tileIndex } };
     }
-    case "label_eq":
+    case "label_eq": {
+      if (mode.firstTileIndex === null) {
+        return { newMode: { ...mode, firstTileIndex: tileIndex } };
+      }
+      if (tileIndex === mode.firstTileIndex) {
+        return { newMode: { ...mode, firstTileIndex: null } };
+      }
+      if (Math.abs(tileIndex - mode.firstTileIndex) !== 1) return { newMode: mode };
+      return {
+        newMode: null,
+        sendPayload: {
+          type: "useEquipment",
+          equipmentId: mode.kind,
+          payload: {
+            kind: mode.kind,
+            tileIndexA: mode.firstTileIndex,
+            tileIndexB: tileIndex,
+          },
+        },
+      };
+    }
     case "label_neq": {
       if (mode.firstTileIndex === null) {
         return { newMode: { ...mode, firstTileIndex: tileIndex } };
@@ -283,6 +311,8 @@ export function handleOwnTileClickEquipment(
         return { newMode: { ...mode, firstTileIndex: null } };
       }
       if (Math.abs(tileIndex - mode.firstTileIndex) !== 1) return { newMode: mode };
+      const firstTile = me.hand[mode.firstTileIndex];
+      if (!firstTile || (firstTile.cut && tile.cut)) return { newMode: mode };
       return {
         newMode: null,
         sendPayload: {

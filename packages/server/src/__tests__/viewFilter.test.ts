@@ -205,6 +205,77 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.log[0].detail).toBe("some public action");
   });
 
+  it("redacts mission-12 equipment lock number lists in client logs", () => {
+    const state = makeGameState({
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "equipment_double_lock:number_cards:3,8,11",
+          timestamp: 1000,
+        },
+      ],
+    });
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toBe("equipment_double_lock:number_cards:[redacted]");
+  });
+
+  it("redacts mission-15 number deck setup values in client logs", () => {
+    const state = makeGameState({
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "m15:number_deck:init:7",
+          timestamp: 1000,
+        },
+      ],
+    });
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toBe("m15:number_deck:init:[redacted]");
+  });
+
+  it("redacts mission-15 completion/next/skipped values in client logs", () => {
+    const state = makeGameState({
+      log: [
+        {
+          turn: 2,
+          playerId: "p1",
+          action: "hookEffect",
+          detail:
+            "m15:number_complete:4|revealed_equipment:rewinder|next:7|skipped:9,11",
+          timestamp: 2000,
+        },
+      ],
+    });
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toBe(
+      "m15:number_complete:[redacted]|revealed_equipment:rewinder|next:[redacted]|skipped:[redacted]",
+    );
+  });
+
+  it("keeps visible-number mission logs unchanged", () => {
+    const state = makeGameState({
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: "m23:number_card:init:6",
+          timestamp: 1000,
+        },
+      ],
+    });
+    const filtered = filterStateForPlayer(state, "player-1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toBe("m23:number_card:init:6");
+  });
+
   it("preserves pending forced-action state for clients", () => {
     const state = makeGameState({
       pendingForcedAction: {
