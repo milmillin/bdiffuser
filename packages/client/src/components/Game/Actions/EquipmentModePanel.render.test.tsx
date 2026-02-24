@@ -122,15 +122,23 @@ const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
 
 describe("EquipmentModePanel — General", () => {
   it.each(ALL_MODES.map((m) => [m.kind, m] as const))(
-    "renders Cancel/Clear buttons for %s",
+    "renders Cancel button for %s",
     (_kind, mode) => {
       // emergency_batteries needs characterUsed players to show content,
       // but Cancel is always rendered by ModeWrapper regardless
       const html = renderMode(mode);
       expect(html).toContain("Cancel");
-      expect(html).toContain("Clear");
     },
   );
+
+  it.each(
+    ALL_MODES
+      .filter((m) => m.kind !== "general_radar")
+      .map((m) => [m.kind, m] as const),
+  )("renders Clear button for %s", (_kind, mode) => {
+    const html = renderMode(mode);
+    expect(html).toContain("Clear");
+  });
 
   it.each(ALL_MODES.map((m) => [m.kind, m] as const))(
     "renders title for %s",
@@ -206,6 +214,7 @@ describe("EquipmentModePanel — general_radar", () => {
       expect(html).toContain(`>${i}</button>`);
     }
     expect(html).not.toContain("Confirm General Radar");
+    expect(html).not.toContain("Clear");
     expect(html).toContain("data-testid=\"equipment-mode-panel\"");
   });
 

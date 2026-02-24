@@ -1963,6 +1963,7 @@ function PendingActionStrip({
   const hideCancelForRewinder =
     pendingAction.kind === "equipment" &&
     pendingAction.equipmentId === "rewinder";
+  let confirmLabel = "Confirm";
   switch (pendingAction.kind) {
     case "dual_cut": {
       const targetName =
@@ -1971,6 +1972,7 @@ function PendingActionStrip({
       summary = `Dual Cut: ${wireLabel(pendingAction.actorTileIndex)} (${String(
         pendingAction.guessValue,
       )}) -> ${targetName} ${wireLabel(pendingAction.targetTileIndex)}`;
+      confirmLabel = `Confirm Dual Cut (${String(pendingAction.guessValue)})`;
       break;
     }
     case "solo_cut":
@@ -2009,7 +2011,7 @@ function PendingActionStrip({
           disabled={!canConfirm}
           className={BUTTON_PRIMARY_CLASS}
         >
-          Confirm
+          {confirmLabel}
         </button>
       </div>
     </div>

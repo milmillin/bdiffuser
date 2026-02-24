@@ -90,6 +90,7 @@ function ModeWrapper({
   children,
   onCancel,
   onClear,
+  showClearButton = true,
   confirmButton,
 }: {
   kind: EquipmentMode["kind"];
@@ -97,6 +98,7 @@ function ModeWrapper({
   children: React.ReactNode;
   onCancel: () => void;
   onClear: () => void;
+  showClearButton?: boolean;
   confirmButton?: React.ReactNode;
 }) {
   return (
@@ -116,9 +118,15 @@ function ModeWrapper({
         >
           Cancel
         </button>
-        <button type="button" onClick={onClear} className={BUTTON_SECONDARY_CLASS}>
-          Clear
-        </button>
+        {showClearButton ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className={BUTTON_SECONDARY_CLASS}
+          >
+            Clear
+          </button>
+        ) : null}
         {confirmButton}
       </div>
     </div>
@@ -936,6 +944,7 @@ export function EquipmentModePanel({
       testId={testId}
       onCancel={onCancel}
       onClear={onClear}
+      showClearButton={mode.kind !== "general_radar"}
       confirmButton={confirmButton}
     >
       {content}
