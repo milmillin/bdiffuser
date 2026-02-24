@@ -1600,6 +1600,50 @@ describe("equipment execution", () => {
     expect(state.board.detonatorPosition).toBe(0);
   });
 
+  it("stabilizer still cuts a red wire on failed dual cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "red", gameValue: "RED", sortValue: 5.5 })],
+    });
+
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "stabilizer",
+            name: "Stabilizer",
+            unlockValue: 9,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+
+    executeUseEquipment(state, "actor", "stabilizer", { kind: "stabilizer" });
+
+    const action = executeDualCut(state, "actor", "target", 0, 5);
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.explosion).toBe(false);
+      expect(action.detonatorAdvanced).toBe(false);
+    }
+    expect(state.phase).toBe("playing");
+    expect(state.result).toBeNull();
+    expect(state.board.detonatorPosition).toBe(0);
+    expect(target.hand[0].cut).toBe(true);
+    expect(target.infoTokens).toEqual([]);
+  });
+
   it("triple detector resolves by running a dual cut against one of chosen indices", () => {
     const actor = makePlayer({
       id: "actor",
