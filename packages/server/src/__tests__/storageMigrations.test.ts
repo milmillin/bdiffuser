@@ -436,6 +436,112 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves mission46 sevens-cut forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 1,
+        turnNumber: 9,
+        mission: 46,
+        result: null,
+        pendingForcedAction: {
+          kind: "mission46SevensCut",
+          playerId: "p2",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f3");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission46SevensCut",
+      playerId: "p2",
+    });
+  });
+
+  it("preserves detector tile-choice forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 4,
+        mission: 6,
+        result: null,
+        pendingForcedAction: {
+          kind: "detectorTileChoice",
+          targetPlayerId: "p2",
+          actorId: "captain",
+          matchingTileIndices: [1, "bad", 3],
+          guessValue: 7,
+          source: "tripleDetector",
+          originalTargetTileIndices: [0, "x", 2],
+          actorTileIndex: 5,
+          equipmentId: "triple_detector",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f4");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "detectorTileChoice",
+      targetPlayerId: "p2",
+      actorId: "captain",
+      matchingTileIndices: [1, 3],
+      guessValue: 7,
+      source: "tripleDetector",
+      originalTargetTileIndices: [0, 2],
+      actorTileIndex: 5,
+      equipmentId: "triple_detector",
+    });
+  });
+
   it("preserves campaign mission objects and timer state across restore", () => {
     const legacy = {
       gameState: {

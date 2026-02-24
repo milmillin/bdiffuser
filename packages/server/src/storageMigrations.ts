@@ -456,8 +456,7 @@ function normalizeGameState(
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
   const missionAudio = normalizeMissionAudio(obj.missionAudio);
-  // Forced-action migration: supports chooseNextPlayer, designateCutter,
-  // mission22TokenPass, and talkiesWalkiesTileChoice.
+  // Forced-action migration: supports all persisted forced-action kinds.
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
     if (
@@ -504,6 +503,63 @@ function normalizeGameState(
           (value): value is number => typeof value === "number" && Number.isFinite(value),
         ),
         completedCount: obj.pendingForcedAction.completedCount,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission46SevensCut"
+      && typeof obj.pendingForcedAction.playerId === "string"
+      && obj.pendingForcedAction.playerId
+    ) {
+      pendingForcedAction = {
+        kind: "mission46SevensCut" as const,
+        playerId: obj.pendingForcedAction.playerId,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "detectorTileChoice"
+      && typeof obj.pendingForcedAction.targetPlayerId === "string"
+      && obj.pendingForcedAction.targetPlayerId
+      && typeof obj.pendingForcedAction.actorId === "string"
+      && obj.pendingForcedAction.actorId
+      && Array.isArray(obj.pendingForcedAction.matchingTileIndices)
+      && typeof obj.pendingForcedAction.guessValue === "number"
+      && Number.isFinite(obj.pendingForcedAction.guessValue)
+      && (
+        obj.pendingForcedAction.source === "doubleDetector"
+        || obj.pendingForcedAction.source === "tripleDetector"
+        || obj.pendingForcedAction.source === "superDetector"
+      )
+    ) {
+      pendingForcedAction = {
+        kind: "detectorTileChoice" as const,
+        targetPlayerId: obj.pendingForcedAction.targetPlayerId,
+        actorId: obj.pendingForcedAction.actorId,
+        matchingTileIndices: obj.pendingForcedAction.matchingTileIndices.filter(
+          (value): value is number => typeof value === "number" && Number.isFinite(value),
+        ),
+        guessValue: obj.pendingForcedAction.guessValue,
+        source: obj.pendingForcedAction.source,
+        ...(typeof obj.pendingForcedAction.originalTileIndex1 === "number"
+          && Number.isFinite(obj.pendingForcedAction.originalTileIndex1)
+          ? { originalTileIndex1: obj.pendingForcedAction.originalTileIndex1 }
+          : {}),
+        ...(typeof obj.pendingForcedAction.originalTileIndex2 === "number"
+          && Number.isFinite(obj.pendingForcedAction.originalTileIndex2)
+          ? { originalTileIndex2: obj.pendingForcedAction.originalTileIndex2 }
+          : {}),
+        ...(Array.isArray(obj.pendingForcedAction.originalTargetTileIndices)
+          ? {
+              originalTargetTileIndices: obj.pendingForcedAction.originalTargetTileIndices.filter(
+                (value): value is number => typeof value === "number" && Number.isFinite(value),
+              ),
+            }
+          : {}),
+        ...(typeof obj.pendingForcedAction.actorTileIndex === "number"
+          && Number.isFinite(obj.pendingForcedAction.actorTileIndex)
+          ? { actorTileIndex: obj.pendingForcedAction.actorTileIndex }
+          : {}),
+        ...(typeof obj.pendingForcedAction.equipmentId === "string"
+          && obj.pendingForcedAction.equipmentId
+          ? { equipmentId: obj.pendingForcedAction.equipmentId }
+          : {}),
       };
     } else if (
       obj.pendingForcedAction.kind === "talkiesWalkiesTileChoice"
