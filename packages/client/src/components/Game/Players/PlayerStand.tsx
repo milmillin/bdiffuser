@@ -28,6 +28,7 @@ export function PlayerStand({
   statusContent?: ReactNode;
 }) {
   const standSegments = getStandSegments(player);
+  const tokenRowMinHeightPx = getTokenRowMinHeight(player);
 
   return (
     <div
@@ -120,7 +121,11 @@ export function PlayerStand({
                         (token) => token.position === flatIndex || token.positionB === flatIndex,
                       );
                       return (
-                        <div key={`info-${flatIndex}`} className="flex items-end justify-center">
+                        <div
+                          key={`info-${flatIndex}`}
+                          className="flex items-end justify-center"
+                          style={tokenRowMinHeightPx > 0 ? { minHeight: `${tokenRowMinHeightPx}px` } : undefined}
+                        >
                           <div className="flex flex-col items-center gap-0.5">
                             {infoTokens.map((token, tokenIndex) => (
                               <InfoTokenView
@@ -207,6 +212,27 @@ function getValidatedStandSizes(player: ClientPlayer): number[] {
     return [player.hand.length];
   }
   return maybeStandSizes;
+}
+
+function getTokenRowMinHeight(player: ClientPlayer): number {
+  let maxTokenStack = 0;
+  for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex += 1) {
+    let count = 0;
+    for (const token of player.infoTokens) {
+      if (token.position === tileIndex || token.positionB === tileIndex) {
+        count += 1;
+      }
+    }
+    if (count > maxTokenStack) {
+      maxTokenStack = count;
+    }
+  }
+
+  if (maxTokenStack <= 0) return 0;
+
+  const tokenHeightPx = 24;
+  const tokenGapPx = 2;
+  return (maxTokenStack * tokenHeightPx) + ((maxTokenStack - 1) * tokenGapPx);
 }
 
 function getInfoTokenImage(token: InfoToken): string {

@@ -71,4 +71,31 @@ describe("PlayerStand", () => {
     const matches = html.match(/alt="Info: 5"/g) ?? [];
     expect(matches).toHaveLength(2);
   });
+
+  it("keeps stand segments aligned when only one stand has info tokens", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 8, sortValue: 8 }),
+      ],
+      standSizes: [1, 1],
+      infoTokens: [{ value: 5, position: 0, isYellow: false }],
+    }) as ClientPlayer;
+    player.remainingTiles = 2;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    const minHeightStyles = html.match(/min-height:\d+px/g) ?? [];
+    expect(minHeightStyles.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(minHeightStyles).size).toBe(1);
+  });
 });
