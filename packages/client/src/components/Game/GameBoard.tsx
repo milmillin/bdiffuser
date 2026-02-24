@@ -22,6 +22,7 @@ import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import { DetectorTileChoicePanel } from "./Actions/DetectorTileChoicePanel.js";
+import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel } from "./RightPanel.js";
@@ -65,12 +66,14 @@ type UnknownForcedAction = {
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
 const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
+const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
   FORCED_ACTION_DETECTOR_TILE_CHOICE,
+  FORCED_ACTION_MISSION22_TOKEN_PASS,
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
 ]);
@@ -268,6 +271,8 @@ export function GameBoard({
         ? pendingForcedAction.designatorId
       : pendingForcedAction?.kind === "detectorTileChoice"
         ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === "mission22TokenPass"
+        ? pendingForcedAction.currentChooserId
       : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
         ? pendingForcedAction.targetPlayerId
           : undefined);
@@ -1061,6 +1066,19 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Playing phase: forced action (mission 22 token pass choice) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION22_TOKEN_PASS &&
+                  gameState.pendingForcedAction.currentChooserId === playerId &&
+                  me && (
+                    <Mission22TokenPassPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {/* Playing phase: forced action (walkies target chooses wire) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -1570,6 +1588,21 @@ function getStatusContent(
             )
           </span>
         )}
+      </span>
+    );
+  }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "mission22TokenPass" &&
+    pendingForcedAction.currentChooserId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the active player"}
+        </span>{" "}
+        to choose a token value to pass...
       </span>
     );
   }
