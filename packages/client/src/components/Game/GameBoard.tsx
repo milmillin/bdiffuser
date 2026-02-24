@@ -598,8 +598,6 @@ export function GameBoard({
               equipment={gameState.board.equipment}
               character={me?.character}
               characterUsed={me?.characterUsed}
-              missionId={gameState.mission}
-              playerCount={gameState.players.length}
               onOpenRules={() => setIsRulesPopupOpen(true)}
               onSelectEquipmentAction={stageEquipmentActionFromLeftDock}
               onSelectPersonalSkill={stageSkillFromLeftDock}

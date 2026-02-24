@@ -2,12 +2,10 @@ import { useState, useCallback, useEffect } from "react";
 import {
   EQUIPMENT_DEFS,
   getEquipmentCardText,
-  MISSION_IMAGES,
   CHARACTER_CARD_TEXT,
   CHARACTER_IMAGES,
   type BoardState,
   type CharacterId,
-  type MissionId,
 } from "@bomb-busters/shared";
 
 const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
@@ -53,14 +51,6 @@ function getStatusLabel(eq: BoardState["equipment"][number]) {
   return { label: `Lock ${eq.unlockValue}x2`, className: "bg-black/70 text-yellow-200" };
 }
 
-function MapIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-      <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM14 5.586v12.828l2.293-2.293A1 1 0 0017 15.414V5.414a1 1 0 00-.293-.707L14 2.414v3.172z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
 function WrenchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
@@ -85,17 +75,14 @@ function BookIcon({ className }: { className?: string }) {
   );
 }
 
-type TabId = "mission_front" | "mission_back" | "equip_personal" | `equip_${string}`;
+type TabId = "equip_personal" | `equip_${string}`;
 
 /** Returns the image src for a given tab, or null if no image. */
 function getTabImage(
   tabId: TabId,
-  missionId: MissionId,
   equipment: BoardState["equipment"],
   charImage: string | null,
 ): string | null {
-  if (tabId === "mission_front") return `/images/${MISSION_IMAGES[missionId]}`;
-  if (tabId === "mission_back") return `/images/mission_${missionId}_back.jpg`;
   if (tabId === "equip_personal") return charImage ? `/images/${charImage}` : null;
   const eqId = tabId.replace("equip_", "");
   const eq = equipment.find((e) => e.id === eqId);
@@ -116,8 +103,6 @@ export function LeftDock({
   equipment,
   character,
   characterUsed,
-  missionId,
-  playerCount,
   onOpenRules,
   onSelectEquipmentAction,
   onSelectPersonalSkill,
@@ -125,8 +110,6 @@ export function LeftDock({
   equipment: BoardState["equipment"];
   character?: CharacterId | null;
   characterUsed?: boolean;
-  missionId: MissionId;
-  playerCount: number;
   onOpenRules: () => void;
   onSelectEquipmentAction?: (equipmentId: string) => void;
   onSelectPersonalSkill?: () => void;
@@ -163,7 +146,7 @@ export function LeftDock({
   }, []);
 
   const hoverImage = hoveredTab && !modalTab
-    ? getTabImage(hoveredTab, missionId, equipment, charImage)
+    ? getTabImage(hoveredTab, equipment, charImage)
     : null;
 
   return (
@@ -172,39 +155,6 @@ export function LeftDock({
         <div className="absolute inset-y-0 left-0 flex">
           {/* Tab strip */}
           <div className="flex flex-col w-9 py-1 gap-1.5 overflow-y-auto overscroll-none flex-shrink-0">
-            {/* Mission front tab */}
-            <TabButton
-              active={modalTab === "mission_front"}
-              onClick={() => setModalTab("mission_front")}
-              onHover={handleHover}
-              tabId="mission_front"
-              title="Mission card (front)"
-              gradient="linear-gradient(135deg, #1e3a5f 0%, #1a2744 100%)"
-              activeGradient="linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"
-            >
-              <MapIcon className="text-blue-300" />
-              <span className="text-[9px] leading-none mt-0.5 font-semibold text-blue-300">F</span>
-            </TabButton>
-
-            {/* Mission back tab */}
-            <TabButton
-              active={modalTab === "mission_back"}
-              onClick={() => setModalTab("mission_back")}
-              onHover={handleHover}
-              tabId="mission_back"
-              title="Mission card (back)"
-              gradient="linear-gradient(135deg, #1e3a5f 0%, #1a2744 100%)"
-              activeGradient="linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"
-            >
-              <MapIcon className="text-blue-300" />
-              <span className="text-[9px] leading-none mt-0.5 font-semibold text-blue-300">B</span>
-            </TabButton>
-
-            {/* Divider */}
-            {(equipment.length > 0 || character) && (
-              <div className="mx-2 my-1.5 border-t border-gray-600/50" />
-            )}
-
             {/* Personal equipment tab */}
             {character && charText && (
               <TabButton
@@ -298,7 +248,6 @@ export function LeftDock({
       {modalTab && (
         <CardModal
           tabId={modalTab}
-          missionId={missionId}
           equipment={equipment}
           character={character ?? null}
           characterUsed={characterUsed ?? false}
@@ -315,7 +264,6 @@ export function LeftDock({
 
 function CardModal({
   tabId,
-  missionId,
   equipment,
   character,
   characterUsed,
@@ -326,7 +274,6 @@ function CardModal({
   onClose,
 }: {
   tabId: TabId;
-  missionId: MissionId;
   equipment: BoardState["equipment"];
   character: CharacterId | null;
   characterUsed: boolean;
@@ -347,28 +294,6 @@ function CardModal({
         style={{ background: "linear-gradient(180deg, #1e2235 0%, #131720 40%, #171c28 100%)" }}
       >
         <div className="p-4">
-          {/* Mission cards */}
-          {tabId === "mission_front" && (
-            <div className="space-y-2">
-              <div className="text-sm text-gray-400 font-bold uppercase tracking-wide">Mission {missionId} — Front</div>
-              <img
-                src={`/images/${MISSION_IMAGES[missionId]}`}
-                alt={`Mission ${missionId} (front)`}
-                className="w-full h-auto rounded-lg"
-              />
-            </div>
-          )}
-          {tabId === "mission_back" && (
-            <div className="space-y-2">
-              <div className="text-sm text-gray-400 font-bold uppercase tracking-wide">Mission {missionId} — Back</div>
-              <img
-                src={`/images/mission_${missionId}_back.jpg`}
-                alt={`Mission ${missionId} (back)`}
-                className="w-full h-auto rounded-lg"
-              />
-            </div>
-          )}
-
           {/* Personal equipment */}
           {tabId === "equip_personal" && character && charText && (() => {
             const showImage = !flippedCards.has(`personal-${character}`);
