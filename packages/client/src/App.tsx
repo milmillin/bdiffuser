@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
+import { useTurnNotification } from "./hooks/useTurnNotification.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
@@ -297,6 +298,7 @@ function GameRoom({
 
   const { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId } =
     usePartySocket(roomId, { id: stableId, onIdReady: handleIdReady });
+  useTurnNotification(gameState, playerId);
   const [joined, setJoined] = useState(false);
 
   // Auto-join when connected
