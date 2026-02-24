@@ -267,7 +267,7 @@ export function CardStrip({
           onClick={() => setPreviewCard(null)}
         >
           <div
-            className="relative w-full max-w-2xl rounded-2xl border border-gray-600 bg-[var(--color-bomb-surface)] p-3"
+            className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden rounded-2xl border border-gray-600 bg-[var(--color-bomb-surface)] p-3"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -277,8 +277,8 @@ export function CardStrip({
             >
               Close
             </button>
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="w-full aspect-[739/1040] overflow-hidden rounded-xl bg-slate-900">
+            <div className="min-h-0 overflow-y-auto overscroll-none grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <div className="w-full aspect-[739/1040] max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900">
                 {previewCard.previewImage ? (
                   <img
                     src={`/images/${previewCard.previewImage}`}
@@ -289,7 +289,7 @@ export function CardStrip({
                   <div className="h-full w-full bg-slate-900" />
                 )}
               </div>
-              <div className="max-h-[70vh] overflow-y-auto space-y-4 pr-2 text-white">
+              <div className="space-y-4 pr-2 text-white">
                 <div className="text-base font-bold leading-tight">
                   {previewCard.name}
                 </div>

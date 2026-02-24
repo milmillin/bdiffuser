@@ -267,26 +267,26 @@ export function ShameDashboard({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto overscroll-none"
       style={{
         background: isWin
           ? "radial-gradient(ellipse at 50% 30%, #4d7c0f 0%, #1a2e05 50%, #0a1204 100%)"
           : "radial-gradient(ellipse at 50% 30%, #4c0519 0%, #1c0a12 50%, #0a0406 100%)",
       }}
     >
-      <div className="max-w-lg w-full text-center space-y-6 py-8">
-        <div className={`text-7xl ${isWin ? "drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]" : "drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"}`}>
+      <div className="max-w-lg w-full text-center space-y-4 sm:space-y-6 py-4 sm:py-8 my-auto">
+        <div className={`text-5xl sm:text-7xl ${isWin ? "drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]" : "drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"}`}>
           {isWin ? "🏆" : "💀"}
         </div>
 
-        <h1 className={`text-4xl font-black uppercase tracking-widest text-white ${isWin ? "drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]" : "drop-shadow-[0_0_20px_rgba(239,68,68,0.6)]"}`}>
+        <h1 className={`text-2xl sm:text-4xl font-black uppercase tracking-widest text-white ${isWin ? "drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]" : "drop-shadow-[0_0_20px_rgba(239,68,68,0.6)]"}`}>
           {isWin ? "MVP Board" : "Wall of Shame"}
         </h1>
-        <p className={`text-lg font-bold uppercase tracking-wide ${isWin ? "text-lime-300/80" : "text-rose-300/80"}`}>
+        <p className={`text-sm sm:text-lg font-bold uppercase tracking-wide ${isWin ? "text-lime-300/80" : "text-rose-300/80"}`}>
           {isWin ? "Ranked by who carried the hardest" : "Ranked by who ruined it the most"}
         </p>
 
-        <div className="space-y-4 mt-4">
+        <div className="space-y-3 sm:space-y-4 mt-2 sm:mt-4">
           {rankings.map((player, i) => {
             const style = rankStyles[Math.min(i, rankStyles.length - 1)];
             const rate = getSuccessRate(player);
@@ -299,7 +299,7 @@ export function ShameDashboard({
             return (
               <div
                 key={player.id}
-                className={`bg-gradient-to-r ${style.card} border-2 rounded-2xl p-5 text-left flex gap-4 items-start ${isTop ? "scale-105" : ""}`}
+                className={`bg-gradient-to-r ${style.card} border-2 rounded-2xl p-3 sm:p-5 text-left flex gap-3 sm:gap-4 items-start ${isTop ? "sm:scale-105" : ""}`}
               >
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div

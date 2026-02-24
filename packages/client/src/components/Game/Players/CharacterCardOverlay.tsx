@@ -32,11 +32,11 @@ export function CharacterCardOverlay({
       aria-label={`${card.name} character card`}
     >
       <div
-        className="relative max-w-sm w-full rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] shadow-2xl overflow-hidden"
+        className="relative max-w-sm w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
+        <div className="shrink-0 flex items-center justify-between border-b border-gray-700 px-4 py-3">
           <h2 className="text-sm font-black uppercase tracking-wide text-gray-100">
             {card.name}
           </h2>
@@ -52,7 +52,7 @@ export function CharacterCardOverlay({
 
         {/* Character image */}
         {image && (
-          <div className="flex justify-center px-4 pt-4">
+          <div className="shrink-0 flex justify-center px-4 pt-4">
             <img
               src={`/images/${image}`}
               alt={card.name}
@@ -62,7 +62,7 @@ export function CharacterCardOverlay({
         )}
 
         {/* Card content */}
-        <div className="px-4 py-3 space-y-3">
+        <div className="min-h-0 overflow-y-auto overscroll-none px-4 py-3 space-y-3">
           {/* Skill status badge */}
           <div className="flex items-center gap-2">
             <span
