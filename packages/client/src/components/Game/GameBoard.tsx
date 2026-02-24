@@ -183,7 +183,6 @@ export function GameBoard({
     number | null
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"mission" | "equipment" | "log" | null>(null);
 
   // Character card overlay state
   const [viewingCharacter, setViewingCharacter] = useState<{
@@ -791,19 +790,6 @@ export function GameBoard({
                     />
                   )}
 
-                {/* Playing phase: forced action (detector tile choice - target player) */}
-                {gameState.phase === "playing" &&
-                  gameState.pendingForcedAction?.kind ===
-                    FORCED_ACTION_DETECTOR_TILE_CHOICE &&
-                  gameState.pendingForcedAction.targetPlayerId === playerId &&
-                  me && (
-                    <DetectorTileChoicePanel
-                      gameState={gameState}
-                      send={send}
-                      playerId={playerId}
-                    />
-                  )}
-
                 {/* Playing phase: forced action (walkies target chooses wire) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -895,6 +881,19 @@ export function GameBoard({
                     onConfirm={confirmPendingAction}
                   />
                 )}
+
+                {/* Playing phase: forced action (detector tile choice - target player) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DETECTOR_TILE_CHOICE &&
+                  gameState.pendingForcedAction.targetPlayerId === playerId &&
+                  me && (
+                    <DetectorTileChoicePanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
 
                 {/* Setup phase: info token placement */}
                 {isSetup && isMyTurn && (
@@ -1105,69 +1104,6 @@ export function GameBoard({
           />
         </div>
 
-        {/* Mobile bottom drawer */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-          {/* Tab buttons */}
-          <div className="flex bg-[var(--color-bomb-surface)] border-t border-gray-700">
-            {(["mission", "equipment", "log"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setMobileTab(mobileTab === tab ? null : tab)}
-                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${
-                  mobileTab === tab
-                    ? "text-yellow-400 bg-gray-800"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {tab === "mission" ? "Mission" : tab === "equipment" ? "Equipment" : "Log"}
-              </button>
-            ))}
-          </div>
-
-          {/* Drawer content */}
-          {mobileTab && (
-            <div className="bg-[var(--color-bomb-dark)] border-t border-gray-700 max-h-[50vh] overflow-y-auto p-3">
-              {mobileTab === "mission" && (
-                <>
-                  <MissionRuleHints gameState={gameState} />
-                  <ActionMissionHints
-                    mission={gameState.mission}
-                    isMyTurn={isMyTurn}
-                    mission11RevealBlockedHint={mission11RevealBlockedHint}
-                    mission9ActiveValue={mission9ActiveValue}
-                    mission9RequiredCuts={mission9RequiredCuts}
-                    mission9ActiveProgress={mission9ActiveProgress}
-                    mission9DualGuessBlocked={
-                      mission9PendingDualBlocked || mission9SelectedGuessBlocked
-                    }
-                    mission9HasYellowSoloValue={mission9HasYellowSoloValue}
-                    forceRevealReds={forceRevealReds}
-                  />
-                  <MissionAudioPlayer gameState={gameState} send={send} />
-                </>
-              )}
-              {mobileTab === "equipment" && (
-                <div className="space-y-2">
-                  {gameState.board.equipment.map((eq) => (
-                    <div key={eq.id} className={`rounded-lg px-3 py-2 text-xs ${eq.used ? "bg-gray-800 text-gray-500 line-through" : eq.unlocked ? "bg-emerald-900/30 text-emerald-200" : "bg-gray-800 text-gray-400"}`}>
-                      <div className="font-bold">{eq.name}</div>
-                      <div className="text-[10px] opacity-70">{eq.description}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {mobileTab === "log" && (
-                <div className="space-y-2">
-                  <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
-                  <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Mobile bottom padding to prevent content being hidden behind tab bar */}
-        <div className="md:hidden h-12" />
       </div>
 
       <GameRulesPopup
