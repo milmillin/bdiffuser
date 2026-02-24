@@ -79,6 +79,87 @@ describe("campaign equipment", () => {
       ]);
       expect(state.campaign?.equipmentReserve).toHaveLength(0);
     });
+
+    it("drawn 22-equipment stays locked until 4 matching cuts exist", () => {
+      const state = makeGameState({
+        players: [
+          makePlayer({
+            hand: [
+              makeTile({ id: "a2-1", gameValue: 2, cut: true }),
+              makeTile({ id: "a2-2", gameValue: 5 }),
+            ],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "P2",
+            hand: [makeTile({ id: "b2-1", gameValue: 2, cut: true })],
+          }),
+        ],
+        board: makeBoardState({ equipment: [unlockedCard("false_bottom", "YELLOW")] }),
+        campaign: {
+          equipmentReserve: [
+            makeEquipmentCard({
+              id: "single_wire_label",
+              name: "Single Wire Label",
+              unlockValue: 2,
+              unlocked: false,
+            }),
+          ],
+        },
+      });
+
+      executeUseEquipment(state, "player-1", "false_bottom", {
+        kind: "false_bottom",
+      });
+
+      const drawn = state.board.equipment.find(
+        (eq) => eq.id === "single_wire_label",
+      );
+      expect(drawn).toBeDefined();
+      expect(drawn?.unlocked).toBe(false);
+    });
+
+    it("drawn 22-equipment unlocks immediately when 4 matching cuts already exist", () => {
+      const state = makeGameState({
+        players: [
+          makePlayer({
+            hand: [
+              makeTile({ id: "a2-1", gameValue: 2, cut: true }),
+              makeTile({ id: "a2-2", gameValue: 2, cut: true }),
+            ],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "P2",
+            hand: [
+              makeTile({ id: "b2-1", gameValue: 2, cut: true }),
+              makeTile({ id: "b2-2", gameValue: 2, cut: true }),
+            ],
+          }),
+        ],
+        board: makeBoardState({ equipment: [unlockedCard("false_bottom", "YELLOW")] }),
+        campaign: {
+          equipmentReserve: [
+            makeEquipmentCard({
+              id: "single_wire_label",
+              name: "Single Wire Label",
+              unlockValue: 2,
+              unlocked: false,
+            }),
+          ],
+        },
+      });
+
+      executeUseEquipment(state, "player-1", "false_bottom", {
+        kind: "false_bottom",
+      });
+
+      const drawn = state.board.equipment.find(
+        (eq) => eq.id === "single_wire_label",
+      );
+      expect(drawn).toBeDefined();
+      expect(drawn?.unlocked).toBe(true);
+    });
   });
 
   describe("single_wire_label", () => {

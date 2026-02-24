@@ -11,6 +11,14 @@ import { executeDualCut, executeSoloCut } from "../gameLogic";
 import { validateUseEquipment } from "../equipment";
 
 describe("equipment unlock lifecycle", () => {
+  const DOUBLE_NUMBER_CAMPAIGN_CASES = [
+    { id: "single_wire_label", unlockValue: 2 },
+    { id: "emergency_drop", unlockValue: 3 },
+    { id: "fast_pass", unlockValue: 9 },
+    { id: "disintegrator", unlockValue: 10 },
+    { id: "grappling_hook", unlockValue: 11 },
+  ] as const;
+
   it("equipment stays locked at 1 cut (threshold=2)", () => {
     // Actor dual-cuts a value-5 tile on target's stand.
     // Only the target tile is cut (actor has no value-5 tile to auto-cut).
@@ -408,6 +416,90 @@ describe("equipment unlock lifecycle", () => {
     expect(state.players[1].hand[0].cut).toBe(true);
     expect(state.board.equipment[0].unlocked).toBe(false);
   });
+
+  it.each(DOUBLE_NUMBER_CAMPAIGN_CASES)(
+    "$id stays locked at 2 cuts",
+    ({ id, unlockValue }) => {
+      const actor = makePlayer({
+        id: "actor",
+        name: "Actor",
+        hand: [
+          makeTile({ id: "a1", gameValue: unlockValue }),
+          makeTile({ id: "a2", gameValue: 12 }),
+        ],
+      });
+      const target = makePlayer({
+        id: "target",
+        name: "Target",
+        hand: [
+          makeTile({ id: "t1", gameValue: unlockValue }),
+          makeTile({ id: "t2", gameValue: 8 }),
+        ],
+      });
+
+      const state = makeGameState({
+        players: [actor, target],
+        currentPlayerIndex: 0,
+        board: {
+          ...makeGameState().board,
+          equipment: [
+            makeEquipmentCard({
+              id,
+              name: id,
+              unlockValue,
+              unlocked: false,
+            }),
+          ],
+        },
+      });
+
+      executeDualCut(state, "actor", "target", 0, unlockValue);
+
+      expect(state.board.equipment[0].unlocked).toBe(false);
+    },
+  );
+
+  it.each(DOUBLE_NUMBER_CAMPAIGN_CASES)(
+    "$id unlocks at 4 cuts",
+    ({ id, unlockValue }) => {
+      const actor = makePlayer({
+        id: "actor",
+        name: "Actor",
+        hand: [
+          makeTile({ id: "a1", gameValue: unlockValue }),
+          makeTile({ id: "a2", gameValue: unlockValue }),
+        ],
+      });
+      const other = makePlayer({
+        id: "other",
+        name: "Other",
+        hand: [
+          makeTile({ id: "o1", gameValue: unlockValue, cut: true }),
+          makeTile({ id: "o2", gameValue: unlockValue, cut: true }),
+        ],
+      });
+
+      const state = makeGameState({
+        players: [actor, other],
+        currentPlayerIndex: 0,
+        board: {
+          ...makeGameState().board,
+          equipment: [
+            makeEquipmentCard({
+              id,
+              name: id,
+              unlockValue,
+              unlocked: false,
+            }),
+          ],
+        },
+      });
+
+      executeSoloCut(state, "actor", unlockValue);
+
+      expect(state.board.equipment[0].unlocked).toBe(true);
+    },
+  );
 
   it("secondary lock blocks validation when cuts are insufficient", () => {
     // Equipment is primary-unlocked but has a secondary lock on value 3

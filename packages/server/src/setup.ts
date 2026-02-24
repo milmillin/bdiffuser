@@ -211,6 +211,38 @@ export function resolveEquipmentPoolIds(spec: MissionEquipmentSpec): string[] {
   return resolveEquipmentPool(spec).map((def) => def.id);
 }
 
+function resolveSetupEquipmentPool(
+  mission: MissionId,
+  spec: MissionEquipmentSpec,
+  yellow: WirePoolSpec,
+): (typeof EQUIPMENT_DEFS)[number][] {
+  if (spec.mode === "none") return [];
+
+  const candidateDefs = resolveEquipmentPool(spec);
+  const byId = new Map(candidateDefs.map((def) => [def.id, def] as const));
+
+  // Rule Sticker A (missions 9+): shuffle False Bottom into the equipment pool
+  // for missions with yellow wires. Mission 41 is handled via explicit mission
+  // setup exclusions/replacement rules.
+  if (mission >= 9 && mission !== 41 && yellow.kind !== "none") {
+    const falseBottom = EQUIPMENT_DEFS.find((def) => def.id === "false_bottom");
+    if (falseBottom && !byId.has(falseBottom.id)) {
+      byId.set(falseBottom.id, falseBottom);
+    }
+  }
+
+  // Rule Sticker C (missions 55+): shuffle campaign equipment into the pool
+  // unless the mission setup already includes campaign cards.
+  if (mission >= 55 && !spec.includeCampaignEquipment) {
+    for (const def of EQUIPMENT_DEFS) {
+      if (def.pool !== "campaign" || byId.has(def.id)) continue;
+      byId.set(def.id, def);
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
 function defToCard(def: (typeof EQUIPMENT_DEFS)[number]): EquipmentCard {
   return {
     id: def.id,
@@ -225,21 +257,17 @@ function defToCard(def: (typeof EQUIPMENT_DEFS)[number]): EquipmentCard {
 
 function createEquipmentCards(
   count: number,
-  spec: MissionEquipmentSpec,
+  candidateDefs: (typeof EQUIPMENT_DEFS)[number][],
+  shuffleBeforeDeal = true,
 ): { dealt: EquipmentCard[]; reserve: EquipmentCard[] } {
-  if (spec.mode === "none") {
-    return { dealt: [], reserve: [] };
-  }
-
-  const candidateDefs = resolveEquipmentPool(spec);
-
-  if (spec.mode !== "fixed_pool") {
-    shuffle(candidateDefs);
+  const pool = [...candidateDefs];
+  if (shuffleBeforeDeal) {
+    shuffle(pool);
   }
 
   return {
-    dealt: candidateDefs.slice(0, count).map(defToCard),
-    reserve: candidateDefs.slice(count).map(defToCard),
+    dealt: pool.slice(0, count).map(defToCard),
+    reserve: pool.slice(count).map(defToCard),
   };
 }
 
@@ -505,55 +533,16 @@ export function setupGame(
     validationTrack[i] = 0;
   }
 
-  const { dealt: equipment, reserve: equipmentReserve } = createEquipmentCards(config.equipmentCount, setup.equipment);
-
-  // Rule Sticker A (missions 9+): Add False Bottom to equipment pool for
-  // missions with yellow wires, unless already present.
-  // Mission 41 explicitly replaces/discards False Bottom if drawn.
-  if (
-    mission >= 9 &&
-    mission !== 41 &&
-    setup.yellow.kind !== "none" &&
-    !equipment.some((eq) => eq.id === "false_bottom")
-  ) {
-    const fb = EQUIPMENT_DEFS.find((def) => def.id === "false_bottom");
-    if (fb) {
-      equipment.push({
-        id: fb.id,
-        name: fb.name,
-        description: fb.description,
-        unlockValue: fb.unlockValue,
-        unlocked: false,
-        used: false,
-        image: fb.image,
-      });
-    }
-  }
-
-  // Rule Sticker C (missions 55+): Add campaign equipment cards to the pool,
-  // unless the mission schema already included them.
-  if (mission >= 55 && !setup.equipment.includeCampaignEquipment) {
-    const existingIds = new Set(equipment.map((eq) => eq.id));
-    const campaignDefs = EQUIPMENT_DEFS.filter(
-      (def) => def.pool === "campaign" && !existingIds.has(def.id),
-    );
-    shuffle(campaignDefs);
-    for (const def of campaignDefs) {
-      equipment.push({
-        id: def.id,
-        name: def.name,
-        description: def.description,
-        unlockValue: def.unlockValue,
-        unlocked: false,
-        used: false,
-        image: def.image,
-      });
-    }
-  }
-
-  // Filter force-added card IDs out of the reserve to prevent duplicates.
-  const activeIds = new Set(equipment.map((eq) => eq.id));
-  const filteredReserve = equipmentReserve.filter((eq) => !activeIds.has(eq.id));
+  const equipmentPool = resolveSetupEquipmentPool(
+    mission,
+    setup.equipment,
+    setup.yellow,
+  );
+  const { dealt: equipment, reserve: equipmentReserve } = createEquipmentCards(
+    config.equipmentCount,
+    equipmentPool,
+    setup.equipment.mode !== "fixed_pool",
+  );
 
   const board: BoardState = {
     detonatorPosition: config.detonatorStart,
@@ -563,5 +552,5 @@ export function setupGame(
     equipment,
   };
 
-  return { board, players, equipmentReserve: filteredReserve };
+  return { board, players, equipmentReserve };
 }

@@ -37,6 +37,7 @@ import { executeDualCut, advanceTurn, clearSatisfiedSecondaryEquipmentLocks } fr
 import { dispatchHooks, hasActiveConstraint, emitMissionFailureTelemetry } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
+import { getEquipmentUnlockCutsRequiredById } from "./equipmentUnlockRules.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -859,11 +860,17 @@ function countCutTilesByValue(state: GameState, value: EquipmentUnlockValue): nu
 }
 
 /** Check if equipment should unlock (threshold wires of matching value cut). */
-function checkEquipUnlock(state: GameState, value: EquipmentUnlockValue, threshold = 2): void {
-  if (countCutTilesByValue(state, value) >= threshold) {
-    for (const eq of state.board.equipment) {
-      if (eq.unlockValue === value && !eq.unlocked) eq.unlocked = true;
-    }
+function checkEquipUnlock(
+  state: GameState,
+  value: EquipmentUnlockValue,
+  thresholdOverride?: number,
+): void {
+  const cutCount = countCutTilesByValue(state, value);
+  for (const eq of state.board.equipment) {
+    if (eq.unlockValue !== value || eq.unlocked) continue;
+    const requiredCuts =
+      thresholdOverride ?? getEquipmentUnlockCutsRequiredById(eq.id);
+    if (cutCount >= requiredCuts) eq.unlocked = true;
   }
 }
 
@@ -1388,7 +1395,10 @@ export function executeUseEquipment(
       const reserve = state.campaign?.equipmentReserve ?? [];
       const drawn = reserve.splice(0, 2);
       for (const card of drawn) {
-        if (countCutTilesByValue(state, card.unlockValue) >= 2) card.unlocked = true;
+        const requiredCuts = getEquipmentUnlockCutsRequiredById(card.id);
+        if (countCutTilesByValue(state, card.unlockValue) >= requiredCuts) {
+          card.unlocked = true;
+        }
         state.board.equipment.push(card);
       }
       addLog(

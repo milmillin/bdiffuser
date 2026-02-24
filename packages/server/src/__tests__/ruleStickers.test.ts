@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { EQUIPMENT_DEFS, MISSION_SCHEMAS, type MissionId } from "@bomb-busters/shared";
+import {
+  EQUIPMENT_DEFS,
+  MISSION_SCHEMAS,
+  PLAYER_COUNT_CONFIG,
+  type MissionId,
+} from "@bomb-busters/shared";
 import { makePlayer } from "@bomb-busters/shared/testing";
 import { setupGame } from "../setup";
 
@@ -35,29 +40,46 @@ const campaignEquipmentIds = EQUIPMENT_DEFS.filter((def) => def.pool === "campai
   (def) => def.id,
 );
 
+function allEquipmentIdsFromSetupResult(
+  board: { equipment: Array<{ id: string }> },
+  equipmentReserve: Array<{ id: string }>,
+): Set<string> {
+  return new Set([
+    ...board.equipment.map((eq) => eq.id),
+    ...equipmentReserve.map((eq) => eq.id),
+  ]);
+}
+
 describe("Rule Sticker A — False Bottom (missions 9+)", () => {
   it("does NOT add false_bottom for missions below 9", () => {
     const missionId = 8 as MissionId;
     const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board } = setupGame(players, missionId);
+    const { board, equipmentReserve } = setupGame(players, missionId);
 
-    expect(board.equipment.some((eq) => eq.id === "false_bottom")).toBe(false);
+    const allIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
+    expect(allIds.has("false_bottom")).toBe(false);
   });
 
-  it("adds false_bottom for missions 9+ with yellow wires", () => {
+  it("adds false_bottom to the equipment pool for missions 9+ with yellow wires", () => {
     const missionId = 9 as MissionId;
-    const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board } = setupGame(players, missionId);
+    const playerCount = firstAllowedPlayerCount(missionId);
+    const players = createPlayers(playerCount);
+    const { board, equipmentReserve } = setupGame(players, missionId);
 
-    expect(board.equipment.filter((eq) => eq.id === "false_bottom")).toHaveLength(1);
+    const allIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
+    expect(allIds.has("false_bottom")).toBe(true);
+    expect(board.equipment).toHaveLength(
+      PLAYER_COUNT_CONFIG[playerCount]!.equipmentCount,
+    );
   });
 
-  it("mission 41 replaces false_bottom instead of keeping it in the equipment row", () => {
+  it("mission 41 excludes false_bottom from the setup equipment pool", () => {
     const missionId = 41 as MissionId;
     const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board } = setupGame(players, missionId);
+    const { board, equipmentReserve } = setupGame(players, missionId);
 
-    expect(board.equipment.some((eq) => eq.id === "false_bottom")).toBe(false);
+    const allIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
+    expect(allIds.has("false_bottom")).toBe(false);
   });
 });
 
@@ -65,21 +87,26 @@ describe("Rule Sticker C — Campaign Equipment (missions 55+)", () => {
   it("does NOT add campaign equipment for missions below 55", () => {
     const missionId = 54 as MissionId;
     const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board } = setupGame(players, missionId);
+    const { board, equipmentReserve } = setupGame(players, missionId);
 
-    const hasCampaign = board.equipment.some((eq) => campaignEquipmentIds.includes(eq.id));
+    const allIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
+    const hasCampaign = [...allIds].some((id) => campaignEquipmentIds.includes(id));
     expect(hasCampaign).toBe(false);
   });
 
-  it("adds campaign equipment for missions 55+ when not already included", () => {
+  it("adds campaign equipment to the pool for missions 55+ when not already included", () => {
     const missionId = 55 as MissionId;
-    const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board } = setupGame(players, missionId);
+    const playerCount = firstAllowedPlayerCount(missionId);
+    const players = createPlayers(playerCount);
+    const { board, equipmentReserve } = setupGame(players, missionId);
 
-    const equipmentIds = new Set(board.equipment.map((eq) => eq.id));
+    const equipmentIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
     for (const campaignId of campaignEquipmentIds) {
       expect(equipmentIds.has(campaignId)).toBe(true);
     }
+    expect(board.equipment).toHaveLength(
+      PLAYER_COUNT_CONFIG[playerCount]!.equipmentCount,
+    );
   });
 });
 

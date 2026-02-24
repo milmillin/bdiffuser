@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { EQUIPMENT_DEFS, PLAYER_COUNT_CONFIG, resolveMissionSetup } from "@bomb-busters/shared";
+import { PLAYER_COUNT_CONFIG, resolveMissionSetup } from "@bomb-busters/shared";
 import { resolveEquipmentPoolIds, setupGame } from "../setup";
 
 describe("equipment pool resolution", () => {
@@ -49,9 +49,10 @@ describe("equipment pool resolution", () => {
 });
 
 describe("setupGame equipmentReserve", () => {
-  it("returns non-empty equipmentReserve when candidates exceed dealt count", () => {
+  it("deals player-count equipment cards and keeps the rest in reserve", () => {
     const playerCount = 4;
-    const mission = 10; // mission 9+ with yellow wires → has base pool equipment
+    const mission = 10; // mission 9+ with yellow wires → Sticker A adds False Bottom to the pool
+    const { setup } = resolveMissionSetup(mission, playerCount);
     const players = Array.from({ length: playerCount }, (_, i) => ({
       id: `player-${i + 1}`,
       name: `Player ${i + 1}`,
@@ -64,12 +65,17 @@ describe("setupGame equipmentReserve", () => {
 
     const { board, equipmentReserve } = setupGame(players as any, mission);
 
-    const basePoolSize = EQUIPMENT_DEFS.filter((def) => def.pool === "base").length;
     const equipmentCount = PLAYER_COUNT_CONFIG[playerCount]!.equipmentCount;
+    const basePoolSize = resolveEquipmentPoolIds(setup.equipment).length;
+    const missionNumber: number = mission;
+    const expectedPoolSize =
+      basePoolSize +
+      (missionNumber >= 9 && missionNumber !== 41 && setup.yellow.kind !== "none"
+        ? 1
+        : 0);
 
-    // The dealt equipment plus the reserve should account for all base candidates
-    // (minus any that were force-added by Rule Sticker A/C and filtered out of reserve).
-    expect(board.equipment.length).toBeGreaterThanOrEqual(equipmentCount);
+    // Deal count should stay at the player-count baseline.
+    expect(board.equipment).toHaveLength(equipmentCount);
     expect(equipmentReserve.length).toBeGreaterThan(0);
 
     // No card should appear in both dealt and reserve
@@ -78,9 +84,10 @@ describe("setupGame equipmentReserve", () => {
       expect(dealtIds.has(card.id)).toBe(false);
     }
 
-    // Together they should cover most of the base pool
+    // Combined dealt + reserve should equal the full setup pool.
     const allIds = new Set([...dealtIds, ...equipmentReserve.map((eq: { id: string }) => eq.id)]);
-    expect(allIds.size).toBeLessThanOrEqual(basePoolSize + 6); // +6 for potential campaign cards
+    expect(allIds.size).toBe(expectedPoolSize);
+    expect(allIds.has("false_bottom")).toBe(true);
   });
 
   it("returns empty equipmentReserve for fixed_pool missions", () => {
@@ -96,7 +103,8 @@ describe("setupGame equipmentReserve", () => {
       characterUsed: false,
     }));
 
-    const { equipmentReserve } = setupGame(players as any, mission);
+    const { board, equipmentReserve } = setupGame(players as any, mission);
+    expect(board.equipment).toHaveLength(1);
     expect(equipmentReserve).toHaveLength(0);
   });
 });

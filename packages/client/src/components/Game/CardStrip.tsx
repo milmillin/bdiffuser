@@ -11,6 +11,22 @@ import { ScrollableRow } from "./Board/BoardArea.js";
 
 const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
 
+const FOUR_CUT_EQUIPMENT_IDS = new Set<string>([
+  "single_wire_label",
+  "emergency_drop",
+  "fast_pass",
+  "disintegrator",
+  "grappling_hook",
+]);
+
+function getPrimaryLockCutsRequired(eq: BoardState["equipment"][number]): number {
+  return FOUR_CUT_EQUIPMENT_IDS.has(eq.id) ? 4 : 2;
+}
+
+function formatLockRequirement(value: string | number, cuts: number): string {
+  return `${value}${MULTIPLICATION_SIGN}${cuts}`;
+}
+
 type StackCard = {
   kind: "character" | "equipment";
   id: string;
@@ -36,16 +52,26 @@ function getStatusLabel(eq: BoardState["equipment"][number]) {
   if (eq.faceDown && !eq.unlocked) {
     return { label: "Face Down", className: "bg-black/75 text-slate-200" };
   }
+  const primaryCuts = getPrimaryLockCutsRequired(eq);
+  const primaryRequirement = formatLockRequirement(eq.unlockValue, primaryCuts);
   if (eq.unlocked && eq.secondaryLockValue !== undefined) {
+    const secondaryCuts = eq.secondaryLockCutsRequired ?? 2;
+    const secondaryRequirement = formatLockRequirement(
+      eq.secondaryLockValue,
+      secondaryCuts,
+    );
     return {
-      label: `Locked ${eq.secondaryLockValue}x4`,
+      label: `Locked ${primaryRequirement} ${secondaryRequirement}`,
       className: "bg-black/75 text-amber-200",
     };
   }
   if (eq.unlocked) {
     return { label: "Available", className: "bg-emerald-700/85 text-white" };
   }
-  return { label: "Locked", className: "bg-black/75 text-yellow-200" };
+  return {
+    label: `Locked ${primaryRequirement}`,
+    className: "bg-black/75 text-yellow-200",
+  };
 }
 
 function getFrameClass(eq: BoardState["equipment"][number]): string {
@@ -341,3 +367,4 @@ export function CardStrip({
     </div>
   );
 }
+const MULTIPLICATION_SIGN = "\u00D7";

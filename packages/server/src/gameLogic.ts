@@ -23,6 +23,7 @@ import {
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
+import { getEquipmentUnlockCutsRequired } from "./equipmentUnlockRules.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -99,13 +100,15 @@ function countCutTilesByValue(state: GameState, value: number | "YELLOW"): numbe
 function checkEquipmentUnlock(
   state: GameState,
   value: number | "YELLOW",
-  threshold = 2,
+  thresholdOverride?: number,
 ): void {
-  if (countCutTilesByValue(state, value) >= threshold) {
-    for (const eq of state.board.equipment) {
-      if (eq.unlockValue === value && !eq.unlocked) {
-        eq.unlocked = true;
-      }
+  const cutCount = countCutTilesByValue(state, value);
+  for (const eq of state.board.equipment) {
+    if (eq.unlockValue !== value || eq.unlocked) continue;
+    const requiredCuts =
+      thresholdOverride ?? getEquipmentUnlockCutsRequired(eq);
+    if (cutCount >= requiredCuts) {
+      eq.unlocked = true;
     }
   }
 }

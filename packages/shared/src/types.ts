@@ -93,7 +93,7 @@ export interface EquipmentCard {
   id: string;
   name: string;
   description: string;
-  /** Wire value that unlocks this equipment (when 2 of this value are cut) */
+  /** Wire value that unlocks this equipment (required cut count may vary by mission/card). */
   unlockValue: EquipmentUnlockValue;
   /** Whether this card is still hidden face-down to players. */
   faceDown?: boolean;
