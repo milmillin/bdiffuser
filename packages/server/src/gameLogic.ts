@@ -755,6 +755,9 @@ export function executeSimultaneousRedCut(
   }
 
   updateMarkerConfirmations(state);
+  if (requiredColor === "yellow") {
+    checkEquipmentUnlock(state, "YELLOW");
+  }
 
   addLog(
     state,

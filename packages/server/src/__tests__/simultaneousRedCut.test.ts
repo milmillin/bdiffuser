@@ -4,6 +4,8 @@ import {
   makePlayer,
   makeGameState,
   makeRedTile,
+  makeBoardState,
+  makeEquipmentCard,
 } from "@bomb-busters/shared/testing";
 import {
   validateSimultaneousRedCutLegality,
@@ -531,5 +533,36 @@ describe("executeSimultaneousRedCut", () => {
     expect(state.players[1].infoTokens[0]?.isYellow).toBe(true);
     expect(state.players[2].infoTokens[0]?.position).toBe(0);
     expect(state.players[2].infoTokens[0]?.isYellow).toBe(true);
+  });
+
+  it("mission 48: successful simultaneous yellow cut unlocks yellow equipment", () => {
+    const y1 = makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" });
+    const y2 = makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" });
+    const y3 = makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" });
+    const yellowEquipment = makeEquipmentCard({
+      id: "false_bottom",
+      unlockValue: "YELLOW",
+      unlocked: false,
+    });
+
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({ id: "p1", hand: [y1] }),
+        makePlayer({ id: "p2", hand: [y2] }),
+        makePlayer({ id: "p3", hand: [y3] }),
+      ],
+      board: makeBoardState({ equipment: [yellowEquipment] }),
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(action.type).toBe("gameOver");
+    expect(state.board.equipment[0]?.unlocked).toBe(true);
   });
 });
