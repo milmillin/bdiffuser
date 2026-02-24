@@ -537,6 +537,98 @@ describe("mission 9 sequence-priority validation", () => {
   });
 });
 
+describe("mission 46 sevens-last validation", () => {
+  it("rejects dual cut of value 7 while actor still has other cuttable wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 7 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
+  });
+
+  it("rejects solo cut of value 7 while actor still has yellow wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 7 }),
+        makeTile({ id: "a2", gameValue: 7 }),
+        makeTile({ id: "a3", color: "yellow", gameValue: "YELLOW" }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
+  });
+
+  it("allows value 7 cut when only 7 and red wires remain in actor hand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 7 }),
+        makeTile({ id: "a2", color: "red", gameValue: "RED" }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).toBeNull();
+  });
+});
+
 describe("validateActionWithHooks", () => {
   it("returns null for valid base action when mission has no validate hooks", () => {
     const actor = makePlayer({

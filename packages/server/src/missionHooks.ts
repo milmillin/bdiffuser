@@ -2861,7 +2861,53 @@ registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
  * Mission 46: Sevens must be last.
  * All 7-value wires must be the last wires cut on each stand.
  */
+type SimultaneousCutGuess = {
+  guessValue?: number | "YELLOW";
+};
+
+function actionAttemptsSevenCut(action: ValidateHookContext["action"]): boolean {
+  if (
+    action.type === "dualCut" ||
+    action.type === "dualCutDoubleDetector"
+  ) {
+    return action.guessValue === 7;
+  }
+
+  if (action.type === "soloCut") {
+    return action.value === 7;
+  }
+
+  if (action.type !== "simultaneousCut") {
+    return false;
+  }
+
+  const cuts = Array.isArray(action.cuts) ? action.cuts as SimultaneousCutGuess[] : [];
+  return cuts.some((cut) => cut.guessValue === 7);
+}
+
+function actorHasUncutNonSevenCuttableWire(
+  state: Readonly<GameState>,
+  actorId: string,
+): boolean {
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor) return false;
+
+  return actor.hand.some((tile) =>
+    !tile.cut && tile.gameValue !== "RED" && tile.gameValue !== 7,
+  );
+}
+
 registerHookHandler<"sevens_last">("sevens_last", {
+  validate(_rule: SevensLastRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (!actionAttemptsSevenCut(ctx.action)) return;
+    if (!actorHasUncutNonSevenCuttableWire(ctx.state, ctx.action.actorId)) return;
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError: "Mission 46: 7-value wires must be cut last",
+    };
+  },
+
   setup(_rule: SevensLastRuleDef, ctx: SetupHookContext): void {
     pushGameLog(ctx.state, {
       turn: 0,
