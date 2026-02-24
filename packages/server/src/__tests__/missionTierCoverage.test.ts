@@ -246,6 +246,48 @@ describe("mission complexity tier representative coverage", () => {
     ).toBe(true);
   });
 
+  it.each([56, 64] as const)(
+    "mission %i: failed dual cut while attempting own flipped wire explodes immediately",
+    (missionId) => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [
+          makeTile({ id: "a4", color: "blue", gameValue: 4, sortValue: 4 }),
+          makeTile({ id: "a9", color: "blue", gameValue: 9, sortValue: 9 }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "t8", color: "blue", gameValue: 8, sortValue: 8 }),
+          makeTile({ id: "t6", color: "blue", gameValue: 6, sortValue: 6 }),
+        ],
+      });
+      (actor.hand[0] as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+      const state = makeGameState({
+        mission: missionId,
+        players: [actor, teammate],
+        currentPlayerIndex: 0,
+        board: makeBoardState({ detonatorPosition: 0, detonatorMax: 6 }),
+        log: [],
+      });
+
+      const result = executeDualCut(state, "actor", "teammate", 0, 4);
+
+      expect(result).toMatchObject({
+        type: "dualCutResult",
+        success: false,
+        explosion: true,
+      });
+      expect(state.phase).toBe("finished");
+      expect(state.result).toBe("loss_red_wire");
+      expect(state.board.detonatorPosition).toBe(0);
+      expect(teammate.infoTokens).toHaveLength(0);
+      expect(actor.hand[0]?.cut).toBe(false);
+    },
+  );
+
   it("x-marker tier (mission 20): Post-it cannot target an X-marked wire", () => {
     const actor = makePlayer({
       id: "actor",

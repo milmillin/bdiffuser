@@ -133,7 +133,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_56_each_player_upside_down_wire"],
-    hookRules: [{ kind: "upside_down_wire", count: 1, selfCutExplodes: false, noEquipmentOnFlipped: false }],
+    hookRules: [{ kind: "upside_down_wire", count: 1, selfCutExplodes: true, noEquipmentOnFlipped: true }],
     notes: [
       "FAQ: If flipped wire is RED, reveal via normal 'Reveal Your Red Wires' action.",
       "ERRATUM: Number cards are NOT used in this mission.",

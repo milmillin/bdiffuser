@@ -18,6 +18,7 @@ import {
   dispatchHooks,
   emitMissionFailureTelemetry,
   getBlueAsRedValue,
+  getHookRules,
   hasActiveConstraint,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
@@ -221,6 +222,28 @@ function addLog(
   });
 }
 
+function resolveActorDualCutTile(
+  actor: Player,
+  guessValue: number | "YELLOW",
+  actorTileIndex?: number,
+): WireTile | undefined {
+  if (actorTileIndex != null) {
+    const candidate = getTileByFlatIndex(actor, actorTileIndex);
+    if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
+      return candidate;
+    }
+  }
+
+  const actorUncut = getUncutTiles(actor);
+  return actorUncut.find((tile) => tile.gameValue === guessValue);
+}
+
+function missionSelfCutFailureExplodes(state: GameState): boolean {
+  return getHookRules(state.mission).some((rule) =>
+    rule.kind === "upside_down_wire" && rule.selfCutExplodes === true
+  );
+}
+
 /** Execute a dual cut action. Returns the action for animation. */
 export function executeDualCut(
   state: GameState,
@@ -289,17 +312,7 @@ export function executeDualCut(
       };
     }
 
-    const actorUncut = getUncutTiles(actor);
-    let actorTile: WireTile | undefined;
-    if (actorTileIndex != null) {
-      const candidate = getTileByFlatIndex(actor, actorTileIndex);
-      if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
-        actorTile = candidate;
-      }
-    }
-    if (!actorTile) {
-      actorTile = actorUncut.find((t) => t.gameValue === guessValue);
-    }
+    const actorTile = resolveActorDualCutTile(actor, guessValue, actorTileIndex);
     if (actorTile) actorTile.cut = true;
 
     // Check validation and equipment unlock
@@ -460,6 +473,30 @@ export function executeDualCut(
         success: false,
         explosion: true,
       };
+    }
+
+    if (missionSelfCutFailureExplodes(state)) {
+      const actorTile = resolveActorDualCutTile(actor, guessValue, actorTileIndex);
+      if (actorTile && (actorTile as WireTile & { upsideDown?: boolean }).upsideDown === true) {
+        state.result = "loss_red_wire";
+        state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+        addLog(
+          state,
+          actorId,
+          "dualCut",
+          `guessed ${target.name}'s wire ${wireLabel(targetTileIndex)} to be ${displayGuess} ✗ while attempting to cut their own flipped wire. BOOM!`,
+        );
+        return {
+          type: "dualCutResult",
+          actorId,
+          targetId: targetPlayerId,
+          targetTileIndex,
+          guessValue,
+          success: false,
+          explosion: true,
+        };
+      }
     }
 
     // Blue or yellow wire — wrong guess, wire stays uncut.

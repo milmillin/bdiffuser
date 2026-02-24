@@ -107,7 +107,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_64_two_upside_down_wires_each"],
-    hookRules: [{ kind: "upside_down_wire", count: 2, selfCutExplodes: false, noEquipmentOnFlipped: false }],
+    hookRules: [{ kind: "upside_down_wire", count: 2, selfCutExplodes: true, noEquipmentOnFlipped: true }],
     notes: ["FAQ: With 2 stands, only 2 wires total flipped. Lowest goes far-left of 1st stand, highest goes far-right of 2nd stand."],
   });
 
