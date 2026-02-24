@@ -362,6 +362,13 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
 
       const action = pickAction(state, actor);
       if (!action) {
+        // Mission 16 FAQ: if a player only has sequence-blocked wires left,
+        // the bomb explodes immediately.
+        if (missionId === 16) {
+          state.phase = "finished";
+          state.result = "loss_detonator";
+          break;
+        }
         throw new Error(
           `Mission ${missionId}: no legal action for ${actor.id} at turn ${state.turnNumber}. ` +
           `Uncut=${summarizeUncutByPlayer(state)}`,

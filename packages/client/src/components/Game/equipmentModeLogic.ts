@@ -215,11 +215,12 @@ export function handleOpponentTileClick(
     }
     case "super_detector": {
       if (mode.targetPlayerId === oppId) {
-        return { ...mode, targetPlayerId: null };
+        return { ...mode, targetPlayerId: null, targetStandIndex: null };
       }
       return {
         ...mode,
         targetPlayerId: oppId,
+        targetStandIndex: null,
         guessTileIndex: mode.guessTileIndex,
       };
     }

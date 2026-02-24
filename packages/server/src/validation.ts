@@ -23,6 +23,98 @@ export function getTileByFlatIndex(player: Player, index: number): WireTile | un
   return player.hand[index];
 }
 
+type StandAwarePlayer = Player & {
+  standSizes?: number[];
+};
+
+export interface StandRange {
+  standIndex: number;
+  start: number;
+  endExclusive: number;
+}
+
+function getNormalizedStandSizes(player: Readonly<Player>): number[] {
+  const standSizes = (player as Readonly<StandAwarePlayer>).standSizes;
+  if (!Array.isArray(standSizes) || standSizes.length === 0) {
+    return [player.hand.length];
+  }
+  if (!standSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+  const total = standSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) {
+    return [player.hand.length];
+  }
+  return standSizes;
+}
+
+/** Resolve stand sizes for this player, defaulting to a single stand. */
+export function getPlayerStandSizes(player: Readonly<Player>): number[] {
+  return getNormalizedStandSizes(player);
+}
+
+/** Resolve a stand's flat-index range. */
+export function resolveStandRange(
+  player: Readonly<Player>,
+  standIndex: number,
+): StandRange | null {
+  if (!Number.isInteger(standIndex) || standIndex < 0) return null;
+
+  const standSizes = getNormalizedStandSizes(player);
+  if (standIndex >= standSizes.length) return null;
+
+  let start = 0;
+  for (let i = 0; i < standSizes.length; i++) {
+    const endExclusive = start + standSizes[i];
+    if (i === standIndex) {
+      return { standIndex, start, endExclusive };
+    }
+    start = endExclusive;
+  }
+  return null;
+}
+
+/** Resolve which stand owns a given flat tile index. */
+export function flatIndexToStandIndex(
+  player: Readonly<Player>,
+  flatIndex: number,
+): number | null {
+  if (!Number.isInteger(flatIndex) || flatIndex < 0 || flatIndex >= player.hand.length) {
+    return null;
+  }
+
+  const standSizes = getNormalizedStandSizes(player);
+  let start = 0;
+  for (let standIndex = 0; standIndex < standSizes.length; standIndex++) {
+    const endExclusive = start + standSizes[standIndex];
+    if (flatIndex >= start && flatIndex < endExclusive) {
+      return standIndex;
+    }
+    start = endExclusive;
+  }
+  return null;
+}
+
+/** Check whether two flat indices belong to the same stand. */
+export function areFlatIndicesOnSameStand(
+  player: Readonly<Player>,
+  indexA: number,
+  indexB: number,
+): boolean {
+  const standA = flatIndexToStandIndex(player, indexA);
+  const standB = flatIndexToStandIndex(player, indexB);
+  return standA != null && standA === standB;
+}
+
+/** Check adjacency constrained to a single stand boundary. */
+export function areFlatIndicesAdjacentWithinStand(
+  player: Readonly<Player>,
+  indexA: number,
+  indexB: number,
+): boolean {
+  return Math.abs(indexA - indexB) === 1 && areFlatIndicesOnSameStand(player, indexA, indexB);
+}
+
 /** Check if it's this player's turn */
 export function isPlayersTurn(state: GameState, playerId: string): boolean {
   if (state.phase !== "playing") return false;
@@ -276,6 +368,12 @@ export function validateDualCutDoubleDetectorLegality(
   const tile2 = getTileByFlatIndex(target, tileIndex2);
   if (!tile1 || !tile2) {
     return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+  }
+  if (!areFlatIndicesOnSameStand(target, tileIndex1, tileIndex2)) {
+    return legalityError(
+      "DOUBLE_DETECTOR_INVALID_TILES",
+      "Double Detector targets must be on the same stand",
+    );
   }
   if (tile1.cut) {
     return legalityError("TILE_ALREADY_CUT", "Tile 1 already cut");

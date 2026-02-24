@@ -209,10 +209,12 @@ function ValidationTrack({
             value < blueRange.minValue || value > blueRange.maxValue;
           const cutCount = track[value] ?? 0;
           const validated = cutCount >= 4;
-          const yellowMarker = isUnused
+          const isMarkerUnused =
+            value < blueRange.minValue || value >= blueRange.maxValue;
+          const yellowMarker = isMarkerUnused
             ? undefined
             : markers.find((m) => m.value === value && m.color === "yellow");
-          const redMarker = isUnused
+          const redMarker = isMarkerUnused
             ? undefined
             : markers.find((m) => m.value === value && m.color === "red");
 
@@ -251,7 +253,7 @@ function ValidationTrack({
               </div>
               {/* Yellow then Red markers between columns */}
               {value <= 11 && (
-                <div className={`flex items-center gap-0.5 px-0.5 pb-0.5 ${isUnused ? "opacity-40" : ""}`}>
+                <div className={`flex items-center gap-0.5 px-0.5 pb-0.5 ${isMarkerUnused ? "opacity-40" : ""}`}>
                   <MarkerIndicator marker={yellowMarker} shape="square" />
                   <MarkerIndicator marker={redMarker} shape="circle" />
                 </div>

@@ -42,6 +42,8 @@ export interface Player {
   isCaptain: boolean;
   /** All wire tiles as a single sorted hand */
   hand: WireTile[];
+  /** Flat stand partition metadata (sum must equal `hand.length`). */
+  standSizes: number[];
   /** Info tokens placed in front of this player's stand */
   infoTokens: InfoToken[];
   /** Whether this player's character ability has been used */
@@ -143,7 +145,13 @@ export type UseEquipmentPayload =
       guessValue: number;
     }
   | { kind: "post_it"; tileIndex: number }
-  | { kind: "super_detector"; targetPlayerId: string; guessValue: number }
+  | {
+      kind: "super_detector";
+      targetPlayerId: string;
+      guessValue: number;
+      /** Optional explicit stand targeting for multi-stand players. */
+      targetStandIndex?: number;
+    }
   | { kind: "rewinder" }
   | { kind: "emergency_batteries"; playerIds: string[] }
   | { kind: "general_radar"; value: number }
@@ -560,6 +568,8 @@ export interface ClientPlayer {
   isCaptain: boolean;
   /** Wire tiles with visibility filtering applied */
   hand: VisibleTile[];
+  /** Flat stand partition metadata (sum must equal `hand.length`). */
+  standSizes: number[];
   infoTokens: InfoToken[];
   characterUsed: boolean;
   connected: boolean;

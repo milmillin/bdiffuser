@@ -192,17 +192,35 @@ function normalizePlayerOxygen(raw: unknown): Record<string, number> {
   return out;
 }
 
+function normalizeStandSizes(raw: unknown, handLength: number): number[] {
+  if (Array.isArray(raw)) {
+    const sizes = raw.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : NaN,
+    );
+    const isValid =
+      sizes.length > 0 &&
+      sizes.every((value) => Number.isInteger(value) && value >= 0) &&
+      sizes.reduce((total, value) => total + value, 0) === handLength;
+    if (isValid) {
+      return sizes;
+    }
+  }
+  return [handLength > 0 ? handLength : 0];
+}
+
 function normalizePlayer(raw: unknown, index: number): Player {
   const obj = isObject(raw) ? raw : {};
   const id = typeof obj.id === "string" && obj.id ? obj.id : `legacy-player-${index + 1}`;
   const name = typeof obj.name === "string" && obj.name ? obj.name : id;
+  const hand = Array.isArray(obj.hand) ? (obj.hand as Player["hand"]) : [];
 
   return {
     id,
     name,
     character: toCharacterId(obj.character),
     isCaptain: toBool(obj.isCaptain, false),
-    hand: Array.isArray(obj.hand) ? (obj.hand as Player["hand"]) : [],
+    hand,
+    standSizes: normalizeStandSizes(obj.standSizes, hand.length),
     infoTokens: Array.isArray(obj.infoTokens) ? (obj.infoTokens as Player["infoTokens"]) : [],
     characterUsed: toBool(obj.characterUsed, false),
     connected: toBool(obj.connected, true),

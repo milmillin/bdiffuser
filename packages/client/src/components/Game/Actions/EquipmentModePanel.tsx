@@ -34,6 +34,7 @@ export type EquipmentMode =
   | {
       kind: "super_detector";
       targetPlayerId: string | null;
+      targetStandIndex: number | null;
       guessTileIndex: number | null;
     }
   | {
@@ -219,6 +220,21 @@ function ModeWrapper({
       </div>
     </div>
   );
+}
+
+function getPlayerStandSizes(player: ClientPlayer): number[] {
+  const maybeStandSizes = (player as ClientPlayer & { standSizes?: number[] }).standSizes;
+  if (!Array.isArray(maybeStandSizes) || maybeStandSizes.length === 0) {
+    return [player.hand.length];
+  }
+  if (!maybeStandSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+  const total = maybeStandSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) {
+    return [player.hand.length];
+  }
+  return maybeStandSizes;
 }
 
 export function EquipmentModePanel({
@@ -636,20 +652,44 @@ export function EquipmentModePanel({
     }
 
     case "super_detector": {
+      const targetPlayer = mode.targetPlayerId == null
+        ? undefined
+        : opponents.find((o) => o.id === mode.targetPlayerId);
+      const targetStandCount = targetPlayer ? getPlayerStandSizes(targetPlayer).length : 0;
+      const requiresStandPick = targetStandCount > 1;
+      const targetStandIndex =
+        mode.targetStandIndex != null &&
+        mode.targetStandIndex >= 0 &&
+        mode.targetStandIndex < targetStandCount
+          ? mode.targetStandIndex
+          : null;
+      const resolvedStandIndex = requiresStandPick ? targetStandIndex : 0;
       const sdAllComplete =
-        mode.targetPlayerId != null && mode.guessTileIndex != null;
+        mode.targetPlayerId != null &&
+        mode.guessTileIndex != null &&
+        resolvedStandIndex != null;
       if (sdAllComplete) {
         const guessValue = me.hand[mode.guessTileIndex!]?.gameValue;
-        const targetName = opponents.find(
-          (o) => o.id === mode.targetPlayerId,
-        )?.name;
+        const targetName = targetPlayer?.name;
+        const standLabel = requiresStandPick
+          ? ` stand ${resolvedStandIndex! + 1}`
+          : "'s entire stand";
         content = (
           <>
-            Target: {targetName}&apos;s entire stand. Guess:{" "}
+            Target: {targetName}
+            {standLabel}. Guess:{" "}
             {String(guessValue)}.
           </>
         );
         if (typeof guessValue === "number") {
+          const payload = {
+            kind: "super_detector" as const,
+            targetPlayerId: mode.targetPlayerId!,
+            guessValue,
+            ...(resolvedStandIndex != null
+              ? { targetStandIndex: resolvedStandIndex }
+              : {}),
+          };
           confirmButton = (
             <button
               type="button"
@@ -657,11 +697,7 @@ export function EquipmentModePanel({
                 sendAndCancel({
                   type: "useEquipment",
                   equipmentId: "super_detector",
-                  payload: {
-                    kind: "super_detector",
-                    targetPlayerId: mode.targetPlayerId!,
-                    guessValue,
-                  },
+                  payload,
                 })
               }
               className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
@@ -672,23 +708,61 @@ export function EquipmentModePanel({
         }
       } else {
         const parts: string[] = [];
+        let standPicker: React.ReactNode = null;
         if (mode.targetPlayerId != null) {
-          const targetName = opponents.find(
-            (o) => o.id === mode.targetPlayerId,
-          )?.name;
-          parts.push(`${targetName}'s stand`);
+          const targetName = targetPlayer?.name;
+          if (requiresStandPick && targetStandIndex != null) {
+            parts.push(`${targetName}'s stand ${targetStandIndex + 1}`);
+          } else {
+            parts.push(`${targetName}'s stand`);
+          }
+        }
+        if (mode.targetPlayerId != null && requiresStandPick) {
+          standPicker = (
+            <div className="space-y-1">
+              <div>Select a stand:</div>
+              <div className="flex gap-2">
+                {Array.from({ length: targetStandCount }, (_, standIndex) => {
+                  const isSelected = targetStandIndex === standIndex;
+                  return (
+                    <button
+                      key={standIndex}
+                      type="button"
+                      onClick={() =>
+                        onUpdateMode({
+                          ...mode,
+                          targetStandIndex: standIndex,
+                        })
+                      }
+                      className={`px-2 py-1 rounded text-xs font-bold transition-colors ${
+                        isSelected
+                          ? "bg-pink-500 text-white"
+                          : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      }`}
+                    >
+                      Stand {standIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
         }
         if (mode.guessTileIndex != null) {
           parts.push(`guess ${String(me.hand[mode.guessTileIndex]?.gameValue)}`);
         }
         const needs: string[] = [];
         if (mode.targetPlayerId == null) needs.push("an opponent's stand");
+        if (requiresStandPick && targetStandIndex == null) needs.push("a target stand");
         if (mode.guessTileIndex == null) needs.push("your blue guess tile");
         content = (
-          <>
-            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
-            Still need: {needs.join(", ")}.
-          </>
+          <div className="space-y-2">
+            <div>
+              {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+              Still need: {needs.join(", ")}.
+            </div>
+            {standPicker}
+          </div>
         );
       }
       break;

@@ -32,6 +32,16 @@ function createSetupPlayers(count: 2 | 3 | 4 | 5) {
   );
 }
 
+function getStandSlices(player: { hand: Array<{ isXMarked?: boolean }>; standSizes: number[] }) {
+  const slices: Array<Array<{ isXMarked?: boolean }>> = [];
+  let offset = 0;
+  for (const size of player.standSizes) {
+    slices.push(player.hand.slice(offset, offset + size));
+    offset += size;
+  }
+  return slices;
+}
+
 describe("mission complexity tier representative coverage", () => {
   it("training tier (mission 1): setup is blue-only with no equipment", () => {
     const players = createSetupPlayers(4);
@@ -62,16 +72,25 @@ describe("mission complexity tier representative coverage", () => {
     expect(yellowMarkers.every((m) => m.possible === true)).toBe(true);
   });
 
-  it("x-marker tier (mission 20): setup marks one unsorted X wire at far right per player", () => {
-    const players = createSetupPlayers(4);
+  it("x-marker tier (mission 20): setup marks one unsorted X wire at far right per stand", () => {
+    const players = createSetupPlayers(3);
     const { players: dealtPlayers } = setupGame(players, 20);
 
     for (const player of dealtPlayers) {
+      const standSlices = getStandSlices(player);
       const marked = player.hand.filter((tile) => tile.isXMarked === true);
-      expect(marked).toHaveLength(1);
-      expect(player.hand[player.hand.length - 1].isXMarked).toBe(true);
+      expect(marked).toHaveLength(player.standSizes.length);
+
+      for (const stand of standSlices) {
+        expect(stand.length).toBeGreaterThan(0);
+        expect(stand[stand.length - 1].isXMarked).toBe(true);
+      }
     }
   });
+
+  it.todo(
+    "mission 64 two-stand flipped-wire FAQ placement is hook-owned in missionHooks setup (lowest far-left stand1, highest far-right stand2)",
+  );
 
   it("x-marker tier (mission 20): Post-it cannot target an X-marked wire", () => {
     const actor = makePlayer({

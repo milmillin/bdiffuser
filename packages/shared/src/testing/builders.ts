@@ -91,17 +91,26 @@ export function makeEquipmentCard(
 // ── Players ────────────────────────────────────────────────
 
 export function makePlayer(overrides: Partial<Player> = {}): Player {
+  const {
+    hand: overrideHand,
+    standSizes: overrideStandSizes,
+    ...restOverrides
+  } = overrides;
+  const hand = overrideHand ?? [makeTile()];
+  const standSizes = overrideStandSizes ?? [hand.length > 0 ? hand.length : 0];
+
   return {
     id: "player-1",
     name: "Alice",
     character: null,
     isCaptain: false,
-    hand: [makeTile()],
+    hand,
+    standSizes,
     infoTokens: [],
     characterUsed: false,
     connected: true,
     isBot: false,
-    ...overrides,
+    ...restOverrides,
   };
 }
 

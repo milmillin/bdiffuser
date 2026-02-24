@@ -186,11 +186,13 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
 }
 
 function filterPlayerFullyVisible(player: Player): ClientPlayer {
+  const standSizes = getNormalizedStandSizes(player);
   return {
     id: player.id,
     name: player.name,
     character: player.character,
     isCaptain: player.isCaptain,
+    standSizes,
     hand: player.hand.map((tile) => ({
       id: tile.id,
       cut: tile.cut,
@@ -210,11 +212,13 @@ function filterPlayerFullyVisible(player: Player): ClientPlayer {
 
 function filterPlayer(player: Player, viewerId: string): ClientPlayer {
   const isOwn = player.id === viewerId;
+  const standSizes = getNormalizedStandSizes(player);
   return {
     id: player.id,
     name: player.name,
     character: player.character,
     isCaptain: player.isCaptain,
+    standSizes,
     hand: player.hand.map((tile) => filterTile(tile, isOwn)),
     infoTokens: player.infoTokens,
     characterUsed: player.characterUsed,
@@ -222,6 +226,14 @@ function filterPlayer(player: Player, viewerId: string): ClientPlayer {
     isBot: player.isBot,
     remainingTiles: player.hand.filter((t) => !t.cut).length,
   };
+}
+
+function getNormalizedStandSizes(player: Player): number[] {
+  const maybeStandSizes = (player as Player & { standSizes?: number[] }).standSizes;
+  if (Array.isArray(maybeStandSizes) && maybeStandSizes.length > 0) {
+    return [...maybeStandSizes];
+  }
+  return [player.hand.length];
 }
 
 function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {

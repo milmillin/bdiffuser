@@ -27,6 +27,8 @@ export function PlayerStand({
   onCharacterClick?: () => void;
   statusContent?: ReactNode;
 }) {
+  const standSegments = getStandSegments(player);
+
   return (
     <div
       data-testid={`player-stand-${player.id}`}
@@ -98,53 +100,113 @@ export function PlayerStand({
         const colWidth = "1.5rem";
         return (
           <ScrollableRow>
-          <div className={`grid gap-x-1 mx-auto min-w-0`}
-            style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
-          >
-            {/* Row 1: info tokens */}
-            {player.hand.map((_, idx) => {
-              const infoTokens = player.infoTokens.filter(
-                (token) => token.position === idx || token.positionB === idx,
-              );
-              return (
-                <div key={`info-${idx}`} className="flex items-end justify-center">
-                  <div className="flex flex-col items-center gap-0.5">
-                    {infoTokens.map((token, tokenIndex) => (
-                      <InfoTokenView
-                        key={`${idx}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
-                        token={token}
+            <div className="flex items-start mx-auto min-w-0">
+              {standSegments.map((segment, segmentIndex) => (
+                <div
+                  key={`stand-segment-${segment.standIndex}`}
+                  data-testid={`player-stand-segment-${player.id}-${segment.standIndex}`}
+                  className={`min-w-0 ${segmentIndex > 0 ? "ml-2 pl-2 border-l border-gray-700/70" : ""}`}
+                >
+                  <div
+                    className="grid gap-x-1 min-w-0"
+                    style={{
+                      gridTemplateColumns: `repeat(${segment.indices.length}, ${colWidth})`,
+                      gridTemplateRows: "auto auto auto",
+                    }}
+                  >
+                    {/* Row 1: info tokens */}
+                    {segment.indices.map((flatIndex) => {
+                      const infoTokens = player.infoTokens.filter(
+                        (token) => token.position === flatIndex || token.positionB === flatIndex,
+                      );
+                      return (
+                        <div key={`info-${flatIndex}`} className="flex items-end justify-center">
+                          <div className="flex flex-col items-center gap-0.5">
+                            {infoTokens.map((token, tokenIndex) => (
+                              <InfoTokenView
+                                key={`${flatIndex}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
+                                token={token}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Row 2: wire tiles */}
+                    {segment.indices.map((flatIndex) => (
+                      <WireTileView
+                        key={player.hand[flatIndex].id}
+                        tile={player.hand[flatIndex]}
+                        isOpponent={isOpponent}
+                        isSmall={true}
+                        isSelectable={
+                          tileSelectableFilter
+                            ? tileSelectableFilter(player.hand[flatIndex], flatIndex)
+                            : !!onTileClick && !player.hand[flatIndex].cut
+                        }
+                        isSelected={selectedTileIndex === flatIndex || (selectedTileIndices?.includes(flatIndex) ?? false)}
+                        isFilterActive={!!tileSelectableFilter}
+                        testId={`wire-tile-${player.id}-${flatIndex}`}
+                        onClick={() => onTileClick?.(flatIndex)}
                       />
+                    ))}
+                    {/* Row 3: wire labels */}
+                    {segment.indices.map((flatIndex) => (
+                      <div key={`label-${flatIndex}`} className="text-center text-[10px] text-gray-500 font-mono leading-tight">
+                        {wireLabel(flatIndex)}
+                      </div>
                     ))}
                   </div>
                 </div>
-              );
-            })}
-            {/* Row 2: wire tiles */}
-            {player.hand.map((tile, idx) => (
-              <WireTileView
-                key={tile.id}
-                tile={tile}
-                isOpponent={isOpponent}
-                isSmall={true}
-                isSelectable={tileSelectableFilter ? tileSelectableFilter(tile, idx) : !!onTileClick && !tile.cut}
-                isSelected={selectedTileIndex === idx || (selectedTileIndices?.includes(idx) ?? false)}
-                isFilterActive={!!tileSelectableFilter}
-                testId={`wire-tile-${player.id}-${idx}`}
-                onClick={() => onTileClick?.(idx)}
-              />
-            ))}
-            {/* Row 3: wire labels */}
-            {player.hand.map((_, idx) => (
-              <div key={`label-${idx}`} className="text-center text-[10px] text-gray-500 font-mono leading-tight">
-                {wireLabel(idx)}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           </ScrollableRow>
         );
       })()}
     </div>
   );
+}
+
+function getStandSegments(
+  player: ClientPlayer,
+): Array<{ standIndex: number; indices: number[] }> {
+  const standSizes = getValidatedStandSizes(player);
+  const segments: Array<{ standIndex: number; indices: number[] }> = [];
+  let cursor = 0;
+
+  for (let standIndex = 0; standIndex < standSizes.length; standIndex += 1) {
+    const size = standSizes[standIndex]!;
+    const end = Math.min(cursor + size, player.hand.length);
+    const indices: number[] = [];
+    for (let idx = cursor; idx < end; idx += 1) {
+      indices.push(idx);
+    }
+    if (indices.length > 0) {
+      segments.push({ standIndex, indices });
+    }
+    cursor = end;
+  }
+
+  if (segments.length === 0 && player.hand.length > 0) {
+    return [{ standIndex: 0, indices: player.hand.map((_, idx) => idx) }];
+  }
+
+  return segments;
+}
+
+function getValidatedStandSizes(player: ClientPlayer): number[] {
+  const maybeStandSizes = (player as ClientPlayer & { standSizes?: number[] }).standSizes;
+  if (!Array.isArray(maybeStandSizes) || maybeStandSizes.length === 0) {
+    return [player.hand.length];
+  }
+  if (!maybeStandSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+  const total = maybeStandSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) {
+    return [player.hand.length];
+  }
+  return maybeStandSizes;
 }
 
 function getInfoTokenImage(token: InfoToken): string {

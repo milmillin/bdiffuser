@@ -7,7 +7,12 @@ import {
   makeRedTile,
 } from "@bomb-busters/shared/testing";
 import {
+  areFlatIndicesAdjacentWithinStand,
+  areFlatIndicesOnSameStand,
+  flatIndexToStandIndex,
+  getPlayerStandSizes,
   isPlayersTurn,
+  resolveStandRange,
   validateActionWithHooks,
   validateDualCut,
   validateDualCutDoubleDetectorLegality,
@@ -16,6 +21,14 @@ import {
   validateSimultaneousCutLegality,
   validateSoloCutLegality,
 } from "../validation";
+
+function withStandSizes<T extends ReturnType<typeof makePlayer>>(
+  player: T,
+  standSizes: number[],
+): T {
+  (player as T & { standSizes?: number[] }).standSizes = [...standSizes];
+  return player;
+}
 
 describe("isPlayersTurn", () => {
   it("returns true when it is the player's turn", () => {
@@ -31,6 +44,45 @@ describe("isPlayersTurn", () => {
   it("returns false when phase is not playing", () => {
     const state = makeGameState({ phase: "lobby" });
     expect(isPlayersTurn(state, "player-1")).toBe(false);
+  });
+});
+
+describe("stand partition helpers", () => {
+  it("resolves stand ranges and flat index mapping from standSizes", () => {
+    const player = withStandSizes(makePlayer({
+      id: "p1",
+      hand: [
+        makeTile({ id: "t1", gameValue: 1 }),
+        makeTile({ id: "t2", gameValue: 2 }),
+        makeTile({ id: "t3", gameValue: 3 }),
+        makeTile({ id: "t4", gameValue: 4 }),
+      ],
+    }), [2, 2]);
+
+    expect(getPlayerStandSizes(player)).toEqual([2, 2]);
+    expect(resolveStandRange(player, 0)).toEqual({ standIndex: 0, start: 0, endExclusive: 2 });
+    expect(resolveStandRange(player, 1)).toEqual({ standIndex: 1, start: 2, endExclusive: 4 });
+    expect(flatIndexToStandIndex(player, 0)).toBe(0);
+    expect(flatIndexToStandIndex(player, 1)).toBe(0);
+    expect(flatIndexToStandIndex(player, 2)).toBe(1);
+    expect(flatIndexToStandIndex(player, 3)).toBe(1);
+  });
+
+  it("enforces same-stand adjacency checks across stand boundaries", () => {
+    const player = withStandSizes(makePlayer({
+      id: "p1",
+      hand: [
+        makeTile({ id: "t1", gameValue: 1 }),
+        makeTile({ id: "t2", gameValue: 2 }),
+        makeTile({ id: "t3", gameValue: 3 }),
+        makeTile({ id: "t4", gameValue: 4 }),
+      ],
+    }), [2, 2]);
+
+    expect(areFlatIndicesOnSameStand(player, 0, 1)).toBe(true);
+    expect(areFlatIndicesOnSameStand(player, 1, 2)).toBe(false);
+    expect(areFlatIndicesAdjacentWithinStand(player, 0, 1)).toBe(true);
+    expect(areFlatIndicesAdjacentWithinStand(player, 1, 2)).toBe(false);
   });
 });
 
@@ -739,6 +791,25 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("rejects Double Detector tiles that cross stand boundaries", () => {
+    const { state } = baseDDSetup("double_detector");
+    const target = withStandSizes(makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 2 }),
+        makeTile({ id: "t2", gameValue: 3 }),
+        makeTile({ id: "t3", gameValue: 5 }),
+        makeTile({ id: "t4", gameValue: 8 }),
+      ],
+    }), [2, 2]);
+    state.players[1] = target;
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 1, 2, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("DOUBLE_DETECTOR_INVALID_TILES");
+    expect(error!.message).toBe("Double Detector targets must be on the same stand");
+  });
+
   it("rejects reused Double Detector outside mission 58", () => {
     const { state } = baseDDSetup("double_detector");
     state.players[0].characterUsed = true;
@@ -818,5 +889,70 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
     expect(error).not.toBeNull();
     expect(error!.code).toBe("CHARACTER_ABILITY_WRONG_CHARACTER");
+  });
+});
+
+describe("constraint I/J stand boundaries", () => {
+  function buildConstraintState(constraintId: "I" | "J") {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = withStandSizes(makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 2 }),
+        makeTile({ id: "t2", gameValue: 3 }),
+        makeTile({ id: "t3", gameValue: 5 }),
+        makeTile({ id: "t4", gameValue: 8 }),
+      ],
+    }), [2, 2]);
+
+    return makeGameState({
+      mission: 32,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        constraints: {
+          global: [
+            { id: constraintId, name: `Constraint ${constraintId}`, description: "", active: true },
+          ],
+          perPlayer: {},
+          deck: [],
+        },
+      },
+    });
+  }
+
+  it("constraint I blocks far-right within the targeted stand", () => {
+    const state = buildConstraintState("I");
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 1,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Constraint I: You cannot cut the far-right wire");
+  });
+
+  it("constraint J blocks far-left within the targeted stand", () => {
+    const state = buildConstraintState("J");
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 2,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Constraint J: You cannot cut the far-left wire");
   });
 });

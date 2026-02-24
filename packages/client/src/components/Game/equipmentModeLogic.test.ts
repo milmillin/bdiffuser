@@ -123,6 +123,7 @@ describe("getOpponentTileSelectableFilter", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
@@ -348,6 +349,7 @@ describe("getOwnTileSelectableFilter", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
@@ -359,6 +361,7 @@ describe("getOwnTileSelectableFilter", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
@@ -607,6 +610,7 @@ describe("highlight functions", () => {
       const mode: EquipmentMode = {
         kind: "super_detector",
         targetPlayerId: "opp1",
+        targetStandIndex: null,
         guessTileIndex: 1,
       };
       expect(getOwnSelectedTileIndex(mode)).toBe(1);
@@ -803,20 +807,24 @@ describe("handleOpponentTileClick", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const result = handleOpponentTileClick(mode, "opp1", 0) as Extract<EquipmentMode, { kind: "super_detector" }>;
     expect(result.targetPlayerId).toBe("opp1");
+    expect(result.targetStandIndex).toBeNull();
   });
 
   it("super_detector: preserves guess on target switch", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: 1,
       guessTileIndex: 3,
     };
     const result = handleOpponentTileClick(mode, "opp2", 0) as Extract<EquipmentMode, { kind: "super_detector" }>;
     expect(result.targetPlayerId).toBe("opp2");
+    expect(result.targetStandIndex).toBeNull();
     expect(result.guessTileIndex).toBe(3); // preserved
   });
 
@@ -824,10 +832,12 @@ describe("handleOpponentTileClick", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: 0,
       guessTileIndex: 3,
     };
     const result = handleOpponentTileClick(mode, "opp1", 1) as Extract<EquipmentMode, { kind: "super_detector" }>;
     expect(result.targetPlayerId).toBeNull();
+    expect(result.targetStandIndex).toBeNull();
     expect(result.guessTileIndex).toBe(3);
   });
 
@@ -1124,6 +1134,7 @@ describe("handleOwnTileClickEquipment", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
@@ -1135,6 +1146,7 @@ describe("handleOwnTileClickEquipment", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
@@ -1257,6 +1269,7 @@ describe("handleOwnTileClickEquipment", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: 0,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
@@ -1443,12 +1456,14 @@ describe("opponent tile toggle-deselect", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: null,
     };
     const result = handleOpponentTileClick(mode, "opp1", 0);
     expect(result).toEqual({
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     });
   });

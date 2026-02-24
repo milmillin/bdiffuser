@@ -19,6 +19,11 @@ import {
   wireLabel,
 } from "@bomb-busters/shared";
 import {
+  areFlatIndicesAdjacentWithinStand,
+  areFlatIndicesOnSameStand,
+  flatIndexToStandIndex,
+  getPlayerStandSizes,
+  resolveStandRange,
   getTileByFlatIndex,
   getUncutTiles,
   getAllTiles,
@@ -80,6 +85,119 @@ function isMission13NonBlueTarget(
   tile: WireTile | undefined,
 ): boolean {
   return state.mission === 13 && tile?.color !== "blue";
+}
+
+type StandAwarePlayer = Player & {
+  standSizes?: number[];
+};
+
+function getStandFlatIndices(player: Player, standIndex: number): number[] {
+  const range = resolveStandRange(player, standIndex);
+  if (!range) return [];
+
+  const indices: number[] = [];
+  for (let i = range.start; i < range.endExclusive; i++) {
+    indices.push(i);
+  }
+  return indices;
+}
+
+function getDetectorEligibleIndicesForStand(
+  state: Readonly<GameState>,
+  target: Player,
+  standIndex: number,
+): number[] {
+  const standIndices = getStandFlatIndices(target, standIndex);
+  return standIndices.filter((index) => {
+    const tile = getTileByFlatIndex(target, index);
+    if (!tile || tile.cut) return false;
+    if (isMission13NonBlueTarget(state, tile)) return false;
+    if (state.mission === 20 && isXMarkedWire(tile)) return false;
+    return true;
+  });
+}
+
+function getSuperDetectorTargetStandIndex(
+  target: Player,
+  payload: Extract<UseEquipmentPayload, { kind: "super_detector" }>,
+): number | null {
+  const standSizes = getPlayerStandSizes(target);
+  const rawStandIndex = (
+    payload as Extract<UseEquipmentPayload, { kind: "super_detector" }> & {
+      targetStandIndex?: unknown;
+    }
+  ).targetStandIndex;
+
+  if (rawStandIndex === undefined) {
+    return standSizes.length > 1 ? null : 0;
+  }
+  if (!Number.isInteger(rawStandIndex)) {
+    return null;
+  }
+  if (resolveStandRange(target, rawStandIndex) == null) {
+    return null;
+  }
+  return rawStandIndex;
+}
+
+function getMutableStandSizes(player: Player): number[] | null {
+  const standSizes = (player as StandAwarePlayer).standSizes;
+  if (!Array.isArray(standSizes) || standSizes.length === 0) return null;
+  if (!standSizes.every((size) => Number.isInteger(size) && size >= 0)) return null;
+  return standSizes;
+}
+
+function adjustStandSize(
+  player: Player,
+  standIndex: number | null,
+  delta: number,
+): void {
+  if (standIndex == null || delta === 0) return;
+
+  const standSizes = getMutableStandSizes(player);
+  if (!standSizes) return;
+  if (standIndex < 0 || standIndex >= standSizes.length) return;
+
+  standSizes[standIndex] = Math.max(0, standSizes[standIndex] + delta);
+}
+
+function resolveInsertStandIndex(player: Player, insertIndex: number): number | null {
+  const standSizes = getPlayerStandSizes(player);
+  if (standSizes.length <= 1) return 0;
+  if (insertIndex >= player.hand.length) return standSizes.length - 1;
+  return flatIndexToStandIndex(player, insertIndex);
+}
+
+function buildGeneralRadarDetail(
+  state: Readonly<GameState>,
+  value: number,
+): string {
+  const parts = state.players.map((player) => {
+    const standSizes = getPlayerStandSizes(player);
+    const perStand = standSizes.map((_, standIndex) => {
+      const hasValue = getStandFlatIndices(player, standIndex).some((index) => {
+        const tile = getTileByFlatIndex(player, index);
+        return (
+          tile != null &&
+          !tile.cut &&
+          tile.color === "blue" &&
+          tile.gameValue === value &&
+          !(state.mission === 20 && isXMarkedWire(tile))
+        );
+      });
+      return hasValue;
+    });
+
+    if (perStand.length > 1) {
+      const standDetail = perStand
+        .map((hasValue, standIndex) => `S${standIndex + 1}:${hasValue ? "yes" : "no"}`)
+        .join("|");
+      return `${player.name}:${standDetail}`;
+    }
+    return `${player.name}:${perStand[0] ? "yes" : "no"}`;
+  });
+
+  return parts.join(", ");
 }
 
 function countCutValue(state: GameState, value: number): number {
@@ -298,7 +416,7 @@ export function validateUseEquipment(
           "X-marked wires are ignored by equipment in mission 20",
         );
       }
-      if (Math.abs(payload.tileIndexA - payload.tileIndexB) !== 1) {
+      if (!areFlatIndicesAdjacentWithinStand(actor, payload.tileIndexA, payload.tileIndexB)) {
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
           "Label cards require two adjacent wires",
@@ -413,6 +531,12 @@ export function validateUseEquipment(
           );
         }
       }
+      if (!indices.every((index) => areFlatIndicesOnSameStand(target, indices[0], index))) {
+        return legalityError(
+          "EQUIPMENT_RULE_VIOLATION",
+          "Triple Detector targets must all be on the same stand",
+        );
+      }
 
       const chosenTileIndex = chooseDetectorTarget(target, indices, payload.guessValue);
       const missionHookError = validateDualCutWithHooks(
@@ -446,12 +570,30 @@ export function validateUseEquipment(
           "You don't have an uncut wire with that value",
         );
       }
-      const eligibleTiles = getUncutTiles(target).filter((tile) => {
-        if (isMission13NonBlueTarget(state, tile)) return false;
-        if (state.mission === 20 && isXMarkedWire(tile)) return false;
-        return true;
-      });
-      if (eligibleTiles.length === 0) {
+
+      const standSizes = getPlayerStandSizes(target);
+      const targetStandIndex = getSuperDetectorTargetStandIndex(target, payload);
+      if (targetStandIndex == null) {
+        return legalityError(
+          "EQUIPMENT_INVALID_PAYLOAD",
+          standSizes.length > 1
+            ? "Super Detector requires targetStandIndex for players with multiple stands"
+            : "Invalid Super Detector stand index",
+        );
+      }
+      if (resolveStandRange(target, targetStandIndex) == null) {
+        return legalityError(
+          "EQUIPMENT_INVALID_PAYLOAD",
+          "Invalid Super Detector stand index",
+        );
+      }
+
+      const eligibleIndices = getDetectorEligibleIndicesForStand(
+        state,
+        target,
+        targetStandIndex,
+      );
+      if (eligibleIndices.length === 0) {
         if (state.mission === 13) {
           return legalityError(
             "MISSION_RULE_VIOLATION",
@@ -466,16 +608,11 @@ export function validateUseEquipment(
         );
       }
 
-      const uncutIndices = target.hand
-        .map((tile, index) => ({ tile, index }))
-        .filter((entry) => {
-          if (entry.tile.cut) return false;
-          if (isMission13NonBlueTarget(state, entry.tile)) return false;
-          if (state.mission === 20 && isXMarkedWire(entry.tile)) return false;
-          return true;
-        })
-        .map((entry) => entry.index);
-      const chosenTileIndex = chooseDetectorTarget(target, uncutIndices, payload.guessValue);
+      const chosenTileIndex = chooseDetectorTarget(
+        target,
+        eligibleIndices,
+        payload.guessValue,
+      );
       const missionHookError = validateDualCutWithHooks(
         state,
         actorId,
@@ -975,17 +1112,7 @@ export function executeUseEquipment(
       };
     }
     case "general_radar": {
-      const details = state.players
-        .map((player) => {
-          const hasValue = getUncutTiles(player).some(
-            (tile) =>
-              tile.color === "blue" &&
-              tile.gameValue === payload.value &&
-              !(state.mission === 20 && isXMarkedWire(tile)),
-          );
-          return `${player.name}:${hasValue ? "yes" : "no"}`;
-        })
-        .join(", ");
+      const details = buildGeneralRadarDetail(state, payload.value);
       addLog(state, actorId, "useEquipment", `used General Radar (${payload.value}) -> ${details}`);
       return {
         type: "equipmentUsed",
@@ -1061,14 +1188,12 @@ export function executeUseEquipment(
     }
     case "super_detector": {
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
-      const uncutIndices = target.hand
-        .map((tile, index) => ({ tile, index }))
-        .filter(
-          (entry) =>
-            !entry.tile.cut &&
-            !(state.mission === 20 && isXMarkedWire(entry.tile)),
-        )
-        .map((entry) => entry.index);
+      const targetStandIndex = getSuperDetectorTargetStandIndex(target, payload) ?? 0;
+      const uncutIndices = getDetectorEligibleIndicesForStand(
+        state,
+        target,
+        targetStandIndex,
+      );
       const matchingIndices = findMatchingDetectorIndices(
         target,
         uncutIndices,
@@ -1089,7 +1214,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Super Detector on ${target.name} guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
+        `used Super Detector on ${target.name} stand ${targetStandIndex + 1} guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
       return {
         type: "equipmentUsed",
@@ -1274,10 +1399,12 @@ export function executeUseEquipment(
     }
     case "grappling_hook": {
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
+      const targetStandIndex = flatIndexToStandIndex(target, payload.targetTileIndex);
       const wire = target.hand[payload.targetTileIndex];
 
       // Remove wire from target's hand
       target.hand.splice(payload.targetTileIndex, 1);
+      adjustStandSize(target, targetStandIndex, -1);
 
       // Shift target's info token positions
       target.infoTokens = target.infoTokens
@@ -1298,7 +1425,9 @@ export function executeUseEquipment(
           break;
         }
       }
+      const actorStandIndex = resolveInsertStandIndex(actor, insertIndex);
       actor.hand.splice(insertIndex, 0, wire);
+      adjustStandSize(actor, actorStandIndex, 1);
 
       // Shift actor's info token positions for tokens at or after insert point
       actor.infoTokens = actor.infoTokens.map((t) => ({
@@ -1445,6 +1574,12 @@ export function validateCharacterAbility(
         if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
         if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
       }
+      if (!indices.every((index) => areFlatIndicesOnSameStand(target, indices[0], index))) {
+        return legalityError(
+          "EQUIPMENT_RULE_VIOLATION",
+          "Triple Detector targets must all be on the same stand",
+        );
+      }
       const chosenTileIndex = chooseDetectorTarget(target, indices, payload.guessValue);
       return validateDualCutWithHooks(state, actorId, payload.targetPlayerId, chosenTileIndex, payload.guessValue);
     }
@@ -1499,17 +1634,7 @@ export function executeCharacterAbility(
 
   switch (payload.kind) {
     case "general_radar": {
-      const details = state.players
-        .map((player) => {
-          const hasValue = getUncutTiles(player).some(
-            (tile) =>
-              tile.color === "blue" &&
-              tile.gameValue === payload.value &&
-              !(state.mission === 20 && isXMarkedWire(tile)),
-          );
-          return `${player.name}:${hasValue ? "yes" : "no"}`;
-        })
-        .join(", ");
+      const details = buildGeneralRadarDetail(state, payload.value);
       addLog(state, actorId, "characterAbility", `used General Radar (${payload.value}) -> ${details}`);
       return {
         type: "equipmentUsed",

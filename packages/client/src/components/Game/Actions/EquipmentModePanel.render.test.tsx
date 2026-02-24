@@ -75,6 +75,7 @@ const ALL_MODES: EquipmentMode[] = [
   {
     kind: "super_detector",
     targetPlayerId: null,
+    targetStandIndex: null,
     guessTileIndex: null,
   },
   {
@@ -408,10 +409,36 @@ describe("EquipmentModePanel — triple_detector", () => {
 // ── super_detector ───────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — super_detector", () => {
+  const makePlayersWithTwoStandOpponent = () => {
+    const me = makePlayer({
+      id: "me",
+      name: "Me",
+      hand: [
+        makeTile({ id: "m1", gameValue: 3 }),
+        makeTile({ id: "m2", gameValue: 5 }),
+        makeTile({ id: "m3", gameValue: 7 }),
+      ],
+    });
+    const opp1 = makePlayer({
+      id: "opp1",
+      name: "Opp1",
+      hand: [
+        makeTile({ id: "o1", gameValue: 1 }),
+        makeTile({ id: "o2", gameValue: 2 }),
+        makeTile({ id: "o3", gameValue: 4 }),
+        makeTile({ id: "o4", gameValue: 8 }),
+      ],
+    }) as ReturnType<typeof makePlayer> & { standSizes?: number[] };
+    opp1.standSizes = [2, 2];
+    const opp2 = makePlayer({ id: "opp2", name: "Opp2" });
+    return [me, opp1, opp2];
+  };
+
   it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "super_detector",
       targetPlayerId: null,
+      targetStandIndex: null,
       guessTileIndex: null,
     });
     expect(html).toContain("Still need:");
@@ -422,6 +449,7 @@ describe("EquipmentModePanel — super_detector", () => {
     const html = renderMode({
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: null,
     });
     expect(html).toContain("Selected");
@@ -432,8 +460,41 @@ describe("EquipmentModePanel — super_detector", () => {
     const html = renderMode({
       kind: "super_detector",
       targetPlayerId: "opp1",
+      targetStandIndex: null,
       guessTileIndex: 0,
     });
+    expect(html).toContain("Confirm Super Detector");
+  });
+
+  it("two-stand target requires explicit stand selection before confirm", () => {
+    const html = renderMode(
+      {
+        kind: "super_detector",
+        targetPlayerId: "opp1",
+        targetStandIndex: null,
+        guessTileIndex: 0,
+      },
+      { players: makePlayersWithTwoStandOpponent() },
+    );
+    expect(html).toContain("Select a stand:");
+    expect(html).toContain("Stand 1");
+    expect(html).toContain("Stand 2");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("target stand");
+    expect(html).not.toContain("Confirm Super Detector");
+  });
+
+  it("two-stand target shows confirm once stand is selected", () => {
+    const html = renderMode(
+      {
+        kind: "super_detector",
+        targetPlayerId: "opp1",
+        targetStandIndex: 1,
+        guessTileIndex: 0,
+      },
+      { players: makePlayersWithTwoStandOpponent() },
+    );
+    expect(html).toContain("Target: Opp1 stand 2. Guess:");
     expect(html).toContain("Confirm Super Detector");
   });
 });

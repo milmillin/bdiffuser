@@ -76,7 +76,12 @@ export function getInitialEquipmentMode(
         guessTileIndex: null,
       };
     case "super_detector":
-      return { kind: "super_detector", targetPlayerId: null, guessTileIndex: null };
+      return {
+        kind: "super_detector",
+        targetPlayerId: null,
+        targetStandIndex: null,
+        guessTileIndex: null,
+      };
     case "x_or_y_ray":
       return {
         kind: "x_or_y_ray",

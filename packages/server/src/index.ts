@@ -420,18 +420,20 @@ export class BombBustersServer extends Server<Env> {
           return;
         }
 
-        player = {
+        const newPlayer: Player = {
           id: conn.id,
           name,
           character: null,
           isCaptain: false,
           hand: [],
+          standSizes: [0],
           infoTokens: [],
           characterUsed: false,
           connected: true,
           isBot: false,
         };
-        this.room.players.push(player);
+        player = newPlayer;
+        this.room.players.push(newPlayer);
 
         // First player is host
         if (!this.room.hostId) {

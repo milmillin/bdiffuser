@@ -26,6 +26,7 @@ export function createBotPlayer(id: string, nameIndex: number): Player {
     character: null,
     isCaptain: false,
     hand: [],
+    standSizes: [0],
     infoTokens: [],
     characterUsed: false,
     connected: true,

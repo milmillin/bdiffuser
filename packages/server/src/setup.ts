@@ -236,25 +236,71 @@ function createEquipmentCards(
   }));
 }
 
-function distributeTiles(
-  tiles: WireTile[],
-  players: Player[],
-): Record<string, string> {
+interface StandSeat {
+  playerId: string;
+  standIndex: number;
+  tiles: WireTile[];
+  lastDealtTileId?: string;
+}
+
+function standCountForPlayer(
+  player: Player,
+  playerCount: number,
+  captainId: string | undefined,
+): number {
+  if (playerCount === 2) return 2;
+  if (playerCount === 3) return player.id === captainId ? 2 : 1;
+  return 1;
+}
+
+function distributeTilesAcrossStands(tiles: WireTile[], players: Player[]): StandSeat[] {
   shuffle(tiles);
-  const lastDealtTileIdByPlayer: Record<string, string> = {};
+  const captainId = players.find((player) => player.isCaptain)?.id ?? players[0]?.id;
+  const standSeats: StandSeat[] = [];
+
+  for (const player of players) {
+    const standCount = standCountForPlayer(player, players.length, captainId);
+    for (let standIndex = 0; standIndex < standCount; standIndex++) {
+      standSeats.push({
+        playerId: player.id,
+        standIndex,
+        tiles: [],
+      });
+    }
+  }
+
+  if (standSeats.length === 0) return standSeats;
 
   for (let i = 0; i < tiles.length; i++) {
-    const player = players[i % players.length];
+    const standSeat = standSeats[i % standSeats.length];
     const tile = tiles[i];
-    player.hand.push(tile);
-    lastDealtTileIdByPlayer[player.id] = tile.id;
+    standSeat.tiles.push(tile);
+    standSeat.lastDealtTileId = tile.id;
+  }
+
+  for (const standSeat of standSeats) {
+    standSeat.tiles.sort((a, b) => a.sortValue - b.sortValue);
+  }
+
+  return standSeats;
+}
+
+function flattenStandSeatsToPlayers(players: Player[], standSeats: StandSeat[]): void {
+  const standSeatsByPlayerId = new Map<string, StandSeat[]>();
+  for (const standSeat of standSeats) {
+    const existing = standSeatsByPlayerId.get(standSeat.playerId);
+    if (existing) existing.push(standSeat);
+    else standSeatsByPlayerId.set(standSeat.playerId, [standSeat]);
   }
 
   for (const player of players) {
-    player.hand.sort((a, b) => a.sortValue - b.sortValue);
+    const playerStandSeats =
+      standSeatsByPlayerId.get(player.id)?.sort((a, b) => a.standIndex - b.standIndex) ?? [];
+    player.hand = playerStandSeats.flatMap((standSeat) => standSeat.tiles);
+    player.standSizes = playerStandSeats.length
+      ? playerStandSeats.map((standSeat) => standSeat.tiles.length)
+      : [0];
   }
-
-  return lastDealtTileIdByPlayer;
 }
 
 export function setupGame(
@@ -271,6 +317,7 @@ export function setupGame(
 
   for (const player of players) {
     player.hand = [];
+    player.standSizes = [];
   }
 
   // Mission 27: no character cards are distributed this mission.
@@ -306,21 +353,22 @@ export function setupGame(
   const allMarkers = [...red.markers, ...yellow.markers].sort(compareMarkerOrder);
 
   const allTiles = [...blueTiles, ...red.tiles, ...yellow.tiles];
-  const lastDealtTileIdByPlayer = distributeTiles(allTiles, players);
+  const standSeats = distributeTilesAcrossStands(allTiles, players);
 
-  // Mission 20: the last dealt wire on each stand is moved unsorted to the far
-  // right and marked with X.
+  // Mission 20: the last dealt wire on each stand is moved unsorted to that
+  // stand's far right and marked with X.
   if (mission === 20) {
-    for (const player of players) {
-      const markerTileId = lastDealtTileIdByPlayer[player.id];
+    for (const standSeat of standSeats) {
+      const markerTileId = standSeat.lastDealtTileId;
       if (!markerTileId) continue;
-      const markerIndex = player.hand.findIndex((tile) => tile.id === markerTileId);
+      const markerIndex = standSeat.tiles.findIndex((tile) => tile.id === markerTileId);
       if (markerIndex < 0) continue;
-      const [markerTile] = player.hand.splice(markerIndex, 1);
+      const [markerTile] = standSeat.tiles.splice(markerIndex, 1);
       markerTile.isXMarked = true;
-      player.hand.push(markerTile);
+      standSeat.tiles.push(markerTile);
     }
   }
+  flattenStandSeatsToPlayers(players, standSeats);
 
   const validationTrack: Record<number, number> = {};
   for (let i = 1; i <= 12; i++) {

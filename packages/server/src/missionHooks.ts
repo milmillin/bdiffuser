@@ -1512,6 +1512,102 @@ registerHookHandler<"intern_failure_explodes">("intern_failure_explodes", {
 
 // ── Mission 18 — Forced General Radar Flow ──────────────────
 
+type StandAwareHookPlayer = import("@bomb-busters/shared").Player & {
+  standSizes?: number[];
+};
+
+function getHookStandSizes(
+  player: Readonly<import("@bomb-busters/shared").Player>,
+): number[] {
+  const standSizes = (player as Readonly<StandAwareHookPlayer>).standSizes;
+  if (!Array.isArray(standSizes) || standSizes.length === 0) {
+    return [player.hand.length];
+  }
+  if (!standSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+  const total = standSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) {
+    return [player.hand.length];
+  }
+  return standSizes;
+}
+
+function resolveHookStandRange(
+  player: Readonly<import("@bomb-busters/shared").Player>,
+  standIndex: number,
+): { start: number; endExclusive: number } | null {
+  if (!Number.isInteger(standIndex) || standIndex < 0) return null;
+
+  const standSizes = getHookStandSizes(player);
+  if (standIndex >= standSizes.length) return null;
+
+  let start = 0;
+  for (let i = 0; i < standSizes.length; i++) {
+    const endExclusive = start + standSizes[i];
+    if (i === standIndex) {
+      return { start, endExclusive };
+    }
+    start = endExclusive;
+  }
+  return null;
+}
+
+function hookFlatIndexToStandIndex(
+  player: Readonly<import("@bomb-busters/shared").Player>,
+  flatIndex: number,
+): number | null {
+  if (!Number.isInteger(flatIndex) || flatIndex < 0 || flatIndex >= player.hand.length) {
+    return null;
+  }
+
+  const standSizes = getHookStandSizes(player);
+  let start = 0;
+  for (let standIndex = 0; standIndex < standSizes.length; standIndex++) {
+    const endExclusive = start + standSizes[standIndex];
+    if (flatIndex >= start && flatIndex < endExclusive) {
+      return standIndex;
+    }
+    start = endExclusive;
+  }
+  return null;
+}
+
+function getMission18StandRadarResults(
+  player: Readonly<import("@bomb-busters/shared").Player>,
+  value: number,
+): boolean[] {
+  const standSizes = getHookStandSizes(player);
+  return standSizes.map((_, standIndex) => {
+    const range = resolveHookStandRange(player, standIndex);
+    if (!range) return false;
+
+    for (let i = range.start; i < range.endExclusive; i++) {
+      const tile = player.hand[i];
+      if (!tile.cut && typeof tile.gameValue === "number" && tile.gameValue === value) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function formatMission18RadarLog(
+  state: Readonly<GameState>,
+  value: number,
+): string {
+  return state.players.map((player) => {
+    const perStand = getMission18StandRadarResults(player, value);
+    if (perStand.length > 1) {
+      const standDetail = perStand
+        .map((hasValue, standIndex) => `S${standIndex + 1}:${hasValue ? "yes" : "no"}`)
+        .join("|");
+      return `${player.id}=${standDetail}`;
+    }
+    return `${player.id}=${perStand[0] ? "yes" : "no"}`;
+  }).join(",");
+}
+
 /**
  * Compute General Radar results for a given value: for each player,
  * returns true if they have at least one uncut wire of that value.
@@ -1522,9 +1618,8 @@ export function computeMission18RadarResults(
 ): Record<string, boolean> {
   const results: Record<string, boolean> = {};
   for (const player of state.players) {
-    results[player.id] = player.hand.some(
-      (t) => !t.cut && typeof t.gameValue === "number" && t.gameValue === value,
-    );
+    const perStand = getMission18StandRadarResults(player, value);
+    results[player.id] = perStand.some(Boolean);
   }
   return results;
 }
@@ -1616,7 +1711,7 @@ function setupMission18ForcedAction(state: GameState, activePlayer: import("@bom
     turn: state.turnNumber,
     playerId: "system",
     action: "hookEffect",
-    detail: `m18:number_card:${drawnValue}|radar:${Object.entries(radarResults).map(([id, has]) => `${id}=${has}`).join(",")}`,
+    detail: `m18:number_card:${drawnValue}|radar:${formatMission18RadarLog(state, drawnValue)}`,
     timestamp: Date.now(),
   });
 }
@@ -2143,15 +2238,28 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
             const targetTileIndex = ctx.action.targetTileIndex as number;
             const target = ctx.state.players.find((p) => p.id === targetPlayerId);
             if (target) {
-              const uncutIndices = target.hand
-                .map((_, i) => i)
-                .filter((i) => !target.hand[i].cut);
-              const maxIndex = Math.max(...uncutIndices);
-              if (targetTileIndex === maxIndex) {
-                return {
-                  validationCode: "MISSION_RULE_VIOLATION",
-                  validationError: "Constraint I: You cannot cut the far-right wire",
-                };
+              const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
+              const standRange = targetStandIndex == null
+                ? null
+                : resolveHookStandRange(target, targetStandIndex);
+              if (standRange) {
+                const uncutIndices = target.hand
+                  .map((_, i) => i)
+                  .filter(
+                    (i) =>
+                      i >= standRange.start &&
+                      i < standRange.endExclusive &&
+                      !target.hand[i].cut,
+                  );
+                if (uncutIndices.length > 0) {
+                  const maxIndex = Math.max(...uncutIndices);
+                  if (targetTileIndex === maxIndex) {
+                    return {
+                      validationCode: "MISSION_RULE_VIOLATION",
+                      validationError: "Constraint I: You cannot cut the far-right wire",
+                    };
+                  }
+                }
               }
             }
           }
@@ -2163,15 +2271,28 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
             const targetTileIndex = ctx.action.targetTileIndex as number;
             const target = ctx.state.players.find((p) => p.id === targetPlayerId);
             if (target) {
-              const uncutIndices = target.hand
-                .map((_, i) => i)
-                .filter((i) => !target.hand[i].cut);
-              const minIndex = Math.min(...uncutIndices);
-              if (targetTileIndex === minIndex) {
-                return {
-                  validationCode: "MISSION_RULE_VIOLATION",
-                  validationError: "Constraint J: You cannot cut the far-left wire",
-                };
+              const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
+              const standRange = targetStandIndex == null
+                ? null
+                : resolveHookStandRange(target, targetStandIndex);
+              if (standRange) {
+                const uncutIndices = target.hand
+                  .map((_, i) => i)
+                  .filter(
+                    (i) =>
+                      i >= standRange.start &&
+                      i < standRange.endExclusive &&
+                      !target.hand[i].cut,
+                  );
+                if (uncutIndices.length > 0) {
+                  const minIndex = Math.min(...uncutIndices);
+                  if (targetTileIndex === minIndex) {
+                    return {
+                      validationCode: "MISSION_RULE_VIOLATION",
+                      validationError: "Constraint J: You cannot cut the far-left wire",
+                    };
+                  }
+                }
               }
             }
           }
