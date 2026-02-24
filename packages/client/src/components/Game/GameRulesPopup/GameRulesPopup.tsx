@@ -151,7 +151,7 @@ export function GameRulesPopup({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/75 p-3 sm:p-6"
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/75 px-3 pt-3 pb-16 sm:p-6"
       data-testid="rules-popup"
       onClick={onClose}
       role="dialog"
@@ -159,7 +159,7 @@ export function GameRulesPopup({
       aria-label="Game rules"
     >
       <div
-        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
+        className="flex max-h-[calc(100dvh-4.75rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
