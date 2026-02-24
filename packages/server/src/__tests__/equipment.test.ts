@@ -239,6 +239,35 @@ describe("equipment validation", () => {
     expect(error?.code).toBe("EQUIPMENT_LOCKED");
   });
 
+  it("rejects face-down equipment even when unlocked", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 23,
+      players: [actor],
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "rewinder",
+            name: "Rewinder",
+            unlockValue: 6,
+            unlocked: true,
+            faceDown: true,
+          }),
+        ],
+      },
+    });
+
+    const error = validateUseEquipment(state, "actor", "rewinder", {
+      kind: "rewinder",
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_LOCKED");
+  });
+
   it("derives value from tile correctly during execution", () => {
     const actor = makePlayer({
       id: "actor",

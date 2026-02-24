@@ -367,6 +367,12 @@ export function validateUseEquipment(
   if (!card) {
     return legalityError("EQUIPMENT_NOT_FOUND", "Equipment card not found");
   }
+  if (card.faceDown) {
+    return legalityError(
+      "EQUIPMENT_LOCKED",
+      "Equipment card is face-down and cannot be used yet",
+    );
+  }
   if (!card.unlocked) {
     return legalityError("EQUIPMENT_LOCKED", "Equipment card is still locked");
   }
