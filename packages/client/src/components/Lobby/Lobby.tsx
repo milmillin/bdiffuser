@@ -2,6 +2,11 @@ import type { CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } f
 import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS } from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
+const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
+const btnFull = `${btnBase} px-7 py-3.5 text-base`;
+const btnSmall = `${btnBase} px-4 py-2 text-sm`;
+const btnDisabled = "disabled:bg-gray-800 disabled:border-gray-900 disabled:text-gray-500 disabled:shadow-none disabled:active:border-b-4 disabled:active:translate-y-0";
+
 export function Lobby({
   lobby,
   send,
@@ -122,14 +127,14 @@ export function Lobby({
                 <button
                   onClick={onLeave}
                   data-testid="leave-room"
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                  className={`${btnSmall} bg-gray-700 border-gray-900 text-white hover:bg-gray-600`}
                 >
                   Leave
                 </button>
                 {isHost && lobby.players.length < 5 && (
                   <button
                     onClick={() => send({ type: "addBot" })}
-                    className="px-4 py-2 bg-purple-700 hover:bg-purple-600 rounded-lg transition-colors font-bold text-sm"
+                    className={`${btnSmall} bg-purple-700 border-purple-950 text-white hover:bg-purple-600`}
                   >
                     + Bot
                   </button>
@@ -210,7 +215,7 @@ export function Lobby({
                 onClick={() => send({ type: "startGame" })}
                 disabled={!canStart}
                 data-testid="start-game"
-                className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+                className={`w-full ${btnFull} bg-green-600 border-green-900 text-white shadow-[0_4px_15px_rgba(22,163,74,0.4)] hover:bg-green-500 ${btnDisabled}`}
               >
                 {playerCount < 2
                   ? "Need 2+ players"
@@ -358,7 +363,7 @@ function MissionSelector({
         />
         <button
           onClick={handleTextSubmit}
-          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold transition-colors"
+          className={`${btnSmall} bg-red-600 border-red-900 text-white hover:bg-red-500`}
         >
           Go
         </button>
@@ -399,14 +404,14 @@ function MissionSelector({
                   ? `${MISSIONS[id].name} — ${playerConstraintLabel(id)}`
                   : MISSIONS[id].name
               }
-              className={`w-full aspect-square rounded text-xs font-bold transition-all ${
+              className={`w-full aspect-square rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer transition-all duration-200 border-b-2 active:border-b-0 active:translate-y-0.5 ${
                 isSelected
-                  ? "bg-red-500 text-white ring-2 ring-red-300 scale-110"
+                  ? "bg-red-500 border-red-800 text-white ring-2 ring-red-300 scale-110"
                   : isPreviewing
-                    ? "bg-yellow-600/50 text-white ring-1 ring-yellow-400"
+                    ? "bg-yellow-600/50 border-yellow-800 text-white ring-1 ring-yellow-400"
                     : disabled
-                      ? "bg-gray-800 text-gray-600 hover:bg-gray-700 hover:text-gray-400"
-                      : "bg-[var(--color-bomb-dark)] text-gray-300 hover:bg-gray-600 hover:text-white"
+                      ? "bg-gray-800 border-gray-900 text-gray-600 hover:bg-gray-700 hover:text-gray-400"
+                      : "bg-[var(--color-bomb-dark)] border-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
               }`}
             >
               {id}

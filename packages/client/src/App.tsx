@@ -5,6 +5,11 @@ import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
 
+const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
+const btnFull = `${btnBase} px-7 py-3.5 text-base`;
+const btnSmall = `${btnBase} px-4 py-2 text-sm`;
+const btnDisabled = "disabled:bg-gray-800 disabled:border-gray-900 disabled:text-gray-500 disabled:shadow-none disabled:active:border-b-4 disabled:active:translate-y-0";
+
 const SESSION_KEY_PREFIX = "bb-session-";
 const LAST_NAME_KEY = "bb-last-name";
 
@@ -156,7 +161,7 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
   };
 
   return (
-    <div className="flex items-center justify-center p-4 h-full" data-testid="join-screen">
+    <div className="min-h-screen flex items-center justify-center p-4" data-testid="join-screen">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight">
@@ -166,20 +171,6 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
         </div>
 
         <div className="bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4">
-          <button
-            onClick={handleCreate}
-            data-testid="create-room"
-            className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold text-lg transition-colors"
-          >
-            Create New Room
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-600" />
-            <span className="text-gray-500 text-sm">or join existing</span>
-            <div className="flex-1 h-px bg-gray-600" />
-          </div>
-
           <div className="flex gap-2">
             <input
               type="text"
@@ -195,11 +186,25 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
               onClick={handleJoin}
               disabled={!room.trim()}
               data-testid="join-room"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold transition-colors"
+              className={`${btnSmall} bg-blue-600 border-blue-900 text-white shadow-[0_4px_15px_rgba(37,99,235,0.4)] hover:bg-blue-500 ${btnDisabled}`}
             >
               Join
             </button>
           </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-600" />
+            <span className="text-gray-500 text-sm">or create new</span>
+            <div className="flex-1 h-px bg-gray-600" />
+          </div>
+
+          <button
+            onClick={handleCreate}
+            data-testid="create-room"
+            className={`w-full ${btnFull} bg-red-600 border-red-900 text-white shadow-[0_4px_15px_rgba(220,38,38,0.4)] hover:bg-red-500`}
+          >
+            Create New Room
+          </button>
         </div>
       </div>
     </div>
@@ -254,7 +259,7 @@ function NameEntry({
             onClick={handleSubmit}
             disabled={!name.trim()}
             data-testid="confirm-join"
-            className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-bold text-lg transition-colors"
+            className={`w-full ${btnFull} bg-red-600 border-red-900 text-white shadow-[0_4px_15px_rgba(220,38,38,0.4)] hover:bg-red-500 ${btnDisabled}`}
           >
             Continue
           </button>
@@ -262,7 +267,7 @@ function NameEntry({
           <button
             onClick={onBack}
             data-testid="back-button"
-            className="w-full py-2 text-gray-400 hover:text-white text-sm transition-colors"
+            className={`w-full ${btnSmall} bg-gray-700 border-gray-900 text-white hover:bg-gray-600`}
           >
             &larr; Back
           </button>
@@ -302,7 +307,7 @@ function GameRoom({
 
   if (!connected) {
     return (
-      <div className="flex items-center justify-center h-full" data-testid="connecting-state">
+      <div className="min-h-screen flex items-center justify-center" data-testid="connecting-state">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-400">Connecting to room {roomId}...</p>
