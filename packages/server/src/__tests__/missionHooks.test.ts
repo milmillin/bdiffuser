@@ -320,6 +320,37 @@ describe("missionHooks dispatcher", () => {
       }
     });
 
+    it("mission 35: chooses the X wire from random blue candidates (not always first blue)", () => {
+      const captain = makePlayer({
+        id: "captain",
+        hand: [
+          makeTile({ id: "c1", color: "blue", gameValue: 2, sortValue: 2 }),
+          makeTile({ id: "c2", color: "blue", gameValue: 9, sortValue: 9 }),
+          makeTile({ id: "c3", color: "red", gameValue: "RED", sortValue: 10.1 }),
+        ],
+      });
+      captain.standSizes = [3];
+
+      const state = makeGameState({
+        mission: 35,
+        players: [captain],
+        log: [],
+      });
+
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.999);
+      try {
+        dispatchHooks(35, { point: "setup", state });
+      } finally {
+        randomSpy.mockRestore();
+      }
+
+      const marked = captain.hand.filter((tile) => tile.isXMarked === true);
+      expect(marked).toHaveLength(1);
+      expect(marked[0].id).toBe("c2");
+      expect(captain.hand[captain.hand.length - 1].id).toBe("c2");
+      expect(captain.hand.find((tile) => tile.id === "c1")?.isXMarked).not.toBe(true);
+    });
+
     it("mission 23: initializes hidden equipment pile with 7 face-down cards", () => {
       const state = makeGameState({
         mission: 23,

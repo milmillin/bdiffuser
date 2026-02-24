@@ -2710,7 +2710,13 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
 
         let markerIndex = standTiles.findIndex((tile) => tile.isXMarked === true);
         if (markerIndex === -1 && ctx.state.mission === 35) {
-          markerIndex = standTiles.findIndex((tile) => tile.color === "blue");
+          const blueIndices = standTiles
+            .map((tile, idx) => (tile.color === "blue" ? idx : -1))
+            .filter((idx) => idx >= 0);
+          if (blueIndices.length > 0) {
+            const randomBlueIndex = Math.floor(Math.random() * blueIndices.length);
+            markerIndex = blueIndices[randomBlueIndex] ?? -1;
+          }
         }
         if (markerIndex === -1) {
           markerIndex = standTiles.length - 1;
