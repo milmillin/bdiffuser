@@ -141,7 +141,10 @@ export function PlayerStand({
                         <div
                           key={`info-${flatIndex}`}
                           className="flex items-end justify-center"
-                          style={tokenRowHeightPx > 0 ? { height: `${tokenRowHeightPx}px` } : undefined}
+                          style={{
+                            width: colWidth,
+                            ...(tokenRowHeightPx > 0 ? { height: `${tokenRowHeightPx}px` } : {}),
+                          }}
                         >
                           <div className="flex flex-col items-center gap-0.5">
                             {infoTokens.map((token, tokenIndex) => (
@@ -156,21 +159,22 @@ export function PlayerStand({
                     })}
                     {/* Row 2: wire tiles */}
                     {segment.indices.map((flatIndex) => (
-                      <WireTileView
-                        key={player.hand[flatIndex].id}
-                        tile={player.hand[flatIndex]}
-                        isOpponent={isOpponent}
-                        isSmall={true}
-                        isSelectable={
-                          tileSelectableFilter
-                            ? tileSelectableFilter(player.hand[flatIndex], flatIndex)
-                            : !!onTileClick && !player.hand[flatIndex].cut
-                        }
-                        isSelected={selectedTileIndex === flatIndex || (selectedTileIndices?.includes(flatIndex) ?? false)}
-                        isFilterActive={!!tileSelectableFilter}
-                        testId={`wire-tile-${player.id}-${flatIndex}`}
-                        onClick={() => onTileClick?.(flatIndex)}
-                      />
+                      <div key={player.hand[flatIndex].id} style={{ width: colWidth }}>
+                        <WireTileView
+                          tile={player.hand[flatIndex]}
+                          isOpponent={isOpponent}
+                          isSmall={true}
+                          isSelectable={
+                            tileSelectableFilter
+                              ? tileSelectableFilter(player.hand[flatIndex], flatIndex)
+                              : !!onTileClick && !player.hand[flatIndex].cut
+                          }
+                          isSelected={selectedTileIndex === flatIndex || (selectedTileIndices?.includes(flatIndex) ?? false)}
+                          isFilterActive={!!tileSelectableFilter}
+                          testId={`wire-tile-${player.id}-${flatIndex}`}
+                          onClick={() => onTileClick?.(flatIndex)}
+                        />
+                      </div>
                     ))}
                     {/* Row 3: wire labels */}
                     {segment.indices.map((flatIndex) => (
@@ -249,8 +253,9 @@ function getTokenRowHeight(player: ClientPlayer): number {
 
   // Token visuals are rendered at 1.5rem to match tile column width.
   const tokenHeightPx = 24;
-  const tokenGapPx = 2;
-  return (maxTokenStack * tokenHeightPx) + ((maxTokenStack - 1) * tokenGapPx);
+  const tokenGapPx = 4;
+  const rowBufferPx = 16;
+  return (maxTokenStack * tokenHeightPx) + ((maxTokenStack - 1) * tokenGapPx) + rowBufferPx;
 }
 
 function getInfoTokenImage(token: InfoToken): string {
@@ -265,14 +270,16 @@ function getInfoTokenImage(token: InfoToken): string {
 function InfoTokenView({ token }: { token: InfoToken }) {
   if (token.relation === "eq" || token.relation === "neq") {
     return (
-      <div
-        className={`w-6 h-6 rounded text-[9px] font-black leading-none flex items-center justify-center ${
-          token.relation === "eq"
-            ? "bg-blue-700 text-white"
-            : "bg-orange-700 text-white"
-        }`}
-      >
-        {token.relation === "eq" ? "=" : "!="}
+      <div className="w-full">
+        <div
+          className={`w-full aspect-square rounded text-[9px] font-black leading-none flex items-center justify-center ${
+            token.relation === "eq"
+              ? "bg-blue-700 text-white"
+              : "bg-orange-700 text-white"
+          }`}
+        >
+          {token.relation === "eq" ? "=" : "!="}
+        </div>
       </div>
     );
   }
@@ -281,7 +288,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
     <img
       src={`/images/${getInfoTokenImage(token)}`}
       alt={`Info: ${token.isYellow ? "YELLOW" : token.countHint != null ? `x${token.countHint}` : token.parity ?? token.value}`}
-      className="w-6 h-6 object-contain block"
+      className="w-full h-auto object-contain block"
     />
   );
 }
@@ -309,7 +316,7 @@ function WireTileView({
   const isCut = tile.cut;
 
   return (
-    <div>
+    <div className="w-full">
       <button
         onClick={onClick}
         disabled={!isSelectable || isCut}
