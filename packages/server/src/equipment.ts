@@ -927,6 +927,33 @@ function swapTalkiesWires(
   teammate.infoTokens = teammate.infoTokens.filter(
     (t) => !(t.position === teammateTileIndex && t.countHint != null),
   );
+
+  // Re-sort both hands by sortValue and remap info-token positions.
+  resortHandAndRemapTokens(actor);
+  resortHandAndRemapTokens(teammate);
+}
+
+function resortHandAndRemapTokens(player: Player): void {
+  const oldOrder = player.hand.map((t) => t.id);
+  player.hand.sort((a, b) => a.sortValue - b.sortValue);
+
+  // Build old→new index mapping.
+  const newIndexOf = new Map<string, number>();
+  for (let i = 0; i < player.hand.length; i++) {
+    newIndexOf.set(player.hand[i].id, i);
+  }
+
+  for (const token of player.infoTokens) {
+    const oldTileId = oldOrder[token.position];
+    const newIdx = newIndexOf.get(oldTileId);
+    if (newIdx != null) token.position = newIdx;
+
+    if (token.positionB != null) {
+      const oldTileIdB = oldOrder[token.positionB];
+      const newIdxB = newIndexOf.get(oldTileIdB);
+      if (newIdxB != null) token.positionB = newIdxB;
+    }
+  }
 }
 
 function chooseDetectorTarget(

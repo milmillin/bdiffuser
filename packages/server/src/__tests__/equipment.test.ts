@@ -1138,7 +1138,7 @@ describe("equipment execution", () => {
     expect(state.board.equipment[0].used).toBe(true);
   });
 
-  it("talkies-walkies swaps only selected indices and does not auto-sort hands", () => {
+  it("talkies-walkies swaps wires and re-sorts both hands by sortValue", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [
@@ -1171,13 +1171,11 @@ describe("equipment execution", () => {
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
     expect(action.effect).toBe("talkies_walkies");
+    // Actor: [a1(1), t2(2), a9(9)] — already sorted
     expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["a1", "t2", "a9"]);
-    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["a6", "t3", "t7"]);
-    expect(state.players[0].hand[0].id).toBe("a1");
-    expect(state.players[0].hand[2].id).toBe("a9");
-    expect(state.players[1].hand[1].id).toBe("t3");
-    expect(state.players[1].hand[2].id).toBe("t7");
-    expect(state.players[1].hand.map((tile) => tile.sortValue)).toEqual([6, 3, 7]);
+    // Teammate: [a6(6), t3(3), t7(7)] → re-sorted → [t3(3), a6(6), t7(7)]
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["t3", "a6", "t7"]);
+    expect(state.players[1].hand.map((tile) => tile.sortValue)).toEqual([3, 6, 7]);
     expect(state.board.equipment[0].used).toBe(true);
   });
 
@@ -1334,8 +1332,9 @@ describe("equipment execution", () => {
     if (action.type !== "equipmentUsed") return;
     expect(action.effect).toBe("talkies_walkies");
     // Count token on actor position 0 should be discarded; position 1 kept
+    // After re-sort: a2(sv5) moves to index 0, so token position remaps 1→0
     expect(state.players[0].infoTokens).toEqual([
-      { value: 0, countHint: 1, position: 1, isYellow: false },
+      { value: 0, countHint: 1, position: 0, isYellow: false },
     ]);
     // Count token on teammate position 0 should be discarded
     expect(state.players[1].infoTokens).toEqual([]);
@@ -1375,8 +1374,10 @@ describe("equipment execution", () => {
 
     expect(action.type).toBe("equipmentUsed");
     // Normal numeric tokens should NOT be discarded
+    // After re-sort: actor hand [t1(sv7), a2(sv5)] → [a2(sv5), t1(sv7)]
+    // Token was at position 0 (tile a1→t1), t1 now at index 1 → position remaps 0→1
     expect(state.players[0].infoTokens).toEqual([
-      { value: 3, position: 0, isYellow: false },
+      { value: 3, position: 1, isYellow: false },
     ]);
     expect(state.players[1].infoTokens).toEqual([
       { value: 7, position: 0, isYellow: false },

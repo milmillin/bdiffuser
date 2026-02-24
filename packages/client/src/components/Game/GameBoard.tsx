@@ -196,6 +196,22 @@ export function GameBoard({
   );
   const cancelEquipmentMode = useCallback(() => setEquipmentMode(null), []);
 
+  // Talkies-Walkies forced-action: teammate picks their own wire on the stand
+  const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
+    number | null
+  >(null);
+
+  useEffect(() => {
+    const fa = gameState.pendingForcedAction;
+    if (
+      !fa ||
+      fa.kind !== "talkiesWalkiesTileChoice" ||
+      fa.targetPlayerId !== playerId
+    ) {
+      setTalkiesWalkiesSelection(null);
+    }
+  }, [gameState.pendingForcedAction, playerId]);
+
   const isSetup = gameState.phase === "setup_info_tokens";
   const requiresSetupToken =
     !isSetup || !me
@@ -423,6 +439,7 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
+    if (talkiesWalkiesSelection != null) return talkiesWalkiesSelection;
     if (pendingAction?.kind === "dual_cut") return pendingAction.actorTileIndex;
     if (pendingAction?.kind === "solo_cut") return pendingAction.actorTileIndex;
     if (pendingAction?.kind === "reveal_reds") return pendingAction.actorTileIndex;
@@ -612,7 +629,7 @@ export function GameBoard({
             <div className="overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0">
               <div className="w-full min-w-0 flex flex-col gap-2 overflow-x-hidden">
                 {/* Opponents area */}
-                <div className="flex gap-2 justify-center overflox-x-hidden flex-wrap min-w-0 w-full">
+                <div className="flex gap-2 justify-center overflow-x-hidden flex-wrap min-w-0 w-full">
                   {opponentsWithOrder.map(({ player: opp, turnOrder }) => (
                     <PlayerStand
                       key={opp.id}
@@ -800,6 +817,7 @@ export function GameBoard({
                       gameState={gameState}
                       send={send}
                       playerId={playerId}
+                      selectedIndex={talkiesWalkiesSelection}
                     />
                   )}
 
@@ -960,9 +978,25 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
-                        : playingInteractionEnabled &&
-                            isMyTurn
+                        : gameState.pendingForcedAction?.kind ===
+                              FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
+                            gameState.pendingForcedAction.targetPlayerId ===
+                              playerId &&
+                            me
                           ? (tileIndex) => {
+                              const tile = me.hand[tileIndex];
+                              if (!tile || tile.cut) return;
+                              if (gameState.mission === 20 && tile.isXMarked)
+                                return;
+                              setTalkiesWalkiesSelection(
+                                talkiesWalkiesSelection === tileIndex
+                                  ? null
+                                  : tileIndex,
+                              );
+                            }
+                          : playingInteractionEnabled &&
+                              isMyTurn
+                            ? (tileIndex) => {
                               if (pendingAction?.kind === "dual_cut") {
                                 if (tileIndex === pendingAction.actorTileIndex) return;
                                 const tile = me.hand[tileIndex];
@@ -1059,9 +1093,17 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
-                        : playingInteractionEnabled &&
-                            isMyTurn
-                          ? (tile: VisibleTile) => {
+                        : gameState.pendingForcedAction?.kind ===
+                              FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
+                            gameState.pendingForcedAction.targetPlayerId ===
+                              playerId &&
+                            me
+                          ? (tile: VisibleTile) =>
+                              !tile.cut &&
+                              !(gameState.mission === 20 && tile.isXMarked)
+                          : playingInteractionEnabled &&
+                              isMyTurn
+                            ? (tile: VisibleTile) => {
                               if (pendingAction?.kind === "dual_cut") {
                                 return !tile.cut && tile.color !== "red";
                               }

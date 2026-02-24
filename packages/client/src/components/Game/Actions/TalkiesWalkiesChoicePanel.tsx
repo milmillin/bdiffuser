@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 
@@ -6,13 +5,13 @@ export function TalkiesWalkiesChoicePanel({
   gameState,
   send,
   playerId,
+  selectedIndex,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
+  selectedIndex: number | null;
 }) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
   const forced = gameState.pendingForcedAction;
   if (!forced || forced.kind !== "talkiesWalkiesTileChoice") return null;
 
@@ -47,30 +46,8 @@ export function TalkiesWalkiesChoicePanel({
         <p>
           {actorName} used <span className="text-indigo-400">Talkies-Walkies</span>{" "}
           and selected wire <span className="font-bold text-white">{wireLabel(forced.actorTileIndex)}</span>.
-          Choose one of your uncut wires.
+          Click one of your uncut wires on your stand below.
         </p>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {selectableIndices.map((tileIdx) => {
-          const tile = me.hand[tileIdx];
-          const label = wireLabel(tileIdx);
-          const valueDisplay = tile?.gameValue ?? "?";
-          return (
-            <button
-              key={tileIdx}
-              type="button"
-              onClick={() => setSelectedIndex(tileIdx)}
-              data-testid={`talkies-choice-tile-${tileIdx}`}
-              className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
-                effectiveSelection === tileIdx
-                  ? "bg-indigo-500 ring-2 ring-indigo-300"
-                  : "bg-indigo-600 hover:bg-indigo-700"
-              }`}
-            >
-              Wire {label} ({String(valueDisplay)})
-            </button>
-          );
-        })}
       </div>
       <div className="flex items-center gap-2">
         <button
