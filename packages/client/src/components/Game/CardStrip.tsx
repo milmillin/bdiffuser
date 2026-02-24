@@ -23,7 +23,7 @@ type StackCard = {
   detailTiming?: string;
   detailEffect?: string;
   detailReminders?: string[];
-  canUseOnTurn: boolean;
+  canUse: boolean;
   onUse?: () => boolean;
 };
 
@@ -114,7 +114,7 @@ export function CardStrip({
         detailTiming: charText.timing,
         detailEffect: charText.effect,
         detailReminders: [...charText.reminders],
-        canUseOnTurn: !skillUsed,
+        canUse: !skillUsed,
         onUse: onSelectPersonalSkill,
       });
     }
@@ -141,7 +141,7 @@ export function CardStrip({
         detailTiming: rulesText.timing,
         detailEffect: rulesText.effect,
         detailReminders: [...rulesText.reminders],
-        canUseOnTurn: eq.unlocked && !eq.used,
+        canUse: eq.unlocked && !eq.used,
         onUse: onSelectEquipmentAction
           ? () => onSelectEquipmentAction(eq.id)
           : undefined,
@@ -199,7 +199,7 @@ export function CardStrip({
                         onDeselectCard?.();
                         return;
                       }
-                      const canUseNow = isMyTurn && card.canUseOnTurn && !!card.onUse;
+                      const canUseNow = card.canUse && !!card.onUse;
                       if (!canUseNow) return;
                       const used = card.onUse!();
                       if (used) onSelectCard?.(card.id);

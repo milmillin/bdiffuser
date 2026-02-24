@@ -467,6 +467,12 @@ export function GameBoard({
   }, [gameState.phase]);
 
   useEffect(() => {
+    if (selectedDockCardId && !equipmentMode && !pendingAction) {
+      setSelectedDockCardId(null);
+    }
+  }, [selectedDockCardId, equipmentMode, pendingAction]);
+
+  useEffect(() => {
     return () => {
       stopMissionAudio();
     };

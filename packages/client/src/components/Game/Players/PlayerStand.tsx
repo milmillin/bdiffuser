@@ -249,13 +249,12 @@ function getTokenRowHeight(player: ClientPlayer): number {
     }
   }
 
-  if (maxTokenStack <= 0) return 0;
-
   // Token visuals are rendered at 1.5rem to match tile column width.
   const tokenHeightPx = 24;
   const tokenGapPx = 4;
   const rowBufferPx = 16;
-  return (maxTokenStack * tokenHeightPx) + ((maxTokenStack - 1) * tokenGapPx) + rowBufferPx;
+  const effectiveTokenStack = Math.max(1, maxTokenStack);
+  return (effectiveTokenStack * tokenHeightPx) + ((effectiveTokenStack - 1) * tokenGapPx) + rowBufferPx;
 }
 
 function getInfoTokenImage(token: InfoToken): string {
