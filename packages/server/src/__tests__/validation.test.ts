@@ -118,6 +118,100 @@ describe("validateDualCut", () => {
   });
 });
 
+describe("mission 35 X-wire cut lock", () => {
+  it("rejects dual cut on an X-marked wire while yellow wires remain uncut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3, isXMarked: true }),
+        makeTile({ id: "t2", color: "yellow", gameValue: "YELLOW" }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 35");
+  });
+
+  it("allows dual cut on an X-marked wire after all yellow wires are cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3, isXMarked: true }),
+        makeTile({ id: "t2", color: "yellow", gameValue: "YELLOW", cut: true }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, 5);
+    expect(error).toBeNull();
+  });
+
+  it("rejects solo cut that includes an X-marked wire while yellow wires remain uncut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5, isXMarked: true }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSoloCutLegality(state, "actor", 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 35");
+  });
+
+  it("allows solo cut with X-marked wire after all yellow wires are cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5, isXMarked: true }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW", cut: true })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSoloCutLegality(state, "actor", 5);
+    expect(error).toBeNull();
+  });
+});
+
 describe("structured legality errors", () => {
   it("returns reason code for self-target dual cut", () => {
     const actor = makePlayer({

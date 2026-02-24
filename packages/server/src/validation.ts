@@ -137,6 +137,13 @@ function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
   return state.mission === 20 || state.mission === 35;
 }
 
+function mission35HasUncutYellowWires(state: Readonly<GameState>): boolean {
+  if (state.mission !== 35) return false;
+  return state.players.some((player) =>
+    player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
+  );
+}
+
 /**
  * Whether this player is currently forced to use Reveal Reds.
  * - Standard missions: all remaining uncut wires are red.
@@ -191,6 +198,13 @@ export function validateDualCutLegality(
   const targetTile = getTileByFlatIndex(target, targetTileIndex);
   if (!targetTile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
   if (targetTile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+
+  if (targetTile.isXMarked && mission35HasUncutYellowWires(state)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
+    );
+  }
 
   // Actor must have an uncut tile with the guessed value
   const actorUncut = getUncutTiles(actor);
@@ -455,6 +469,13 @@ export function validateSoloCutLegality(
     return legalityError(
       "NO_MATCHING_WIRES_IN_HAND",
       "You don't have any wires with that value",
+    );
+  }
+
+  if (mission35HasUncutYellowWires(state) && matchingTiles.some((tile) => tile.isXMarked)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
     );
   }
 
