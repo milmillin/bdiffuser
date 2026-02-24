@@ -21,6 +21,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       equipment: { mode: "default", excludedUnlockValues: [10] },
     },
     behaviorHooks: ["mission_26_visible_number_card_gate"],
+    hookRules: [{ kind: "visible_number_card_gate" }],
   });
 
   setMission(27, {
@@ -32,6 +33,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       equipment: { mode: "default", excludedUnlockValues: [7] },
     },
     behaviorHooks: ["mission_27_no_character_cards", "mission_27_yellow_trigger_random_token_draft"],
+    hookRules: [{ kind: "no_character_cards", yellowTriggerDraftCount: 2 }],
   });
 
   setMission(28, {
@@ -43,6 +45,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3), yellow: exact(4) } },
     behaviorHooks: ["mission_28_captain_lazy_constraints"],
+    hookRules: [{ kind: "captain_lazy_constraints" }],
   });
 
   setMission(29, {
@@ -52,6 +55,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       red: exact(3),
     },
     behaviorHooks: ["mission_29_hidden_number_card_penalty"],
+    hookRules: [{ kind: "hidden_number_card_penalty" }],
     notes: [
       "FAQ: Detector multi-wire — only the cut wire triggers detonator advance from the Number card.",
       "FAQ: Empty hand — place Number cards face down under the draw pile.",
@@ -78,6 +82,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       red: outOf(2, 3),
     },
     behaviorHooks: ["mission_31_personal_constraints_a_to_e"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E"], scope: "per_player" }],
     notes: ["FAQ: Once constraint card is flipped, player plays normally even if they later recover a matching wire via Walkie-Talkies."],
   });
 
@@ -89,6 +94,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_32_global_constraint_stack"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], scope: "global" }],
     notes: ["FAQ: If the Restraint card pile is empty, players continue without any restraint."],
   });
 }

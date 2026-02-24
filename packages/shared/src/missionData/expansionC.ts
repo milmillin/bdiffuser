@@ -14,6 +14,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_58_no_info_tokens_unlimited_double_detector"],
+    hookRules: [{ kind: "no_info_unlimited_dd" }],
   });
 
   setMission(59, {
@@ -58,6 +59,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_61_rotating_constraints"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], scope: "global" }],
   });
 
   setMission(62, {
@@ -68,6 +70,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_62_number_card_completions_reduce_detonator"],
+    hookRules: [{ kind: "number_card_completions" }],
   });
 
   setMission(63, {
@@ -99,6 +102,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_64_two_upside_down_wires_each"],
+    hookRules: [{ kind: "upside_down_wire", count: 2, selfCutExplodes: false, noEquipmentOnFlipped: false }],
     notes: ["FAQ: With 2 stands, only 2 wires total flipped. Lowest goes far-left of 1st stand, highest goes far-right of 2nd stand."],
   });
 
@@ -111,6 +115,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     allowedPlayerCounts: [3, 4, 5],
     behaviorHooks: ["mission_65_personal_number_cards"],
+    hookRules: [{ kind: "personal_number_cards" }],
   });
 
   setMission(66, {

@@ -279,6 +279,186 @@ export interface NoMarkersMemoryModeRuleDef {
 }
 
 /**
+ * Missions 21, 33: Replace standard info tokens with even/odd tokens.
+ */
+export interface EvenOddTokensRuleDef {
+  kind: "even_odd_tokens";
+}
+
+/**
+ * Missions 24, 40: Replace standard info tokens with count tokens (x1/x2/x3)
+ * indicating how many wires of that value exist on the stand.
+ */
+export interface CountTokensRuleDef {
+  kind: "count_tokens";
+}
+
+/**
+ * Mission 52: All info tokens are false — the values must NOT match
+ * the wires they point at.
+ */
+export interface FalseTokensRuleDef {
+  kind: "false_tokens";
+}
+
+/**
+ * Missions 20, 35: The last dealt wire on each stand is moved unsorted
+ * to the far right and marked with X.
+ */
+export interface XMarkedWireRuleDef {
+  kind: "x_marked_wire";
+  /** Whether Equipment 2 (Walkie-Talkies) is excluded. */
+  excludeWalkieTalkies?: boolean;
+}
+
+/**
+ * Missions 38, 56, 64: Each player flips wire(s) face-down (upside-down)
+ * without looking. Teammates can see the value but the player cannot.
+ */
+export interface UpsideDownWireRuleDef {
+  kind: "upside_down_wire";
+  /** Number of wires flipped per player. */
+  count: 1 | 2;
+  /** Whether a failed self-cut of the flipped wire causes immediate explosion. */
+  selfCutExplodes?: boolean;
+  /** Whether using equipment/detector on own flipped wire is forbidden. */
+  noEquipmentOnFlipped?: boolean;
+}
+
+/**
+ * Missions 26: Visible number card gate — cut wires matching the
+ * revealed number card value to proceed.
+ */
+export interface VisibleNumberCardGateRuleDef {
+  kind: "visible_number_card_gate";
+}
+
+/**
+ * Mission 29: Hidden number card penalty — each turn a hidden number
+ * card is revealed and penalizes the player.
+ */
+export interface HiddenNumberCardPenaltyRuleDef {
+  kind: "hidden_number_card_penalty";
+}
+
+/**
+ * Mission 45: Squeak number challenge — players challenge a number
+ * and must cut it before someone else does.
+ */
+export interface SqueakNumberChallengeRuleDef {
+  kind: "squeak_number_challenge";
+}
+
+/**
+ * Mission 47: Add/subtract number cards — mathematical operations on
+ * number cards determine valid cut targets.
+ */
+export interface AddSubtractNumberCardsRuleDef {
+  kind: "add_subtract_number_cards";
+}
+
+/**
+ * Mission 62: Number card completions — cutting 4 of a value matching
+ * a face-up number card grants a detonator reduction.
+ */
+export interface NumberCardCompletionsRuleDef {
+  kind: "number_card_completions";
+}
+
+/**
+ * Mission 65: Personal number cards — each player has private number
+ * cards determining their valid cut targets.
+ */
+export interface PersonalNumberCardsRuleDef {
+  kind: "personal_number_cards";
+}
+
+/**
+ * Mission 27: No character cards — Double Detectors are unavailable.
+ * Also: yellow-trigger random token draft at 2 yellow wire threshold.
+ */
+export interface NoCharacterCardsRuleDef {
+  kind: "no_character_cards";
+  /** Trigger threshold for the token draft event. */
+  yellowTriggerDraftCount?: number;
+}
+
+/**
+ * Mission 28: Captain lazy constraints — captain has no character card
+ * and special turn-skipping rules.
+ */
+export interface CaptainLazyConstraintsRuleDef {
+  kind: "captain_lazy_constraints";
+}
+
+/**
+ * Mission 17: False info tokens — captain places misleading tokens.
+ */
+export interface FalseInfoTokensRuleDef {
+  kind: "false_info_tokens";
+}
+
+/**
+ * Missions 39, 48: Simultaneous multi-wire cut — players simultaneously
+ * cut wires of the same color.
+ */
+export interface SimultaneousMultiCutRuleDef {
+  kind: "simultaneous_multi_cut";
+  /** Color of wires cut simultaneously. */
+  color: "yellow" | "red";
+  /** Number of wires to cut simultaneously. */
+  count: 3 | 4;
+}
+
+/**
+ * Mission 46: Sevens must be last — all 7-value wires must be the last
+ * wires cut on each stand.
+ */
+export interface SevensLastRuleDef {
+  kind: "sevens_last";
+}
+
+/**
+ * Mission 51: Boss designates value — the designated player announces
+ * a value and a teammate must cut it.
+ */
+export interface BossDesignatesValueRuleDef {
+  kind: "boss_designates_value";
+}
+
+/**
+ * Mission 58: No-info unlimited Double Detector — DD is always available
+ * but failed cuts give no information.
+ */
+export interface NoInfoUnlimitedDDRuleDef {
+  kind: "no_info_unlimited_dd";
+}
+
+/**
+ * Mission 59: Nano value-parity navigation — Nano moves based on
+ * wire value parity (even/odd) matching.
+ */
+export interface NanoValueParityRuleDef {
+  kind: "nano_value_parity";
+}
+
+/**
+ * Mission 13: Random setup info tokens — during setup, random info
+ * tokens are placed instead of player-chosen ones.
+ */
+export interface RandomSetupInfoTokensRuleDef {
+  kind: "random_setup_info_tokens";
+}
+
+/**
+ * Mission 41: Iberian yellow mode — special yellow wire handling
+ * where a designated wire must be cut when instructed.
+ */
+export interface IberianYellowModeRuleDef {
+  kind: "iberian_yellow_mode";
+}
+
+/**
  * Discriminated union of all resolved hook rule definitions.
  * Extend this union as more hooks are resolved in later milestones.
  */
@@ -301,7 +481,28 @@ export type MissionHookRuleDef =
   | ConstraintEnforcementRuleDef
   | AudioPromptRuleDef
   | NoSpokenNumbersRuleDef
-  | NoMarkersMemoryModeRuleDef;
+  | NoMarkersMemoryModeRuleDef
+  | EvenOddTokensRuleDef
+  | CountTokensRuleDef
+  | FalseTokensRuleDef
+  | XMarkedWireRuleDef
+  | UpsideDownWireRuleDef
+  | VisibleNumberCardGateRuleDef
+  | HiddenNumberCardPenaltyRuleDef
+  | SqueakNumberChallengeRuleDef
+  | AddSubtractNumberCardsRuleDef
+  | NumberCardCompletionsRuleDef
+  | PersonalNumberCardsRuleDef
+  | NoCharacterCardsRuleDef
+  | CaptainLazyConstraintsRuleDef
+  | FalseInfoTokensRuleDef
+  | SimultaneousMultiCutRuleDef
+  | SevensLastRuleDef
+  | BossDesignatesValueRuleDef
+  | NoInfoUnlimitedDDRuleDef
+  | NanoValueParityRuleDef
+  | RandomSetupInfoTokensRuleDef
+  | IberianYellowModeRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 

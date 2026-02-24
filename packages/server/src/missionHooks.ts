@@ -460,6 +460,26 @@ import type {
   OxygenProgressionRuleDef,
   SimultaneousFourCutRuleDef,
   YellowTriggerTokenPassRuleDef,
+  EvenOddTokensRuleDef,
+  CountTokensRuleDef,
+  FalseTokensRuleDef,
+  XMarkedWireRuleDef,
+  UpsideDownWireRuleDef,
+  VisibleNumberCardGateRuleDef,
+  HiddenNumberCardPenaltyRuleDef,
+  SqueakNumberChallengeRuleDef,
+  AddSubtractNumberCardsRuleDef,
+  NumberCardCompletionsRuleDef,
+  PersonalNumberCardsRuleDef,
+  NoCharacterCardsRuleDef,
+  CaptainLazyConstraintsRuleDef,
+  FalseInfoTokensRuleDef,
+  SimultaneousMultiCutRuleDef,
+  SevensLastRuleDef,
+  BossDesignatesValueRuleDef,
+  NoInfoUnlimitedDDRuleDef,
+  RandomSetupInfoTokensRuleDef,
+  IberianYellowModeRuleDef,
 } from "@bomb-busters/shared";
 import { CONSTRAINT_CARD_DEFS } from "@bomb-busters/shared";
 
@@ -1893,6 +1913,100 @@ function extractCutValue(action: ValidateHookContext["action"]): number | "YELLO
 }
 
 /**
+ * Check if a value satisfies a constraint (is NOT blocked by it).
+ */
+function valuePassesConstraint(value: number, constraintId: string): boolean {
+  switch (constraintId) {
+    case "A": return value % 2 === 0;
+    case "B": return value % 2 !== 0;
+    case "C": return value >= 1 && value <= 6;
+    case "D": return value >= 7 && value <= 12;
+    case "E": return value >= 4 && value <= 9;
+    case "F": return value < 4 || value > 9;
+    default: return true; // G, H, I, J, K, L are positional/structural, not value-based
+  }
+}
+
+/**
+ * Check if a player has ANY valid dual-cut target across all other stands.
+ * A dual cut requires the actor to have a matching value for a target's uncut tile.
+ */
+function hasAnyDualCutTarget(state: Readonly<GameState>, playerId: string): boolean {
+  const actor = state.players.find((p) => p.id === playerId);
+  if (!actor) return false;
+
+  const actorValues = new Set(
+    actor.hand
+      .filter((t) => !t.cut && typeof t.gameValue === "number")
+      .map((t) => t.gameValue as number),
+  );
+
+  for (const target of state.players) {
+    if (target.id === playerId) continue;
+    for (const tile of target.hand) {
+      if (!tile.cut && typeof tile.gameValue === "number" && actorValues.has(tile.gameValue)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Auto-flip stuck constraints: if a player has no legal actions due to their
+ * constraint, deactivate it (matches physical game rule where constraint card
+ * gets flipped face-down when the player is stuck).
+ */
+function autoFlipStuckConstraints(state: GameState, playerId: string): void {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return;
+
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return;
+
+  const uncutValues = player.hand
+    .filter((t) => !t.cut && typeof t.gameValue === "number")
+    .map((t) => t.gameValue as number);
+  if (uncutValues.length === 0) return;
+
+  const flipConstraint = (c: { id: string; active: boolean }) => {
+    c.active = false;
+    state.log.push({
+      turn: state.turnNumber,
+      playerId,
+      action: "hookEffect",
+      detail: `constraint_auto_flip:${c.id}:stuck`,
+      timestamp: Date.now(),
+    });
+  };
+
+  const checkAndFlip = (c: { id: string; active: boolean }) => {
+    if (!c.active) return;
+
+    // Value-based constraints (A-F): flip if ALL tiles are blocked
+    if (["A", "B", "C", "D", "E", "F"].includes(c.id)) {
+      if (uncutValues.every((v) => !valuePassesConstraint(v, c.id))) {
+        flipConstraint(c);
+      }
+      return;
+    }
+
+    // Constraint K (No Solo Cut): flip if no dual-cut targets exist
+    if (c.id === "K") {
+      if (!hasAnyDualCutTarget(state, playerId)) {
+        flipConstraint(c);
+      }
+    }
+  };
+
+  for (const c of constraints.global) checkAndFlip(c);
+  const personal = constraints.perPlayer[playerId];
+  if (personal) {
+    for (const c of personal) checkAndFlip(c);
+  }
+}
+
+/**
  * Constraint enforcement for campaign missions.
  *
  * Setup: Initializes constraints from rule definition.
@@ -1903,31 +2017,42 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   setup(rule: ConstraintEnforcementRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
 
-    const cards = rule.constraintIds
-      .map((id) => {
-        const def = CONSTRAINT_CARD_DEFS.find((c) => c.id === id);
-        return def
-          ? { id: def.id, name: def.name, description: def.description, active: true }
-          : null;
-      })
-      .filter((c): c is NonNullable<typeof c> => c != null);
+    const allCards = shuffle(
+      rule.constraintIds
+        .map((id) => {
+          const def = CONSTRAINT_CARD_DEFS.find((c) => c.id === id);
+          return def
+            ? { id: def.id, name: def.name, description: def.description, active: false }
+            : null;
+        })
+        .filter((c): c is NonNullable<typeof c> => c != null),
+    );
 
     if (rule.scope === "global") {
+      // Global: activate only the first constraint; the rest form a draw deck.
+      const first = allCards.shift();
+      if (first) first.active = true;
       ctx.state.campaign.constraints = {
-        global: cards,
+        global: first ? [first] : [],
         perPlayer: {},
+        deck: allCards,
       };
     } else {
-      const perPlayer: Record<string, typeof cards> = {};
-      // Distribute cards round-robin to players
-      for (let i = 0; i < cards.length; i++) {
-        const player = ctx.state.players[i % ctx.state.players.length];
-        perPlayer[player.id] ??= [];
-        perPlayer[player.id].push({ ...cards[i] });
+      // Per-player: deal ONE constraint per player, rest are unused deck.
+      const perPlayer: Record<string, typeof allCards> = {};
+      for (const player of ctx.state.players) {
+        const card = allCards.shift();
+        if (card) {
+          card.active = true;
+          perPlayer[player.id] = [card];
+        } else {
+          perPlayer[player.id] = [];
+        }
       }
       ctx.state.campaign.constraints = {
         global: [],
         perPlayer,
+        deck: allCards,
       };
     }
 
@@ -1942,6 +2067,11 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
 
   validate(_rule: ConstraintEnforcementRuleDef, ctx: ValidateHookContext): HookResult | void {
     const actorId = ctx.action.actorId;
+
+    // Auto-flip: if the player's constraint blocks ALL their remaining tiles,
+    // deactivate it (matches physical game rule: flip constraint when stuck).
+    autoFlipStuckConstraints(ctx.state as GameState, actorId);
+
     const active = getActiveConstraints(ctx.state, actorId);
     if (active.length === 0) return;
 
@@ -2142,6 +2272,512 @@ registerHookHandler<"no_markers_memory_mode">("no_markers_memory_mode", {
       playerId: "",
       action: "hook",
       detail: "no_markers_memory_mode:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// ── Token-based hooks (missions 21/24/33/40/52) ──────────────────
+
+/**
+ * Missions 21, 33: Even/odd tokens.
+ * Replaces standard info tokens with even/odd indicators. The actual token
+ * placement logic is enforced in gameLogic.ts via campaign flag.
+ */
+registerHookHandler<"even_odd_tokens">("even_odd_tokens", {
+  setup(_rule: EvenOddTokensRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).evenOddTokenMode = true;
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "even_odd_tokens:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Missions 24, 40: Count tokens (x1/x2/x3).
+ * Replaces standard info tokens with count indicators showing how many
+ * wires of that value exist on the stand.
+ */
+registerHookHandler<"count_tokens">("count_tokens", {
+  setup(_rule: CountTokensRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).countTokenMode = true;
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "count_tokens:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 52: All tokens are false — values must NOT match wires.
+ */
+registerHookHandler<"false_tokens">("false_tokens", {
+  setup(_rule: FalseTokensRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).falseTokenMode = true;
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "false_tokens:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// ── Wire-based hooks (missions 20/35/38/56/64) ──────────────────
+
+/**
+ * Missions 20, 35: X-marked wire.
+ * The last dealt wire on each stand is moved unsorted to the far right
+ * and marked with X. Setup modifies tile positions.
+ */
+registerHookHandler<"x_marked_wire">("x_marked_wire", {
+  setup(rule: XMarkedWireRuleDef, ctx: SetupHookContext): void {
+    for (const player of ctx.state.players) {
+      if (player.hand.length === 0) continue;
+      // Mark the last tile as X-marked (unsorted, far right)
+      const lastTile = player.hand[player.hand.length - 1];
+      (lastTile as unknown as Record<string, unknown>).xMarked = true;
+    }
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `x_marked_wire:active|excludeWalkieTalkies=${Boolean(rule.excludeWalkieTalkies)}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Missions 38, 56, 64: Upside-down wires.
+ * Each player flips wire(s) face-down without looking. Teammates can
+ * see the value but the player cannot.
+ */
+registerHookHandler<"upside_down_wire">("upside_down_wire", {
+  setup(rule: UpsideDownWireRuleDef, ctx: SetupHookContext): void {
+    const flippedPerPlayer: Record<string, number[]> = {};
+
+    for (const player of ctx.state.players) {
+      const uncutIndices = player.hand
+        .map((_, i) => i)
+        .filter((i) => !player.hand[i].cut);
+      if (uncutIndices.length === 0) continue;
+
+      const toFlip = Math.min(rule.count, uncutIndices.length);
+      const selected = shuffle([...uncutIndices]).slice(0, toFlip);
+      flippedPerPlayer[player.id] = selected;
+
+      for (const idx of selected) {
+        (player.hand[idx] as unknown as Record<string, unknown>).upsideDown = true;
+      }
+    }
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `upside_down_wire:count=${rule.count}|selfCutExplodes=${Boolean(rule.selfCutExplodes)}|noEquipmentOnFlipped=${Boolean(rule.noEquipmentOnFlipped)}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// ── Number card hooks (missions 26/29/45/47/62/65) ──────────────────
+
+/**
+ * Mission 26: Visible number card gate.
+ * A face-up number card determines which value must be cut to proceed.
+ */
+registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
+  setup(_rule: VisibleNumberCardGateRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const firstValue = deckValues.shift()!;
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [{ id: `m26-visible-${firstValue}`, value: firstValue, faceUp: true }],
+      deck: deckValues.map((value, idx) => ({
+        id: `m26-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `visible_number_card_gate:init:${firstValue}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 29: Hidden number card penalty.
+ * Each turn a hidden number card is revealed and penalizes the player
+ * if they cannot match it.
+ */
+registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", {
+  setup(_rule: HiddenNumberCardPenaltyRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [],
+      deck: deckValues.map((value, idx) => ({
+        id: `m29-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "hidden_number_card_penalty:init",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 45: Squeak number challenge.
+ * Players challenge a number and must cut it before someone else does.
+ */
+registerHookHandler<"squeak_number_challenge">("squeak_number_challenge", {
+  setup(_rule: SqueakNumberChallengeRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "squeak_number_challenge:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 47: Add/subtract number cards.
+ * Mathematical operations on number cards determine valid cut targets.
+ */
+registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
+  setup(_rule: AddSubtractNumberCardsRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [],
+      deck: deckValues.map((value, idx) => ({
+        id: `m47-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "add_subtract_number_cards:init",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 62: Number card completions.
+ * Cutting 4 wires of a value matching a face-up number card grants
+ * a detonator reduction.
+ */
+registerHookHandler<"number_card_completions">("number_card_completions", {
+  setup(_rule: NumberCardCompletionsRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const firstValue = deckValues.shift()!;
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [{ id: `m62-visible-${firstValue}`, value: firstValue, faceUp: true }],
+      deck: deckValues.map((value, idx) => ({
+        id: `m62-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `number_card_completions:init:${firstValue}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(_rule: NumberCardCompletionsRuleDef, ctx: ResolveHookContext): void {
+    if (!ctx.cutSuccess) return;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    const currentCard = numberCards?.visible?.[0];
+    if (!numberCards || !currentCard) return;
+    if (ctx.cutValue !== currentCard.value) return;
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, currentCard.value);
+    if (projectedCutCount < 4) return;
+
+    // Value completed — reduce detonator by 1
+    ctx.state.board.detonatorPosition = Math.max(
+      0,
+      ctx.state.board.detonatorPosition - 1,
+    );
+
+    // Move to discard and draw next
+    const completed = numberCards.visible.shift()!;
+    completed.faceUp = true;
+    numberCards.discard.push(completed);
+
+    if (numberCards.deck.length > 0) {
+      const next = numberCards.deck.shift()!;
+      next.faceUp = true;
+      numberCards.visible = [next];
+    }
+
+    ctx.state.log.push({
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `number_card_completions:completed=${currentCard.value}|detonator_reduction=1|next=${numberCards.visible[0]?.value ?? "none"}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 65: Personal number cards.
+ * Each player has private number cards determining their valid cut targets.
+ */
+registerHookHandler<"personal_number_cards">("personal_number_cards", {
+  setup(_rule: PersonalNumberCardsRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+
+    ctx.state.campaign ??= {};
+    const playerHands: Record<string, { id: string; value: number; faceUp: boolean }[]> = {};
+    const cardsPerPlayer = Math.max(1, Math.floor(deckValues.length / ctx.state.players.length));
+
+    for (let i = 0; i < ctx.state.players.length; i++) {
+      const player = ctx.state.players[i];
+      const hand = deckValues.splice(0, cardsPerPlayer);
+      playerHands[player.id] = hand.map((value, idx) => ({
+        id: `m65-${player.id}-${idx}-${value}`,
+        value,
+        faceUp: false,
+      }));
+    }
+
+    ctx.state.campaign.numberCards = {
+      visible: [],
+      deck: deckValues.map((value, idx) => ({
+        id: `m65-remaining-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands,
+    };
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `personal_number_cards:init|players=${ctx.state.players.length}|cardsPerPlayer=${cardsPerPlayer}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+// ── Unique mission hooks ──────────────────────────────────────────
+
+/**
+ * Mission 27: No character cards / DD unavailable.
+ * Also triggers a token draft at yellow-wire threshold.
+ */
+registerHookHandler<"no_character_cards">("no_character_cards", {
+  setup(rule: NoCharacterCardsRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).noCharacterCards = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `no_character_cards:active|yellowTriggerDraftCount=${rule.yellowTriggerDraftCount ?? "none"}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 28: Captain lazy constraints.
+ * Captain has no character card and special turn-skipping rules.
+ */
+registerHookHandler<"captain_lazy_constraints">("captain_lazy_constraints", {
+  setup(_rule: CaptainLazyConstraintsRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).captainLazy = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "captain_lazy_constraints:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 17: False info tokens.
+ * Captain places misleading tokens on other players' stands.
+ */
+registerHookHandler<"false_info_tokens">("false_info_tokens", {
+  setup(_rule: FalseInfoTokensRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).falseInfoTokenMode = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "false_info_tokens:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Missions 39, 48: Simultaneous multi-wire cut.
+ * Players simultaneously cut wires of the same color.
+ */
+registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
+  setup(rule: SimultaneousMultiCutRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `simultaneous_multi_cut:color=${rule.color}|count=${rule.count}`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 46: Sevens must be last.
+ * All 7-value wires must be the last wires cut on each stand.
+ */
+registerHookHandler<"sevens_last">("sevens_last", {
+  setup(_rule: SevensLastRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "sevens_last:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 51: Boss designates value.
+ * The designated player announces a value and a teammate must cut it.
+ */
+registerHookHandler<"boss_designates_value">("boss_designates_value", {
+  setup(_rule: BossDesignatesValueRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "boss_designates_value:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 58: No info tokens, unlimited Double Detector.
+ * DD is always available but failed cuts give no information.
+ */
+registerHookHandler<"no_info_unlimited_dd">("no_info_unlimited_dd", {
+  setup(_rule: NoInfoUnlimitedDDRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).noInfoUnlimitedDD = true;
+    (ctx.state.campaign as Record<string, unknown>).noMarkersMemoryMode = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "no_info_unlimited_dd:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 13: Random setup info tokens.
+ * During setup, random info tokens are placed instead of player-chosen ones.
+ */
+registerHookHandler<"random_setup_info_tokens">("random_setup_info_tokens", {
+  setup(_rule: RandomSetupInfoTokensRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).randomSetupInfoTokens = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "random_setup_info_tokens:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 41: Iberian yellow mode.
+ * Special yellow wire handling where a designated wire must be cut when
+ * instructed. If the designated yellow wire is RED, the bomb explodes.
+ */
+registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
+  setup(_rule: IberianYellowModeRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    (ctx.state.campaign as Record<string, unknown>).iberianYellowMode = true;
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "iberian_yellow_mode:active",
       timestamp: Date.now(),
     });
   },

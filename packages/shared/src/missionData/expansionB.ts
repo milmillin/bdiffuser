@@ -50,6 +50,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_51_boss_designates_value"],
+    hookRules: [{ kind: "boss_designates_value" }],
   });
 
   setMission(52, {
@@ -62,6 +63,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3), yellow: exact(4) } },
     behaviorHooks: ["mission_52_all_tokens_false"],
+    hookRules: [{ kind: "false_tokens" }],
   });
 
   setMission(53, {
@@ -119,6 +121,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_56_each_player_upside_down_wire"],
+    hookRules: [{ kind: "upside_down_wire", count: 1, selfCutExplodes: false, noEquipmentOnFlipped: false }],
     notes: [
       "FAQ: If flipped wire is RED, reveal via normal 'Reveal Your Red Wires' action.",
       "ERRATUM: Number cards are NOT used in this mission.",
@@ -138,5 +141,6 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_57_constraint_per_validated_value"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E"], scope: "per_player" }],
   });
 }

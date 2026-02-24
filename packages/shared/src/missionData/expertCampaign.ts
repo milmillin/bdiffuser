@@ -13,6 +13,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_33_even_odd_tokens"],
+    hookRules: [{ kind: "even_odd_tokens" }],
   });
 
   setMission(34, {
@@ -23,6 +24,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
     },
     allowedPlayerCounts: [3, 4, 5],
     behaviorHooks: ["mission_34_hidden_weak_link_and_constraints"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E"], scope: "per_player" }],
   });
 
   setMission(35, {
@@ -37,6 +39,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       2: { red: exact(3), yellow: exact(4) },
     },
     behaviorHooks: ["mission_35_x_marked_blue_wires"],
+    hookRules: [{ kind: "x_marked_wire" }],
   });
 
   setMission(36, {
@@ -57,6 +60,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
     setup: { ...defaultSetup(), red: exact(2) },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_37_rolling_constraint"],
+    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], scope: "global" }],
   });
 
   setMission(38, {
@@ -64,6 +68,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
     setup: { ...defaultSetup(), red: exact(2) },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_38_captain_upside_down_wire"],
+    hookRules: [{ kind: "upside_down_wire", count: 1, selfCutExplodes: true, noEquipmentOnFlipped: true }],
     notes: ["FAQ: If Captain's upside-down wire is RED, reveal via normal 'Reveal Your Red Wires' action."],
   });
 
@@ -79,6 +84,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       2: { red: exact(3), yellow: exact(4) },
     },
     behaviorHooks: ["mission_39_no_equipment_simultaneous_four"],
+    hookRules: [{ kind: "simultaneous_multi_cut", color: "yellow", count: 4 }],
     notes: ["FAQ: If dealt a Number card for a value not in hand or no longer in the game, ignore it."],
   });
 
@@ -89,5 +95,6 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       red: exact(3),
     },
     behaviorHooks: ["mission_40_alternating_token_types"],
+    hookRules: [{ kind: "count_tokens" }],
   });
 }

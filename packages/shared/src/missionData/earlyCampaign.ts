@@ -98,6 +98,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
       yellow: none(),
     },
     behaviorHooks: ["mission_13_simultaneous_red_cut_action", "mission_13_random_info_token_setup"],
+    hookRules: [{ kind: "random_setup_info_tokens" }],
     notes: ["FAQ: Cannot use Equipment or Personal Equipment to cut RED wires. RED/YELLOW have no numeric value — detectors cannot target them."],
   });
 

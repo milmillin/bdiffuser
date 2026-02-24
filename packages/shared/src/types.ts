@@ -226,6 +226,8 @@ export interface ConstraintCardState {
   global: ConstraintCard[];
   /** Per-player active constraints, keyed by player ID. */
   perPlayer: Record<string, ConstraintCard[]>;
+  /** Draw deck of undealt constraints (shuffled). */
+  deck?: ConstraintCard[];
 }
 
 /** A challenge card that may award bonuses when completed. */

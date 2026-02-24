@@ -23,6 +23,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       5: { yellow: exact(4) },
     },
     behaviorHooks: ["mission_41_iberian_yellow_mode"],
+    hookRules: [{ kind: "iberian_yellow_mode" }],
     notes: ["FAQ: If the special designated Iberian (yellow) wire is RED, the bomb explodes."],
   });
 
@@ -75,6 +76,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_45_squeak_number_challenge"],
+    hookRules: [{ kind: "squeak_number_challenge" }],
   });
 
   setMission(46, {
@@ -86,6 +88,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       equipment: { mode: "default", excludedUnlockValues: [7] },
     },
     behaviorHooks: ["mission_46_sevens_must_be_last"],
+    hookRules: [{ kind: "sevens_last" }],
   });
 
   setMission(47, {
@@ -97,6 +100,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_47_add_subtract_number_cards"],
+    hookRules: [{ kind: "add_subtract_number_cards" }],
   });
 
   setMission(48, {
@@ -108,5 +112,6 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3), yellow: exact(3) } },
     behaviorHooks: ["mission_48_simultaneous_three_yellow"],
+    hookRules: [{ kind: "simultaneous_multi_cut", color: "yellow", count: 3 }],
   });
 }

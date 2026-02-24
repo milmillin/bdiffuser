@@ -15,6 +15,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       2: { red: exact(3) },
     },
     behaviorHooks: ["mission_17_false_info_tokens", "mission_17_sergio_equipment_restriction"],
+    hookRules: [{ kind: "false_info_tokens" }],
   });
 
   setMission(18, {
@@ -58,6 +59,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       },
     },
     behaviorHooks: ["mission_20_x_marked_unsorted_wires"],
+    hookRules: [{ kind: "x_marked_wire", excludeWalkieTalkies: true }],
   });
 
   setMission(21, {
@@ -70,6 +72,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       2: { red: exact(2) },
     },
     behaviorHooks: ["mission_21_even_odd_tokens"],
+    hookRules: [{ kind: "even_odd_tokens" }],
   });
 
   setMission(22, {
@@ -110,6 +113,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       2: { red: exact(3) },
     },
     behaviorHooks: ["mission_24_count_tokens_x1_x2_x3"],
+    hookRules: [{ kind: "count_tokens" }],
     notes: ["FAQ: If Walkie-Talkies are used on a wire with an x1/x2/x3 info token, that token is discarded."],
   });
 }
