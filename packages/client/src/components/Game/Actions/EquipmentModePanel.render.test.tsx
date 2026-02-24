@@ -133,7 +133,9 @@ describe("EquipmentModePanel — General", () => {
 
   it.each(
     ALL_MODES
-      .filter((m) => m.kind !== "general_radar")
+      .filter(
+        (m) => m.kind !== "general_radar" && m.kind !== "double_detector",
+      )
       .map((m) => [m.kind, m] as const),
   )("renders Clear button for %s", (_kind, mode) => {
     const html = renderMode(mode);
@@ -202,6 +204,16 @@ describe("EquipmentModePanel — double_detector", () => {
     });
     expect(html).toContain("data-testid=\"dd-confirm\"");
     expect(html).toContain("Confirm Double Detector");
+  });
+
+  it("does not render Clear button", () => {
+    const html = renderMode({
+      kind: "double_detector",
+      targetPlayerId: null,
+      selectedTiles: [],
+      guessTileIndex: null,
+    });
+    expect(html).not.toContain("Clear");
   });
 });
 

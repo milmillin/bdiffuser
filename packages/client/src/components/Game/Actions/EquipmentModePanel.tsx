@@ -944,7 +944,9 @@ export function EquipmentModePanel({
       testId={testId}
       onCancel={onCancel}
       onClear={onClear}
-      showClearButton={mode.kind !== "general_radar"}
+      showClearButton={
+        mode.kind !== "general_radar" && mode.kind !== "double_detector"
+      }
       confirmButton={confirmButton}
     >
       {content}
