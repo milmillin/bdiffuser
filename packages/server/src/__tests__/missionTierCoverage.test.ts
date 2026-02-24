@@ -954,6 +954,23 @@ describe("mission complexity tier representative coverage", () => {
     expect(dealtPlayers[2].character).toBe("character_3");
   });
 
+  it("system-d tier (mission 58): setup assigns Double Detector to all players", () => {
+    const players = createSetupPlayers(4);
+    players[0].character = "character_2";
+    players[0].characterUsed = true;
+    players[1].character = "character_3";
+    players[1].characterUsed = true;
+    players[2].character = "character_4";
+    players[3].character = "character_5";
+
+    const { players: dealtPlayers } = setupGame(players, 58);
+
+    for (const player of dealtPlayers) {
+      expect(player.character).toBe("double_detector");
+      expect(player.characterUsed).toBe(false);
+    }
+  });
+
   it("sergio tier (mission 17): failed dual cut targeting captain places false token with announced value", () => {
     const actor = makePlayer({
       id: "actor",

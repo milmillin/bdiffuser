@@ -346,6 +346,14 @@ export function setupGame(
     }
   }
 
+  // Mission 58: everyone uses Double Detector personal equipment.
+  if (mission === 58) {
+    for (const player of players) {
+      player.character = "double_detector";
+      player.characterUsed = false;
+    }
+  }
+
   const blueTiles = createBlueTiles(setup.blue.minValue, setup.blue.maxValue);
 
   const red = createRedTiles(setup.red);
