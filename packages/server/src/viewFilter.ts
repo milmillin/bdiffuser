@@ -82,24 +82,14 @@ function filterEquipmentCardForClient(
 }
 
 function filterLog(log: GameLogEntry[]): GameLogEntry[] {
-  // Keep hidden card values server-side only.
-  return log
-    .filter(
-      (entry) =>
-        !(
-          entry.action === "hookSetup"
-          && isLogTextDetail(entry.detail)
-          && entry.detail.text.startsWith("blue_as_red:")
-        ),
-    )
-    .map((entry) => {
-      if (!isLogTextDetail(entry.detail)) return entry;
+  return log.map((entry) => {
+    if (!isLogTextDetail(entry.detail)) return entry;
 
-      const text = redactHiddenCardNumbers(entry.action, entry.detail.text);
-      if (text === entry.detail.text) return entry;
+    const text = redactHiddenCardNumbers(entry.action, entry.detail.text);
+    if (text === entry.detail.text) return entry;
 
-      return { ...entry, detail: logText(text) };
-    });
+    return { ...entry, detail: logText(text) };
+  });
 }
 
 function redactHiddenCardNumbers(action: string, detail: string): string {

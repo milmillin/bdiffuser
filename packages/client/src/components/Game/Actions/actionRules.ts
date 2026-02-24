@@ -7,6 +7,7 @@ import type {
 import {
   BLUE_COPIES_PER_VALUE,
   getWirePoolCount,
+  isLogTextDetail,
   resolveMissionSetup,
 } from "@bomb-busters/shared";
 import type { EquipmentMode } from "./EquipmentModePanel.js";
@@ -173,6 +174,13 @@ export function canRevealReds(
   if (!me) return false;
   const uncutTiles = me.hand.filter((t) => !t.cut);
   if (uncutTiles.length === 0) return false;
+
+  if (state.mission === 11) {
+    const hiddenBlueAsRedValue = getMission11BlueAsRedValue(state);
+    if (hiddenBlueAsRedValue == null) return false;
+    return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
+  }
+
   const allRed = uncutTiles.every((t) => t.color === "red");
   if (!allRed) return false;
 
@@ -180,4 +188,21 @@ export function canRevealReds(
   if (state.mission === 13) return false;
 
   return true;
+}
+
+function getMission11BlueAsRedValue(state: ClientGameState): number | null {
+  if (state.mission !== 11) return null;
+
+  for (const entry of state.log) {
+    if (entry.action !== "hookSetup") continue;
+    if (!isLogTextDetail(entry.detail)) continue;
+    const match = /^blue_as_red:(\d+)$/.exec(entry.detail.text.trim());
+    if (!match) continue;
+    const value = Number(match[1]);
+    if (Number.isInteger(value) && value >= 1 && value <= 12) {
+      return value;
+    }
+  }
+
+  return null;
 }

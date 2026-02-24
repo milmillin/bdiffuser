@@ -221,7 +221,7 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(filtered.players[1].hand[1].gameValue).toBeUndefined();
   });
 
-  it("redacts mission-11 hidden blue-as-red setup log from client view", () => {
+  it("preserves mission-11 blue-as-red setup log for client view", () => {
     const state = makeGameState({
       log: [
         {
@@ -241,8 +241,9 @@ describe("filterStateForPlayer – campaign state", () => {
       ],
     });
     const filtered = filterStateForPlayer(state, "player-1");
-    expect(filtered.log).toHaveLength(1);
-    expect(renderLogDetail(filtered.log[0].detail)).toBe("some public action");
+    expect(filtered.log).toHaveLength(2);
+    expect(renderLogDetail(filtered.log[0].detail)).toBe("blue_as_red:7");
+    expect(renderLogDetail(filtered.log[1].detail)).toBe("some public action");
   });
 
   it("redacts mission-12 equipment lock number lists in client logs", () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ClientGameState } from "@bomb-busters/shared";
+import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -193,6 +194,58 @@ describe("getSoloCutValues yellow logic", () => {
 });
 
 describe("canRevealReds mission rules", () => {
+  it("returns true in mission 11 when all remaining wires match the blue-as-red value", () => {
+    const state = makeGameState({
+      mission: 11,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "b1", color: "blue", gameValue: 7 }),
+            makeTile({ id: "b2", color: "blue", gameValue: 7 }),
+          ],
+        }),
+      ],
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(canRevealReds(state, "me")).toBe(true);
+  });
+
+  it("returns false in mission 11 when remaining wires do not all match blue-as-red", () => {
+    const state = makeGameState({
+      mission: 11,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "b1", color: "blue", gameValue: 7 }),
+            makeTile({ id: "b2", color: "blue", gameValue: 5 }),
+          ],
+        }),
+      ],
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(canRevealReds(state, "me")).toBe(false);
+  });
+
   it("returns false in mission 13 even when all remaining wires are red", () => {
     const state = makeGameState({
       mission: 13,
