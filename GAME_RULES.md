@@ -1662,6 +1662,10 @@ Baseline assumption used in this section:
 
 - You cannot cut the far-left wire (lowest number) on teammates' tile stands.
 
+### Constraint K
+
+- You cannot do a Solo Cut action.
+
 ## Challenge Cards
 
 ### Challenge 1
