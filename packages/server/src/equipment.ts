@@ -410,6 +410,12 @@ export function validateUseEquipment(
       }
       return null;
     case "post_it": {
+      if (hasActiveConstraint(state, actorId, "H")) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Constraint H: Post-it cannot be used",
+        );
+      }
       if (state.mission === 58) {
         return legalityError(
           "MISSION_RULE_VIOLATION",

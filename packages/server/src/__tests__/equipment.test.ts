@@ -655,6 +655,25 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "rewinder", "MISSION_RULE_VIOLATION");
   });
 
+  it("rejects Post-it when Constraint H is active for the actor", () => {
+    const state = buildStateForEquipmentMatrix("post_it");
+    state.mission = 32;
+    state.campaign = {
+      constraints: {
+        global: [{ id: "H", name: "Constraint H", description: "", active: true }],
+        perPlayer: {},
+        deck: [],
+      },
+    };
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe("Constraint H: Post-it cannot be used");
+  });
+
   it("rejects equipment in mission 11 when actor has only hidden red-like wires", () => {
     const state = buildStateForEquipmentMatrix("rewinder");
     state.mission = 11;
