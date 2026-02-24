@@ -27,14 +27,14 @@ export function PlayerStand({
   return (
     <div
       data-testid={`player-stand-${player.id}`}
-      className={`rounded-xl p-3 min-w-0 ${
+      className={`rounded-lg p-2 min-w-0 ${
         isCurrentTurn
-          ? "bg-yellow-900/20 border-2 border-yellow-600"
+          ? "bg-yellow-900/20 border border-yellow-600"
           : "bg-[var(--color-bomb-surface)]"
       }`}
     >
       {/* Player header */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-1.5 mb-1">
         {player.character && CHARACTER_IMAGES[player.character] && (
           <button
             type="button"
@@ -45,7 +45,7 @@ export function PlayerStand({
             <img
               src={`/images/${CHARACTER_IMAGES[player.character]}`}
               alt={player.character}
-              className="w-8 h-8 rounded object-cover"
+              className="w-6 h-6 rounded object-cover"
             />
           </button>
         )}
@@ -86,10 +86,10 @@ export function PlayerStand({
 
       {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {
-        const colWidth = isOpponent ? "1.5rem" : "2rem";
+        const colWidth = "1.5rem";
         return (
           <ScrollableRow>
-          <div className={`inline-grid gap-x-1 mx-auto w-fit`}
+          <div className={`grid gap-x-1 mx-auto w-fit`}
             style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
           >
             {/* Row 1: info tokens */}
@@ -116,7 +116,7 @@ export function PlayerStand({
                 key={tile.id}
                 tile={tile}
                 isOpponent={isOpponent}
-                isSmall={isOpponent}
+                isSmall={true}
                 isSelectable={tileSelectableFilter ? tileSelectableFilter(tile, idx) : !!onTileClick && !tile.cut}
                 isSelected={selectedTileIndex === idx || (selectedTileIndices?.includes(idx) ?? false)}
                 testId={`wire-tile-${player.id}-${idx}`}

@@ -231,20 +231,20 @@ export function ActionPanel({
 
   return (
     <div
-      className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+      className="bg-[var(--color-bomb-surface)] rounded-lg p-2 space-y-2 text-xs"
       data-testid="action-panel"
     >
       {/* Header — Improvement #1: Stronger "Your Turn" + turn distance */}
       {isMyTurn ? (
-        <div className="flex items-center gap-2 pb-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 -mx-3 -mt-3 px-3 pt-3 rounded-t-xl border-b-2 border-yellow-500">
-          <span className="bg-yellow-500 text-black font-black uppercase text-sm px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-1.5 pb-1.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 -mx-2 -mt-2 px-2 pt-2 rounded-t-lg border-b-2 border-yellow-500">
+          <span className="bg-yellow-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
             Your Turn
           </span>
-          <span className="text-sm font-bold text-yellow-400">Choose an Action</span>
+          <span className="text-xs font-bold text-yellow-400">Choose an Action</span>
         </div>
       ) : (
-        <div className="pb-2 border-b border-gray-700 space-y-2">
-          <span className="text-sm text-gray-400" data-testid="waiting-turn">
+        <div className="pb-1.5 border-b border-gray-700 space-y-1">
+          <span className="text-xs text-gray-400" data-testid="waiting-turn">
             {isCurrentPlayerBot ? (
               <span className="inline-flex items-center gap-2">
                 <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
@@ -315,23 +315,24 @@ export function ActionPanel({
         </div>
       )}
 
+      <div className="flex gap-2 items-start min-w-0">
       {/* Dual Cut — Action-first flow with toggle */}
       {isMyTurn && !forceRevealReds && (
         !dualCutActive ? (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+          <div className="rounded px-2 py-1.5 space-y-1 border border-blue-500/50 bg-blue-950/15">
             <div className="text-xs font-bold text-blue-300 uppercase">
               Dual Cut
             </div>
             <button
               onClick={onToggleDualCut}
               data-testid="dual-cut-activate"
-              className="px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              className="px-2.5 py-1 rounded font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white transition-colors"
             >
               Dual Cut
             </button>
           </div>
         ) : guessValue == null ? (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+          <div className="rounded px-2 py-1.5 space-y-1 border border-blue-500/50 bg-blue-950/15">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-blue-300 uppercase">
                 Dual Cut
@@ -339,7 +340,7 @@ export function ActionPanel({
               <DualCutStepIndicator step={1} />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Select one of your wires as your guess</span>
+              <span className="text-xs text-gray-400">Select one of your wires as your guess</span>
               <button
                 onClick={onToggleDualCut}
                 data-testid="dual-cut-cancel"
@@ -350,7 +351,7 @@ export function ActionPanel({
             </div>
           </div>
         ) : !selectedTarget ? (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+          <div className="rounded px-2 py-1.5 space-y-1 border border-blue-500/50 bg-blue-950/15">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-blue-300 uppercase">
                 Dual Cut
@@ -358,10 +359,10 @@ export function ActionPanel({
               <DualCutStepIndicator step={2} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-300" data-testid="dual-cut-out-wire">
+              <span className="text-xs text-gray-300" data-testid="dual-cut-out-wire">
                 Guess: wire {wireLabel(selectedGuessTile!)} (value: {String(guessValue)})
               </span>
-              <span className="text-sm text-gray-400">Select a wire on an opponent&apos;s stand</span>
+              <span className="text-xs text-gray-400">Select a wire on an opponent&apos;s stand</span>
               <button
                 onClick={onClearTarget}
                 data-testid="dual-cut-cancel"
@@ -372,7 +373,7 @@ export function ActionPanel({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-blue-500/50 bg-blue-950/15">
+          <div className="rounded px-2 py-1.5 space-y-1 border border-blue-500/50 bg-blue-950/15">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-blue-300 uppercase">
                 Dual Cut
@@ -380,7 +381,7 @@ export function ActionPanel({
               <DualCutStepIndicator step={3} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-300" data-testid="dual-cut-target">
+              <span className="text-xs text-gray-300" data-testid="dual-cut-target">
                 Targeting{" "}
                 {
                   gameState.players.find((p) => p.id === selectedTarget.playerId)
@@ -399,7 +400,7 @@ export function ActionPanel({
                 onClick={handleDualCut}
                 disabled={mission9DualCutBlocked}
                 data-testid="dual-cut-submit"
-                className={`px-5 py-2.5 rounded-lg font-black text-base transition-colors ${
+                className={`px-3 py-1.5 rounded font-black text-xs transition-colors ${
                   mission9DualCutBlocked
                     ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                     : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/50"
@@ -416,7 +417,7 @@ export function ActionPanel({
 
       {/* Solo Cut — Improvement #3: Inline confirmation (click-to-select, click-again-to-confirm) */}
       {isMyTurn && !forceRevealReds && soloValues.length > 0 && (
-        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-violet-500/50 bg-violet-950/15">
+        <div className="rounded px-2 py-1.5 space-y-1 border border-violet-500/50 bg-violet-950/15">
           <div className="text-xs font-bold text-violet-300 uppercase">
             Solo Cut
           </div>
@@ -437,7 +438,7 @@ export function ActionPanel({
                   }}
                   disabled={blockedBySequence}
                   data-testid={isConfirming ? "solo-cut-submit" : `solo-cut-${String(v).toLowerCase()}`}
-                  className={`px-4 py-2 rounded-lg font-black text-base min-w-[3rem] transition-colors ${
+                  className={`px-2.5 py-1 rounded font-black text-xs min-w-[2.5rem] transition-colors ${
                     blockedBySequence
                       ? "bg-gray-700 text-gray-400 cursor-not-allowed"
                       : isConfirming
@@ -455,12 +456,12 @@ export function ActionPanel({
 
       {/* Reveal Reds */}
       {isMyTurn && canRevealReds && (
-        <div className={`rounded-lg px-3 py-2.5 space-y-2 border border-red-500/50 bg-red-950/15 ${forceRevealReds ? "animate-pulse" : ""}`}>
+        <div className={`rounded px-2 py-1.5 space-y-1 border border-red-500/50 bg-red-950/15 ${forceRevealReds ? "animate-pulse" : ""}`}>
           <div className="text-xs font-bold text-red-300 uppercase">
             Reveal Reds
           </div>
           {forceRevealReds && (
-            <p className="text-sm text-amber-300">
+            <p className="text-xs text-amber-300">
               You must reveal your remaining red wires before taking other actions.
             </p>
           )}
@@ -498,7 +499,7 @@ export function ActionPanel({
           : undefined;
 
         return (
-          <div className="rounded-lg px-3 py-2.5 space-y-2 border border-fuchsia-500/50 bg-fuchsia-950/15" data-testid="personal-skill-section">
+          <div className="rounded px-2 py-1.5 space-y-1 border border-fuchsia-500/50 bg-fuchsia-950/15" data-testid="personal-skill-section">
             <div className="text-xs font-bold text-fuchsia-300 uppercase">
               Personal Skill — {cardText.abilityName}
             </div>
@@ -508,7 +509,7 @@ export function ActionPanel({
                 onClick={onUseCharacterAbility}
                 disabled={!canUseSkill}
                 data-testid="use-skill-button"
-                className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+                className={`px-2.5 py-1 rounded font-bold text-xs transition-colors ${
                   canUseSkill
                     ? "bg-fuchsia-600 hover:bg-fuchsia-700 text-white"
                     : "bg-gray-700 text-gray-400 cursor-not-allowed"
@@ -533,7 +534,7 @@ export function ActionPanel({
 
       {/* Equipment — Improvement #4: Color-coded by timing, sorted */}
       {sortedEquipment.length > 0 && (
-        <div className="rounded-lg px-3 py-2.5 space-y-2 border border-emerald-500/50 bg-emerald-950/15">
+        <div className="rounded px-2 py-1.5 space-y-1 border border-emerald-500/50 bg-emerald-950/15">
           <div className="text-xs font-bold text-emerald-300 uppercase">
             Equipment
           </div>
@@ -577,7 +578,7 @@ export function ActionPanel({
                   <button
                     onClick={() => useEquipment(equipment.id)}
                     disabled={!canUse}
-                    className={`px-3 py-1.5 rounded font-bold text-sm transition-colors ${
+                    className={`px-2 py-1 rounded font-bold text-xs transition-colors ${
                       canUse
                         ? `${timingColor.bg} ${timingColor.hover} text-white`
                         : secondaryLocked
@@ -607,6 +608,7 @@ export function ActionPanel({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
