@@ -720,7 +720,7 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error).toBeNull();
   });
 
-  it("mission 40: non-captain alternating seats may use Post-it on cut wires", () => {
+  it("mission 40: non-captain Post-it may target cut blue wires", () => {
     const state = buildStateForEquipmentMatrix("post_it");
     state.mission = 40;
     state.players[0].isCaptain = true;
@@ -1067,7 +1067,7 @@ describe("equipment execution", () => {
     ]);
   });
 
-  it("mission 40: alternating non-captain Post-it may target cut wire and places even/odd token", () => {
+  it("mission 40: non-captain Post-it may target cut wire and places x1/x2/x3 token", () => {
     const captain = makePlayer({
       id: "captain",
       isCaptain: true,
@@ -1097,7 +1097,7 @@ describe("equipment execution", () => {
     if (action.type !== "equipmentUsed") return;
     expect(action.effect).toBe("post_it");
     expect(state.players[1].infoTokens).toEqual([
-      { value: 0, parity: "even", position: 0, isYellow: false },
+      { value: 0, countHint: 1, position: 0, isYellow: false },
     ]);
   });
 
@@ -1416,7 +1416,7 @@ describe("equipment execution", () => {
     ]);
   });
 
-  it("mission 40: talkies-walkies keeps x1/x2/x3 tokens and moves them with swapped wires", () => {
+  it("mission 40: talkies-walkies moves x1/x2/x3 tokens with swapped wires", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [
@@ -1431,7 +1431,7 @@ describe("equipment execution", () => {
       id: "teammate",
       hand: [makeTile({ id: "t1", gameValue: 5, sortValue: 5 })],
       infoTokens: [
-        { value: 0, parity: "odd", position: 0, isYellow: false },
+        { value: 0, countHint: 1, position: 0, isYellow: false },
       ],
     });
     const state = stateWithEquipment(
@@ -1451,7 +1451,7 @@ describe("equipment execution", () => {
     if (action.type !== "equipmentUsed") return;
     expect(action.effect).toBe("talkies_walkies");
     expect(state.players[0].infoTokens).toEqual([
-      { value: 0, parity: "odd", position: 0, isYellow: false },
+      { value: 0, countHint: 1, position: 0, isYellow: false },
     ]);
     expect(state.players[1].infoTokens).toEqual([
       { value: 0, countHint: 2, position: 0, isYellow: false },

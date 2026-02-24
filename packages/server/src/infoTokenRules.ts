@@ -1,9 +1,8 @@
 import type { GameState, InfoToken, Player, WireValue } from "@bomb-busters/shared";
 
 const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21, 33]);
-const COUNT_TOKEN_MISSIONS = new Set<number>([24]);
+const COUNT_TOKEN_MISSIONS = new Set<number>([24, 40]);
 const ABSENT_VALUE_TOKEN_MISSIONS = new Set<number>([22]);
-const MISSION_40 = 40;
 
 function isParityTokenMission(state: Readonly<GameState>): boolean {
   return EVEN_ODD_TOKEN_MISSIONS.has(state.mission);
@@ -35,28 +34,6 @@ function countValueCopies(owner: Readonly<Player>, value: WireValue): number {
   return count;
 }
 
-function mission40TokenMode(
-  state: Readonly<GameState>,
-  owner: Readonly<Player>,
-): "count_hint" | "parity" | null {
-  if (state.mission !== MISSION_40) return null;
-
-  const captainIndex = state.players.findIndex((player) => player.isCaptain);
-  const ownerIndex = state.players.findIndex((player) => player.id === owner.id);
-  if (captainIndex === -1 || ownerIndex === -1) return null;
-
-  const seatOffset =
-    (ownerIndex - captainIndex + state.players.length) % state.players.length;
-  return seatOffset % 2 === 0 ? "count_hint" : "parity";
-}
-
-export function isMission40CountHintPlayer(
-  state: Readonly<GameState>,
-  player: Readonly<Player>,
-): boolean {
-  return mission40TokenMode(state, player) === "count_hint";
-}
-
 /**
  * Map a wire's game value to a numeric value that is NOT present on the tile.
  * Uses a fixed 1↔2 mapping: value 1 → 2, everything else → 1.
@@ -74,7 +51,7 @@ function toAbsentNumericValue(value: WireValue): number {
 /**
  * Apply mission-specific token variants while preserving legacy token shape.
  * Missions 21 and 33 convert numeric tokens to even/odd parity tokens.
- * Mission 24 converts numeric/yellow tokens to x1/x2/x3 count hints.
+ * Missions 24 and 40 convert numeric/yellow tokens to x1/x2/x3 count hints.
  */
 export function applyMissionInfoTokenVariant(
   state: Readonly<GameState>,
@@ -82,36 +59,6 @@ export function applyMissionInfoTokenVariant(
   owner?: Readonly<Player>,
 ): InfoToken {
   if (token.relation != null) return token;
-
-  if (state.mission === MISSION_40) {
-    if (!owner) return token;
-    const tile = owner.hand[token.position];
-    if (!tile || tile.color === "red") return token;
-
-    const mode = mission40TokenMode(state, owner);
-    if (mode === "count_hint") {
-      return {
-        ...token,
-        value: 0,
-        isYellow: false,
-        parity: undefined,
-        countHint: toCountHint(countValueCopies(owner, tile.gameValue)),
-      };
-    }
-    if (mode === "parity") {
-      if (!Number.isInteger(token.value) || token.value < 1 || token.value > 12) {
-        return token;
-      }
-      return {
-        ...token,
-        value: 0,
-        isYellow: false,
-        parity: tokenParity(token.value),
-        countHint: undefined,
-      };
-    }
-    return token;
-  }
 
   if (isAbsentValueTokenMission(state)) {
     if (!owner) return token;

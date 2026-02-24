@@ -745,7 +745,7 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
-  it("expert tier (mission 40): alternating non-captain seat receives even/odd tokens on failed cuts", () => {
+  it("expert tier (mission 40): non-captain seat receives x1/x2/x3 tokens on failed cuts", () => {
     const captain = makePlayer({
       id: "captain",
       isCaptain: true,
@@ -771,7 +771,7 @@ describe("mission complexity tier representative coverage", () => {
     expect(partner.infoTokens).toEqual([
       {
         value: 0,
-        parity: "even",
+        countHint: 1,
         position: 0,
         isYellow: false,
       },
