@@ -1646,6 +1646,10 @@ Baseline assumption used in this section:
 
 - You cannot cut wires 4 to 9.
 
+### Constraint G
+
+- You CANNOT use Equipment cards or your own personal equipment.
+
 ## Challenge Cards
 
 ### Challenge 1
