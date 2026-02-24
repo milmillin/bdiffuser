@@ -787,14 +787,24 @@ function Header({
         <div data-testid="turn-number">
           Turn <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
-        <div data-testid="current-player">
-          Playing:{" "}
-          <span className={currentPlayer?.id === playerId ? "text-yellow-400 font-bold" : "text-white"}>
-            {currentPlayer?.id === playerId ? "YOU" : currentPlayer?.name}
-          </span>
-        </div>
-        <div className="text-gray-400">
-          {gameState.isSpectator ? "Spectator" : <>{me?.name} {me?.isCaptain ? "(Captain)" : ""}</>}
+        <div className="flex items-center gap-1.5" data-testid="player-list">
+          {gameState.players.map((p) => {
+            const isCurrentTurn = p.id === currentPlayer?.id;
+            const isMe = p.id === playerId;
+            return (
+              <div
+                key={p.id}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  isCurrentTurn ? "ring-2 ring-yellow-500 bg-gray-700 text-white" : "bg-gray-800 text-gray-400"
+                }`}
+              >
+                {p.name}
+                {isMe && (
+                  <span className="bg-blue-600 text-white text-[10px] rounded px-1 font-bold leading-tight">YOU</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
