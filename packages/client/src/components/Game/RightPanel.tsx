@@ -57,7 +57,7 @@ export function RightPanel({
   );
 }
 
-function MissionCard({ missionId }: { missionId: MissionId }) {
+export function MissionCard({ missionId }: { missionId: MissionId }) {
   const [showBack, setShowBack] = useState(false);
 
   const frontSrc = `/images/${MISSION_IMAGES[missionId]}`;

@@ -28,9 +28,10 @@ import {
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
-import { RightPanel } from "./RightPanel.js";
+import { RightPanel, MissionCard } from "./RightPanel.js";
 import { ActionLog } from "./ActionLog.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
+import { MobileTabBar, type MobileTab } from "./MobileTabBar.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
 import { MissionAudioPlayer } from "./MissionAudioPlayer.js";
 import { EquipmentModePanel } from "./Actions/EquipmentModePanel.js";
@@ -204,6 +205,7 @@ export function GameBoard({
     number | null
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("game");
 
   // Character card overlay state
   const [viewingCharacter, setViewingCharacter] = useState<{
@@ -913,12 +915,11 @@ export function GameBoard({
         </div>
 
         <div
-          className="grid gap-2 pr-2 py-2 overflow-hidden min-w-0 min-h-0"
-          style={{ gridTemplateColumns: "1fr auto" }}
+          className="grid grid-cols-[1fr] md:grid-cols-[1fr_auto] gap-2 pr-2 py-2 pb-14 md:pb-2 overflow-hidden min-w-0 min-h-0"
         >
           {/* Game area */}
           <div
-            className="grid gap-2 min-w-0 min-h-0"
+            className={`grid gap-2 min-w-0 min-h-0 ${mobileTab !== "game" ? "hidden md:grid" : ""}`}
             style={{ gridTemplateRows: "1fr auto" }}
           >
             {/* Scrollable top area */}
@@ -1516,16 +1517,10 @@ export function GameBoard({
             )}
           </div>
 
-          {/* Sidebar: mission card + action log / chat */}
-          <RightPanel
-            missionId={gameState.mission}
-            log={gameState.log}
-            players={gameState.players}
-            result={gameState.result}
-            chatMessages={chatMessages}
-            send={send}
-            playerId={playerId}
-            missionExtras={
+          {/* Mobile-only tab content */}
+          {mobileTab === "mission" && (
+            <div className="md:hidden overflow-y-auto min-h-0 space-y-3 px-2">
+              <MissionCard missionId={gameState.mission} />
               <ActionMissionHints
                 mission={gameState.mission}
                 isMyTurn={isMyTurn}
@@ -1539,8 +1534,54 @@ export function GameBoard({
                 mission9HasYellowSoloValue={mission9HasYellowSoloValue}
                 forceRevealReds={forceRevealReds}
               />
-            }
-          />
+            </div>
+          )}
+          {mobileTab === "log" && (
+            <div className="md:hidden overflow-hidden min-h-0 flex flex-col">
+              <ActionLog
+                log={gameState.log}
+                players={gameState.players}
+                result={gameState.result}
+              />
+            </div>
+          )}
+          {mobileTab === "chat" && (
+            <div className="md:hidden overflow-hidden min-h-0 flex flex-col">
+              <ChatPanel
+                messages={chatMessages}
+                send={send}
+                playerId={playerId}
+              />
+            </div>
+          )}
+
+          {/* Sidebar: mission card + action log / chat (desktop only) */}
+          <div className="hidden md:grid">
+            <RightPanel
+              missionId={gameState.mission}
+              log={gameState.log}
+              players={gameState.players}
+              result={gameState.result}
+              chatMessages={chatMessages}
+              send={send}
+              playerId={playerId}
+              missionExtras={
+                <ActionMissionHints
+                  mission={gameState.mission}
+                  isMyTurn={isMyTurn}
+                  mission11RevealBlockedHint={mission11RevealBlockedHint}
+                  mission9ActiveValue={mission9ActiveValue}
+                  mission9RequiredCuts={mission9RequiredCuts}
+                  mission9ActiveProgress={mission9ActiveProgress}
+                  mission9DualGuessBlocked={
+                    mission9PendingDualBlocked || mission9SelectedGuessBlocked
+                  }
+                  mission9HasYellowSoloValue={mission9HasYellowSoloValue}
+                  forceRevealReds={forceRevealReds}
+                />
+              }
+            />
+          </div>
         </div>
 
       </div>
@@ -1561,6 +1602,8 @@ export function GameBoard({
           onClose={() => setViewingCharacter(null)}
         />
       )}
+
+      <MobileTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
     </>
   );
 }
