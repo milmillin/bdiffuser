@@ -1,33 +1,102 @@
 import { playExplosionBoom as synthBoom } from "./explosionSynth.js";
+import type { MissionAudioState } from "@bomb-busters/shared";
 
 export { synthBoom as playExplosionBoom };
 
 let currentAudio: HTMLAudioElement | null = null;
+let currentAudioFile: string | null = null;
+
+function ensureMissionAudio(audioFile: string): HTMLAudioElement {
+  if (!currentAudio || currentAudioFile !== audioFile) {
+    if (currentAudio) {
+      currentAudio.pause();
+    }
+    currentAudio = new Audio(`/audio/${audioFile}.mp3`);
+    currentAudio.preload = "auto";
+    currentAudioFile = audioFile;
+  }
+  return currentAudio;
+}
+
+function maybeSeek(audio: HTMLAudioElement, positionMs: number): void {
+  const targetSeconds = Math.max(0, positionMs) / 1000;
+  if (Math.abs(audio.currentTime - targetSeconds) < 0.25) return;
+
+  try {
+    audio.currentTime = targetSeconds;
+  } catch {
+    // Ignore seek failures before metadata is loaded.
+  }
+}
+
+/** Apply synchronized mission-audio state from the server. */
+export function syncMissionAudioState(
+  missionAudio: MissionAudioState,
+  resolvedPositionMs: number,
+): void {
+  const audio = ensureMissionAudio(missionAudio.audioFile);
+  maybeSeek(audio, resolvedPositionMs);
+
+  if (missionAudio.status === "playing") {
+    if (audio.paused) {
+      audio.play().catch(() => {
+        // Autoplay may be blocked until user interaction.
+      });
+    }
+  } else if (!audio.paused) {
+    audio.pause();
+  }
+}
 
 /** Play a mission audio file from /audio/{audioFile}.mp3. */
 export function playMissionAudio(audioFile: string): void {
-  stopMissionAudio();
-  const audio = new Audio(`/audio/${audioFile}.mp3`);
-  audio.addEventListener("ended", () => {
-    if (currentAudio === audio) currentAudio = null;
-  });
+  const audio = ensureMissionAudio(audioFile);
   audio.play().catch(() => {
-    // Autoplay may be blocked; user interaction required first
-    currentAudio = null;
+    // Autoplay may be blocked; user interaction required first.
   });
-  currentAudio = audio;
 }
 
 /** Stop any currently playing mission audio. */
 export function stopMissionAudio(): void {
   if (currentAudio) {
     currentAudio.pause();
-    currentAudio.currentTime = 0;
+    try {
+      currentAudio.currentTime = 0;
+    } catch {
+      // Ignore reset failures if metadata is not ready.
+    }
     currentAudio = null;
+    currentAudioFile = null;
   }
 }
 
 /** Check whether mission audio is currently playing. */
 export function isMissionAudioPlaying(): boolean {
   return currentAudio != null && !currentAudio.paused;
+}
+
+/** Current playback position in milliseconds for the loaded mission audio. */
+export function getMissionAudioPositionMs(): number {
+  if (!currentAudio) return 0;
+  return Math.max(0, Math.round(currentAudio.currentTime * 1000));
+}
+
+/** Loaded audio duration in milliseconds, if known. */
+export function getMissionAudioDurationMs(): number | undefined {
+  if (!currentAudio || !Number.isFinite(currentAudio.duration) || currentAudio.duration <= 0) {
+    return undefined;
+  }
+  return Math.round(currentAudio.duration * 1000);
+}
+
+/** Subscribe to mission-audio playback end events. */
+export function onMissionAudioEnded(listener: () => void): () => void {
+  if (!currentAudio) return () => {};
+
+  const audio = currentAudio;
+  const handler = () => listener();
+  audio.addEventListener("ended", handler);
+  return () => {
+    audio.removeEventListener("ended", handler);
+  };
 }

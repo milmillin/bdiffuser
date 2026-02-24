@@ -419,6 +419,19 @@ export interface ActionLegalityError {
 export type GamePhase = "lobby" | "setup_info_tokens" | "playing" | "finished";
 export type GameResult = "win" | "loss_red_wire" | "loss_detonator" | "loss_timer" | null;
 
+export type MissionAudioStatus = "playing" | "paused";
+
+export interface MissionAudioState {
+  audioFile: string;
+  status: MissionAudioStatus;
+  /** Position in milliseconds captured at `syncedAtMs`. */
+  positionMs: number;
+  /** Unix-ms timestamp for the canonical playback snapshot. */
+  syncedAtMs: number;
+  /** Optional known duration in milliseconds. */
+  durationMs?: number;
+}
+
 export interface GameState {
   phase: GamePhase;
   roomId: string;
@@ -437,6 +450,8 @@ export interface GameState {
   pendingForcedAction?: ForcedAction;
   /** Temporary turn-scoped effects from equipment cards. */
   turnEffects?: TurnEffects;
+  /** Mission audio playback state synchronized across all players. */
+  missionAudio?: MissionAudioState;
   /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */
   timerDeadline?: number;
 }
@@ -477,6 +492,8 @@ export interface ClientGameState {
   campaign?: CampaignState;
   /** A forced action that must be resolved before normal play resumes. */
   pendingForcedAction?: ForcedAction;
+  /** Mission audio playback state synchronized across all players. */
+  missionAudio?: MissionAudioState;
   /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */
   timerDeadline?: number;
 }

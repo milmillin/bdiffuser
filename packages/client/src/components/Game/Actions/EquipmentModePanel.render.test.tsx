@@ -55,7 +55,7 @@ const ALL_MODES: EquipmentMode[] = [
     selectedTiles: [],
     guessTileIndex: null,
   },
-  { kind: "general_radar" },
+  { kind: "general_radar", selectedValue: null },
   { kind: "label_eq", firstTileIndex: null },
   { kind: "label_neq", firstTileIndex: null },
   {
@@ -65,7 +65,7 @@ const ALL_MODES: EquipmentMode[] = [
     myTileIndex: null,
   },
   { kind: "emergency_batteries", selectedPlayerIds: [] },
-  { kind: "coffee_mug" },
+  { kind: "coffee_mug", selectedPlayerId: null },
   {
     kind: "triple_detector",
     targetPlayerId: null,
@@ -189,12 +189,18 @@ describe("EquipmentModePanel — double_detector", () => {
 // ── general_radar ────────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — general_radar", () => {
-  it("renders 12 numbered buttons (1 through 12)", () => {
-    const html = renderMode({ kind: "general_radar" });
+  it("renders 12 numbered buttons (1 through 12) and no confirm before selection", () => {
+    const html = renderMode({ kind: "general_radar", selectedValue: null });
     for (let i = 1; i <= 12; i++) {
       expect(html).toContain(`>${i}</button>`);
     }
+    expect(html).not.toContain("Confirm General Radar");
     expect(html).toContain("data-testid=\"equipment-mode-panel\"");
+  });
+
+  it("shows confirm button after a value is selected", () => {
+    const html = renderMode({ kind: "general_radar", selectedValue: 5 });
+    expect(html).toContain("Confirm General Radar");
   });
 });
 
@@ -321,18 +327,22 @@ describe("EquipmentModePanel — emergency_batteries", () => {
 // ── coffee_mug ───────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — coffee_mug", () => {
-  it("shows player buttons excluding self", () => {
-    const html = renderMode({ kind: "coffee_mug" });
+  it("shows player buttons excluding self and no confirm before selection", () => {
+    const html = renderMode({ kind: "coffee_mug", selectedPlayerId: null });
     expect(html).toContain("Opp1");
     expect(html).toContain("Opp2");
-    // "Me" should not appear as a selectable button (self is excluded)
-    // The title "Coffee Mug" contains no "Me", and the buttons are only opponents
     expect(html).toContain("Choose a player to give the next turn to");
+    expect(html).not.toContain("Confirm Coffee Mug");
+  });
+
+  it("shows confirm button after a player is selected", () => {
+    const html = renderMode({ kind: "coffee_mug", selectedPlayerId: "opp1" });
+    expect(html).toContain("Confirm Coffee Mug");
   });
 
   it("excludes players whose tiles are all cut", () => {
     const html = renderMode(
-      { kind: "coffee_mug" },
+      { kind: "coffee_mug", selectedPlayerId: null },
       {
         players: [
           makePlayer({

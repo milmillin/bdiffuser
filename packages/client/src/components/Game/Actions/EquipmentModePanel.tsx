@@ -14,7 +14,7 @@ export type EquipmentMode =
       selectedTiles: number[];
       guessTileIndex: number | null;
     }
-  | { kind: "general_radar" }
+  | { kind: "general_radar"; selectedValue: number | null }
   | { kind: "label_eq"; firstTileIndex: number | null }
   | { kind: "label_neq"; firstTileIndex: number | null }
   | {
@@ -24,7 +24,7 @@ export type EquipmentMode =
       myTileIndex: number | null;
     }
   | { kind: "emergency_batteries"; selectedPlayerIds: string[] }
-  | { kind: "coffee_mug" }
+  | { kind: "coffee_mug"; selectedPlayerId: string | null }
   | {
       kind: "triple_detector";
       targetPlayerId: string | null;
@@ -327,25 +327,46 @@ export function EquipmentModePanel({
         <div className="space-y-2">
           <div>Choose a value to announce (1–12):</div>
           <div className="grid grid-cols-4 gap-1">
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() =>
-                  sendAndCancel({
-                    type: "useEquipment",
-                    equipmentId: "general_radar",
-                    payload: { kind: "general_radar", value },
-                  })
-                }
-                className="px-2 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold transition-colors"
-              >
-                {value}
-              </button>
-            ))}
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
+              const isSelected = mode.selectedValue === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() =>
+                    onUpdateMode({ ...mode, selectedValue: value })
+                  }
+                  className={`px-2 py-1.5 rounded text-sm font-bold transition-colors ${
+                    isSelected
+                      ? "bg-cyan-500 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  }`}
+                >
+                  {value}
+                </button>
+              );
+            })}
           </div>
         </div>
       );
+      if (typeof mode.selectedValue === "number") {
+        const selectedValue = mode.selectedValue;
+        confirmButton = (
+          <button
+            type="button"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "general_radar",
+                payload: { kind: "general_radar", value: selectedValue },
+              })
+            }
+            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          >
+            Confirm General Radar
+          </button>
+        );
+      }
       break;
     }
 
@@ -447,17 +468,6 @@ export function EquipmentModePanel({
                     key={player.id}
                     type="button"
                     onClick={() => {
-                      if (usedPlayers.length === 1) {
-                        sendAndCancel({
-                          type: "useEquipment",
-                          equipmentId: "emergency_batteries",
-                          payload: {
-                            kind: "emergency_batteries",
-                            playerIds: [player.id],
-                          },
-                        });
-                        return;
-                      }
                       const newIds = isSelected
                         ? mode.selectedPlayerIds.filter(
                             (id) => id !== player.id,
@@ -512,28 +522,49 @@ export function EquipmentModePanel({
         <div className="space-y-2">
           <div>Choose a player to give the next turn to:</div>
           <div className="flex gap-2 flex-wrap">
-            {candidates.map((player) => (
-              <button
-                key={player.id}
-                type="button"
-                onClick={() =>
-                  sendAndCancel({
-                    type: "useEquipment",
-                    equipmentId: "coffee_mug",
-                    payload: {
-                      kind: "coffee_mug",
-                      targetPlayerId: player.id,
-                    },
-                  })
-                }
-                className="px-3 py-1.5 rounded bg-lime-700 hover:bg-lime-600 text-white text-sm font-bold transition-colors"
-              >
-                {player.name}
-              </button>
-            ))}
+            {candidates.map((player) => {
+              const isSelected = mode.selectedPlayerId === player.id;
+              return (
+                <button
+                  key={player.id}
+                  type="button"
+                  onClick={() =>
+                    onUpdateMode({ ...mode, selectedPlayerId: player.id })
+                  }
+                  className={`px-3 py-1.5 rounded text-sm font-bold transition-colors ${
+                    isSelected
+                      ? "bg-lime-500 text-black"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  }`}
+                >
+                  {player.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       );
+      if (mode.selectedPlayerId != null) {
+        const selectedPlayerId = mode.selectedPlayerId;
+        confirmButton = (
+          <button
+            type="button"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "coffee_mug",
+                payload: {
+                  kind: "coffee_mug",
+                  targetPlayerId: selectedPlayerId,
+                },
+              })
+            }
+            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          >
+            Confirm Coffee Mug
+          </button>
+        );
+      }
       break;
     }
 

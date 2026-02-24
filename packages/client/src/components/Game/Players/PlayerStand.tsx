@@ -119,6 +119,7 @@ export function PlayerStand({
                 isSmall={true}
                 isSelectable={tileSelectableFilter ? tileSelectableFilter(tile, idx) : !!onTileClick && !tile.cut}
                 isSelected={selectedTileIndex === idx || (selectedTileIndices?.includes(idx) ?? false)}
+                isFilterActive={!!tileSelectableFilter}
                 testId={`wire-tile-${player.id}-${idx}`}
                 onClick={() => onTileClick?.(idx)}
               />
@@ -176,6 +177,7 @@ function WireTileView({
   isSmall,
   isSelectable,
   isSelected,
+  isFilterActive,
   testId,
   onClick,
 }: {
@@ -184,6 +186,7 @@ function WireTileView({
   isSmall: boolean;
   isSelectable: boolean;
   isSelected: boolean;
+  isFilterActive: boolean;
   testId: string;
   onClick: () => void;
 }) {
@@ -203,7 +206,9 @@ function WireTileView({
             ? "cursor-pointer hover:scale-105 hover:ring-2 hover:ring-white"
             : isCut
               ? "opacity-60"
-              : "cursor-default"
+              : isFilterActive
+                ? "cursor-default opacity-40"
+                : "cursor-default"
         }`}
       >
         {showFront ? (

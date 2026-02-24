@@ -39,6 +39,7 @@ import {
   handleOpponentTileClick as _handleOpponentTileClick,
   handleOwnTileClickEquipment as _handleOwnTileClickEquipment,
 } from "./equipmentModeLogic.js";
+import { stopMissionAudio } from "../../audio/audio.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { LeftDock } from "./LeftDock.js";
 import {
@@ -90,6 +91,7 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "triple_detector",
   "super_detector",
   "x_or_y_ray",
+  "grappling_hook",
 ]);
 
 function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
@@ -336,6 +338,18 @@ export function GameBoard({
       `[GameBoard] Unsupported forced action kind "${unknownForcedAction.kind}" is pending; fallback UI is active.`,
     );
   }, [unknownForcedAction?.kind]);
+
+  useEffect(() => {
+    if (gameState.phase === "finished") {
+      stopMissionAudio();
+    }
+  }, [gameState.phase]);
+
+  useEffect(() => {
+    return () => {
+      stopMissionAudio();
+    };
+  }, []);
 
   // Clear staged interaction state when turn or phase changes.
   useEffect(() => {
@@ -745,7 +759,7 @@ export function GameBoard({
                 )}
 
                 {gameState.phase !== "finished" && (
-                  <MissionAudioPlayer missionId={gameState.mission} />
+                  <MissionAudioPlayer gameState={gameState} send={send} />
                 )}
 
                 {/* Playing phase: forced action (captain chooses next player) */}
@@ -962,6 +976,19 @@ export function GameBoard({
                         : playingInteractionEnabled &&
                             isMyTurn
                           ? (tileIndex) => {
+                              if (pendingAction?.kind === "dual_cut") {
+                                if (tileIndex === pendingAction.actorTileIndex) return;
+                                const tile = me.hand[tileIndex];
+                                if (!tile || tile.cut || tile.color === "red") return;
+                                const newGuessValue = tile.gameValue;
+                                if (newGuessValue == null || newGuessValue === "RED") return;
+                                setPendingAction({
+                                  ...pendingAction,
+                                  actorTileIndex: tileIndex,
+                                  guessValue: newGuessValue,
+                                });
+                                return;
+                              }
                               if (pendingAction) return;
                               const tile = me.hand[tileIndex];
                               if (!tile || tile.cut) return;
@@ -1048,6 +1075,9 @@ export function GameBoard({
                         : playingInteractionEnabled &&
                             isMyTurn
                           ? (tile: VisibleTile) => {
+                              if (pendingAction?.kind === "dual_cut") {
+                                return !tile.cut && tile.color !== "red";
+                              }
                               if (pendingAction) return false;
                               if (tile.cut) return false;
                               if (forceRevealReds) return tile.color === "red";
@@ -1125,7 +1155,7 @@ export function GameBoard({
                     mission9HasYellowSoloValue={mission9HasYellowSoloValue}
                     forceRevealReds={forceRevealReds}
                   />
-                  <MissionAudioPlayer missionId={gameState.mission} />
+                  <MissionAudioPlayer gameState={gameState} send={send} />
                 </>
               )}
               {mobileTab === "equipment" && (

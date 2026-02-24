@@ -10,8 +10,9 @@ import type {
   UseEquipmentPayload,
   GameState,
   GameResult,
+  MissionAudioState,
 } from "@bomb-busters/shared";
-import { wireLabel } from "@bomb-busters/shared";
+import { MISSION_SCHEMAS, wireLabel } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import { setupGame } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
@@ -62,6 +63,11 @@ import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRule
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
+
+type MissionAudioControlCommand = Extract<
+  ClientMessage,
+  { type: "missionAudioControl" }
+>["command"];
 
 interface Env {
   [key: string]: unknown;
@@ -120,6 +126,54 @@ export class BombBustersServer extends Server<Env> {
     if (isFailureReason(previousResult)) return;
     if (!isFailureReason(state.result)) return;
     incrementFailureCounter(this.room.failureCounters, state.result);
+  }
+
+  private getMissionAudioFile(mission: MissionId): string | null {
+    const schema = MISSION_SCHEMAS[mission];
+    if (!schema) return null;
+
+    const audioRule = schema.hookRules?.find((rule) => rule.kind === "audio_prompt");
+    if (!audioRule || audioRule.kind !== "audio_prompt") return null;
+    return audioRule.audioFile;
+  }
+
+  private initializeMissionAudioState(state: GameState): void {
+    const audioFile = this.getMissionAudioFile(state.mission);
+    if (!audioFile) {
+      state.missionAudio = undefined;
+      return;
+    }
+
+    state.missionAudio = {
+      audioFile,
+      status: "paused",
+      positionMs: 0,
+      syncedAtMs: Date.now(),
+    };
+  }
+
+  private clampMissionAudioPosition(
+    missionAudio: MissionAudioState,
+    positionMs: number,
+  ): number {
+    const normalized = Math.max(0, Math.round(positionMs));
+    if (missionAudio.durationMs == null) return normalized;
+    return Math.min(normalized, missionAudio.durationMs);
+  }
+
+  private getMissionAudioCurrentPosition(
+    missionAudio: MissionAudioState,
+    nowMs: number,
+  ): number {
+    if (missionAudio.status !== "playing") {
+      return this.clampMissionAudioPosition(missionAudio, missionAudio.positionMs);
+    }
+
+    const elapsedMs = Math.max(0, nowMs - missionAudio.syncedAtMs);
+    return this.clampMissionAudioPosition(
+      missionAudio,
+      missionAudio.positionMs + elapsedMs,
+    );
   }
 
   onConnect(connection: Connection) {
@@ -222,6 +276,14 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "mission22TokenPassChoice":
         this.handleMission22TokenPassChoice(connection, msg.value);
+        break;
+      case "missionAudioControl":
+        this.handleMissionAudioControl(
+          connection,
+          msg.command,
+          msg.positionMs,
+          msg.durationMs,
+        );
         break;
       case "addBot":
         this.handleAddBot(connection);
@@ -461,6 +523,7 @@ export class BombBustersServer extends Server<Env> {
       point: "setup",
       state: this.room.gameState,
     });
+    this.initializeMissionAudioState(this.room.gameState);
 
     const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(this.room.gameState);
     for (const placement of autoPlacements) {
@@ -971,6 +1034,75 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMissionAudioControl(
+    conn: Connection,
+    command: MissionAudioControlCommand,
+    positionMs?: number,
+    durationMs?: number,
+  ) {
+    const state = this.room.gameState;
+    if (!state || state.phase === "finished") return;
+    if (!state.missionAudio) return;
+    if (
+      command !== "play" &&
+      command !== "pause" &&
+      command !== "seek"
+    ) {
+      this.sendMsg(conn, { type: "error", message: "Invalid mission audio command" });
+      return;
+    }
+
+    const missionAudio = state.missionAudio;
+
+    if (durationMs !== undefined) {
+      if (!Number.isFinite(durationMs) || durationMs < 0) {
+        this.sendMsg(conn, { type: "error", message: "Invalid mission audio duration" });
+        return;
+      }
+      missionAudio.durationMs = Math.round(durationMs);
+      missionAudio.positionMs = this.clampMissionAudioPosition(
+        missionAudio,
+        missionAudio.positionMs,
+      );
+    }
+
+    const parsedPosition =
+      typeof positionMs === "number" && Number.isFinite(positionMs)
+        ? Math.round(positionMs)
+        : undefined;
+
+    if (positionMs !== undefined && parsedPosition === undefined) {
+      this.sendMsg(conn, { type: "error", message: "Invalid mission audio position" });
+      return;
+    }
+
+    if (command === "seek" && parsedPosition === undefined) {
+      this.sendMsg(conn, { type: "error", message: "Seek requires a playback position" });
+      return;
+    }
+
+    const nowMs = Date.now();
+    const currentPosition = this.getMissionAudioCurrentPosition(
+      missionAudio,
+      nowMs,
+    );
+    const nextPosition = this.clampMissionAudioPosition(
+      missionAudio,
+      parsedPosition ?? currentPosition,
+    );
+
+    if (command === "play") {
+      missionAudio.status = "playing";
+    } else if (command === "pause") {
+      missionAudio.status = "paused";
+    }
+    missionAudio.positionMs = nextPosition;
+    missionAudio.syncedAtMs = nowMs;
+
+    this.saveState();
+    this.broadcastGameState();
   }
 
   // -- Chat handlers -----------------------------------------------------

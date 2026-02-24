@@ -38,6 +38,9 @@ export function filterStateForPlayer(
     ...(state.pendingForcedAction
       ? { pendingForcedAction: state.pendingForcedAction }
       : {}),
+    ...(state.missionAudio
+      ? { missionAudio: state.missionAudio }
+      : {}),
     ...(state.timerDeadline != null
       ? { timerDeadline: state.timerDeadline }
       : {}),
@@ -102,6 +105,9 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
       : {}),
     ...(state.pendingForcedAction
       ? { pendingForcedAction: state.pendingForcedAction }
+      : {}),
+    ...(state.missionAudio
+      ? { missionAudio: state.missionAudio }
       : {}),
     ...(state.timerDeadline != null
       ? { timerDeadline: state.timerDeadline }

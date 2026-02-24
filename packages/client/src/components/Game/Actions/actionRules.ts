@@ -52,7 +52,7 @@ export function getInitialEquipmentMode(
     case "post_it":
       return { kind: "post_it" };
     case "general_radar":
-      return { kind: "general_radar" };
+      return { kind: "general_radar", selectedValue: null };
     case "label_eq":
       return { kind: "label_eq", firstTileIndex: null };
     case "label_neq":
@@ -67,7 +67,7 @@ export function getInitialEquipmentMode(
     case "emergency_batteries":
       return { kind: "emergency_batteries", selectedPlayerIds: [] };
     case "coffee_mug":
-      return { kind: "coffee_mug" };
+      return { kind: "coffee_mug", selectedPlayerId: null };
     case "triple_detector":
       return {
         kind: "triple_detector",

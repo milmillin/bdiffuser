@@ -150,7 +150,7 @@ describe("getOpponentTileSelectableFilter", () => {
   });
 
   it("general_radar: returns a function that always returns false", () => {
-    const mode: EquipmentMode = { kind: "general_radar" };
+    const mode: EquipmentMode = { kind: "general_radar", selectedValue: null };
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
     expect(filter(tile(), 0)).toBe(false);
   });
@@ -812,14 +812,14 @@ describe("handleOpponentTileClick", () => {
     expect(result.guessTileIndex).toBe(3); // preserved
   });
 
-  it("super_detector: preserves guess when clicking same opponent", () => {
+  it("super_detector: deselects when clicking same opponent", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
       guessTileIndex: 3,
     };
     const result = handleOpponentTileClick(mode, "opp1", 1) as Extract<EquipmentMode, { kind: "super_detector" }>;
-    expect(result.targetPlayerId).toBe("opp1");
+    expect(result.targetPlayerId).toBeNull();
     expect(result.guessTileIndex).toBe(3);
   });
 
@@ -1306,5 +1306,163 @@ describe("handleOwnTileClickEquipment", () => {
     };
     const result = handleOwnTileClickEquipment(mode, 2, me);
     expect(result.newMode).toEqual(mode);
+  });
+
+  // -- label_eq / label_neq first tile deselection --
+
+  it("label_eq: clicking selected first tile deselects it", () => {
+    const me = player({ hand: [tile(), tile(), tile()] });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1 };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("label_neq: clicking selected first tile deselects it", () => {
+    const me = player({ hand: [tile(), tile(), tile()] });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1 };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// grappling_hook — opponent interactions
+// ---------------------------------------------------------------------------
+describe("grappling_hook opponent interactions", () => {
+  it("getOpponentTileSelectableFilter: allows uncut tiles", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1");
+    expect(filter).toBeDefined();
+    expect(filter!(tile({ cut: false }), 0)).toBe(true);
+    expect(filter!(tile({ cut: true }), 0)).toBe(false);
+  });
+
+  it("getOpponentSelectedTileIndex: returns index for matching opponent", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 2,
+    };
+    expect(getOpponentSelectedTileIndex(mode, "opp1")).toBe(2);
+    expect(getOpponentSelectedTileIndex(mode, "opp2")).toBeUndefined();
+  });
+
+  it("handleOpponentTileClick: selects an opponent tile", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 3);
+    expect(result).toEqual({
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 3,
+    });
+  });
+
+  it("handleOpponentTileClick: deselects on same tile click", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 3,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 3);
+    expect(result).toEqual({
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    });
+  });
+
+  it("handleOpponentTileClick: retargets to different tile", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 3,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 1);
+    expect(result).toEqual({
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 1,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Opponent tile toggle-deselect for single-select equipment
+// ---------------------------------------------------------------------------
+describe("opponent tile toggle-deselect", () => {
+  it("talkies_walkies: deselects on same tile click", () => {
+    const mode: EquipmentMode = {
+      kind: "talkies_walkies",
+      teammateId: "opp1",
+      teammateTileIndex: 2,
+      myTileIndex: null,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 2);
+    expect(result).toEqual({
+      kind: "talkies_walkies",
+      teammateId: null,
+      teammateTileIndex: null,
+      myTileIndex: null,
+    });
+  });
+
+  it("super_detector: deselects on same opponent click", () => {
+    const mode: EquipmentMode = {
+      kind: "super_detector",
+      targetPlayerId: "opp1",
+      guessTileIndex: null,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 0);
+    expect(result).toEqual({
+      kind: "super_detector",
+      targetPlayerId: null,
+      guessTileIndex: null,
+    });
+  });
+
+  it("x_or_y_ray: deselects on same tile click", () => {
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 2,
+      guessATileIndex: null,
+      guessBTileIndex: null,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 2);
+    expect(result).toEqual({
+      kind: "x_or_y_ray",
+      targetPlayerId: null,
+      targetTileIndex: null,
+      guessATileIndex: null,
+      guessBTileIndex: null,
+    });
+  });
+
+  it("x_or_y_ray: retargets to different tile on same opponent", () => {
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 2,
+      guessATileIndex: null,
+      guessBTileIndex: null,
+    };
+    const result = handleOpponentTileClick(mode, "opp1", 4);
+    expect(result).toEqual({
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 4,
+      guessATileIndex: null,
+      guessBTileIndex: null,
+    });
   });
 });

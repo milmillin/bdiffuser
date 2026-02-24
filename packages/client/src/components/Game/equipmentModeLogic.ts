@@ -40,6 +40,8 @@ export function getOpponentTileSelectableFilter(
       return (tile) => !tile.cut;
     case "x_or_y_ray":
       return (tile) => !tile.cut;
+    case "grappling_hook":
+      return (tile) => !tile.cut;
     default:
       return () => false;
   }
@@ -100,6 +102,8 @@ export function getOpponentSelectedTileIndex(
       return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
     case "talkies_walkies":
       return mode.teammateId === oppId ? (mode.teammateTileIndex ?? undefined) : undefined;
+    case "grappling_hook":
+      return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
     default:
       return undefined;
   }
@@ -178,6 +182,9 @@ export function handleOpponentTileClick(
       };
     }
     case "talkies_walkies": {
+      if (mode.teammateId === oppId && mode.teammateTileIndex === tileIndex) {
+        return { ...mode, teammateId: null, teammateTileIndex: null };
+      }
       return {
         ...mode,
         teammateId: oppId,
@@ -200,6 +207,9 @@ export function handleOpponentTileClick(
       };
     }
     case "super_detector": {
+      if (mode.targetPlayerId === oppId) {
+        return { ...mode, targetPlayerId: null };
+      }
       return {
         ...mode,
         targetPlayerId: oppId,
@@ -207,6 +217,9 @@ export function handleOpponentTileClick(
       };
     }
     case "x_or_y_ray": {
+      if (mode.targetPlayerId === oppId && mode.targetTileIndex === tileIndex) {
+        return { ...mode, targetPlayerId: null, targetTileIndex: null };
+      }
       return {
         ...mode,
         targetPlayerId: oppId,
@@ -214,6 +227,12 @@ export function handleOpponentTileClick(
         guessATileIndex: mode.guessATileIndex,
         guessBTileIndex: mode.guessBTileIndex,
       };
+    }
+    case "grappling_hook": {
+      if (mode.targetPlayerId === oppId && mode.targetTileIndex === tileIndex) {
+        return { ...mode, targetPlayerId: null, targetTileIndex: null };
+      }
+      return { ...mode, targetPlayerId: oppId, targetTileIndex: tileIndex };
     }
     default:
       return mode;
@@ -259,6 +278,9 @@ export function handleOwnTileClickEquipment(
     case "label_neq": {
       if (mode.firstTileIndex === null) {
         return { newMode: { ...mode, firstTileIndex: tileIndex } };
+      }
+      if (tileIndex === mode.firstTileIndex) {
+        return { newMode: { ...mode, firstTileIndex: null } };
       }
       if (Math.abs(tileIndex - mode.firstTileIndex) !== 1) return { newMode: mode };
       return {

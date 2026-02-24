@@ -13,6 +13,7 @@ import {
   type ConstraintCard,
   type ChallengeCard,
   type SpecialMarker,
+  type MissionAudioState,
 } from "@bomb-busters/shared";
 import {
   cloneFailureCounters,
@@ -279,6 +280,43 @@ function normalizeEquipment(raw: unknown): EquipmentCard[] {
     .filter((card): card is EquipmentCard => card !== null);
 }
 
+function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
+  if (!isObject(raw)) return undefined;
+  if (typeof raw.audioFile !== "string" || !raw.audioFile) return undefined;
+
+  const status: MissionAudioState["status"] =
+    raw.status === "playing" || raw.status === "paused"
+      ? raw.status
+      : "paused";
+  const syncedAtMs =
+    typeof raw.syncedAtMs === "number" && Number.isFinite(raw.syncedAtMs)
+      ? Math.round(raw.syncedAtMs)
+      : Date.now();
+  const durationMs =
+    typeof raw.durationMs === "number" &&
+    Number.isFinite(raw.durationMs) &&
+    raw.durationMs >= 0
+      ? Math.round(raw.durationMs)
+      : undefined;
+
+  let positionMs =
+    typeof raw.positionMs === "number" && Number.isFinite(raw.positionMs)
+      ? Math.max(0, Math.round(raw.positionMs))
+      : 0;
+
+  if (durationMs != null) {
+    positionMs = Math.min(positionMs, durationMs);
+  }
+
+  return {
+    audioFile: raw.audioFile,
+    status,
+    positionMs,
+    syncedAtMs,
+    ...(durationMs != null ? { durationMs } : {}),
+  };
+}
+
 function normalizeCampaign(raw: unknown): CampaignState | undefined {
   if (!isObject(raw)) return undefined;
 
@@ -390,6 +428,7 @@ function normalizeGameState(
 
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
+  const missionAudio = normalizeMissionAudio(obj.missionAudio);
   // Forced-action migration: supports chooseNextPlayer, designateCutter, and mission22TokenPass.
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
@@ -459,6 +498,7 @@ function normalizeGameState(
     log: Array.isArray(obj.log) ? obj.log : [],
     chat: Array.isArray(obj.chat) ? obj.chat : [],
     ...(campaign ? { campaign } : {}),
+    ...(missionAudio ? { missionAudio } : {}),
     ...(pendingForcedAction ? { pendingForcedAction } : {}),
     ...(typeof obj.timerDeadline === "number" && Number.isFinite(obj.timerDeadline)
       ? { timerDeadline: obj.timerDeadline }

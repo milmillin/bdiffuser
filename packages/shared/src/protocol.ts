@@ -36,6 +36,18 @@ export type ClientMessage =
   | { type: "designateCutter"; targetPlayerId: string }
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "mission22TokenPassChoice"; value: number }
+  | {
+      type: "missionAudioControl";
+      command: "play" | "pause";
+      positionMs?: number;
+      durationMs?: number;
+    }
+  | {
+      type: "missionAudioControl";
+      command: "seek";
+      positionMs: number;
+      durationMs?: number;
+    }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
   | { type: "chat"; text: string };
