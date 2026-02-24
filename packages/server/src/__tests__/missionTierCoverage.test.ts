@@ -98,6 +98,33 @@ describe("mission complexity tier representative coverage", () => {
     expect(yellowCounts).toEqual([1, 1, 1, 0]);
   });
 
+  it("special setup tier (mission 13): red wires are pre-dealt clockwise from captain", () => {
+    const players = createSetupPlayers(4);
+    const { players: dealtPlayers } = setupGame(players, 13);
+
+    const redCounts = dealtPlayers.map((player) =>
+      player.hand.filter((tile) => tile.color === "red").length
+    );
+    expect(redCounts).toEqual([1, 1, 1, 0]);
+  });
+
+  it("special setup tier (mission 13, 2p): captain splits red wires across both stands", () => {
+    const players = createSetupPlayers(2);
+    const { players: dealtPlayers } = setupGame(players, 13);
+    const captain = dealtPlayers.find((player) => player.isCaptain)!;
+    const teammate = dealtPlayers.find((player) => !player.isCaptain)!;
+
+    const captainRedCount = captain.hand.filter((tile) => tile.color === "red").length;
+    const teammateRedCount = teammate.hand.filter((tile) => tile.color === "red").length;
+    expect(captainRedCount).toBe(2);
+    expect(teammateRedCount).toBe(1);
+
+    const captainStands = getStandSlices(captain);
+    expect(captainStands).toHaveLength(2);
+    expect(captainStands[0].some((tile) => tile.color === "red")).toBe(true);
+    expect(captainStands[1].some((tile) => tile.color === "red")).toBe(true);
+  });
+
   it("special setup tier (mission 48, 2p): captain splits yellow wires across both stands", () => {
     const players = createSetupPlayers(2);
     const { players: dealtPlayers } = setupGame(players, 48);

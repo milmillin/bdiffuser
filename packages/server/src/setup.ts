@@ -259,11 +259,11 @@ function standCountForPlayer(
   return 1;
 }
 
-function buildMission48YellowPredeals(
+function buildClockwiseCaptainPredeals(
   players: Player[],
-  yellowTiles: WireTile[],
+  tiles: WireTile[],
 ): PredealtTileAssignment[] {
-  if (players.length === 0 || yellowTiles.length === 0) return [];
+  if (players.length === 0 || tiles.length === 0) return [];
 
   const captainIndex = players.findIndex((player) => player.isCaptain);
   const startIndex = captainIndex >= 0 ? captainIndex : 0;
@@ -272,12 +272,13 @@ function buildMission48YellowPredeals(
   const assignments: PredealtTileAssignment[] = [];
   let captainStandCursor = 0;
 
-  for (let i = 0; i < yellowTiles.length; i++) {
+  for (let i = 0; i < tiles.length; i++) {
     const recipient = players[(startIndex + i) % players.length];
     const recipientStandCount = standCountForPlayer(recipient, players.length, captainId);
     let standIndex = 0;
 
-    // Mission 48 rulebook exception: with 2 players, the captain places one yellow on each stand.
+    // Mission 13/48 rulebook exception: with 2 players, the captain places one
+    // pre-dealt special wire on each stand.
     if (
       players.length === 2 &&
       recipient.id === captainId &&
@@ -290,7 +291,7 @@ function buildMission48YellowPredeals(
     assignments.push({
       playerId: recipient.id,
       standIndex,
-      tile: yellowTiles[i],
+      tile: tiles[i],
     });
   }
 
@@ -424,13 +425,21 @@ export function setupGame(
   const yellow = createYellowTiles(setup.yellow);
   const allMarkers = [...red.markers, ...yellow.markers].sort(compareMarkerOrder);
 
-  const mission48YellowPredeals = mission === 48
-    ? buildMission48YellowPredeals(players, yellow.tiles)
+  // Mission 13: red wires are pre-dealt clockwise from captain before normal deal.
+  // Mission 48: yellow wires are pre-dealt clockwise from captain before normal deal.
+  const mission13RedPredeals = mission === 13
+    ? buildClockwiseCaptainPredeals(players, red.tiles)
     : [];
+  const mission48YellowPredeals = mission === 48
+    ? buildClockwiseCaptainPredeals(players, yellow.tiles)
+    : [];
+  const predealtTiles = [...mission13RedPredeals, ...mission48YellowPredeals];
   const allTiles = mission === 48
     ? [...blueTiles, ...red.tiles]
-    : [...blueTiles, ...red.tiles, ...yellow.tiles];
-  const standSeats = distributeTilesAcrossStands(allTiles, players, mission48YellowPredeals);
+    : mission === 13
+      ? [...blueTiles, ...yellow.tiles]
+      : [...blueTiles, ...red.tiles, ...yellow.tiles];
+  const standSeats = distributeTilesAcrossStands(allTiles, players, predealtTiles);
 
   // Mission 20: the last dealt wire on each stand is moved unsorted to that
   // stand's far right and marked with X.
