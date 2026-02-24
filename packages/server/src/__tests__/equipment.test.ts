@@ -1306,6 +1306,58 @@ describe("equipment execution", () => {
     expect((state.players[1] as typeof teammate & { standSizes?: number[] }).standSizes).toEqual([2, 2]);
   });
 
+  it("talkies-walkies sorts wires within each stand independently", () => {
+    const actor = withStandSizes(makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a4", sortValue: 4, gameValue: 4 }),
+        makeTile({ id: "a6", sortValue: 6, gameValue: 6 }),
+        makeTile({ id: "a3", sortValue: 3, gameValue: 3 }),
+        makeTile({ id: "a9", sortValue: 9, gameValue: 9 }),
+      ],
+      infoTokens: [
+        { value: 4, position: 0, isYellow: false },
+        { value: 6, position: 1, isYellow: false },
+      ],
+    }), [2, 2]);
+    const teammate = withStandSizes(makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [
+        makeTile({ id: "t2", sortValue: 2, gameValue: 2 }),
+        makeTile({ id: "t5", sortValue: 5, gameValue: 5 }),
+        makeTile({ id: "t7", sortValue: 7, gameValue: 7 }),
+        makeTile({ id: "t8", sortValue: 8, gameValue: 8 }),
+      ],
+      infoTokens: [],
+    }), [2, 2]);
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 1,
+      teammateTileIndex: 0,
+    });
+
+    // Actor pre-sort after swap: [a4, t2 | a3, a9]
+    // Per-stand sort yields [t2, a4 | a3, a9].
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["t2", "a4", "a3", "a9"]);
+    // Global sort would place a3 ahead of a4; this verifies stand boundaries are respected.
+    expect(state.players[0].hand.map((tile) => tile.sortValue)).toEqual([2, 4, 3, 9]);
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["t5", "a6", "t7", "t8"]);
+    // Token on a4 remaps to index 1; swapped token on a6 follows the wire to teammate and remaps there.
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 4, position: 1, isYellow: false },
+    ]);
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 6, position: 1, isYellow: false },
+    ]);
+  });
+
   it("talkies-walkies can start with actor wire only and wait for target choice", () => {
     const actor = makePlayer({
       id: "actor",

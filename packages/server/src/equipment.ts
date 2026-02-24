@@ -988,9 +988,9 @@ function swapTalkiesWires(
     });
   }
 
-  // Re-sort both hands by sortValue and remap info-token positions.
-  resortHandAndRemapTokens(actor);
-  resortHandAndRemapTokens(teammate);
+  // Re-sort each stand segment by sortValue and remap info-token positions.
+  resortHandByStandAndRemapTokens(actor);
+  resortHandByStandAndRemapTokens(teammate);
 }
 
 function collectSwappedWireTokens(
@@ -1017,9 +1017,24 @@ function collectSwappedWireTokens(
   return transferable;
 }
 
-function resortHandAndRemapTokens(player: Player): void {
+function resortHandByStandAndRemapTokens(player: Player): void {
   const oldOrder = player.hand.map((t) => t.id);
-  player.hand.sort((a, b) => a.sortValue - b.sortValue);
+  const standSizes = getPlayerStandSizes(player);
+  let cursor = 0;
+
+  for (const standSize of standSizes) {
+    const start = cursor;
+    const endExclusive = Math.min(start + standSize, player.hand.length);
+    if (endExclusive - start > 1) {
+      const sortedStand = player.hand
+        .slice(start, endExclusive)
+        .sort((a, b) => a.sortValue - b.sortValue);
+      for (let i = 0; i < sortedStand.length; i += 1) {
+        player.hand[start + i] = sortedStand[i]!;
+      }
+    }
+    cursor = endExclusive;
+  }
 
   // Build old→new index mapping.
   const newIndexOf = new Map<string, number>();
