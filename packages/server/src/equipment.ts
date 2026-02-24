@@ -11,7 +11,7 @@ import type {
   UseEquipmentPayload,
   WireTile,
 } from "@bomb-busters/shared";
-import { EQUIPMENT_DEFS, DOUBLE_DETECTOR_CHARACTERS } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS, DOUBLE_DETECTOR_CHARACTERS, wireLabel } from "@bomb-busters/shared";
 import {
   getTileByFlatIndex,
   getUncutTiles,
@@ -1051,7 +1051,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used X or Y Ray on ${target.name}'s wire ${payload.targetTileIndex} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
+        `used X or Y Ray on ${target.name}'s wire ${wireLabel(payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
       );
 
       return executeDualCut(
@@ -1560,7 +1560,7 @@ export function executeCharacterAbility(
         state,
         actorId,
         "characterAbility",
-        `used X or Y Ray on ${target.name}'s wire ${payload.targetTileIndex} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
+        `used X or Y Ray on ${target.name}'s wire ${wireLabel(payload.targetTileIndex)} (${String(payload.guessValueA)}|${String(payload.guessValueB)})`,
       );
       return executeDualCut(
         state,
