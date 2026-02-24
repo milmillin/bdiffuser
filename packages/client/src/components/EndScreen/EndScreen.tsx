@@ -3,6 +3,9 @@ import type { ClientGameState } from "@bomb-busters/shared";
 import { ShameDashboard } from "./ShameDashboard";
 import { ExplosionEffect } from "./ExplosionEffect";
 
+const btnBase =
+  "px-7 py-3.5 rounded-xl font-extrabold text-base tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
+
 export function EndScreen({
   gameState,
   onPlayAgain,
@@ -11,6 +14,7 @@ export function EndScreen({
   onPlayAgain: () => void;
 }) {
   const [showShame, setShowShame] = useState(false);
+  const [showBoard, setShowBoard] = useState(false);
   const isWin = gameState.result === "win";
 
   if (showShame) {
@@ -22,15 +26,36 @@ export function EndScreen({
     );
   }
 
+  if (showBoard) {
+    return (
+      <div className="fixed inset-0 z-40">
+        <button
+          onClick={() => setShowBoard(false)}
+          className={`fixed top-4 left-4 z-50 ${btnBase} bg-gray-800 border-gray-950 text-white shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:bg-gray-700 hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]`}
+        >
+          Back to Results
+        </button>
+      </div>
+    );
+  }
+
+  const bg = isWin
+    ? "radial-gradient(ellipse at 50% 40%, #34d399 0%, #059669 40%, #064e3b 100%)"
+    : "radial-gradient(ellipse at 50% 40%, #fb7185 0%, #e11d48 35%, #9f1239 65%, #4c0519 100%)";
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" data-testid="end-screen">
-      <div className="max-w-md w-full text-center space-y-6">
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center"
+      style={{ background: bg }}
+      data-testid="end-screen"
+    >
+      <div className="w-full h-full flex flex-col items-center justify-center">
         {isWin ? (
           <>
             <div className="text-8xl animate-bounce">🎉</div>
             <h1
               data-testid="result-title"
-              className="text-4xl font-black text-green-400"
+              className="text-4xl font-black text-emerald-400 mt-6 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]"
             >
               MISSION COMPLETE!
             </h1>
@@ -47,71 +72,33 @@ export function EndScreen({
           </>
         )}
 
-        <p className="text-gray-300 text-lg">
+        <p className="text-white/90 text-2xl font-black mt-6 uppercase tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">
           {gameState.result === "win" && "All wires have been safely cut!"}
           {gameState.result === "loss_red_wire" &&
             "A red wire was cut and the bomb exploded!"}
           {gameState.result === "loss_detonator" &&
-            "The detonator reached the end!"}
+            "The detonator hit zero. No survivors."}
           {gameState.result === "loss_timer" &&
             "The mission timer expired!"}
         </p>
 
-        <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 text-left">
-          <h2 className="text-sm font-bold text-gray-400 uppercase mb-2">
-            Game Summary
-          </h2>
-          <div className="space-y-1 text-sm">
-            <div>
-              Mission: <span className="text-white">#{gameState.mission}</span>
-            </div>
-            <div>
-              Turns played:{" "}
-              <span className="text-white">{gameState.turnNumber}</span>
-            </div>
-            <div>
-              Players:{" "}
-              <span className="text-white">
-                {gameState.players.map((p) => p.name).join(", ")}
-              </span>
-            </div>
-            <div>
-              Detonator:{" "}
-              <span className="text-white">
-                {gameState.board.detonatorPosition}/{gameState.board.detonatorMax}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Game log */}
-        {gameState.log.length > 0 && (
-          <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 text-left max-h-48 overflow-y-auto">
-            <h2 className="text-sm font-bold text-gray-400 uppercase mb-2">
-              Action Log
-            </h2>
-            <div className="space-y-1 text-xs text-gray-400">
-              {gameState.log.slice(-20).map((entry, i) => (
-                <div key={i}>
-                  <span className="text-gray-500">T{entry.turn}:</span>{" "}
-                  {entry.detail}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-4 mt-10">
+          <button
+            onClick={() => setShowBoard(true)}
+            className={`${btnBase} bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]`}
+          >
+            View Board
+          </button>
           <button
             onClick={() => setShowShame(true)}
-            className="px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 rounded-xl font-bold text-sm text-red-400 transition-colors"
+            className={`${btnBase} bg-rose-900 border-rose-950 text-white shadow-[0_4px_15px_rgba(136,19,55,0.5)] hover:bg-rose-800 hover:shadow-[0_6px_20px_rgba(136,19,55,0.6)]`}
           >
             Who Blew It?
           </button>
           <button
             onClick={onPlayAgain}
             data-testid="play-again"
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-lg transition-colors"
+            className={`${btnBase} bg-amber-500 border-amber-800 text-gray-900 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:bg-amber-400 hover:shadow-[0_6px_20px_rgba(245,158,11,0.6)]`}
           >
             Play Again
           </button>

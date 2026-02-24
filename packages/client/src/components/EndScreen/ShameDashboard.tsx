@@ -11,17 +11,88 @@ interface PlayerStats {
   totalActions: number;
 }
 
-const SHAME_TITLES: { test: (s: PlayerStats) => boolean; title: string }[] = [
-  { test: (s) => s.explosions > 0, title: "The Saboteur" },
-  { test: (s) => s.failedCuts >= 3, title: "Butter Fingers" },
-  { test: (s) => s.detonatorAdvances >= 2, title: "Detonator's Best Friend" },
-  { test: (s) => s.totalActions > 0 && s.failedCuts === 0 && s.explosions === 0, title: "Lucky Guesser" },
-  { test: (s) => s.totalActions === 0, title: "AFK" },
-  { test: () => true, title: "Could Be Worse" },
+const SHAME_TITLES: { test: (s: PlayerStats) => boolean; title: string; roasts: string[] }[] = [
+  {
+    test: (s) => s.explosions > 0,
+    title: "THE SABOTEUR",
+    roasts: [
+      "Single-handedly murdered everyone. Impressive.",
+      "They didn't defuse the bomb. They WERE the bomb.",
+      "Congratulations, you played yourself. And everyone else.",
+      "Task failed successfully... at killing the whole team.",
+      "Born to cut wires. Forced to cut the wrong one.",
+      "Some people just want to watch the world burn.",
+    ],
+  },
+  {
+    test: (s) => s.failedCuts >= 3,
+    title: "BUTTER FINGERS",
+    roasts: [
+      "Couldn't cut a wire if their life depended on it. It did.",
+      "Has the precision of a blindfolded toddler with scissors.",
+      "Three strikes and everyone's out. Permanently.",
+      "Wire cutting accuracy: thoughts and prayers.",
+      "Their hands were shaking. Their team was crying.",
+      "Statistically, a coin flip would've been better.",
+    ],
+  },
+  {
+    test: (s) => s.detonatorAdvances >= 2,
+    title: "DETONATOR'S BEST FRIEND",
+    roasts: [
+      "Kept feeding the thing that kills everyone. Bold strategy.",
+      "The detonator sends its thanks and regards.",
+      "Speedrunning the team's death, one tick at a time.",
+      "If the detonator had a fan club, they'd be president.",
+      "Tick. Tick. Tick. That's the sound of their contributions.",
+      "They didn't just let the detonator win — they cheered it on.",
+    ],
+  },
+  {
+    test: (s) => s.totalActions > 0 && s.failedCuts === 0 && s.explosions === 0,
+    title: "LUCKY GUESSER",
+    roasts: [
+      "Got carried. Hard.",
+      "Clean record, zero credit. The team did the work.",
+      "Peaked in luck, not in skill.",
+      "Even a broken clock cuts the right wire twice.",
+      "Survived on vibes alone.",
+      "Their strategy was 'hope' and somehow it worked.",
+    ],
+  },
+  {
+    test: (s) => s.totalActions === 0,
+    title: "AFK LEGEND",
+    roasts: [
+      "Contributed nothing. Somehow still not the worst.",
+      "Was technically 'in the game.' Technically.",
+      "Their best move was not making one.",
+      "Went to get snacks. Never came back.",
+      "Present in body, absent in spirit and usefulness.",
+      "The team had a passenger. First class, no luggage.",
+    ],
+  },
+  {
+    test: () => true,
+    title: "COULD BE WORSE",
+    roasts: [
+      "Mediocrity is its own punishment.",
+      "Not the worst, not the best. Just... there.",
+      "The human equivalent of a participation trophy.",
+      "Did enough to not be last. What a legacy.",
+      "Average performance. Below average entertainment.",
+      "They showed up. That's... something, I guess.",
+    ],
+  },
 ];
 
-function getShameTitle(stats: PlayerStats): string {
-  return SHAME_TITLES.find((t) => t.test(stats))!.title;
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getShameInfo(stats: PlayerStats): { title: string; roast: string } {
+  const match = SHAME_TITLES.find((t) => t.test(stats))!;
+  return { title: match.title, roast: pick(match.roasts) };
 }
 
 function getSuccessRate(stats: PlayerStats): number {
@@ -63,19 +134,15 @@ function analyzeLog(log: GameLogEntry[]): Map<string, Omit<PlayerStats, "id" | "
   return stats;
 }
 
-const RANK_COLORS = [
-  "from-red-500/20 to-red-900/10 border-red-500/40",
-  "from-orange-500/20 to-orange-900/10 border-orange-500/40",
-  "from-yellow-500/20 to-yellow-900/10 border-yellow-500/40",
-  "from-green-500/20 to-green-900/10 border-green-500/40",
+const RANK_STYLES = [
+  { card: "from-red-600/30 to-red-950/40 border-red-500/60 shadow-[0_0_30px_rgba(239,68,68,0.3)]", badge: "bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.6)]", label: "WORST" },
+  { card: "from-orange-600/25 to-orange-950/30 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.2)]", badge: "bg-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.5)]", label: "" },
+  { card: "from-yellow-600/20 to-yellow-950/20 border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.15)]", badge: "bg-yellow-600 shadow-[0_0_10px_rgba(234,179,8,0.4)]", label: "" },
+  { card: "from-emerald-600/20 to-emerald-950/20 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.15)]", badge: "bg-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.4)]", label: "LEAST BAD" },
 ];
 
-const RANK_BADGE_COLORS = [
-  "bg-red-500",
-  "bg-orange-500",
-  "bg-yellow-500",
-  "bg-green-500",
-];
+const btnBase =
+  "px-7 py-3.5 rounded-xl font-extrabold text-base tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
 
 export function ShameDashboard({
   gameState,
@@ -100,11 +167,8 @@ export function ShameDashboard({
 
     // Sort worst-to-best
     playerStats.sort((a, b) => {
-      // 1. Explosions (descending)
       if (a.explosions !== b.explosions) return b.explosions - a.explosions;
-      // 2. Failed cuts (descending)
       if (a.failedCuts !== b.failedCuts) return b.failedCuts - a.failedCuts;
-      // 3. Success rate (ascending — lower = worse)
       return getSuccessRate(a) - getSuccessRate(b);
     });
 
@@ -112,63 +176,81 @@ export function ShameDashboard({
   }, [gameState]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center space-y-5">
-        <div className="text-6xl">🏆</div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      style={{ background: "radial-gradient(ellipse at 50% 30%, #4c0519 0%, #1c0a12 50%, #0a0406 100%)" }}
+    >
+      <div className="max-w-lg w-full text-center space-y-6 py-8">
+        <div className="text-7xl drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]">
+          💀
+        </div>
 
-        <h1 className="text-3xl font-black text-red-400">
+        <h1 className="text-4xl font-black uppercase tracking-widest text-white drop-shadow-[0_0_20px_rgba(239,68,68,0.6)]">
           Wall of Shame
         </h1>
-        <p className="text-gray-400 text-sm">Ranked worst to best</p>
+        <p className="text-rose-300/80 text-lg font-bold uppercase tracking-wide">
+          Ranked by who ruined it the most
+        </p>
 
-        <div className="space-y-3">
+        <div className="space-y-4 mt-4">
           {rankings.map((player, i) => {
-            const colorIdx = Math.min(i, RANK_COLORS.length - 1);
+            const style = RANK_STYLES[Math.min(i, RANK_STYLES.length - 1)];
             const rate = getSuccessRate(player);
-            const title = getShameTitle(player);
+            const { title, roast } = getShameInfo(player);
+            const isWorst = i === 0;
 
             return (
               <div
                 key={player.id}
-                className={`bg-gradient-to-r ${RANK_COLORS[colorIdx]} border rounded-xl p-4 text-left flex gap-3 items-start`}
+                className={`bg-gradient-to-r ${style.card} border-2 rounded-2xl p-5 text-left flex gap-4 items-start ${isWorst ? "scale-105" : ""}`}
               >
-                <div
-                  className={`${RANK_BADGE_COLORS[colorIdx]} text-white font-black text-sm w-7 h-7 rounded-full flex items-center justify-center shrink-0`}
-                >
-                  {i + 1}
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <div
+                    className={`${style.badge} text-white font-black text-lg w-10 h-10 rounded-full flex items-center justify-center`}
+                  >
+                    {i + 1}
+                  </div>
+                  {style.label && (
+                    <span className="text-[10px] font-black tracking-widest text-white/60 uppercase">
+                      {style.label}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-bold text-white truncate">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className={`font-black text-xl truncate ${isWorst ? "text-red-400" : "text-white"}`}>
                       {player.name}
                     </span>
-                    <span className="text-xs text-gray-400 italic shrink-0">
-                      {title}
-                    </span>
                   </div>
+                  <div className={`text-sm font-bold tracking-wide mt-0.5 ${isWorst ? "text-red-300/90" : "text-white/70"}`}>
+                    {title}
+                  </div>
+                  <p className="text-xs text-white/40 italic mt-1">
+                    &ldquo;{roast}&rdquo;
+                  </p>
 
-                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-xs font-semibold">
                     {player.explosions > 0 && (
-                      <span className="text-red-400">
-                        💥 {player.explosions} explosion{player.explosions !== 1 ? "s" : ""}
+                      <span className="text-red-400 bg-red-500/15 px-2 py-0.5 rounded-full">
+                        💥 {player.explosions} kill{player.explosions !== 1 ? "s" : ""}
                       </span>
                     )}
                     {player.failedCuts > 0 && (
-                      <span className="text-orange-400">
-                        ✗ {player.failedCuts} failed
+                      <span className="text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full">
+                        ✗ {player.failedCuts} botched
                       </span>
                     )}
                     {player.detonatorAdvances > 0 && (
-                      <span className="text-yellow-400">
-                        ⚡ {player.detonatorAdvances} detonator
+                      <span className="text-yellow-400 bg-yellow-500/15 px-2 py-0.5 rounded-full">
+                        ⚡ {player.detonatorAdvances} ticks
                       </span>
                     )}
-                    <span className="text-green-400">
-                      ✓ {player.successfulCuts} success
+                    <span className="text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full">
+                      ✓ {player.successfulCuts} clean
                     </span>
-                    <span>
-                      {player.totalActions} total · {Math.round(rate * 100)}% rate
+                    <span className="text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
+                      {Math.round(rate * 100)}% accuracy
                     </span>
                   </div>
                 </div>
@@ -177,12 +259,14 @@ export function ShameDashboard({
           })}
         </div>
 
-        <button
-          onClick={onBack}
-          className="px-6 py-2 bg-[var(--color-bomb-surface)] hover:bg-[var(--color-bomb-dark)] rounded-xl font-bold text-sm transition-colors"
-        >
-          Back
-        </button>
+        <div className="pt-4">
+          <button
+            onClick={onBack}
+            className={`${btnBase} bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]`}
+          >
+            Back
+          </button>
+        </div>
       </div>
     </div>
   );
