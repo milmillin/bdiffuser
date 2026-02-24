@@ -1650,6 +1650,10 @@ Baseline assumption used in this section:
 
 - You CANNOT use Equipment cards or your own personal equipment.
 
+### Constraint H
+
+- Failed cuts don't place Info tokens, and you cannot cut a wire indicated by an Info token.
+
 ## Challenge Cards
 
 ### Challenge 1
