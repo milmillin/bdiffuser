@@ -30,12 +30,15 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
         makePlayer({
           id: "me",
           name: "Me",
-          hand: [makeTile({ id: "m1", color: "blue", gameValue: 5, sortValue: 5 })],
+          hand: [
+            makeTile({ id: "m1", color: "blue", gameValue: 5, sortValue: 5 }),
+            makeTile({ id: "m2", color: "red", gameValue: "RED", sortValue: 6.5 }),
+          ],
         }),
         makePlayer({
           id: "p2",
           name: "Teammate",
-          hand: [makeTile({ id: "p2-1", color: "red", gameValue: "RED", sortValue: 6.5 })],
+          hand: [makeTile({ id: "p2-1", color: "red", gameValue: "RED", sortValue: 7.5 })],
         }),
       ],
       currentPlayerIndex: 0,
@@ -80,6 +83,62 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
     expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
     expect(html).toContain("Mission 48 Special Action");
     expect(html).toContain("Cut the 3 yellow wires at the same time.");
+  });
+
+  it("hides the mission 13 launcher with 3 players when actor has no uncut red wire", () => {
+    const state = makeGameState({
+      mission: 13,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "red", gameValue: "RED", sortValue: 6.5 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "red", gameValue: "RED", sortValue: 7.5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
+  it("hides the mission 48 launcher with 3 players when actor has no uncut yellow wire", () => {
+    const state = makeGameState({
+      mission: 48,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: "YELLOW", sortValue: 2.1 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "yellow", gameValue: "YELLOW", sortValue: 3.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
   });
 
   it("hides the launcher in mission 48 when Reveal Reds is forced", () => {

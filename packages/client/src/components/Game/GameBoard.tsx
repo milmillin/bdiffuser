@@ -314,8 +314,32 @@ export function GameBoard({
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const missionSupportsSimultaneousThreeCut =
     gameState.mission === 13 || gameState.mission === 48;
+  const missionSpecialRequiredColor =
+    gameState.mission === 13
+      ? "red"
+      : gameState.mission === 48
+        ? "yellow"
+        : null;
+  const missionSpecialAnyTargetColorAvailable =
+    missionSpecialRequiredColor != null &&
+    gameState.players.some((player) =>
+      player.hand.some(
+        (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
+      ),
+    );
+  const missionSpecialActorHasRequiredColor =
+    missionSpecialRequiredColor != null &&
+    !!me &&
+    me.hand.some(
+      (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
+    );
+  const missionSpecialActorEligible =
+    missionSpecialRequiredColor != null &&
+    (gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
   const canStartMissionSpecialCut =
     missionSupportsSimultaneousThreeCut &&
+    missionSpecialAnyTargetColorAvailable &&
+    missionSpecialActorEligible &&
     gameState.phase === "playing" &&
     isMyTurn &&
     !gameState.pendingForcedAction &&
