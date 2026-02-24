@@ -809,4 +809,98 @@ describe("equipment post-usage effects", () => {
       relation: "neq",
     });
   });
+
+  // ── 23. Triple detector: 2 of 3 wires match, target chooses which to cut ──
+  it("Triple detector: 2 of 3 wires match, target chooses which to cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 6 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      name: "Target",
+      hand: [
+        makeTile({ id: "t0", gameValue: 5 }),
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+      ],
+    });
+    const state = stateWith(
+      [actor, target],
+      unlockedEquipment("triple_detector", "Triple Detector 3000", 3),
+    );
+
+    const action = executeUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "target",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 5,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+    // 2 matches → matchingTileIndices should contain both
+    const forced = state.pendingForcedAction as { matchingTileIndices: number[] };
+    expect(forced.matchingTileIndices).toEqual(expect.arrayContaining([0, 2]));
+    expect(forced.matchingTileIndices).toHaveLength(2);
+
+    // Target chooses tile index 2
+    const resolveAction = resolveDetectorTileChoice(state, 2);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(2);
+      expect(resolveAction.success).toBe(true);
+    }
+  });
+
+  // ── 24. Super detector: 2+ wires match across entire stand, target chooses ──
+  it("Super detector: 2+ wires match across entire stand, target chooses", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 4 }),
+        makeTile({ id: "a2", gameValue: 7 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      name: "Target",
+      hand: [
+        makeTile({ id: "t0", gameValue: 4 }),
+        makeTile({ id: "t1", gameValue: 2 }),
+        makeTile({ id: "t2", gameValue: 4 }),
+        makeTile({ id: "t3", gameValue: 9 }),
+      ],
+    });
+    const state = stateWith(
+      [actor, target],
+      unlockedEquipment("super_detector", "Super Detector", 5),
+    );
+
+    const action = executeUseEquipment(state, "actor", "super_detector", {
+      kind: "super_detector",
+      targetPlayerId: "target",
+      guessValue: 4,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+    // 2 matches across the stand
+    const forced = state.pendingForcedAction as { matchingTileIndices: number[] };
+    expect(forced.matchingTileIndices).toEqual(expect.arrayContaining([0, 2]));
+    expect(forced.matchingTileIndices).toHaveLength(2);
+
+    // Target chooses tile index 0
+    const resolveAction = resolveDetectorTileChoice(state, 0);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(0);
+      expect(resolveAction.success).toBe(true);
+    }
+  });
 });

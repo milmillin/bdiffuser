@@ -326,31 +326,7 @@ export function validateUseEquipment(
       return null;
     }
     case "talkies_walkies": {
-      const teammate = getPlayer(state, payload.teammateId);
-      if (!teammate) {
-        return legalityError("TARGET_PLAYER_NOT_FOUND", "Teammate not found");
-      }
-      if (teammate.id === actor.id) {
-        return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
-      }
-      const myTile = getTileByFlatIndex(actor, payload.myTileIndex);
-      const teammateTile = getTileByFlatIndex(teammate, payload.teammateTileIndex);
-      if (!myTile || !teammateTile) {
-        return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
-      }
-      if (state.mission === 20 && (isXMarkedWire(myTile) || isXMarkedWire(teammateTile))) {
-        return legalityError(
-          "MISSION_RULE_VIOLATION",
-          "X-marked wires are ignored by equipment in mission 20",
-        );
-      }
-      if (myTile.cut || teammateTile.cut) {
-        return legalityError(
-          "EQUIPMENT_RULE_VIOLATION",
-          "Talkies-Walkies can only swap uncut wires",
-        );
-      }
-      return null;
+      return validateTalkiesWalkiesPayload(state, actor, payload);
     }
     case "emergency_batteries": {
       const selected = [...new Set(payload.playerIds)];
@@ -730,6 +706,92 @@ function markEquipmentUsed(state: GameState, equipmentId: AnyEquipmentId): void 
   if (card) card.used = true;
 }
 
+function hasSwappableTalkiesTile(state: GameState, player: Player): boolean {
+  return player.hand.some(
+    (tile) => !tile.cut && !(state.mission === 20 && isXMarkedWire(tile)),
+  );
+}
+
+function validateTalkiesWalkiesPayload(
+  state: GameState,
+  actor: Player,
+  payload: Extract<UseEquipmentPayload, { kind: "talkies_walkies" }>,
+): ActionLegalityError | null {
+  const teammate = getPlayer(state, payload.teammateId);
+  if (!teammate) {
+    return legalityError("TARGET_PLAYER_NOT_FOUND", "Teammate not found");
+  }
+  if (teammate.id === actor.id) {
+    return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
+  }
+
+  const myTile = getTileByFlatIndex(actor, payload.myTileIndex);
+  if (!myTile) {
+    return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+  }
+  if (state.mission === 20 && isXMarkedWire(myTile)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "X-marked wires are ignored by equipment in mission 20",
+    );
+  }
+  if (myTile.cut) {
+    return legalityError(
+      "EQUIPMENT_RULE_VIOLATION",
+      "Talkies-Walkies can only swap uncut wires",
+    );
+  }
+
+  if (typeof payload.teammateTileIndex === "number") {
+    const teammateTile = getTileByFlatIndex(teammate, payload.teammateTileIndex);
+    if (!teammateTile) {
+      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+    }
+    if (state.mission === 20 && isXMarkedWire(teammateTile)) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "X-marked wires are ignored by equipment in mission 20",
+      );
+    }
+    if (teammateTile.cut) {
+      return legalityError(
+        "EQUIPMENT_RULE_VIOLATION",
+        "Talkies-Walkies can only swap uncut wires",
+      );
+    }
+    return null;
+  }
+
+  if (!hasSwappableTalkiesTile(state, teammate)) {
+    return legalityError(
+      "EQUIPMENT_RULE_VIOLATION",
+      "Target player has no swappable uncut wires",
+    );
+  }
+
+  return null;
+}
+
+function swapTalkiesWires(
+  actor: Player,
+  teammate: Player,
+  myTileIndex: number,
+  teammateTileIndex: number,
+): void {
+  const mine = actor.hand[myTileIndex];
+  const theirs = teammate.hand[teammateTileIndex];
+  actor.hand[myTileIndex] = theirs;
+  teammate.hand[teammateTileIndex] = mine;
+
+  // Mission 24 FAQ: x1/x2/x3 count tokens on swapped wires are discarded.
+  actor.infoTokens = actor.infoTokens.filter(
+    (t) => !(t.position === myTileIndex && t.countHint != null),
+  );
+  teammate.infoTokens = teammate.infoTokens.filter(
+    (t) => !(t.position === teammateTileIndex && t.countHint != null),
+  );
+}
+
 function chooseDetectorTarget(
   target: Player,
   indices: number[],
@@ -756,7 +818,12 @@ function findMatchingDetectorIndices(
 ): number[] {
   return indices.filter((index) => {
     const tile = getTileByFlatIndex(target, index);
-    return tile?.gameValue === guessValue;
+    return (
+      tile != null &&
+      tile.color === "blue" &&
+      typeof tile.gameValue === "number" &&
+      tile.gameValue === guessValue
+    );
   });
 }
 
@@ -846,17 +913,33 @@ export function executeUseEquipment(
     }
     case "talkies_walkies": {
       const teammate = state.players.find((player) => player.id === payload.teammateId)!;
-      const mine = actor.hand[payload.myTileIndex];
-      const theirs = teammate.hand[payload.teammateTileIndex];
-      actor.hand[payload.myTileIndex] = theirs;
-      teammate.hand[payload.teammateTileIndex] = mine;
+      if (typeof payload.teammateTileIndex !== "number") {
+        state.pendingForcedAction = {
+          kind: "talkiesWalkiesTileChoice",
+          actorId,
+          targetPlayerId: teammate.id,
+          actorTileIndex: payload.myTileIndex,
+          source: "equipment",
+        };
+        addLog(
+          state,
+          actorId,
+          "useEquipment",
+          `used Talkies-Walkies with ${teammate.name} (selected wire ${payload.myTileIndex}; waiting for ${teammate.name} to choose)`,
+        );
+        return {
+          type: "equipmentUsed",
+          equipmentId,
+          playerId: actorId,
+          effect: "talkies_walkies_pending",
+        };
+      }
 
-      // Mission 24 FAQ: x1/x2/x3 count tokens on swapped wires are discarded.
-      actor.infoTokens = actor.infoTokens.filter(
-        (t) => !(t.position === payload.myTileIndex && t.countHint != null),
-      );
-      teammate.infoTokens = teammate.infoTokens.filter(
-        (t) => !(t.position === payload.teammateTileIndex && t.countHint != null),
+      swapTalkiesWires(
+        actor,
+        teammate,
+        payload.myTileIndex,
+        payload.teammateTileIndex,
       );
 
       addLog(
@@ -1338,16 +1421,7 @@ export function validateCharacterAbility(
       return null;
 
     case "talkies_walkies": {
-      const teammate = getPlayer(state, payload.teammateId);
-      if (!teammate) return legalityError("TARGET_PLAYER_NOT_FOUND", "Teammate not found");
-      if (teammate.id === actor.id) return legalityError("CANNOT_TARGET_SELF", "Cannot target yourself");
-      const myTile = getTileByFlatIndex(actor, payload.myTileIndex);
-      const teammateTile = getTileByFlatIndex(teammate, payload.teammateTileIndex);
-      if (!myTile || !teammateTile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
-      if (myTile.cut || teammateTile.cut) {
-        return legalityError("EQUIPMENT_RULE_VIOLATION", "Can only swap uncut wires");
-      }
-      return null;
+      return validateTalkiesWalkiesPayload(state, actor, payload);
     }
 
     case "triple_detector": {
@@ -1446,17 +1520,33 @@ export function executeCharacterAbility(
 
     case "talkies_walkies": {
       const teammate = state.players.find((player) => player.id === payload.teammateId)!;
-      const mine = actor.hand[payload.myTileIndex];
-      const theirs = teammate.hand[payload.teammateTileIndex];
-      actor.hand[payload.myTileIndex] = theirs;
-      teammate.hand[payload.teammateTileIndex] = mine;
+      if (typeof payload.teammateTileIndex !== "number") {
+        state.pendingForcedAction = {
+          kind: "talkiesWalkiesTileChoice",
+          actorId,
+          targetPlayerId: teammate.id,
+          actorTileIndex: payload.myTileIndex,
+          source: "characterAbility",
+        };
+        addLog(
+          state,
+          actorId,
+          "characterAbility",
+          `used Walkie-Talkies with ${teammate.name} (selected wire ${payload.myTileIndex}; waiting for ${teammate.name} to choose)`,
+        );
+        return {
+          type: "equipmentUsed",
+          equipmentId: "talkies_walkies",
+          playerId: actorId,
+          effect: "talkies_walkies_pending",
+        };
+      }
 
-      // Discard count tokens on swapped wires
-      actor.infoTokens = actor.infoTokens.filter(
-        (t) => !(t.position === payload.myTileIndex && t.countHint != null),
-      );
-      teammate.infoTokens = teammate.infoTokens.filter(
-        (t) => !(t.position === payload.teammateTileIndex && t.countHint != null),
+      swapTalkiesWires(
+        actor,
+        teammate,
+        payload.myTileIndex,
+        payload.teammateTileIndex,
       );
 
       addLog(
@@ -1538,4 +1628,37 @@ export function executeCharacterAbility(
       };
     }
   }
+}
+
+export function resolveTalkiesWalkiesTileChoice(
+  state: GameState,
+  teammateTileIndex: number,
+): GameAction {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "talkiesWalkiesTileChoice") {
+    throw new Error("No pending Walkie-Talkies tile-choice forced action");
+  }
+
+  const actor = state.players.find((player) => player.id === forced.actorId);
+  if (!actor) throw new Error("Talkies-Walkies actor not found");
+
+  const teammate = state.players.find((player) => player.id === forced.targetPlayerId);
+  if (!teammate) throw new Error("Talkies-Walkies target player not found");
+
+  swapTalkiesWires(actor, teammate, forced.actorTileIndex, teammateTileIndex);
+  state.pendingForcedAction = undefined;
+
+  addLog(
+    state,
+    forced.actorId,
+    forced.source === "equipment" ? "useEquipment" : "characterAbility",
+    `used Walkie-Talkies with ${teammate.name} (swapped wires ${forced.actorTileIndex}/${teammateTileIndex})`,
+  );
+
+  return {
+    type: "equipmentUsed",
+    equipmentId: "talkies_walkies",
+    playerId: forced.actorId,
+    effect: "talkies_walkies",
+  };
 }
