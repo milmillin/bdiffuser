@@ -96,7 +96,10 @@ function formatInfoToken(token: {
   isYellow: boolean;
   parity?: "even" | "odd";
   countHint?: 1 | 2 | 3;
+  relation?: "eq" | "neq";
 }): string {
+  if (token.relation === "eq") return "=";
+  if (token.relation === "neq") return "!=";
   if (token.isYellow) return "YELLOW";
   if (token.countHint != null) return `x${token.countHint}`;
   if (token.parity === "even") return "EVEN";
@@ -133,9 +136,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
   lines.push("## Your Hand (you can see these):");
   for (let i = 0; i < me.hand.length; i++) {
     const tile = me.hand[i];
-    const infoToken = me.infoTokens.find((t) => t.position === i);
-    const infoStr = infoToken
-      ? ` [Info Token: ${formatInfoToken(infoToken)}]`
+    const infoTokens = me.infoTokens.filter(
+      (token) => token.position === i || token.positionB === i,
+    );
+    const infoStr = infoTokens.length > 0
+      ? ` [Info Tokens: ${infoTokens.map((token) => formatInfoToken(token)).join(", ")}]`
       : "";
     if (tile.cut) {
       lines.push(`  [${i}] CUT - was ${tile.color} ${tile.gameValue}`);
@@ -151,9 +156,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
     lines.push(`## ${opp.name}'s Hand (id: ${opp.id})${opp.isBot ? " [BOT]" : ""}:`);
     for (let i = 0; i < opp.hand.length; i++) {
       const tile = opp.hand[i];
-      const infoToken = opp.infoTokens.find((t) => t.position === i);
-      const infoStr = infoToken
-        ? ` [Info Token: ${formatInfoToken(infoToken)}]`
+      const infoTokens = opp.infoTokens.filter(
+        (token) => token.position === i || token.positionB === i,
+      );
+      const infoStr = infoTokens.length > 0
+        ? ` [Info Tokens: ${infoTokens.map((token) => formatInfoToken(token)).join(", ")}]`
         : "";
       if (tile.cut) {
         lines.push(`  [${i}] CUT - was ${tile.color} ${tile.gameValue}`);

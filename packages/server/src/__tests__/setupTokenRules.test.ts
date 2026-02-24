@@ -227,7 +227,7 @@ describe("setupTokenRules", () => {
       expect(error).toBeNull();
     });
 
-    it("rejects stacking setup info tokens on the same wire", () => {
+    it("rejects placing a setup token on a wire that already has any token", () => {
       const player = makePlayer({
         hand: [
           makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" }),

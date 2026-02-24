@@ -118,9 +118,9 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
     (state.mission === 52 || (state.mission === 17 && bot.isCaptain));
   if (requiresFalseSetupToken) {
     const existingPositions = new Set(bot.infoTokens.map((t) => t.position));
-    const tryPlace = (allowUsedPositions: boolean): boolean => {
+    const tryPlace = (): boolean => {
       for (let tileIndex = 0; tileIndex < bot.hand.length; tileIndex++) {
-        if (!allowUsedPositions && existingPositions.has(tileIndex)) continue;
+        if (existingPositions.has(tileIndex)) continue;
         for (let value = 1; value <= 12; value++) {
           const error = validateSetupInfoTokenPlacement(state, bot, value, tileIndex);
           if (error) continue;
@@ -129,14 +129,14 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
             position: tileIndex,
             isYellow: false,
           }, bot));
+          existingPositions.add(tileIndex);
           return true;
         }
       }
       return false;
     };
 
-    if (tryPlace(false)) return;
-    if (tryPlace(true)) return;
+    if (tryPlace()) return;
     return;
   }
 

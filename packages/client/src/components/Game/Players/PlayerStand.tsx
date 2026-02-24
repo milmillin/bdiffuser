@@ -94,9 +94,8 @@ export function PlayerStand({
           >
             {/* Row 1: info tokens */}
             {player.hand.map((_, idx) => {
-              const infoTokens = dedupeInfoTokensForWire(
-                player.infoTokens,
-                idx,
+              const infoTokens = player.infoTokens.filter(
+                (token) => token.position === idx || token.positionB === idx,
               );
               return (
                 <div key={`info-${idx}`} className="flex items-end justify-center">
@@ -136,35 +135,6 @@ export function PlayerStand({
       })()}
     </div>
   );
-}
-
-function dedupeInfoTokensForWire(
-  tokens: InfoToken[],
-  tileIndex: number,
-): InfoToken[] {
-  const relevant = tokens.filter(
-    (token) => token.position === tileIndex || token.positionB === tileIndex,
-  );
-  const seen = new Set<string>();
-  const deduped: InfoToken[] = [];
-  for (const token of relevant) {
-    const anchor = token.position === tileIndex ? "A" : "B";
-    const signature = [
-      token.relation ?? "_",
-      token.countHint ?? "_",
-      token.parity ?? "_",
-      token.value,
-      token.isYellow ? "Y" : "N",
-      token.singleWire ? "S" : "N",
-      token.position,
-      token.positionB ?? "_",
-      anchor,
-    ].join("|");
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    deduped.push(token);
-  }
-  return deduped;
 }
 
 function getInfoTokenImage(token: InfoToken): string {

@@ -11,7 +11,6 @@ import {
 } from "@bomb-busters/shared/testing";
 import { botPlaceInfoToken, getBotAction } from "../botController";
 import { callLLM } from "../llmClient";
-import { validateSetupInfoTokenPlacement } from "../setupTokenRules";
 
 vi.mock("../llmClient", () => ({
   callLLM: vi.fn(),
@@ -46,7 +45,13 @@ describe("botPlaceInfoToken", () => {
     expect(bot.infoTokens).toHaveLength(2);
     expect(new Set(bot.infoTokens.map((token) => token.position)).size).toBe(2);
     for (const token of bot.infoTokens) {
-      expect(validateSetupInfoTokenPlacement(state, bot, token.value, token.position)).toBeNull();
+      expect(token.position).toBeGreaterThanOrEqual(0);
+      expect(token.position).toBeLessThan(bot.hand.length);
+      const tile = bot.hand[token.position];
+      expect(tile.color).not.toBe("yellow");
+      if (tile.color === "blue" && typeof tile.gameValue === "number") {
+        expect(token.value).not.toBe(tile.gameValue);
+      }
     }
   });
 
@@ -76,8 +81,15 @@ describe("botPlaceInfoToken", () => {
     botPlaceInfoToken(state, "captain-bot");
 
     expect(captainBot.infoTokens).toHaveLength(2);
+    expect(new Set(captainBot.infoTokens.map((token) => token.position)).size).toBe(2);
     for (const token of captainBot.infoTokens) {
-      expect(validateSetupInfoTokenPlacement(state, captainBot, token.value, token.position)).toBeNull();
+      expect(token.position).toBeGreaterThanOrEqual(0);
+      expect(token.position).toBeLessThan(captainBot.hand.length);
+      const tile = captainBot.hand[token.position];
+      expect(tile.color).not.toBe("red");
+      if (tile.color === "blue" && typeof tile.gameValue === "number") {
+        expect(token.value).not.toBe(tile.gameValue);
+      }
     }
   });
 

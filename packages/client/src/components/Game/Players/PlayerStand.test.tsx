@@ -47,7 +47,7 @@ describe("PlayerStand", () => {
     expect(html).toContain("/images/info_x3.png");
   });
 
-  it("does not render duplicated info tokens stacked on the same wire", () => {
+  it("renders all info tokens present on a wire", () => {
     const player = makePlayer({
       id: "p1",
       name: "Alpha",
@@ -69,6 +69,6 @@ describe("PlayerStand", () => {
     );
 
     const matches = html.match(/alt="Info: 5"/g) ?? [];
-    expect(matches).toHaveLength(1);
+    expect(matches).toHaveLength(2);
   });
 });

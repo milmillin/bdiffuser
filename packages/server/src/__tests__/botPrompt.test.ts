@@ -113,8 +113,8 @@ describe("buildUserMessage campaign context", () => {
     const filtered = filterStateForPlayer(state, "p1");
     const message = buildUserMessage(filtered);
 
-    expect(message).toContain("[Info Token: ODD]");
-    expect(message).toContain("[Info Token: EVEN]");
+    expect(message).toContain("[Info Tokens: ODD]");
+    expect(message).toContain("[Info Tokens: EVEN]");
   });
 
   it("renders mission-24 count tokens as x1/x2/x3 in bot prompt context", () => {
@@ -140,8 +140,36 @@ describe("buildUserMessage campaign context", () => {
     const filtered = filterStateForPlayer(state, "p1");
     const message = buildUserMessage(filtered);
 
-    expect(message).toContain("[Info Token: x2]");
-    expect(message).toContain("[Info Token: x1]");
+    expect(message).toContain("[Info Tokens: x2]");
+    expect(message).toContain("[Info Tokens: x1]");
+  });
+
+  it("lists multiple info tokens on the same wire when present", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "p1-1", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [
+        { value: 2, position: 0, isYellow: false },
+        { value: 0, parity: "odd", position: 0, isYellow: false },
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+
+    const state = makeGameState({
+      mission: 21,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("[Info Tokens: 2, ODD]");
   });
 
   it("includes no-token mission guidance for mission 58", () => {
