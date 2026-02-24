@@ -1562,97 +1562,31 @@ Baseline assumption used in this section:
 
 ### Constraint Cards
 
-#### Constraint A
-
-- You must cut only even wires.
-
-#### Constraint B
-
-- You must cut only odd wires.
-
-#### Constraint C
-
-- You must cut only wires 1 to 6.
-
-#### Constraint D
-
-- You must cut only wires 7 to 12.
-
-#### Constraint E
-
-- You must cut only wires 4 to 9.
-
-#### Constraint F
-
-- You cannot cut wires 4 to 9.
-
-#### Constraint G
-
-- You CANNOT use Equipment cards or your own personal equipment.
-
-#### Constraint H
-
-- If your cut or a cut in your hand fails, do not place an Info token (and do not reveal the value).
-- You cannot cut a wire indicated by an Info token.
-- P.S. Equipment `4` (Post-it) cannot be used.
-
-#### Constraint I
-
-- You cannot cut the far-right wire (highest number) on teammates' tile stands.
-
-#### Constraint J
-
-- You cannot cut the far-left wire (lowest number) on teammates' tile stands.
-
-#### Constraint K
-
-- You cannot do a Solo Cut action.
-
-#### Constraint L
-
-- If the cut fails, the detonator dial advances 2 spaces (instead of 1).
+- **Constraint A:** You must cut only even wires.
+- **Constraint B:** You must cut only odd wires.
+- **Constraint C:** You must cut only wires 1 to 6.
+- **Constraint D:** You must cut only wires 7 to 12.
+- **Constraint E:** You must cut only wires 4 to 9.
+- **Constraint F:** You cannot cut wires 4 to 9.
+- **Constraint G:** You CANNOT use Equipment cards or your own personal equipment.
+- **Constraint H:** If your cut or a cut in your hand fails, do not place an Info token (and do not reveal the value). You cannot cut a wire indicated by an Info token. P.S. Equipment `4` (Post-it) cannot be used.
+- **Constraint I:** You cannot cut the far-right wire (highest number) on teammates' tile stands.
+- **Constraint J:** You cannot cut the far-left wire (lowest number) on teammates' tile stands.
+- **Constraint K:** You cannot do a Solo Cut action.
+- **Constraint L:** If the cut fails, the detonator dial advances 2 spaces (instead of 1).
 
 ### Challenge Cards
 
-#### Challenge 1
-
-- Instead of their action, a bomb disposal expert cuts a teammate's wire, saying "It is RED." If that wire is not RED, the bomb explodes!
-
-#### Challenge 2
-
-- 4 bomb disposal experts consecutively cut EVEN numbers.
-
-#### Challenge 3
-
-- Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).
-
-#### Challenge 4
-
-- The sum of the first 3 Validation tokens used equals 18.
-
-#### Challenge 5
-
-- 2 bomb disposal experts consecutively perform the SOLO Cut action.
-
-#### Challenge 6
-
-- On a single tile stand, at least 5 uncut wires have been isolated (the adjacent wires have been cut).
-
-#### Challenge 7
-
-- 3 bomb disposal experts consecutively cut sequential values (either up or down). Examples: 8-9-10 or 5-4-3.
-
-#### Challenge 8
-
-- The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
-
-#### Challenge 9
-
-- A tile stand has only uncut ODD wires (a minimum of 6 wires). Ignore RED and YELLOW wires.
-
-#### Challenge 10
-
-- On a single tile stand, at least 7 wires have been cut, but the 2 wires on each end have not been cut yet.
+- **Challenge 1:** Instead of their action, a bomb disposal expert cuts a teammate's wire, saying "It is RED." If that wire is not RED, the bomb explodes!
+- **Challenge 2:** 4 bomb disposal experts consecutively cut EVEN numbers.
+- **Challenge 3:** Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).
+- **Challenge 4:** The sum of the first 3 Validation tokens used equals 18.
+- **Challenge 5:** 2 bomb disposal experts consecutively perform the SOLO Cut action.
+- **Challenge 6:** On a single tile stand, at least 5 uncut wires have been isolated (the adjacent wires have been cut).
+- **Challenge 7:** 3 bomb disposal experts consecutively cut sequential values (either up or down). Examples: 8-9-10 or 5-4-3.
+- **Challenge 8:** The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
+- **Challenge 9:** A tile stand has only uncut ODD wires (a minimum of 6 wires). Ignore RED and YELLOW wires.
+- **Challenge 10:** On a single tile stand, at least 7 wires have been cut, but the 2 wires on each end have not been cut yet.
 
 ---
 
