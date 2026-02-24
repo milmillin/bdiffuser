@@ -266,7 +266,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleRevealReds(connection);
         break;
       case "simultaneousRedCut":
-        this.handleSimultaneousRedCut(connection);
+        this.handleSimultaneousRedCut(connection, msg.targets);
         break;
       case "simultaneousFourCut":
         this.handleSimultaneousFourCut(connection, msg.targets);
@@ -778,11 +778,14 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
-  handleSimultaneousRedCut(conn: Connection) {
+  handleSimultaneousRedCut(
+    conn: Connection,
+    targets: Array<{ playerId: string; tileIndex: number }>,
+  ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    const error = validateSimultaneousRedCutWithHooks(state, conn.id);
+    const error = validateSimultaneousRedCutWithHooks(state, conn.id, targets);
     if (error) {
       this.sendMsg(conn, {
         type: "error",
@@ -793,7 +796,7 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeSimultaneousRedCut(state, conn.id);
+    const action = executeSimultaneousRedCut(state, conn.id, targets);
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
@@ -1744,12 +1747,12 @@ export class BombBustersServer extends Server<Env> {
         break;
       }
       case "simultaneousRedCut": {
-        const error = validateSimultaneousRedCutWithHooks(state, botId);
+        const error = validateSimultaneousRedCutWithHooks(state, botId, botAction.targets);
         if (error) {
           console.log(`Bot ${botId} simultaneousRedCut validation failed [${error.code}]: ${error.message}`);
           return;
         }
-        action = executeSimultaneousRedCut(state, botId);
+        action = executeSimultaneousRedCut(state, botId, botAction.targets);
         break;
       }
       case "simultaneousFourCut": {

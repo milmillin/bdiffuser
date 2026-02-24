@@ -185,7 +185,7 @@ export type BotAction =
     }
   | { action: "soloCut"; value: number | "YELLOW" }
   | { action: "revealReds" }
-  | { action: "simultaneousRedCut" }
+  | { action: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { action: "simultaneousFourCut" }
   | {
       action: "useEquipment";
@@ -245,7 +245,7 @@ export async function getBotAction(
 
       // Some models return an array — unwrap to find the action object
       const actionObj = extractActionObject(result);
-      const parsed = parseLLMAction(actionObj);
+      const parsed = parseLLMAction(state, actionObj);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
         if (!error) return { action: parsed, reasoning: lastReasoning };
@@ -281,6 +281,7 @@ function extractActionObject(
 }
 
 function parseLLMAction(
+  state: GameState,
   result: Record<string, unknown>,
 ): BotAction | null {
   const action = result.action as string;
@@ -317,7 +318,25 @@ function parseLLMAction(
   }
 
   if (action === "simultaneousRedCut") {
-    return { action: "simultaneousRedCut" };
+    const rawTargets = result.targets;
+    const parsedTargets =
+      Array.isArray(rawTargets) &&
+      rawTargets.every(
+        (t) =>
+          t &&
+          typeof t === "object" &&
+          typeof (t as Record<string, unknown>).playerId === "string" &&
+          Number.isInteger((t as Record<string, unknown>).tileIndex),
+      )
+        ? rawTargets.map((t) => ({
+            playerId: (t as { playerId: string }).playerId,
+            tileIndex: Number((t as { tileIndex: number }).tileIndex),
+          }))
+        : null;
+
+    const targets = parsedTargets ?? buildSimultaneousRedCutValidationTargets(state);
+    if (!targets) return null;
+    return { action: "simultaneousRedCut", targets };
   }
 
   if (action === "simultaneousFourCut") {
@@ -388,7 +407,7 @@ function validateBotAction(
     case "revealReds":
       return validateRevealRedsWithHooks(state, botId)?.message ?? null;
     case "simultaneousRedCut":
-      return validateSimultaneousRedCutWithHooks(state, botId)?.message ?? null;
+      return validateSimultaneousRedCutWithHooks(state, botId, action.targets)?.message ?? null;
     case "simultaneousFourCut":
       return validateSimultaneousFourCutForBot(state, botId);
     case "useEquipment":
@@ -548,6 +567,22 @@ function buildSimultaneousFourCutValidationTargets(
   return targets.length === 4 ? targets : null;
 }
 
+function buildSimultaneousRedCutValidationTargets(
+  state: GameState,
+): Array<{ playerId: string; tileIndex: number }> | null {
+  const targets: Array<{ playerId: string; tileIndex: number }> = [];
+
+  for (const player of state.players) {
+    for (let i = 0; i < player.hand.length; i++) {
+      const tile = player.hand[i];
+      if (tile.cut || tile.color !== "red") continue;
+      targets.push({ playerId: player.id, tileIndex: i });
+    }
+  }
+
+  return targets.length >= 3 ? targets.slice(0, 3) : null;
+}
+
 function validateSimultaneousFourCutForBot(
   state: GameState,
   botId: string,
@@ -580,8 +615,12 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   }
 
   // 1b. simultaneousRedCut when legal (mission 13 only).
-  if (!validateSimultaneousRedCutWithHooks(state, botId)) {
-    return { action: "simultaneousRedCut" };
+  const simultaneousRedTargets = buildSimultaneousRedCutValidationTargets(state);
+  if (
+    simultaneousRedTargets &&
+    !validateSimultaneousRedCutWithHooks(state, botId, simultaneousRedTargets)
+  ) {
+    return { action: "simultaneousRedCut", targets: simultaneousRedTargets };
   }
 
   // 1c. simultaneousFourCut when legal.

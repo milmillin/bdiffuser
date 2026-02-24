@@ -29,7 +29,7 @@ export type ClientMessage =
   | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number; actorTileIndex?: number }
   | { type: "soloCut"; value: number | "YELLOW" }
   | { type: "revealReds" }
-  | { type: "simultaneousRedCut" }
+  | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "useEquipment"; equipmentId: AnyEquipmentId; payload: UseEquipmentPayload }
   | { type: "useCharacterAbility"; payload: UseEquipmentPayload }
   | { type: "chooseNextPlayer"; targetPlayerId: string }

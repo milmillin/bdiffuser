@@ -611,22 +611,43 @@ export function executeSoloCut(
   };
 }
 
-/** Execute simultaneous red cut: cut one uncut red wire from each player who has one. */
+/** Execute simultaneous red cut (mission 13): explode on any non-red designated wire. */
 export function executeSimultaneousRedCut(
   state: GameState,
   actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
 ): GameAction {
-  const cuts: Array<{ playerId: string; tileIndex: number }> = [];
-
-  for (const player of state.players) {
-    for (let i = 0; i < player.hand.length; i++) {
-      const tile = player.hand[i];
-      if (!tile.cut && tile.color === "red") {
-        tile.cut = true;
-        cuts.push({ playerId: player.id, tileIndex: i });
-        break; // one per player
-      }
+  let allRed = true;
+  for (const target of targets) {
+    const player = state.players.find((p) => p.id === target.playerId);
+    const tile = player ? getTileByFlatIndex(player, target.tileIndex) : null;
+    if (!tile || tile.cut || tile.color !== "red") {
+      allRed = false;
+      break;
     }
+  }
+
+  if (!allRed) {
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
+
+    addLog(
+      state,
+      actorId,
+      "simultaneousRedCut",
+      "designated 3 wires for simultaneous red cut — at least one was not red. BOOM!",
+    );
+
+    return { type: "gameOver", result: "loss_red_wire" };
+  }
+
+  const cuts: Array<{ playerId: string; tileIndex: number }> = [];
+  for (const target of targets) {
+    const player = state.players.find((p) => p.id === target.playerId)!;
+    const tile = getTileByFlatIndex(player, target.tileIndex)!;
+    tile.cut = true;
+    cuts.push({ playerId: target.playerId, tileIndex: target.tileIndex });
   }
 
   updateMarkerConfirmations(state);
@@ -635,7 +656,7 @@ export function executeSimultaneousRedCut(
     state,
     actorId,
     "simultaneousRedCut",
-    `initiated simultaneous red cut — ${cuts.length} red wire(s) cut across ${cuts.length} player(s)`,
+    `designated ${cuts.length} wires for simultaneous red cut — all were red`,
   );
 
   if (checkWin(state)) {

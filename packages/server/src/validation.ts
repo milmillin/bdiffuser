@@ -552,6 +552,7 @@ export function validateRevealReds(
 export function validateSimultaneousRedCutLegality(
   state: GameState,
   actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
 ): ActionLegalityError | null {
   if (state.mission !== 13) {
     return legalityError(
@@ -570,6 +571,38 @@ export function validateSimultaneousRedCutLegality(
   );
   if (!anyUncutRed) {
     return legalityError("NO_UNCUT_RED_WIRES", "No player has uncut red wires");
+  }
+
+  if (targets.length !== 3) {
+    return legalityError(
+      "SIMULTANEOUS_RED_CUT_INVALID_TARGETS",
+      "Must designate exactly 3 wires",
+    );
+  }
+
+  const seenTargets = new Set<string>();
+  for (const target of targets) {
+    const player = state.players.find((p) => p.id === target.playerId);
+    if (!player) {
+      return legalityError("TARGET_PLAYER_NOT_FOUND", `Target player ${target.playerId} not found`);
+    }
+
+    const targetKey = `${target.playerId}:${target.tileIndex}`;
+    if (seenTargets.has(targetKey)) {
+      return legalityError(
+        "SIMULTANEOUS_RED_CUT_INVALID_TARGETS",
+        "Cannot target the same wire twice",
+      );
+    }
+    seenTargets.add(targetKey);
+
+    const tile = getTileByFlatIndex(player, target.tileIndex);
+    if (!tile) {
+      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+    }
+    if (tile.cut) {
+      return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+    }
   }
 
   return null;
@@ -675,6 +708,7 @@ export type ValidatableAction =
   | {
       type: "simultaneousRedCut";
       actorId: string;
+      targets: Array<{ playerId: string; tileIndex: number }>;
     }
   | {
       type: "simultaneousFourCut";
@@ -755,7 +789,11 @@ export function validateActionWithHooks(
       break;
     }
     case "simultaneousRedCut": {
-      const baseError = validateSimultaneousRedCutLegality(state, action.actorId);
+      const baseError = validateSimultaneousRedCutLegality(
+        state,
+        action.actorId,
+        action.targets,
+      );
       if (baseError) return baseError;
       break;
     }
@@ -849,8 +887,9 @@ export function validateSimultaneousCutWithHooks(
 export function validateSimultaneousRedCutWithHooks(
   state: GameState,
   actorId: string,
+  targets: Array<{ playerId: string; tileIndex: number }>,
 ): ActionLegalityError | null {
-  return validateActionWithHooks(state, { type: "simultaneousRedCut", actorId });
+  return validateActionWithHooks(state, { type: "simultaneousRedCut", actorId, targets });
 }
 
 export function validateSimultaneousFourCutWithHooks(
