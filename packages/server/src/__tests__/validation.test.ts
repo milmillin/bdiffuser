@@ -116,6 +116,26 @@ describe("validateDualCut", () => {
 
     expect(validateDualCut(state, "actor", "actor", 0, 5)).toBe("Cannot target yourself");
   });
+
+  it("rejects numeric guess when targeting a yellow wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("YELLOW");
+  });
 });
 
 describe("mission 35 X-wire cut lock", () => {
