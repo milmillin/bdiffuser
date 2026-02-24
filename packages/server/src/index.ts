@@ -73,6 +73,7 @@ import {
   buildSimultaneousFourCutTargets,
   getSimultaneousFourCutTargetValue,
 } from "./simultaneousFourCutTargets.js";
+import { validateMission18DesignatedCutterTarget } from "./mission18.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -967,6 +968,20 @@ export class BombBustersServer extends Server<Env> {
     const uncutCount = target.hand.filter((t) => !t.cut).length;
     if (uncutCount === 0) {
       this.sendMsg(conn, { type: "error", message: "Target player has no remaining tiles" });
+      return;
+    }
+
+    const mission18TargetError = validateMission18DesignatedCutterTarget(
+      forced.value,
+      targetPlayerId,
+      forced.radarResults,
+    );
+    if (mission18TargetError) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: mission18TargetError.message,
+        code: mission18TargetError.code,
+      });
       return;
     }
 
