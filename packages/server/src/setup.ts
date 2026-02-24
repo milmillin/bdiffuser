@@ -298,6 +298,31 @@ function buildClockwiseCaptainPredeals(
   return assignments;
 }
 
+function buildMission41TripwirePredeals(
+  players: Player[],
+  tiles: WireTile[],
+): PredealtTileAssignment[] {
+  if (players.length === 0 || tiles.length === 0) return [];
+
+  const captainIndex = players.findIndex((player) => player.isCaptain);
+  const startIndex = captainIndex >= 0 ? captainIndex : 0;
+  const skipCaptain = players.length === 5;
+  const assignments: PredealtTileAssignment[] = [];
+
+  for (let i = 0; i < players.length && assignments.length < tiles.length; i++) {
+    const recipient = players[(startIndex + i) % players.length];
+    if (skipCaptain && recipient.isCaptain) continue;
+
+    assignments.push({
+      playerId: recipient.id,
+      standIndex: 0,
+      tile: tiles[assignments.length],
+    });
+  }
+
+  return assignments;
+}
+
 function distributeTilesAcrossStands(
   tiles: WireTile[],
   players: Player[],
@@ -433,11 +458,20 @@ export function setupGame(
   const mission48YellowPredeals = mission === 48
     ? buildClockwiseCaptainPredeals(players, yellow.tiles)
     : [];
-  const predealtTiles = [...mission13RedPredeals, ...mission48YellowPredeals];
+  const mission41YellowPredeals = mission === 41
+    ? buildMission41TripwirePredeals(players, yellow.tiles)
+    : [];
+  const predealtTiles = [
+    ...mission13RedPredeals,
+    ...mission48YellowPredeals,
+    ...mission41YellowPredeals,
+  ];
   const allTiles = mission === 48
     ? [...blueTiles, ...red.tiles]
     : mission === 13
       ? [...blueTiles, ...yellow.tiles]
+      : mission === 41
+        ? [...blueTiles, ...red.tiles]
       : [...blueTiles, ...red.tiles, ...yellow.tiles];
   const standSeats = distributeTilesAcrossStands(allTiles, players, predealtTiles);
 

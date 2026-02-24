@@ -98,6 +98,26 @@ describe("mission complexity tier representative coverage", () => {
     expect(yellowCounts).toEqual([1, 1, 1, 0]);
   });
 
+  it("special setup tier (mission 41): yellow tripwires are pre-dealt instead of shuffled", () => {
+    const players = createSetupPlayers(4);
+    const { players: dealtPlayers } = setupGame(players, 41);
+
+    const yellowCounts = dealtPlayers.map((player) =>
+      player.hand.filter((tile) => tile.color === "yellow").length
+    );
+    expect(yellowCounts).toEqual([1, 1, 1, 1]);
+  });
+
+  it("special setup tier (mission 41, 5p): captain is excluded from yellow tripwire pre-deal", () => {
+    const players = createSetupPlayers(5);
+    const { players: dealtPlayers } = setupGame(players, 41);
+
+    const yellowCounts = dealtPlayers.map((player) =>
+      player.hand.filter((tile) => tile.color === "yellow").length
+    );
+    expect(yellowCounts).toEqual([0, 1, 1, 1, 1]);
+  });
+
   it("special setup tier (mission 13): red wires are pre-dealt clockwise from captain", () => {
     const players = createSetupPlayers(4);
     const { players: dealtPlayers } = setupGame(players, 13);
