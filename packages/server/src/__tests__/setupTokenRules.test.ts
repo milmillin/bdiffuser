@@ -148,7 +148,7 @@ describe("setupTokenRules", () => {
   });
 
   describe("autoPlaceMission13RandomSetupInfoTokens", () => {
-    it("auto-places one random valid setup token per required player in mission 13", () => {
+    it("auto-places random setup tokens and allows beside-stand placement when value is absent", () => {
       const captain = makePlayer({
         id: "captain",
         isCaptain: true,
@@ -182,8 +182,8 @@ describe("setupTokenRules", () => {
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 
       expect(placements).toHaveLength(3);
-      expect(captain.infoTokens).toEqual([{ value: 2, position: 0, isYellow: false }]);
-      expect(p2.infoTokens).toEqual([{ value: 4, position: 0, isYellow: false }]);
+      expect(captain.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
+      expect(p2.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
       expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
     });
 
@@ -208,7 +208,7 @@ describe("setupTokenRules", () => {
 
       expect(placements).toHaveLength(1);
       expect(captain.infoTokens).toHaveLength(0);
-      expect(partner.infoTokens).toEqual([{ value: 7, position: 0, isYellow: false }]);
+      expect(partner.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
     });
 
     it("auto-places random setup tokens for mission 39 after setup hooks", () => {
@@ -247,8 +247,8 @@ describe("setupTokenRules", () => {
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 
       expect(placements).toHaveLength(3);
-      expect(captain.infoTokens).toEqual([{ value: 3, position: 0, isYellow: false }]);
-      expect(p2.infoTokens).toEqual([{ value: 4, position: 0, isYellow: false }]);
+      expect(captain.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
+      expect(p2.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
       expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
     });
   });

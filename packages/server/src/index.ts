@@ -84,6 +84,10 @@ interface Env {
   ZHIPU_API_KEY: string;
 }
 
+function describeInfoTokenLocation(position: number): string {
+  return position < 0 ? "beside stand" : `wire ${wireLabel(position)}`;
+}
+
 export class BombBustersServer extends Server<Env> {
   room: RoomStateSnapshot = {
     gameState: null,
@@ -562,7 +566,7 @@ export class BombBustersServer extends Server<Env> {
         turn: 0,
         playerId: placement.playerId,
         action: "placeInfoToken",
-        detail: `placed random info token ${describeInfoToken(placement.token)} on wire ${wireLabel(placement.token.position)}`,
+        detail: `placed random info token ${describeInfoToken(placement.token)} on ${describeInfoTokenLocation(placement.token.position)}`,
         timestamp: Date.now(),
       });
     }
@@ -637,7 +641,7 @@ export class BombBustersServer extends Server<Env> {
       turn: 0,
       playerId: conn.id,
       action: "placeInfoToken",
-      detail: `placed info token ${describeInfoToken(token)} on wire ${wireLabel(tileIndex)}`,
+      detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(tileIndex)}`,
       timestamp: Date.now(),
     });
 
@@ -1354,7 +1358,7 @@ export class BombBustersServer extends Server<Env> {
             turn: 0,
             playerId: player.id,
             action: "placeInfoToken",
-            detail: `placed info token ${describeInfoToken(token)} on wire ${wireLabel(token.position)}`,
+            detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(token.position)}`,
             timestamp: Date.now(),
           });
         }

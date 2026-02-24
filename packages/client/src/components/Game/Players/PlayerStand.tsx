@@ -29,6 +29,9 @@ export function PlayerStand({
 }) {
   const standSegments = getStandSegments(player);
   const tokenRowHeightPx = getTokenRowHeight(player);
+  const offStandTokens = player.infoTokens.filter(
+    (token) => token.position < 0 && (token.positionB == null || token.positionB < 0),
+  );
 
   return (
     <div
@@ -95,6 +98,20 @@ export function PlayerStand({
           <span className="text-xs text-red-400 ml-auto">Offline</span>
         )}
       </div>
+
+      {offStandTokens.length > 0 && (
+        <div
+          className="mb-1 flex flex-wrap items-center gap-1"
+          data-testid={`off-stand-tokens-${player.id}`}
+        >
+          {offStandTokens.map((token, tokenIndex) => (
+            <InfoTokenView
+              key={`off-stand-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
+              token={token}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {

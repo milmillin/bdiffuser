@@ -93,15 +93,9 @@ export interface AutoSetupInfoTokenPlacement {
   };
 }
 
-function randomSetupAvailableBlueValues(player: Readonly<Player>): number[] {
-  const values = new Set<number>();
-  for (const tile of player.hand) {
-    if (tile.cut) continue;
-    if (tile.color !== "blue") continue;
-    if (typeof tile.gameValue !== "number") continue;
-    values.add(tile.gameValue);
-  }
-  return [...values];
+function randomSetupTokenValue(rng: () => number): number {
+  // Setup draw excludes yellow token for these missions.
+  return Math.floor(rng() * 12) + 1;
 }
 
 function randomSetupMatchingBlueIndices(player: Readonly<Player>, value: number): number[] {
@@ -136,14 +130,11 @@ export function autoPlaceMission13RandomSetupInfoTokens(
   for (const player of state.players) {
     const required = requiredSetupInfoTokenCount(state, player);
     while (player.infoTokens.length < required) {
-      const values = randomSetupAvailableBlueValues(player);
-      if (values.length === 0) break;
-
-      const value = values[Math.floor(rng() * values.length)];
+      const value = randomSetupTokenValue(rng);
       const indices = randomSetupMatchingBlueIndices(player, value);
-      if (indices.length === 0) break;
-
-      const position = indices[Math.floor(rng() * indices.length)];
+      const position = indices.length === 0
+        ? -1
+        : indices[Math.floor(rng() * indices.length)];
       const token = { value, position, isYellow: false as const };
       player.infoTokens.push(token);
       placements.push({ playerId: player.id, token });

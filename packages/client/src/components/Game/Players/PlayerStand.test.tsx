@@ -72,6 +72,28 @@ describe("PlayerStand", () => {
     expect(matches).toHaveLength(2);
   });
 
+  it("renders beside-stand info tokens when position is -1", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5 })],
+      infoTokens: [{ value: 11, position: -1, isYellow: false }],
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("data-testid=\"off-stand-tokens-p1\"");
+    expect(html).toContain("alt=\"Info: 11\"");
+  });
+
   it("keeps stand segments aligned when only one stand has info tokens", () => {
     const player = makePlayer({
       id: "p1",
