@@ -109,6 +109,29 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
     expect(values).not.toContain("YELLOW");
   });
+
+  it("does NOT offer YELLOW in mission 48 where yellow must use simultaneous action", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeYellowTile({ id: "y1" }),
+            makeYellowTile({ id: "y2" }),
+            makeYellowTile({ id: "y3" }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", color: "blue", gameValue: 3 })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain("YELLOW");
+  });
 });
 
 describe("canRevealReds mission rules", () => {

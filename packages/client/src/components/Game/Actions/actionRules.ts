@@ -133,6 +133,10 @@ export function getSoloCutValues(
         values.push(value);
       }
     } else {
+      if (state.mission === 48) {
+        // Mission 48 yellow wires can only be cut via the simultaneous 3-yellow action.
+        continue;
+      }
       const { setup } = resolveMissionSetup(state.mission, state.players.length);
       const totalYellowsInGame = getWirePoolCount(setup.yellow);
       const allCutYellows = state.players.reduce(
