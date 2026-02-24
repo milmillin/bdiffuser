@@ -38,3 +38,200 @@ body {
 .tile-back {
   transform: rotateY(180deg);
 }
+
+/* ═══════════════════════════════════════════════════
+   EXPLOSION EFFECT
+   ═══════════════════════════════════════════════════ */
+
+/* Container — fills the explosion area, centered */
+.explosion-container {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* ── Full-screen flash ── */
+.explosion-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,200,0.95), rgba(255,140,0,0.6), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.05s;
+}
+.explosion-flash.active {
+  opacity: 1;
+  animation: flash-fade 0.5s ease-out forwards;
+}
+@keyframes flash-fade {
+  0% { opacity: 1; }
+  30% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+/* ── Screen shake ── */
+.screen-shake {
+  animation: shake 0.6s ease-out;
+}
+@keyframes shake {
+  0%  { transform: translate(0, 0); }
+  10% { transform: translate(-8px, 6px); }
+  20% { transform: translate(7px, -8px); }
+  30% { transform: translate(-6px, 4px); }
+  40% { transform: translate(5px, -3px); }
+  50% { transform: translate(-3px, 5px); }
+  60% { transform: translate(4px, -2px); }
+  70% { transform: translate(-2px, 3px); }
+  80% { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ── SVG canvas ── */
+.explosion-center {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.explosion-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ── Fireball core ── */
+.fireball-core {
+  animation: fireball-expand 1.2s ease-out forwards;
+}
+@keyframes fireball-expand {
+  0%   { r: 5;   opacity: 0; }
+  10%  { r: 70;  opacity: 1; }
+  40%  { r: 90;  opacity: 0.9; }
+  70%  { r: 60;  opacity: 0.5; }
+  100% { r: 30;  opacity: 0.15; }
+}
+
+/* ── Shockwave rings ── */
+.shockwave-ring {
+  animation: shockwave 1s ease-out forwards;
+  opacity: 0;
+}
+@keyframes shockwave {
+  0%   { r: 10;  stroke-width: 4; opacity: 0; }
+  10%  { opacity: 0.8; }
+  100% { r: 180; stroke-width: 0.5; opacity: 0; }
+}
+
+/* ── Smoke blobs ── */
+.smoke-blob {
+  opacity: 0;
+  animation: smoke-drift 2s ease-out forwards;
+}
+@keyframes smoke-drift {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  15%  { opacity: 0.6; }
+  100% { transform: translate(var(--smoke-tx), var(--smoke-ty)) scale(2.5); opacity: 0; }
+}
+
+/* ── BOOM text ── */
+.boom-text {
+  opacity: 0;
+  animation: boom-text-enter 0.8s ease-out 0.1s forwards;
+}
+@keyframes boom-text-enter {
+  0%   { opacity: 0; font-size: 10px; }
+  30%  { opacity: 1; font-size: 90px; }
+  50%  { font-size: 68px; }
+  70%  { font-size: 76px; }
+  100% { opacity: 1; font-size: 72px; }
+}
+
+/* ── Particle field ── */
+.particle-field {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.particle {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  background: var(--color);
+  border-radius: 50%;
+  animation: particle-fly var(--duration) ease-out var(--delay) forwards;
+  opacity: 0;
+  box-shadow: 0 0 6px var(--color);
+}
+
+.particle-spark {
+  border-radius: 50%;
+}
+.particle-ember {
+  border-radius: 2px;
+  box-shadow: 0 0 10px 2px var(--color);
+}
+.particle-debris {
+  border-radius: 1px;
+  box-shadow: none;
+}
+
+@keyframes particle-fly {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(var(--spin)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* ── Rising embers (persistent after-effect) ── */
+.rising-embers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rising-ember {
+  position: absolute;
+  bottom: 30%;
+  width: 3px;
+  height: 3px;
+  background: #ff6b35;
+  border-radius: 50%;
+  box-shadow: 0 0 6px 2px rgba(255,107,53,0.6);
+  animation: ember-rise linear infinite;
+  opacity: 0;
+}
+
+@keyframes ember-rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-200px) translateX(20px);
+    opacity: 0;
+  }
+}
