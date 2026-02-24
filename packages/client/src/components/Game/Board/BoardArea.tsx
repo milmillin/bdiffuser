@@ -170,7 +170,7 @@ export function DetonatorDial({
           return (
             <div
               key={i}
-              className={`w-6 h-6 rounded-sm border-2 flex items-center justify-center text-xs font-black transition-all duration-300 ${
+              className={`relative w-6 h-6 rounded-sm border-2 flex items-center justify-center text-xs font-black transition-all duration-300 ${
                 inactive
                   ? `bg-gray-900 ${colors.border} opacity-20`
                   : filled
@@ -181,6 +181,12 @@ export function DetonatorDial({
               } ${isDead && isSkull ? "animate-pulse" : ""}`}
             >
               {isSkull ? "\u{1F480}" : filled ? "\u2716" : ""}
+              {inactive && (
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute left-0.5 right-0.5 top-1/2 h-px -translate-y-1/2 rotate-45 bg-gray-500/70" />
+                  <div className="absolute left-0.5 right-0.5 top-1/2 h-px -translate-y-1/2 -rotate-45 bg-gray-500/70" />
+                </div>
+              )}
             </div>
           );
         })}
