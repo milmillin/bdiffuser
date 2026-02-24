@@ -1,4 +1,5 @@
 import type {
+  ForcedAction,
   GameState,
   Player,
   WireTile,
@@ -491,83 +492,25 @@ export function executeDualCutDoubleDetector(
   const match2 = tile2.gameValue === guessValue;
 
   if (match1 && match2) {
-    // Both match: cut first designated tile + actor's matching tile
-    tile1.cut = true;
-
-    // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
-    const resolveResult = dispatchHooks(state.mission, {
-      point: "resolve",
-      state,
-      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: tileIndex1, guessValue },
-      cutValue: guessValue,
-      cutSuccess: true,
-    });
-
-    // Mission hooks may turn a successful cut into an immediate loss
-    if (state.phase === "finished" && state.result) {
-      updateMarkerConfirmations(state);
-      if (state.result === "loss_red_wire") {
-        addLog(
-          state,
-          actorId,
-          "dualCutDoubleDetector",
-          `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — cut a RED-like hidden wire! BOOM!`,
-        );
-        return {
-          type: "dualCutDoubleDetectorResult",
-          actorId,
-          targetId: targetPlayerId,
-          tileIndex1,
-          tileIndex2,
-          guessValue,
-          outcome: "both_match",
-          cutTileIndex: tileIndex1,
-          explosion: true,
-        };
-      }
-      return { type: "gameOver", result: state.result };
-    }
-
-    const actorUncut = getUncutTiles(actor);
-    let actorTile: WireTile | undefined;
-    if (actorTileIndex != null) {
-      const candidate = getTileByFlatIndex(actor, actorTileIndex);
-      if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
-        actorTile = candidate;
-      }
-    }
-    if (!actorTile) {
-      actorTile = actorUncut.find(
-        (t) => t.color === "blue" && t.gameValue === guessValue,
-      );
-    }
-    if (actorTile) actorTile.cut = true;
-
-    if (typeof guessValue === "number") {
-      checkValidation(state, guessValue);
-      if (!resolveResult.overrideEquipmentUnlock) {
-        checkEquipmentUnlock(state, guessValue);
-      } else {
-        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
-      }
-    }
-    clearSatisfiedSecondaryEquipmentLocks(state);
-    updateMarkerConfirmations(state);
+    // Both match: target player must choose which tile to cut
+    state.pendingForcedAction = {
+      kind: "detectorTileChoice",
+      targetPlayerId,
+      actorId,
+      matchingTileIndices: [tileIndex1, tileIndex2],
+      guessValue,
+      source: "doubleDetector",
+      originalTileIndex1: tileIndex1,
+      originalTileIndex2: tileIndex2,
+      actorTileIndex,
+    };
 
     addLog(
       state,
       actorId,
       "dualCutDoubleDetector",
-      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — wire ${wireLabel(tileIndex1)} cut ✓`,
+      `used Double Detector on ${target.name}'s wires ${wireLabel(tileIndex1)} & ${wireLabel(tileIndex2)} guessing ${guessValue} — both match! Waiting for ${target.name} to choose...`,
     );
-
-    if (checkWin(state)) {
-      state.result = "win";
-      state.phase = "finished";
-      return { type: "gameOver", result: "win" };
-    }
-
-    advanceTurn(state);
 
     return {
       type: "dualCutDoubleDetectorResult",
@@ -577,7 +520,6 @@ export function executeDualCutDoubleDetector(
       tileIndex2,
       guessValue,
       outcome: "both_match",
-      cutTileIndex: tileIndex1,
     };
   }
 
@@ -1035,5 +977,166 @@ export function executeRevealReds(
     type: "revealRedsResult",
     actorId,
     tilesRevealed: revealed,
+  };
+}
+
+/** Resolve a pending detectorTileChoice forced action. */
+export function resolveDetectorTileChoice(
+  state: GameState,
+  chosenTileIndex: number,
+): GameAction {
+  const forced = state.pendingForcedAction as Extract<ForcedAction, { kind: "detectorTileChoice" }>;
+  state.pendingForcedAction = undefined;
+
+  const { actorId, targetPlayerId, guessValue, source } = forced;
+  const actor = state.players.find((p) => p.id === actorId)!;
+  const target = state.players.find((p) => p.id === targetPlayerId)!;
+  const chosenTile = getTileByFlatIndex(target, chosenTileIndex)!;
+
+  // Cut the chosen target tile
+  chosenTile.cut = true;
+
+  // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
+  const resolveResult = dispatchHooks(state.mission, {
+    point: "resolve",
+    state,
+    action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: chosenTileIndex, guessValue },
+    cutValue: guessValue,
+    cutSuccess: true,
+  });
+
+  // Mission hooks may turn a successful cut into an immediate loss
+  if (state.phase === "finished" && state.result) {
+    updateMarkerConfirmations(state);
+    if (state.result === "loss_red_wire") {
+      addLog(
+        state,
+        actorId,
+        source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment",
+        `${target.name} chose wire ${wireLabel(chosenTileIndex)} — cut a RED-like hidden wire! BOOM!`,
+      );
+      if (source === "doubleDetector") {
+        return {
+          type: "dualCutDoubleDetectorResult",
+          actorId,
+          targetId: targetPlayerId,
+          tileIndex1: forced.originalTileIndex1!,
+          tileIndex2: forced.originalTileIndex2!,
+          guessValue,
+          outcome: "both_match",
+          cutTileIndex: chosenTileIndex,
+          explosion: true,
+        };
+      }
+      return {
+        type: "dualCutResult",
+        actorId,
+        targetId: targetPlayerId,
+        targetTileIndex: chosenTileIndex,
+        guessValue,
+        success: false,
+        revealedColor: "red",
+        revealedValue: chosenTile.gameValue,
+        explosion: true,
+      };
+    }
+    return { type: "gameOver", result: state.result };
+  }
+
+  // Cut actor's matching tile
+  const actorUncut = getUncutTiles(actor);
+  let actorTile: WireTile | undefined;
+  if (forced.actorTileIndex != null) {
+    const candidate = getTileByFlatIndex(actor, forced.actorTileIndex);
+    if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
+      actorTile = candidate;
+    }
+  }
+  if (!actorTile) {
+    actorTile = actorUncut.find(
+      (t) => t.color === "blue" && t.gameValue === guessValue,
+    );
+  }
+  if (actorTile) actorTile.cut = true;
+
+  // Check validation and equipment unlock
+  if (typeof guessValue === "number") {
+    checkValidation(state, guessValue);
+    if (!resolveResult.overrideEquipmentUnlock) {
+      checkEquipmentUnlock(state, guessValue);
+    } else {
+      checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
+    }
+  }
+  clearSatisfiedSecondaryEquipmentLocks(state);
+  updateMarkerConfirmations(state);
+
+  // Check detonator loss (hooks like blue_as_red may have advanced it)
+  if (checkDetonatorLoss(state)) {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
+    const logAction = source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment";
+    addLog(state, actorId, logAction, `${target.name} chose wire ${wireLabel(chosenTileIndex)} ✓ (but detonator triggered)`);
+    if (source === "doubleDetector") {
+      return {
+        type: "dualCutDoubleDetectorResult",
+        actorId,
+        targetId: targetPlayerId,
+        tileIndex1: forced.originalTileIndex1!,
+        tileIndex2: forced.originalTileIndex2!,
+        guessValue,
+        outcome: "both_match",
+        cutTileIndex: chosenTileIndex,
+        detonatorAdvanced: true,
+      };
+    }
+    return {
+      type: "dualCutResult",
+      actorId,
+      targetId: targetPlayerId,
+      targetTileIndex: chosenTileIndex,
+      guessValue,
+      success: true,
+      detonatorAdvanced: true,
+    };
+  }
+
+  const logAction = source === "doubleDetector" ? "dualCutDoubleDetector" : "useEquipment";
+  addLog(
+    state,
+    actorId,
+    logAction,
+    `${target.name} chose wire ${wireLabel(chosenTileIndex)} to cut ✓`,
+  );
+
+  // Check win
+  if (checkWin(state)) {
+    state.result = "win";
+    state.phase = "finished";
+    return { type: "gameOver", result: "win" };
+  }
+
+  advanceTurn(state);
+
+  if (source === "doubleDetector") {
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1: forced.originalTileIndex1!,
+      tileIndex2: forced.originalTileIndex2!,
+      guessValue,
+      outcome: "both_match",
+      cutTileIndex: chosenTileIndex,
+    };
+  }
+  return {
+    type: "dualCutResult",
+    actorId,
+    targetId: targetPlayerId,
+    targetTileIndex: chosenTileIndex,
+    guessValue,
+    success: true,
   };
 }

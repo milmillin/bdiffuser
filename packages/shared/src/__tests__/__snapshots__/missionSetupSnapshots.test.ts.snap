@@ -488,7 +488,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact_same_value",
+        "kind": "exact",
       },
     },
     "3": {
@@ -505,7 +505,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact_same_value",
+        "kind": "exact",
       },
     },
     "4": {
@@ -522,7 +522,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact_same_value",
+        "kind": "exact",
       },
     },
     "5": {
@@ -539,7 +539,7 @@ exports[`resolved mission setup snapshots > mission 6 1`] = `
       },
       "yellow": {
         "count": 4,
-        "kind": "exact_same_value",
+        "kind": "exact",
       },
     },
   },

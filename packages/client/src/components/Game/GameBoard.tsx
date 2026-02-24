@@ -20,6 +20,7 @@ import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
+import { DetectorTileChoicePanel } from "./Actions/DetectorTileChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel } from "./RightPanel.js";
 import { ActionLog } from "./ActionLog.js";
@@ -61,9 +62,11 @@ type UnknownForcedAction = {
 
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
+const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
+  FORCED_ACTION_DETECTOR_TILE_CHOICE,
 ]);
 
 function getUnknownForcedAction(
@@ -220,7 +223,9 @@ export function GameBoard({
       ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === "designateCutter"
         ? pendingForcedAction.designatorId
-        : undefined);
+        : pendingForcedAction?.kind === "detectorTileChoice"
+          ? pendingForcedAction.targetPlayerId
+          : undefined);
   const forcedActionCaptainName = forcedActionCaptainId
     ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
     : undefined;
@@ -827,6 +832,36 @@ export function GameBoard({
                           </span>
                         </span>
                       )}
+                    </div>
+                  )}
+
+                {/* Playing phase: forced action (detector tile choice - target player) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DETECTOR_TILE_CHOICE &&
+                  gameState.pendingForcedAction.targetPlayerId === playerId &&
+                  me && (
+                    <DetectorTileChoicePanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {/* Playing phase: waiting for target player to choose tile (other players' view) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DETECTOR_TILE_CHOICE &&
+                  gameState.pendingForcedAction.targetPlayerId !== playerId && (
+                    <div
+                      className="text-center py-2 text-gray-400"
+                      data-testid="waiting-detector-choice"
+                    >
+                      Waiting for{" "}
+                      <span className="text-yellow-400 font-bold">
+                        {forcedActionCaptainName ?? "the target player"}
+                      </span>{" "}
+                      to choose which wire to cut...
                     </div>
                   )}
 

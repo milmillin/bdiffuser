@@ -1,7 +1,6 @@
 import {
   blueRange,
   exact,
-  exactSameValue,
   none,
   outOf,
   redUpTo9_5,
@@ -77,13 +76,13 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
     setup: {
       blue: blueRange(1, 12),
       red: exact(1),
-      yellow: exactSameValue(4),
+      yellow: exact(4),
       equipment: { mode: "default" },
     },
     overrides: {
       2: {
         red: exact(2),
-        yellow: exactSameValue(4),
+        yellow: exact(4),
       },
     },
   });

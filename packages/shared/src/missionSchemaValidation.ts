@@ -79,6 +79,11 @@ function validatePoolSpec(missionId: MissionId, color: "red" | "yellow", spec: W
       return;
     }
     case "exact_same_value": {
+      if (color === "yellow") {
+        throw new Error(
+          `Mission ${missionId}: yellow exact_same_value is not allowed (yellow values must be unique)`,
+        );
+      }
       if (!Number.isInteger(spec.count) || spec.count < 1) {
         throw new Error(`Mission ${missionId}: ${color} exact_same_value count must be a positive integer`);
       }

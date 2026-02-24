@@ -31,6 +31,7 @@ import {
   executeRevealReds,
   executeSimultaneousRedCut,
   executeSimultaneousFourCut,
+  resolveDetectorTileChoice,
 } from "./gameLogic.js";
 import { executeUseEquipment, validateUseEquipment, validateCharacterAbility, executeCharacterAbility } from "./equipment.js";
 import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
@@ -277,6 +278,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission22TokenPassChoice":
         this.handleMission22TokenPassChoice(connection, msg.value);
         break;
+      case "detectorTileChoice":
+        this.handleDetectorTileChoice(connection, msg.tileIndex);
+        break;
       case "missionAudioControl":
         this.handleMissionAudioControl(
           connection,
@@ -336,6 +340,13 @@ export class BombBustersServer extends Server<Env> {
         } else if (gs.pendingForcedAction.kind === "mission22TokenPass") {
           if (gs.pendingForcedAction.currentChooserId === oldId) {
             gs.pendingForcedAction.currentChooserId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "detectorTileChoice") {
+          if (gs.pendingForcedAction.targetPlayerId === oldId) {
+            gs.pendingForcedAction.targetPlayerId = newId;
+          }
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
           }
         }
       }
@@ -1036,6 +1047,36 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleDetectorTileChoice(conn: Connection, tileIndex: number) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "detectorTileChoice") {
+      this.sendMsg(conn, { type: "error", message: "No pending detector tile choice" });
+      return;
+    }
+
+    if (conn.id !== forced.targetPlayerId) {
+      this.sendMsg(conn, { type: "error", message: "Only the target player can choose which tile to cut" });
+      return;
+    }
+
+    if (!forced.matchingTileIndices.includes(tileIndex)) {
+      this.sendMsg(conn, { type: "error", message: "Invalid tile choice" });
+      return;
+    }
+
+    const previousResult = state.result;
+    const action = resolveDetectorTileChoice(state, tileIndex);
+    this.maybeRecordMissionFailure(previousResult, state);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   handleMissionAudioControl(
     conn: Connection,
     command: MissionAudioControlCommand,
@@ -1331,6 +1372,22 @@ export class BombBustersServer extends Server<Env> {
   async executeBotTurn() {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
+
+    // Detector tile choice: if a bot is the target, auto-pick the first matching tile
+    const detectorForced = state.pendingForcedAction;
+    if (detectorForced?.kind === "detectorTileChoice") {
+      const targetPlayer = state.players.find((p) => p.id === detectorForced.targetPlayerId);
+      if (targetPlayer?.isBot) {
+        const previousResult = state.result;
+        const action = resolveDetectorTileChoice(state, detectorForced.matchingTileIndices[0]);
+        this.maybeRecordMissionFailure(previousResult, state);
+        this.saveState();
+        this.broadcastAction(action);
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+    }
 
     // Mission 22 token pass: if a bot is the current chooser, pick a random value
     const m22Forced = state.pendingForcedAction;

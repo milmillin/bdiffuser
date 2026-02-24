@@ -5,7 +5,7 @@ import {
   makeTile,
   makeRedTile,
 } from "@bomb-busters/shared/testing";
-import { executeDualCutDoubleDetector } from "../gameLogic";
+import { executeDualCutDoubleDetector, resolveDetectorTileChoice } from "../gameLogic";
 
 describe("executeDualCutDoubleDetector actorTileIndex", () => {
   it("consumes Double Detector outside mission 58", () => {
@@ -60,7 +60,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(state.players[0].characterUsed).toBe(false);
   });
 
-  it("selects the correct blue tile when actorTileIndex is provided (both match)", () => {
+  it("sets pendingForcedAction when both match and actorTileIndex is provided", () => {
     const actor = makePlayer({
       id: "actor",
       character: "double_detector",
@@ -82,15 +82,24 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       currentPlayerIndex: 0,
     });
 
-    // actorTileIndex=2 should cut actor's third tile (b3), not the first (b1)
+    // actorTileIndex=2 is preserved in the forced action
     const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5, 2);
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
     expect(action.outcome).toBe("both_match");
-    // The specified tile (index 2, b3) should be cut
+    // No tiles cut yet — pending choice
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.hand[1].cut).toBe(false);
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Resolve: target chooses tile 0
+    const resolveAction = resolveDetectorTileChoice(state, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    expect(target.hand[0].cut).toBe(true);
+    // The specified actor tile (index 2, b3) should be cut
     expect(actor.hand[2].cut).toBe(true);
-    // The first two blue tiles should NOT be cut
     expect(actor.hand[0].cut).toBe(false);
     expect(actor.hand[1].cut).toBe(false);
   });
@@ -130,7 +139,7 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(actor.hand[2].cut).toBe(false);
   });
 
-  it("falls back to first match when actorTileIndex is undefined", () => {
+  it("sets pendingForcedAction when both match and actorTileIndex is undefined", () => {
     const actor = makePlayer({
       id: "actor",
       character: "double_detector",
@@ -156,6 +165,16 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
     expect(action.outcome).toBe("both_match");
+    // No tiles cut yet
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.hand[1].cut).toBe(false);
+    expect(state.pendingForcedAction).toBeDefined();
+    expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+    // Resolve: target chooses tile 1
+    const resolveAction = resolveDetectorTileChoice(state, 1);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    expect(target.hand[1].cut).toBe(true);
     // Falls back to first match (b1)
     expect(actor.hand[0].cut).toBe(true);
     expect(actor.hand[1].cut).toBe(false);
@@ -183,12 +202,16 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       currentPlayerIndex: 0,
     });
 
-    // actorTileIndex=1 points to a cut tile — should fall back to first uncut match
+    // actorTileIndex=1 points to a cut tile — should fall back on resolution
     const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5, 1);
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
     expect(action.outcome).toBe("both_match");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve
+    resolveDetectorTileChoice(state, 0);
     // Falls back to first uncut match (b1)
     expect(actor.hand[0].cut).toBe(true);
     expect(actor.hand[1].cut).toBe(true); // was already cut
@@ -217,12 +240,16 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       currentPlayerIndex: 0,
     });
 
-    // actorTileIndex=0 points to value 7, not 5 — should fall back
+    // actorTileIndex=0 points to value 7, not 5 — should fall back on resolution
     const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5, 0);
 
     expect(action.type).toBe("dualCutDoubleDetectorResult");
     if (action.type !== "dualCutDoubleDetectorResult") return;
     expect(action.outcome).toBe("both_match");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve
+    resolveDetectorTileChoice(state, 0);
     // Falls back to first uncut match with value 5 (b2)
     expect(actor.hand[0].cut).toBe(false);
     expect(actor.hand[1].cut).toBe(true);

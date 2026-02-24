@@ -4,7 +4,7 @@ import {
   makePlayer,
   makeTile,
 } from "@bomb-busters/shared/testing";
-import { executeDualCut, executeDualCutDoubleDetector, executeSoloCut } from "../gameLogic";
+import { executeDualCut, executeDualCutDoubleDetector, executeSoloCut, resolveDetectorTileChoice } from "../gameLogic";
 
 describe("mission 11 game logic", () => {
   it("explodes when a dual cut successfully cuts the hidden red-like blue value", () => {
@@ -154,7 +154,7 @@ describe("mission 11 game logic", () => {
       timestamp: 1000,
     };
 
-    it("explodes when both tiles match the hidden red-like value", () => {
+    it("explodes when both tiles match the hidden red-like value (after choice)", () => {
       const actor = makePlayer({
         id: "actor",
         hand: [makeTile({ id: "a1", color: "blue", gameValue: 7 })],
@@ -177,9 +177,16 @@ describe("mission 11 game logic", () => {
       const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 7);
       expect(action.type).toBe("dualCutDoubleDetectorResult");
       if (action.type !== "dualCutDoubleDetectorResult") return;
-
-      expect(action.explosion).toBe(true);
       expect(action.outcome).toBe("both_match");
+      // Forced action is set; explosion happens on resolution
+      expect(state.pendingForcedAction).toBeDefined();
+      expect(state.pendingForcedAction!.kind).toBe("detectorTileChoice");
+
+      const resolveAction = resolveDetectorTileChoice(state, 0);
+      expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+      if (resolveAction.type === "dualCutDoubleDetectorResult") {
+        expect(resolveAction.explosion).toBe(true);
+      }
       expect(state.result).toBe("loss_red_wire");
       expect(state.phase).toBe("finished");
     });

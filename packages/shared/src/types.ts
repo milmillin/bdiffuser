@@ -364,6 +364,29 @@ export type ForcedAction =
       passingOrder: number[];
       /** How many players have completed their token pass. */
       completedCount: number;
+    }
+  | {
+      kind: "detectorTileChoice";
+      /** The player who must choose which matching tile to cut. */
+      targetPlayerId: string;
+      /** The player who used the detector. */
+      actorId: string;
+      /** Tile indices the target can pick from. */
+      matchingTileIndices: number[];
+      /** The guessed value. */
+      guessValue: number;
+      /** Which detector triggered this choice. */
+      source: "doubleDetector" | "tripleDetector" | "superDetector";
+      /** Double Detector: first designated tile index. */
+      originalTileIndex1?: number;
+      /** Double Detector: second designated tile index. */
+      originalTileIndex2?: number;
+      /** Triple Detector: the 3 originally targeted tile indices. */
+      originalTargetTileIndices?: number[];
+      /** Actor's tile index to cut on resolution. */
+      actorTileIndex?: number;
+      /** Equipment card ID if triggered via equipment (not character ability). */
+      equipmentId?: string;
     };
 
 export interface TurnEffects {
