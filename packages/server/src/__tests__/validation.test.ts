@@ -451,6 +451,94 @@ describe("mission 13 reveal validation", () => {
   });
 });
 
+describe("mission 48 simultaneous yellow validation", () => {
+  it("rejects yellow dual cut guesses", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "a2", gameValue: 4 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: "YELLOW",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous 3-yellow");
+  });
+
+  it("rejects yellow solo cuts", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "a2", color: "yellow", gameValue: "YELLOW" }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: "YELLOW",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous 3-yellow");
+  });
+
+  it("allows non-yellow cuts", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).toBeNull();
+  });
+});
+
 describe("mission 18 designated cut value enforcement", () => {
   it("rejects dual cut guesses that do not match the active Number card value", () => {
     const cutter = makePlayer({

@@ -3418,6 +3418,22 @@ registerHookHandler<"false_info_tokens">("false_info_tokens", {
  * Players simultaneously cut wires of the same color.
  */
 registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
+  validate(rule: SimultaneousMultiCutRuleDef, ctx: ValidateHookContext): HookResult | void {
+    // Mission 48: yellow wires cannot be cut via normal dual/solo actions.
+    // They must be cut through the dedicated simultaneous 3-yellow action.
+    if (ctx.state.mission !== 48) return;
+    if (rule.color !== "yellow" || rule.count !== 3) return;
+
+    const cutValue = extractCutValue(ctx.action);
+    if (cutValue !== "YELLOW") return;
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError:
+        "Mission 48: yellow wires can only be cut using the simultaneous 3-yellow special action",
+    };
+  },
+
   setup(rule: SimultaneousMultiCutRuleDef, ctx: SetupHookContext): void {
     // Mission 39 requires a visible Number card target for the 4-wire action.
     // Initialize one face-up card plus an 8-card face-down deck.

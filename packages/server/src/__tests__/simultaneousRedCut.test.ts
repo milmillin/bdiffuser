@@ -136,6 +136,54 @@ describe("validateSimultaneousRedCutLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("accepts mission 48 simultaneous yellow target designation", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
+            makeTile({ id: "b1", gameValue: 3 }),
+          ],
+        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(error).toBeNull();
+  });
+
+  it("mission 48: rejects when no player has uncut yellow wires", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "b2", gameValue: 4 })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "b3", gameValue: 5 })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("yellow");
+  });
+
   it("allows non-red designations so execution can resolve failure", () => {
     const state = makeGameState({
       mission: 13,
@@ -307,5 +355,60 @@ describe("executeSimultaneousRedCut", () => {
 
     expect(state.turnNumber).toBe(2);
     expect(state.currentPlayerIndex).toBe(1);
+  });
+
+  it("mission 48: cuts designated yellow wires when all designated wires are yellow", () => {
+    const y1 = makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" });
+    const y2 = makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" });
+    const y3 = makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" });
+
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({ id: "p1", hand: [y1, makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [y2] }),
+        makePlayer({ id: "p3", hand: [y3, makeTile({ id: "b3", gameValue: 5 })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(y1.cut).toBe(true);
+    expect(y2.cut).toBe(true);
+    expect(y3.cut).toBe(true);
+    expect(action.type).toBe("simultaneousRedCutResult");
+  });
+
+  it("mission 48: explodes when at least one designated wire is not yellow", () => {
+    const state = makeGameState({
+      mission: 48,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
+            makeTile({ id: "b1", gameValue: 3 }),
+          ],
+        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p1", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(action).toEqual({ type: "gameOver", result: "loss_red_wire" });
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
   });
 });

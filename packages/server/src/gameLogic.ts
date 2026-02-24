@@ -622,23 +622,28 @@ export function executeSoloCut(
   };
 }
 
-/** Execute simultaneous red cut (mission 13): explode on any non-red designated wire. */
+/** Execute simultaneous 3-wire special cut (missions 13/48). */
 export function executeSimultaneousRedCut(
   state: GameState,
   actorId: string,
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): GameAction {
-  let allRed = true;
+  const requiredColor = state.mission === 48 ? "yellow" : "red";
+  const actionLabel = requiredColor === "yellow"
+    ? "simultaneous yellow cut"
+    : "simultaneous red cut";
+
+  let allMatch = true;
   for (const target of targets) {
     const player = state.players.find((p) => p.id === target.playerId);
     const tile = player ? getTileByFlatIndex(player, target.tileIndex) : null;
-    if (!tile || tile.cut || tile.color !== "red") {
-      allRed = false;
+    if (!tile || tile.cut || tile.color !== requiredColor) {
+      allMatch = false;
       break;
     }
   }
 
-  if (!allRed) {
+  if (!allMatch) {
     state.result = "loss_red_wire";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_red_wire", actorId, null);
@@ -647,7 +652,7 @@ export function executeSimultaneousRedCut(
       state,
       actorId,
       "simultaneousRedCut",
-      "designated 3 wires for simultaneous red cut — at least one was not red. BOOM!",
+      `designated 3 wires for ${actionLabel} — at least one was not ${requiredColor}. BOOM!`,
     );
 
     return { type: "gameOver", result: "loss_red_wire" };
@@ -667,7 +672,7 @@ export function executeSimultaneousRedCut(
     state,
     actorId,
     "simultaneousRedCut",
-    `designated ${cuts.length} wires for simultaneous red cut — all were red`,
+    `designated ${cuts.length} wires for ${actionLabel} — all were ${requiredColor}`,
   );
 
   if (checkWin(state)) {

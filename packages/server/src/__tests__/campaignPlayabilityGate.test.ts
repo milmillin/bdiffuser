@@ -129,12 +129,13 @@ function summarizeUncutByPlayer(state: Readonly<GameState>): string {
 function buildSimultaneousRedCutTargets(
   state: Readonly<GameState>,
 ): Array<{ playerId: string; tileIndex: number }> | null {
+  const requiredColor = state.mission === 48 ? "yellow" : "red";
   const targets: Array<{ playerId: string; tileIndex: number }> = [];
 
   for (const player of state.players) {
     for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex++) {
       const tile = player.hand[tileIndex];
-      if (!tile || tile.cut || tile.color !== "red") continue;
+      if (!tile || tile.cut || tile.color !== requiredColor) continue;
       targets.push({ playerId: player.id, tileIndex });
     }
   }

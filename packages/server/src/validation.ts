@@ -590,16 +590,22 @@ export function validateRevealReds(
   return validateRevealRedsLegality(state, actorId)?.message ?? null;
 }
 
-/** Check if a simultaneous red cut action is valid (base rules only). */
+/** Check if a simultaneous 3-wire special cut action is valid (missions 13/48). */
 export function validateSimultaneousRedCutLegality(
   state: GameState,
   actorId: string,
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): ActionLegalityError | null {
-  if (state.mission !== 13) {
+  const requiredColor = state.mission === 13
+    ? "red"
+    : state.mission === 48
+      ? "yellow"
+      : null;
+
+  if (requiredColor == null) {
     return legalityError(
       "SIMULTANEOUS_RED_CUT_WRONG_MISSION",
-      "Simultaneous red cut is only available in mission 13",
+      "Simultaneous 3-wire special cut is only available in mission 13 or 48",
     );
   }
 
@@ -607,12 +613,18 @@ export function validateSimultaneousRedCutLegality(
     return legalityError("NOT_YOUR_TURN", "Not your turn");
   }
 
-  // Check if any player has uncut red wires
-  const anyUncutRed = state.players.some((p) =>
-    p.hand.some((t) => !t.cut && t.color === "red"),
+  // Check if any player has uncut target-color wires.
+  const anyUncutTargetColor = state.players.some((p) =>
+    p.hand.some((t) => !t.cut && t.color === requiredColor),
   );
-  if (!anyUncutRed) {
-    return legalityError("NO_UNCUT_RED_WIRES", "No player has uncut red wires");
+  if (!anyUncutTargetColor) {
+    if (requiredColor === "red") {
+      return legalityError("NO_UNCUT_RED_WIRES", "No player has uncut red wires");
+    }
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "No player has uncut yellow wires",
+    );
   }
 
   if (targets.length !== 3) {
