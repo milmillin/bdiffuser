@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { playExplosionBoom } from "../../audio/audio.js";
+import { useMemo } from "react";
+
 
 /** Seeded random so particle layout is stable across renders */
 function seededRandom(seed: number) {
@@ -33,10 +33,6 @@ const SPARK_COLORS = ["#ff4500", "#ff6b35", "#ffa500", "#ffd700", "#fff176", "#f
 const EMBER_COLORS = ["#ff4500", "#ff6b35", "#e53e3e", "#dd2c00", "#bf360c"];
 
 export function ExplosionEffect() {
-  useEffect(() => {
-    playExplosionBoom();
-  }, []);
-
   const particles = useMemo(() => {
     const rand = seededRandom(42);
     const result: Particle[] = [];
