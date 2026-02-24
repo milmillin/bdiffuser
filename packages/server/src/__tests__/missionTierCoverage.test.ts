@@ -115,6 +115,14 @@ describe("mission complexity tier representative coverage", () => {
     expect(captainStands[1].some((tile) => tile.color === "yellow")).toBe(true);
   });
 
+  it("mid-campaign tier (mission 22, 2p): setup uses three red wires", () => {
+    const players = createSetupPlayers(2);
+    const { players: dealtPlayers } = setupGame(players, 22);
+    const redTiles = dealtPlayers.flatMap((player) => player.hand).filter((tile) => tile.color === "red");
+
+    expect(redTiles).toHaveLength(3);
+  });
+
   it("mission 64: two-stand flipped wires follow FAQ edge placement", () => {
     const captain = makePlayer({
       id: "captain",

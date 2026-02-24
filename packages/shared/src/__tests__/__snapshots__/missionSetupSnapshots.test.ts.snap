@@ -1755,7 +1755,7 @@ exports[`resolved mission setup snapshots > mission 22 1`] = `
         "mode": "default",
       },
       "red": {
-        "count": 1,
+        "count": 3,
         "kind": "exact",
       },
       "yellow": {

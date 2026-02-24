@@ -82,6 +82,9 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       red: exact(1),
       yellow: exact(4),
     },
+    overrides: {
+      2: { red: exact(3) },
+    },
     behaviorHooks: ["mission_22_absent_value_tokens", "mission_22_yellow_trigger_token_pass"],
     hookRules: [{ kind: "yellow_trigger_token_pass", triggerCount: 2 }],
   });
