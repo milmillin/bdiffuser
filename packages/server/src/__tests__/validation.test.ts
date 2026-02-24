@@ -1040,6 +1040,92 @@ describe("validateDualCutDoubleDetectorLegality", () => {
   });
 });
 
+describe("mission 65 personal number cards validation", () => {
+  function mission65State(
+    actorHandValues: number[],
+    actorCards: Array<{ value: number; faceUp?: boolean }>,
+    targetHandValues: number[],
+  ) {
+    const actor = makePlayer({
+      id: "actor",
+      hand: actorHandValues.map((value, idx) =>
+        makeTile({ id: `a${idx + 1}`, gameValue: value }),
+      ),
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: targetHandValues.map((value, idx) =>
+        makeTile({ id: `t${idx + 1}`, gameValue: value }),
+      ),
+    });
+
+    return makeGameState({
+      mission: 65,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [],
+          deck: [],
+          discard: [],
+          playerHands: {
+            actor: actorCards.map((card, idx) => ({
+              id: `c-actor-${idx + 1}`,
+              value: card.value,
+              faceUp: card.faceUp ?? true,
+            })),
+            target: [{ id: "c-target-1", value: 9, faceUp: true }],
+          },
+        },
+      },
+    });
+  }
+
+  it("rejects dual cut when guessed value is not on actor face-up Number cards", () => {
+    const state = mission65State([6], [{ value: 4 }], [2]);
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 6,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 65");
+  });
+
+  it("rejects solo cut when chosen value is not on actor face-up Number cards", () => {
+    const state = mission65State([6, 6], [{ value: 4 }], [2]);
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "actor",
+      value: 6,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 65");
+  });
+
+  it("allows cut actions when guessed value is on actor face-up Number cards", () => {
+    const state = mission65State([6], [{ value: 6 }], [2]);
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 6,
+    });
+
+    expect(error).toBeNull();
+  });
+});
+
 describe("constraint I/J stand boundaries", () => {
   function buildConstraintState(constraintId: "I" | "J") {
     const actor = makePlayer({

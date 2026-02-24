@@ -2894,6 +2894,60 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
       timestamp: Date.now(),
     });
   },
+
+  validate(_rule: PersonalNumberCardsRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (
+      ctx.action.type !== "dualCut" &&
+      ctx.action.type !== "dualCutDoubleDetector" &&
+      ctx.action.type !== "soloCut" &&
+      ctx.action.type !== "simultaneousCut"
+    ) {
+      return;
+    }
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    const actorCards = numberCards?.playerHands?.[ctx.action.actorId];
+    if (!actorCards) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 65: personal Number cards are not initialized",
+      };
+    }
+
+    const faceUpValues = new Set(
+      actorCards.filter((card) => card.faceUp).map((card) => card.value),
+    );
+    if (faceUpValues.size === 0) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 65: you have no face-up Number cards and must skip",
+      };
+    }
+
+    const attemptedValues: unknown[] =
+      ctx.action.type === "dualCut" || ctx.action.type === "dualCutDoubleDetector"
+        ? [ctx.action.guessValue]
+        : ctx.action.type === "soloCut"
+          ? [ctx.action.value]
+          : (Array.isArray(ctx.action.cuts)
+            ? ctx.action.cuts
+            : []
+          ).map((cut) => {
+            const withGuess = cut as { guessValue?: unknown };
+            return withGuess.guessValue;
+          });
+
+    for (const attemptedValue of attemptedValues) {
+      if (typeof attemptedValue !== "number" || !faceUpValues.has(attemptedValue)) {
+        const allowedValues = [...faceUpValues].sort((a, b) => a - b).join(", ");
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError:
+            `Mission 65: cut values must match your face-up Number cards (${allowedValues})`,
+        };
+      }
+    }
+  },
 });
 
 // ── Unique mission hooks ──────────────────────────────────────────
