@@ -32,6 +32,9 @@ export function PlayerStand({
   const offStandTokens = player.infoTokens.filter(
     (token) => token.position < 0 && (token.positionB == null || token.positionB < 0),
   );
+  const offStandTokenText = offStandTokens
+    .map((token) => getInfoTokenLabel(token))
+    .join(", ");
 
   return (
     <div
@@ -89,6 +92,14 @@ export function PlayerStand({
             Skill {player.characterUsed ? "Used" : "Available"}
           </span>
         )}
+        {offStandTokens.length > 0 && (
+          <span
+            data-testid={`off-stand-token-text-${player.id}`}
+            className="text-[10px] px-1.5 py-0.5 rounded-full border border-gray-600 bg-gray-700 text-gray-100 font-semibold uppercase tracking-wide"
+          >
+            Off-stand: {offStandTokenText}
+          </span>
+        )}
         {isCurrentTurn && (
           <span className="text-xs bg-yellow-600 px-1.5 py-0.5 rounded text-black font-bold ml-auto">
             ACTIVE
@@ -98,20 +109,6 @@ export function PlayerStand({
           <span className="text-xs text-red-400 ml-auto">Offline</span>
         )}
       </div>
-
-      {offStandTokens.length > 0 && (
-        <div
-          className="mb-1 flex flex-wrap items-center gap-1"
-          data-testid={`off-stand-tokens-${player.id}`}
-        >
-          {offStandTokens.map((token, tokenIndex) => (
-            <InfoTokenView
-              key={`off-stand-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
-              token={token}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {
@@ -266,6 +263,16 @@ function getInfoTokenImage(token: InfoToken): string {
   return "info_no.png";
 }
 
+function getInfoTokenLabel(token: InfoToken): string {
+  if (token.relation === "eq") return "=";
+  if (token.relation === "neq") return "!=";
+  if (token.countHint != null) return `x${token.countHint}`;
+  if (token.isYellow) return "YELLOW";
+  if (token.parity === "even") return "EVEN";
+  if (token.parity === "odd") return "ODD";
+  return String(token.value);
+}
+
 function InfoTokenView({ token }: { token: InfoToken }) {
   if (token.relation === "eq" || token.relation === "neq") {
     return (
@@ -286,7 +293,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
   return (
     <img
       src={`/images/${getInfoTokenImage(token)}`}
-      alt={`Info: ${token.isYellow ? "YELLOW" : token.countHint != null ? `x${token.countHint}` : token.parity ?? token.value}`}
+      alt={`Info: ${getInfoTokenLabel(token)}`}
       className="w-full h-auto object-contain block"
     />
   );

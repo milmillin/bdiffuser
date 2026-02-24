@@ -72,7 +72,7 @@ describe("PlayerStand", () => {
     expect(matches).toHaveLength(2);
   });
 
-  it("renders beside-stand info tokens when position is -1", () => {
+  it("renders off-stand info token text when position is -1", () => {
     const player = makePlayer({
       id: "p1",
       name: "Alpha",
@@ -90,8 +90,8 @@ describe("PlayerStand", () => {
       />,
     );
 
-    expect(html).toContain("data-testid=\"off-stand-tokens-p1\"");
-    expect(html).toContain("alt=\"Info: 11\"");
+    expect(html).toContain("data-testid=\"off-stand-token-text-p1\"");
+    expect(html).toContain("Off-stand: 11");
   });
 
   it("keeps stand segments aligned when only one stand has info tokens", () => {
