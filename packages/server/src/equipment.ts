@@ -80,6 +80,10 @@ function isXMarkedWire(tile: WireTile | undefined): boolean {
   return tile?.isXMarked === true;
 }
 
+function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
+  return state.mission === 20 || state.mission === 35;
+}
+
 function isMission13NonBlueTarget(
   state: Readonly<GameState>,
   tile: WireTile | undefined,
@@ -112,7 +116,7 @@ function getDetectorEligibleIndicesForStand(
     const tile = getTileByFlatIndex(target, index);
     if (!tile || tile.cut) return false;
     if (isMission13NonBlueTarget(state, tile)) return false;
-    if (state.mission === 20 && isXMarkedWire(tile)) return false;
+    if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) return false;
     return true;
   });
 }
@@ -182,7 +186,7 @@ function buildGeneralRadarDetail(
           !tile.cut &&
           tile.color === "blue" &&
           tile.gameValue === value &&
-          !(state.mission === 20 && isXMarkedWire(tile))
+          !(hasXWireEquipmentRestriction(state) && isXMarkedWire(tile))
         );
       });
       return hasValue;
@@ -380,10 +384,10 @@ export function validateUseEquipment(
       if (tile.cut && !mission40CountHintSeat) {
         return legalityError("TILE_ALREADY_CUT", "Cannot place Post-it on a cut wire");
       }
-      if (state.mission === 20 && isXMarkedWire(tile)) {
+      if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
-          "X-marked wires are ignored by equipment in mission 20",
+          "X-marked wires are ignored by equipment in this mission",
         );
       }
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") {
@@ -410,10 +414,10 @@ export function validateUseEquipment(
       if (!tileA || !tileB) {
         return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       }
-      if (state.mission === 20 && (isXMarkedWire(tileA) || isXMarkedWire(tileB))) {
+      if (hasXWireEquipmentRestriction(state) && (isXMarkedWire(tileA) || isXMarkedWire(tileB))) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
-          "X-marked wires are ignored by equipment in mission 20",
+          "X-marked wires are ignored by equipment in this mission",
         );
       }
       if (!areFlatIndicesAdjacentWithinStand(actor, payload.tileIndexA, payload.tileIndexB)) {
@@ -524,10 +528,10 @@ export function validateUseEquipment(
             "Detectors can only target blue wires in mission 13",
           );
         }
-        if (state.mission === 20 && isXMarkedWire(tile)) {
+        if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
           return legalityError(
             "MISSION_RULE_VIOLATION",
-            "X-marked wires are ignored by equipment in mission 20",
+            "X-marked wires are ignored by equipment in this mission",
           );
         }
       }
@@ -602,7 +606,7 @@ export function validateUseEquipment(
         }
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
-          state.mission === 20
+          hasXWireEquipmentRestriction(state)
             ? "Target stand has no non-X uncut wires"
             : "Target stand has no uncut wires",
         );
@@ -635,10 +639,10 @@ export function validateUseEquipment(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
-      if (state.mission === 20 && isXMarkedWire(tile)) {
+      if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
-          "X-marked wires are ignored by equipment in mission 20",
+          "X-marked wires are ignored by equipment in this mission",
         );
       }
       if (isMission13NonBlueTarget(state, tile)) {
@@ -845,7 +849,7 @@ function markEquipmentUsed(state: GameState, equipmentId: AnyEquipmentId): void 
 
 function hasSwappableTalkiesTile(state: GameState, player: Player): boolean {
   return player.hand.some(
-    (tile) => !tile.cut && !(state.mission === 20 && isXMarkedWire(tile)),
+    (tile) => !tile.cut && !(hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)),
   );
 }
 
@@ -866,10 +870,10 @@ function validateTalkiesWalkiesPayload(
   if (!myTile) {
     return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
   }
-  if (state.mission === 20 && isXMarkedWire(myTile)) {
+  if (hasXWireEquipmentRestriction(state) && isXMarkedWire(myTile)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
-      "X-marked wires are ignored by equipment in mission 20",
+      "X-marked wires are ignored by equipment in this mission",
     );
   }
   if (myTile.cut) {
@@ -884,10 +888,10 @@ function validateTalkiesWalkiesPayload(
     if (!teammateTile) {
       return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
     }
-    if (state.mission === 20 && isXMarkedWire(teammateTile)) {
+    if (hasXWireEquipmentRestriction(state) && isXMarkedWire(teammateTile)) {
       return legalityError(
         "MISSION_RULE_VIOLATION",
-        "X-marked wires are ignored by equipment in mission 20",
+        "X-marked wires are ignored by equipment in this mission",
       );
     }
     if (teammateTile.cut) {

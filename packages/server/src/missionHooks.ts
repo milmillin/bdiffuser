@@ -2470,9 +2470,49 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
   setup(rule: XMarkedWireRuleDef, ctx: SetupHookContext): void {
     for (const player of ctx.state.players) {
       if (player.hand.length === 0) continue;
-      // Mark the last tile as X-marked (unsorted, far right)
-      const lastTile = player.hand[player.hand.length - 1];
-      (lastTile as unknown as Record<string, unknown>).xMarked = true;
+
+      const standSizes =
+        Array.isArray(player.standSizes) && player.standSizes.length > 0
+          ? player.standSizes
+          : [player.hand.length];
+
+      let offset = 0;
+      for (const standSize of standSizes) {
+        const size = Math.max(0, standSize);
+        if (size === 0) {
+          continue;
+        }
+
+        const start = offset;
+        const endExclusive = Math.min(player.hand.length, offset + size);
+        offset += size;
+
+        if (endExclusive <= start) {
+          continue;
+        }
+
+        const standTiles = player.hand.slice(start, endExclusive);
+
+        let markerIndex = standTiles.findIndex((tile) => tile.isXMarked === true);
+        if (markerIndex === -1 && ctx.state.mission === 35) {
+          markerIndex = standTiles.findIndex((tile) => tile.color === "blue");
+        }
+        if (markerIndex === -1) {
+          markerIndex = standTiles.length - 1;
+        }
+
+        const [markerTile] = standTiles.splice(markerIndex, 1);
+        for (const tile of standTiles) {
+          tile.isXMarked = false;
+          delete (tile as unknown as { xMarked?: boolean }).xMarked;
+        }
+
+        markerTile.isXMarked = true;
+        delete (markerTile as unknown as { xMarked?: boolean }).xMarked;
+        standTiles.push(markerTile);
+
+        player.hand.splice(start, endExclusive - start, ...standTiles);
+      }
     }
 
     pushGameLog(ctx.state, {

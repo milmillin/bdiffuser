@@ -716,6 +716,14 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "post_it", "MISSION_RULE_VIOLATION");
   });
 
+  it("mission 35: rejects Post-it targeting an X-marked wire", () => {
+    const state = buildStateForEquipmentMatrix("post_it");
+    state.mission = 35;
+    state.players[0].hand[0].isXMarked = true;
+
+    expectLegalityCode(state, "actor", "post_it", "MISSION_RULE_VIOLATION");
+  });
+
   it("mission 20: rejects Talkies-Walkies when either selected wire is X-marked", () => {
     const state = buildStateForEquipmentMatrix("talkies_walkies");
     state.mission = 20;

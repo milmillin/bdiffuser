@@ -129,6 +129,10 @@ function legalityError(
   return { code, message };
 }
 
+function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
+  return state.mission === 20 || state.mission === 35;
+}
+
 /**
  * Whether this player is currently forced to use Reveal Reds.
  * - Standard missions: all remaining uncut wires are red.
@@ -382,11 +386,11 @@ export function validateDualCutDoubleDetectorLegality(
     return legalityError("TILE_ALREADY_CUT", "Tile 2 already cut");
   }
 
-  // Mission 20: X-marked wires are ignored by personal equipment.
-  if (state.mission === 20 && (tile1.isXMarked || tile2.isXMarked)) {
+  // Missions 20/35: X-marked wires are ignored by personal equipment.
+  if (hasXWireEquipmentRestriction(state) && (tile1.isXMarked || tile2.isXMarked)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
-      "X-marked wires cannot be targeted by personal equipment in mission 20",
+      "X-marked wires cannot be targeted by personal equipment in this mission",
     );
   }
 

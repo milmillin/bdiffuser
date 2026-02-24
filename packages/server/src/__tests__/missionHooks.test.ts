@@ -269,6 +269,57 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.discard).toHaveLength(0);
     });
 
+    it("mission 35: marks one blue X wire at far right of each stand", () => {
+      const captain = makePlayer({
+        id: "captain",
+        hand: [
+          makeTile({ id: "c1", color: "blue", gameValue: 2, sortValue: 2 }),
+          makeTile({ id: "c2", color: "red", gameValue: "RED", sortValue: 8.5 }),
+          makeTile({ id: "c3", color: "yellow", gameValue: "YELLOW", sortValue: 4.1 }),
+          makeTile({ id: "c4", color: "blue", gameValue: 7, sortValue: 7 }),
+        ],
+      });
+      captain.standSizes = [2, 2];
+
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "t1", color: "red", gameValue: "RED", sortValue: 3.5 }),
+          makeTile({ id: "t2", color: "blue", gameValue: 5, sortValue: 5 }),
+          makeTile({ id: "t3", color: "yellow", gameValue: "YELLOW", sortValue: 9.1 }),
+        ],
+      });
+      teammate.standSizes = [3];
+
+      const state = makeGameState({
+        mission: 35,
+        players: [captain, teammate],
+        log: [],
+      });
+
+      dispatchHooks(35, { point: "setup", state });
+
+      for (const player of state.players) {
+        const standSizes = player.standSizes ?? [player.hand.length];
+        let offset = 0;
+        let markerCount = 0;
+
+        for (const standSize of standSizes) {
+          const stand = player.hand.slice(offset, offset + standSize);
+          offset += standSize;
+          expect(stand.length).toBeGreaterThan(0);
+
+          const standMarkers = stand.filter((tile) => tile.isXMarked === true);
+          markerCount += standMarkers.length;
+          expect(standMarkers).toHaveLength(1);
+          expect(stand[stand.length - 1].isXMarked).toBe(true);
+          expect(stand[stand.length - 1].color).toBe("blue");
+        }
+
+        expect(markerCount).toBe(standSizes.length);
+      }
+    });
+
     it("mission 23: initializes hidden equipment pile with 7 face-down cards", () => {
       const state = makeGameState({
         mission: 23,

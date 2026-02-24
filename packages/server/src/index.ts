@@ -1151,10 +1151,10 @@ export class BombBustersServer extends Server<Env> {
       this.sendMsg(conn, { type: "error", message: "Tile already cut" });
       return;
     }
-    if (state.mission === 20 && tile.isXMarked) {
+    if ((state.mission === 20 || state.mission === 35) && tile.isXMarked) {
       this.sendMsg(conn, {
         type: "error",
-        message: "X-marked wires are ignored by equipment in mission 20",
+        message: "X-marked wires are ignored by equipment in this mission",
         code: "MISSION_RULE_VIOLATION",
       });
       return;
@@ -1524,7 +1524,7 @@ export class BombBustersServer extends Server<Env> {
       const targetPlayer = state.players.find((p) => p.id === talkiesForced.targetPlayerId);
       if (targetPlayer?.isBot) {
         const tileIndex = targetPlayer.hand.findIndex(
-          (tile) => !tile.cut && !(state.mission === 20 && tile.isXMarked),
+          (tile) => !tile.cut && !((state.mission === 20 || state.mission === 35) && tile.isXMarked),
         );
         if (tileIndex === -1) {
           console.log(
