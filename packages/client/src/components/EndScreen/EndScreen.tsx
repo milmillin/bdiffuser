@@ -21,6 +21,7 @@ export function EndScreen({
     return (
       <ShameDashboard
         gameState={gameState}
+        isWin={isWin}
         onBack={() => setShowShame(false)}
       />
     );
@@ -40,7 +41,7 @@ export function EndScreen({
   }
 
   const bg = isWin
-    ? "radial-gradient(ellipse at 50% 40%, #34d399 0%, #059669 40%, #064e3b 100%)"
+    ? "radial-gradient(ellipse at 50% 40%, #d4e157 0%, #9ccc65 35%, #558b2f 70%, #33691e 100%)"
     : "radial-gradient(ellipse at 50% 40%, #fb7185 0%, #e11d48 35%, #9f1239 65%, #4c0519 100%)";
 
   return (
@@ -55,7 +56,7 @@ export function EndScreen({
             <div className="text-8xl animate-bounce">🎉</div>
             <h1
               data-testid="result-title"
-              className="text-4xl font-black text-emerald-400 mt-6 drop-shadow-[0_0_20px_rgba(52,211,153,0.5)]"
+              className="text-4xl font-black text-green-950 mt-6 drop-shadow-[0_0_20px_rgba(255,255,200,0.4)]"
             >
               MISSION COMPLETE!
             </h1>
@@ -72,7 +73,7 @@ export function EndScreen({
           </>
         )}
 
-        <p className="text-white/90 text-2xl font-black mt-6 uppercase tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">
+        <p className={`text-2xl font-black mt-6 uppercase tracking-wide ${isWin ? "text-green-950 drop-shadow-[0_2px_8px_rgba(255,255,255,0.3)]" : "text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]"}`}>
           {gameState.result === "win" && "All wires have been safely cut!"}
           {gameState.result === "loss_red_wire" &&
             "A red wire was cut and the bomb exploded!"}
@@ -85,20 +86,20 @@ export function EndScreen({
         <div className="flex gap-4 mt-10">
           <button
             onClick={() => setShowBoard(true)}
-            className={`${btnBase} bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]`}
+            className={`${btnBase} ${isWin ? "bg-green-800 border-green-950 text-green-100 shadow-[0_4px_15px_rgba(22,101,52,0.5)] hover:bg-green-700 hover:shadow-[0_6px_20px_rgba(22,101,52,0.6)]" : "bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]"}`}
           >
             View Board
           </button>
           <button
             onClick={() => setShowShame(true)}
-            className={`${btnBase} bg-rose-900 border-rose-950 text-white shadow-[0_4px_15px_rgba(136,19,55,0.5)] hover:bg-rose-800 hover:shadow-[0_6px_20px_rgba(136,19,55,0.6)]`}
+            className={`${btnBase} ${isWin ? "bg-lime-600 border-lime-800 text-white shadow-[0_4px_15px_rgba(101,163,13,0.5)] hover:bg-lime-500 hover:shadow-[0_6px_20px_rgba(101,163,13,0.6)]" : "bg-rose-900 border-rose-950 text-white shadow-[0_4px_15px_rgba(136,19,55,0.5)] hover:bg-rose-800 hover:shadow-[0_6px_20px_rgba(136,19,55,0.6)]"}`}
           >
-            Who Blew It?
+            {isWin ? "MVP Board" : "Who Blew It?"}
           </button>
           <button
             onClick={onPlayAgain}
             data-testid="play-again"
-            className={`${btnBase} bg-amber-500 border-amber-800 text-gray-900 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:bg-amber-400 hover:shadow-[0_6px_20px_rgba(245,158,11,0.6)]`}
+            className={`${btnBase} ${isWin ? "bg-yellow-400 border-yellow-600 text-green-950 shadow-[0_4px_15px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:shadow-[0_6px_20px_rgba(250,204,21,0.6)]" : "bg-amber-500 border-amber-800 text-gray-900 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:bg-amber-400 hover:shadow-[0_6px_20px_rgba(245,158,11,0.6)]"}`}
           >
             Play Again
           </button>
