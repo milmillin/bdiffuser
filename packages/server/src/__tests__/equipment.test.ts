@@ -708,7 +708,19 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error).toBeNull();
   });
 
-  it("mission 40: alternating parity seats cannot use Post-it on cut wires", () => {
+  it("mission 24: Post-it may target cut blue wires", () => {
+    const state = buildStateForEquipmentMatrix("post_it");
+    state.mission = 24;
+    state.players[1].hand[0].cut = true;
+
+    const error = validateUseEquipment(state, "teammate", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+    expect(error).toBeNull();
+  });
+
+  it("mission 40: non-captain alternating seats may use Post-it on cut wires", () => {
     const state = buildStateForEquipmentMatrix("post_it");
     state.mission = 40;
     state.players[0].isCaptain = true;
@@ -718,8 +730,7 @@ describe("equipment validation matrix across shared game states", () => {
       kind: "post_it",
       tileIndex: 0,
     });
-    expect(error).not.toBeNull();
-    expect(error?.code).toBe("TILE_ALREADY_CUT");
+    expect(error).toBeNull();
   });
 
   it("mission 20: rejects Post-it targeting an X-marked wire", () => {
@@ -986,7 +997,7 @@ describe("equipment execution", () => {
     ]);
   });
 
-  it("mission 24: post-it places x1/x2/x3 token based on stand count", () => {
+  it("mission 24: post-it may target a cut wire and places x1/x2/x3 token based on stand count", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [
@@ -1008,14 +1019,14 @@ describe("equipment execution", () => {
 
     const action = executeUseEquipment(state, "actor", "post_it", {
       kind: "post_it",
-      tileIndex: 0,
+      tileIndex: 2,
     });
 
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
     expect(action.effect).toBe("post_it");
     expect(state.players[0].infoTokens).toEqual([
-      { value: 0, countHint: 3, position: 0, isYellow: false },
+      { value: 0, countHint: 3, position: 2, isYellow: false },
     ]);
   });
 
@@ -1056,7 +1067,7 @@ describe("equipment execution", () => {
     ]);
   });
 
-  it("mission 40: alternating non-captain Post-it places even/odd token", () => {
+  it("mission 40: alternating non-captain Post-it may target cut wire and places even/odd token", () => {
     const captain = makePlayer({
       id: "captain",
       isCaptain: true,
@@ -1064,7 +1075,7 @@ describe("equipment execution", () => {
     });
     const partner = makePlayer({
       id: "partner",
-      hand: [makeTile({ id: "p1", gameValue: 8, sortValue: 8 })],
+      hand: [makeTile({ id: "p1", gameValue: 8, sortValue: 8, cut: true })],
       infoTokens: [],
     });
     const state = makeGameState({

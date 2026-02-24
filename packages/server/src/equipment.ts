@@ -33,7 +33,7 @@ import {
 } from "./validation.js";
 import { executeDualCut, advanceTurn } from "./gameLogic.js";
 import { dispatchHooks, hasActiveConstraint } from "./missionHooks.js";
-import { applyMissionInfoTokenVariant, isMission40CountHintPlayer } from "./infoTokenRules.js";
+import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
@@ -82,6 +82,10 @@ function isXMarkedWire(tile: WireTile | undefined): boolean {
 
 function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
   return state.mission === 20 || state.mission === 35;
+}
+
+function canPostItTargetCutWire(state: Readonly<GameState>): boolean {
+  return state.mission === 24 || state.mission === 40;
 }
 
 function isMission13NonBlueTarget(
@@ -387,8 +391,7 @@ export function validateUseEquipment(
       }
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
-      const mission40CountHintSeat = isMission40CountHintPlayer(state, actor);
-      if (tile.cut && !mission40CountHintSeat) {
+      if (tile.cut && !canPostItTargetCutWire(state)) {
         return legalityError("TILE_ALREADY_CUT", "Cannot place Post-it on a cut wire");
       }
       if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {

@@ -214,7 +214,20 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(captain.hand[0], 0)).toBe(true);
   });
 
-  it("mission 40: post_it still rejects cut blue tiles for parity alternating seat", () => {
+  it("mission 24: post_it allows cut blue tiles", () => {
+    const me = player({
+      id: "me",
+      hand: [tile({ cut: true, gameValue: 7 })],
+    });
+    const filter = getOwnTileSelectableFilter(
+      { kind: "post_it" },
+      me,
+      { mission: 24 },
+    )!;
+    expect(filter(me.hand[0], 0)).toBe(true);
+  });
+
+  it("mission 40: post_it allows cut blue tiles for non-captain alternating seat", () => {
     const captain = player({
       id: "captain",
       isCaptain: true,
@@ -229,7 +242,7 @@ describe("getOwnTileSelectableFilter", () => {
       partner,
       mission40State([captain, partner]),
     )!;
-    expect(filter(partner.hand[0], 0)).toBe(false);
+    expect(filter(partner.hand[0], 0)).toBe(true);
   });
 
   it("double_detector: allows blue numeric tiles even before 2 opponent tiles selected", () => {
@@ -933,7 +946,26 @@ describe("handleOwnTileClickEquipment", () => {
     });
   });
 
-  it("mission 40: post_it keeps parity alternating seat blocked on cut tile", () => {
+  it("mission 24: post_it allows sending from a cut blue tile", () => {
+    const me = player({
+      id: "me",
+      hand: [tile({ cut: true, color: "blue", gameValue: 7 })],
+    });
+    const result = handleOwnTileClickEquipment(
+      { kind: "post_it" },
+      0,
+      me,
+      { mission: 24 },
+    );
+    expect(result.newMode).toBeNull();
+    expect(result.sendPayload).toEqual({
+      type: "useEquipment",
+      equipmentId: "post_it",
+      payload: { kind: "post_it", tileIndex: 0 },
+    });
+  });
+
+  it("mission 40: post_it allows non-captain alternating seat on cut tile", () => {
     const captain = player({
       id: "captain",
       isCaptain: true,
@@ -949,8 +981,12 @@ describe("handleOwnTileClickEquipment", () => {
       partner,
       mission40State([captain, partner]),
     );
-    expect(result.newMode).toEqual({ kind: "post_it" });
-    expect(result.sendPayload).toBeUndefined();
+    expect(result.newMode).toBeNull();
+    expect(result.sendPayload).toEqual({
+      type: "useEquipment",
+      equipmentId: "post_it",
+      payload: { kind: "post_it", tileIndex: 0 },
+    });
   });
 
   it("post_it: ignores red tile", () => {

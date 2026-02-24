@@ -5,19 +5,12 @@
 import type { ClientGameState, ClientMessage, ClientPlayer, VisibleTile } from "@bomb-busters/shared";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
 
-type Mission40Context = Pick<ClientGameState, "mission" | "players">;
+type PostItMissionContext = Pick<ClientGameState, "mission">;
 
-function isMission40CountHintSeat(
-  gameState: Mission40Context | undefined,
-  me: ClientPlayer,
+function canPostItTargetCutWire(
+  gameState: PostItMissionContext | undefined,
 ): boolean {
-  if (!gameState || gameState.mission !== 40) return false;
-  const captainIndex = gameState.players.findIndex((player) => player.isCaptain);
-  const meIndex = gameState.players.findIndex((player) => player.id === me.id);
-  if (captainIndex === -1 || meIndex === -1) return false;
-  const seatOffset =
-    (meIndex - captainIndex + gameState.players.length) % gameState.players.length;
-  return seatOffset % 2 === 0;
+  return gameState?.mission === 24 || gameState?.mission === 40;
 }
 
 // --- Selectability filters ---
@@ -50,12 +43,12 @@ export function getOpponentTileSelectableFilter(
 export function getOwnTileSelectableFilter(
   mode: EquipmentMode | null,
   me: ClientPlayer | undefined,
-  gameState?: Mission40Context,
+  gameState?: PostItMissionContext,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode || !me) return undefined;
   switch (mode.kind) {
     case "post_it": {
-      const allowCutTile = isMission40CountHintSeat(gameState, me);
+      const allowCutTile = canPostItTargetCutWire(gameState);
       return (tile, idx) =>
         (allowCutTile || !tile.cut) &&
         tile.color === "blue" &&
@@ -254,12 +247,12 @@ export function handleOwnTileClickEquipment(
   mode: EquipmentMode | null,
   tileIndex: number,
   me: ClientPlayer | undefined,
-  gameState?: Mission40Context,
+  gameState?: PostItMissionContext,
 ): OwnTileClickResult {
   if (!mode || !me) return { newMode: mode };
   const tile = me.hand[tileIndex];
   const allowCutTile =
-    (mode.kind === "post_it" && isMission40CountHintSeat(gameState, me))
+    (mode.kind === "post_it" && canPostItTargetCutWire(gameState))
     || mode.kind === "label_neq";
   if (!tile || (tile.cut && !allowCutTile)) return { newMode: mode };
 
