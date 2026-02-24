@@ -7,6 +7,7 @@ import {
   type BoardState,
   type CharacterId,
 } from "@bomb-busters/shared";
+import { ScrollableRow } from "./Board/BoardArea.js";
 
 const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
 
@@ -152,71 +153,75 @@ export function CardStrip({
 
   return (
     <div className="w-full" data-testid="card-stack">
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-        {cards.map((card) => {
-          const isSelected = selectedCardId === card.id;
-          const headerBgClass = isSelected
-            ? "bg-sky-700/85 text-white"
-            : card.statusClassName;
-          const borderClass = isSelected ? "border-sky-500" : card.frameClassName;
-          return (
-            <div
-              key={card.id}
-              className={`flex w-36 sm:w-40 flex-col items-stretch gap-0 rounded-xl overflow-hidden ${headerBgClass}`}
-            >
-              <div
-                className="w-full rounded-t-xl rounded-b-none pl-3 pr-2 py-1 text-left text-[9px] font-bold uppercase leading-none"
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="inline-flex items-center gap-1">
-                    {!isSelected && card.showLockIcon && (
-                      <LockIcon className="opacity-95" />
-                    )}
-                    <span>{isSelected ? "Selected" : card.statusLabel}</span>
-                  </span>
+      <ScrollableRow>
+        <div className="mx-auto w-max min-w-full">
+          <div className="flex flex-nowrap justify-center gap-2 sm:gap-3">
+            {cards.map((card) => {
+              const isSelected = selectedCardId === card.id;
+              const headerBgClass = isSelected
+                ? "bg-sky-700/85 text-white"
+                : card.statusClassName;
+              const borderClass = isSelected ? "border-sky-500" : card.frameClassName;
+              return (
+                <div
+                  key={card.id}
+                  className={`flex w-36 shrink-0 sm:w-40 flex-col items-stretch gap-0 rounded-xl overflow-hidden ${headerBgClass}`}
+                >
+                  <div
+                    className="w-full rounded-t-xl rounded-b-none pl-3 pr-2 py-1 text-left text-[9px] font-bold uppercase leading-none"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="inline-flex items-center gap-1">
+                        {!isSelected && card.showLockIcon && (
+                          <LockIcon className="opacity-95" />
+                        )}
+                        <span>{isSelected ? "Selected" : card.statusLabel}</span>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`View ${card.name}`}
+                        onClick={() => setPreviewCard(card)}
+                        className="flex h-4 w-4 items-center justify-center rounded-full border border-white/70 bg-black/30 text-[9px] font-black leading-none text-white"
+                      >
+                        i
+                      </button>
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    aria-label={`View ${card.name}`}
-                    onClick={() => setPreviewCard(card)}
-                    className="flex h-4 w-4 items-center justify-center rounded-full border border-white/70 bg-black/30 text-[9px] font-black leading-none text-white"
+                    onClick={() => {
+                      if (!canSelectCards) return;
+                      if (isSelected) {
+                        onDeselectCard?.();
+                        return;
+                      }
+                      if (selectedCardId && selectedCardId !== card.id) {
+                        onDeselectCard?.();
+                        return;
+                      }
+                      const canUseNow = isMyTurn && card.canUseOnTurn && !!card.onUse;
+                      if (!canUseNow) return;
+                      const used = card.onUse!();
+                      if (used) onSelectCard?.(card.id);
+                    }}
+                    className={`relative w-full aspect-[739/1040] rounded-xl border-2 overflow-hidden text-left ${borderClass}`}
                   >
-                    i
+                    {card.image ? (
+                      <img
+                        src={`/images/${card.image}`}
+                        alt={card.name}
+                        className="block h-full w-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-slate-900" />
+                    )}
                   </button>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!canSelectCards) return;
-                  if (isSelected) {
-                    onDeselectCard?.();
-                    return;
-                  }
-                  if (selectedCardId && selectedCardId !== card.id) {
-                    onDeselectCard?.();
-                    return;
-                  }
-                  const canUseNow = isMyTurn && card.canUseOnTurn && !!card.onUse;
-                  if (!canUseNow) return;
-                  const used = card.onUse!();
-                  if (used) onSelectCard?.(card.id);
-                }}
-                className={`relative w-full aspect-[739/1040] rounded-xl border-2 overflow-hidden text-left ${borderClass}`}
-              >
-                {card.image ? (
-                  <img
-                    src={`/images/${card.image}`}
-                    alt={card.name}
-                    className="block h-full w-full rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-slate-900" />
-                )}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      </ScrollableRow>
 
       {previewCard && (
         <div
