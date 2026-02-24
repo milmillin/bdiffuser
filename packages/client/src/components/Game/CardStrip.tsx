@@ -12,9 +12,13 @@ import { ScrollableRow } from "./Board/BoardArea.js";
 const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
 
 type StackCard = {
+  kind: "character" | "equipment";
   id: string;
   name: string;
   image: string | null;
+  previewImage: string | null;
+  isUsed: boolean;
+  isLocked: boolean;
   statusLabel: string;
   showLockIcon: boolean;
   statusClassName: string;
@@ -99,16 +103,20 @@ export function CardStrip({
       const charImage = CHARACTER_IMAGES[character];
       const skillUsed = characterUsed ?? false;
       builtCards.push({
+        kind: "character",
         id: `personal-${character}`,
         name: charText.name,
-        image: charImage,
+        image: skillUsed ? "character_back.png" : charImage,
+        previewImage: charImage,
+        isUsed: skillUsed,
+        isLocked: false,
         statusLabel: skillUsed ? "Used" : "Available",
         showLockIcon: false,
         statusClassName: skillUsed
-          ? "bg-rose-700/85 text-white"
+          ? "bg-black/75 text-gray-200"
           : "bg-emerald-700/85 text-white",
         frameClassName: skillUsed
-          ? "border-rose-700/85"
+          ? "border-black/75"
           : "border-emerald-700/85",
         detailSubtitle: charText.abilityName,
         detailTiming: charText.timing,
@@ -123,10 +131,20 @@ export function CardStrip({
       const status = getStatusLabel(eq);
       const def = EQUIPMENT_DEFS_BY_ID.get(eq.id);
       const rulesText = getEquipmentCardText(eq.id, def);
+      const showBackImage = eq.faceDown || eq.used;
+      const isLockedEquipmentCard =
+        !eq.used &&
+        ((eq.faceDown && !eq.unlocked) ||
+          (eq.unlocked && eq.secondaryLockValue !== undefined) ||
+          !eq.unlocked);
       builtCards.push({
+        kind: "equipment",
         id: `equipment-${eq.id}`,
         name: eq.name,
-        image: eq.image,
+        image: showBackImage ? "equipment_back.png" : eq.image,
+        previewImage: eq.faceDown ? "equipment_back.png" : eq.image,
+        isUsed: eq.used,
+        isLocked: isLockedEquipmentCard,
         statusLabel: status.label,
         showLockIcon:
           (eq.faceDown && !eq.unlocked) ||
@@ -154,18 +172,35 @@ export function CardStrip({
   return (
     <div className="w-full" data-testid="card-stack">
       <ScrollableRow>
-        <div className="mx-auto w-max min-w-full">
+        <div className="mx-auto w-max min-w-full py-2">
           <div className="flex flex-nowrap justify-center gap-2 sm:gap-3">
             {cards.map((card) => {
               const isSelected = selectedCardId === card.id;
+              const isCardEnabled = canSelectCards && card.canUse && !!card.onUse;
+              const showDisabledOverlay =
+                (card.kind === "equipment" && !isCardEnabled) ||
+                (card.kind === "character" && card.isUsed);
+              const overlayClassName =
+                card.kind === "equipment" && card.isLocked
+                  ? "bg-black/50"
+                  : "bg-black/65";
               const headerBgClass = isSelected
                 ? "bg-sky-700/85 text-white"
                 : card.statusClassName;
               const borderClass = isSelected ? "border-sky-500" : card.frameClassName;
+              const wrapperScaleClass = isSelected ? "scale-[1.02]" : "";
+              const wrapperHoverClass = isCardEnabled
+                ? isSelected
+                  ? "cursor-pointer hover:scale-[1.025]"
+                  : "cursor-pointer hover:scale-[1.01]"
+                : "cursor-default";
+              const buttonCursorClass = isCardEnabled
+                ? "cursor-pointer"
+                : "cursor-default";
               return (
                 <div
                   key={card.id}
-                  className={`flex w-36 shrink-0 sm:w-40 flex-col items-stretch gap-0 rounded-xl overflow-hidden ${headerBgClass}`}
+                  className={`flex w-36 shrink-0 sm:w-40 flex-col items-stretch gap-0 rounded-xl overflow-hidden transition-transform duration-150 ease-out ${headerBgClass} ${wrapperScaleClass} ${wrapperHoverClass}`}
                 >
                   <div
                     className="w-full rounded-t-xl rounded-b-none pl-3 pr-2 py-1 text-left text-[9px] font-bold uppercase leading-none"
@@ -190,7 +225,7 @@ export function CardStrip({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!canSelectCards) return;
+                      if (!isCardEnabled) return;
                       if (isSelected) {
                         onDeselectCard?.();
                         return;
@@ -199,12 +234,10 @@ export function CardStrip({
                         onDeselectCard?.();
                         return;
                       }
-                      const canUseNow = card.canUse && !!card.onUse;
-                      if (!canUseNow) return;
                       const used = card.onUse!();
                       if (used) onSelectCard?.(card.id);
                     }}
-                    className={`relative w-full aspect-[739/1040] rounded-xl border-2 overflow-hidden text-left ${borderClass}`}
+                    className={`relative w-full aspect-[739/1040] rounded-xl border-2 overflow-hidden text-left ${borderClass} ${buttonCursorClass}`}
                   >
                     {card.image ? (
                       <img
@@ -214,6 +247,11 @@ export function CardStrip({
                       />
                     ) : (
                       <div className="h-full w-full bg-slate-900" />
+                    )}
+                    {showDisabledOverlay && (
+                      <div
+                        className={`pointer-events-none absolute inset-0 ${overlayClassName}`}
+                      />
                     )}
                   </button>
                 </div>
@@ -241,9 +279,9 @@ export function CardStrip({
             </button>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
               <div className="w-full aspect-[739/1040] overflow-hidden rounded-xl bg-slate-900">
-                {previewCard.image ? (
+                {previewCard.previewImage ? (
                   <img
-                    src={`/images/${previewCard.image}`}
+                    src={`/images/${previewCard.previewImage}`}
                     alt={previewCard.name}
                     className="h-full w-full object-contain"
                   />
