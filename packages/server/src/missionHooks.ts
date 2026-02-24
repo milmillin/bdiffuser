@@ -2606,12 +2606,21 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
 
 /**
  * Missions 38, 56, 64: Upside-down wires.
- * Each player flips wire(s) face-down without looking. Teammates can
- * see the value but the player cannot.
+ * Mission 38 flips only the captain's wire; missions 56/64 flip wires
+ * for each player. Teammates can see the value but the owner cannot.
  */
 registerHookHandler<"upside_down_wire">("upside_down_wire", {
   setup(rule: UpsideDownWireRuleDef, ctx: SetupHookContext): void {
+    const captainOnly = ctx.state.mission === 38;
+
     for (const player of ctx.state.players) {
+      if (captainOnly && !player.isCaptain) {
+        for (const tile of player.hand) {
+          delete (tile as unknown as Record<string, unknown>).upsideDown;
+        }
+        continue;
+      }
+
       const uncutIndices = player.hand
         .map((_, i) => i)
         .filter((i) => !player.hand[i].cut);

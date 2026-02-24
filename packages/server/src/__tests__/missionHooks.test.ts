@@ -368,6 +368,42 @@ describe("missionHooks dispatcher", () => {
       expect(new Set(allValues).size).toBe(allValues.length);
     });
 
+    it("mission 38: flips exactly one captain wire and none for teammates", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "c1", color: "blue", gameValue: 1, sortValue: 1 }),
+          makeTile({ id: "c2", color: "blue", gameValue: 2, sortValue: 2 }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3 }),
+          makeTile({ id: "t2", color: "blue", gameValue: 4, sortValue: 4 }),
+        ],
+      });
+
+      const state = makeGameState({
+        mission: 38,
+        players: [captain, teammate],
+        log: [],
+      });
+
+      dispatchHooks(38, { point: "setup", state });
+
+      const captainUpsideDownCount = captain.hand.filter(
+        (tile) => (tile as unknown as { upsideDown?: boolean }).upsideDown === true,
+      ).length;
+      const teammateUpsideDownCount = teammate.hand.filter(
+        (tile) => (tile as unknown as { upsideDown?: boolean }).upsideDown === true,
+      ).length;
+
+      expect(captainUpsideDownCount).toBe(1);
+      expect(teammateUpsideDownCount).toBe(0);
+    });
+
     it("mission 65: deals Number cards as equally as possible from captain clockwise", () => {
       const p1 = makePlayer({ id: "p1", isCaptain: false });
       const p2 = makePlayer({ id: "p2", isCaptain: false });
