@@ -9,6 +9,7 @@ import {
   makeSpecialMarker,
   makeTile,
   makeRedTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import { botPlaceInfoToken, getBotAction } from "../botController";
 import { callLLM } from "../llmClient";
@@ -205,6 +206,42 @@ describe("getBotAction fallback", () => {
 
     const result = await getBotAction(state, "bot", "", "");
     expect(result.action).toEqual({ action: "revealReds" });
+  });
+
+  it("mission 48: fallback selects simultaneous yellow cut when yellows are the only legal cuts", async () => {
+    const bot = makePlayer({
+      id: "bot",
+      isBot: true,
+      hand: [
+        makeYellowTile({ id: "bot-y1" }),
+        makeRedTile({ id: "bot-r1", cut: true }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [
+        makeYellowTile({ id: "t-y1" }),
+        makeYellowTile({ id: "t-y2" }),
+        makeRedTile({ id: "t-r1", cut: true }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 48,
+      phase: "playing",
+      players: [bot, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const result = await getBotAction(state, "bot", "", "");
+    expect(result.action.action).toBe("simultaneousRedCut");
+    if (result.action.action === "simultaneousRedCut") {
+      expect(result.action.targets).toEqual([
+        { playerId: "bot", tileIndex: 0 },
+        { playerId: "teammate", tileIndex: 0 },
+        { playerId: "teammate", tileIndex: 1 },
+      ]);
+    }
   });
 
   it("returns chooseNextPlayer forced action for mission-10 captain bot without calling LLM", async () => {
