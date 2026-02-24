@@ -66,11 +66,13 @@ const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
 const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
+const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
   FORCED_ACTION_DETECTOR_TILE_CHOICE,
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
+  FORCED_ACTION_MISSION46_SEVENS_CUT,
 ]);
 
 function getUnknownForcedAction(
@@ -142,6 +144,11 @@ type PendingAction =
       immediatePayload?: UseEquipmentPayload;
     };
 
+type Mission46CutTarget = {
+  playerId: string;
+  tileIndex: number;
+};
+
 export function GameBoard({
   gameState,
   send,
@@ -205,6 +212,9 @@ export function GameBoard({
   const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
     number | null
   >(null);
+  const [mission46Targets, setMission46Targets] = useState<Mission46CutTarget[]>(
+    [],
+  );
 
   useEffect(() => {
     const fa = gameState.pendingForcedAction;
@@ -240,6 +250,11 @@ export function GameBoard({
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
   const unknownForcedAction = getUnknownForcedAction(gameState);
+  const mission46ForcedForMe =
+    gameState.phase === "playing" &&
+    isMyTurn &&
+    pendingForcedAction?.kind === FORCED_ACTION_MISSION46_SEVENS_CUT &&
+    pendingForcedAction.playerId === playerId;
   const isUnknownForcedActionCaptain =
     unknownForcedAction?.captainId != null &&
     unknownForcedAction.captainId === playerId;
@@ -257,6 +272,19 @@ export function GameBoard({
   const forcedActionCaptainName = forcedActionCaptainId
     ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
     : undefined;
+
+  useEffect(() => {
+    if (!mission46ForcedForMe) {
+      setMission46Targets([]);
+      return;
+    }
+    // Mission 46 forced action supersedes any staged normal action.
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+    setEquipmentMode(null);
+    setSelectedDockCardId(null);
+  }, [mission46ForcedForMe]);
+
   const activeGlobalConstraints =
     gameState.campaign?.constraints?.global?.filter(
       (constraint) => constraint.active,
@@ -449,8 +477,16 @@ export function GameBoard({
     return undefined;
   };
 
-  const getOpponentSelectedTileIndices = (oppId: string) =>
-    _getOpponentSelectedTileIndices(equipmentMode, oppId);
+  const getOpponentSelectedTileIndices = (oppId: string): number[] | undefined => {
+    const fromEquipment = _getOpponentSelectedTileIndices(equipmentMode, oppId);
+    if (fromEquipment !== undefined) return fromEquipment;
+    if (equipmentMode) return undefined;
+    if (!mission46ForcedForMe) return undefined;
+    const indices = mission46Targets
+      .filter((target) => target.playerId === oppId)
+      .map((target) => target.tileIndex);
+    return indices.length > 0 ? indices : undefined;
+  };
 
   const getOwnSelectedTileIndex = (): number | undefined => {
     if (isSetup)
@@ -458,6 +494,7 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
+    if (mission46ForcedForMe) return undefined;
     if (talkiesWalkiesSelection != null) return talkiesWalkiesSelection;
     if (pendingAction?.kind === "dual_cut") return pendingAction.actorTileIndex;
     if (pendingAction?.kind === "solo_cut") return pendingAction.actorTileIndex;
@@ -471,6 +508,12 @@ export function GameBoard({
   const getOwnSelectedTileIndices = (): number[] | undefined => {
     const fromEquipment = _getOwnSelectedTileIndices(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
+    if (!equipmentMode && mission46ForcedForMe) {
+      const indices = mission46Targets
+        .filter((target) => target.playerId === playerId)
+        .map((target) => target.tileIndex);
+      return indices.length > 0 ? indices : undefined;
+    }
     if (
       selectedGuessTile != null &&
       pendingAction == null &&
@@ -586,6 +629,38 @@ export function GameBoard({
     setSelectedDockCardId(null);
   };
 
+  const toggleMission46Target = useCallback(
+    (targetPlayerId: string, tileIndex: number) => {
+      setMission46Targets((current) => {
+        const existingIndex = current.findIndex(
+          (target) =>
+            target.playerId === targetPlayerId && target.tileIndex === tileIndex,
+        );
+        if (existingIndex >= 0) {
+          return current.filter((_, index) => index !== existingIndex);
+        }
+        if (current.length >= 4) {
+          return current;
+        }
+        return [...current, { playerId: targetPlayerId, tileIndex }];
+      });
+    },
+    [],
+  );
+
+  const clearMission46Targets = useCallback(() => {
+    setMission46Targets([]);
+  }, []);
+
+  const confirmMission46SevensCut = useCallback(() => {
+    if (!mission46ForcedForMe || mission46Targets.length !== 4) return;
+    send({ type: "simultaneousFourCut", targets: mission46Targets });
+    setMission46Targets([]);
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
+  }, [mission46ForcedForMe, mission46Targets, send]);
+
   const cancelSelectedDockCard = useCallback(() => {
     setSelectedDockCardId(null);
     setEquipmentMode(null);
@@ -688,6 +763,12 @@ export function GameBoard({
                         gameState.phase === "playing"
                           ? (tileIndex) =>
                               handleOpponentTileClick(opp.id, tileIndex)
+                          : mission46ForcedForMe
+                            ? (tileIndex) => {
+                                const oppTile = opp.hand[tileIndex];
+                                if (!oppTile || oppTile.cut) return;
+                                toggleMission46Target(opp.id, tileIndex);
+                              }
                           : pendingAction?.kind === "dual_cut"
                             ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
@@ -731,6 +812,8 @@ export function GameBoard({
                         gameState.phase === "playing" &&
                         MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind)
                           ? getOpponentTileSelectableFilter(opp.id)
+                          : mission46ForcedForMe
+                            ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
                             ? (tile: VisibleTile) => !tile.cut
                             : playingInteractionEnabled &&
@@ -877,6 +960,14 @@ export function GameBoard({
                       selectedIndex={talkiesWalkiesSelection}
                     />
                   )}
+
+                {gameState.phase === "playing" && mission46ForcedForMe && (
+                  <Mission46SevensCutPanel
+                    selectedCount={mission46Targets.length}
+                    onClear={clearMission46Targets}
+                    onConfirm={confirmMission46SevensCut}
+                  />
+                )}
 
                 {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
                 {gameState.phase === "playing" &&
@@ -1053,6 +1144,12 @@ export function GameBoard({
                                   : tileIndex,
                               );
                             }
+                          : mission46ForcedForMe
+                            ? (tileIndex) => {
+                                const tile = me.hand[tileIndex];
+                                if (!tile || tile.cut) return;
+                                toggleMission46Target(playerId, tileIndex);
+                              }
                           : playingInteractionEnabled &&
                               isMyTurn
                             ? (tileIndex) => {
@@ -1160,6 +1257,8 @@ export function GameBoard({
                           ? (tile: VisibleTile) =>
                               !tile.cut &&
                               !(hasXWireEquipmentRestriction && tile.isXMarked)
+                          : mission46ForcedForMe
+                            ? (tile: VisibleTile) => !tile.cut
                           : playingInteractionEnabled &&
                               isMyTurn
                             ? (tile: VisibleTile) => {
@@ -1249,6 +1348,35 @@ function getStatusContent(
       : 0;
 
   // --- Forced action messages (playing phase only) ---
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "mission46SevensCut"
+  ) {
+    if (pendingForcedAction.playerId === playerId) {
+      return (
+        <span className="inline-flex items-center gap-2">
+          <span className="bg-amber-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+            Forced
+          </span>
+          <span className="text-amber-300 font-bold">
+            Mission 46: select 4 wires for the simultaneous 7-cut.
+          </span>
+        </span>
+      );
+    }
+
+    const forcedPlayerName =
+      gameState.players.find((player) => player.id === pendingForcedAction.playerId)
+        ?.name ?? "the active player";
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">{forcedPlayerName}</span>{" "}
+        to resolve Mission 46&apos;s forced simultaneous 7-cut...
+      </span>
+    );
+  }
+
   if (
     gameState.phase === "playing" &&
     pendingForcedAction?.kind === "chooseNextPlayer" &&
@@ -1369,6 +1497,54 @@ function getStatusContent(
     );
   }
   return null;
+}
+
+function Mission46SevensCutPanel({
+  selectedCount,
+  onClear,
+  onConfirm,
+}: {
+  selectedCount: number;
+  onClear: () => void;
+  onConfirm: () => void;
+}) {
+  const canConfirm = selectedCount === 4;
+
+  return (
+    <div
+      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs space-y-2"
+      data-testid="mission46-sevens-cut-panel"
+    >
+      <div className="font-bold text-amber-300 uppercase tracking-wide">
+        Mission 46 Forced Action
+      </div>
+      <div className="text-amber-100">
+        Select exactly 4 uncut wires to attempt the simultaneous 7-wire cut.
+      </div>
+      <div className="text-amber-200/90">{selectedCount}/4 wires selected</div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onClear}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          className={`px-3 py-1 rounded font-black transition-colors ${
+            canConfirm
+              ? "bg-red-600 hover:bg-red-500 text-white"
+              : "bg-gray-700 text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Confirm 4-Wire Cut
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function PendingActionStrip({
