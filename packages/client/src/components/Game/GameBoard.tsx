@@ -444,6 +444,11 @@ export function GameBoard({
     pendingAction?.kind === "dual_cut" &&
     isMission9BlockedValue(pendingAction.guessValue);
   const mission9HasYellowSoloValue = soloValues.includes("YELLOW");
+  const canConfirmSoloFromDraft =
+    selectedGuessValue != null &&
+    selectedGuessValue !== "RED" &&
+    soloValueSet.has(selectedGuessValue) &&
+    !isMission9BlockedValue(selectedGuessValue);
   const soloCandidateIndices =
     selectedGuessTile != null && me
       ? me.hand
@@ -459,6 +464,14 @@ export function GameBoard({
           })
           .map(({ index }) => index)
       : [];
+
+  const confirmSoloFromDraft = useCallback(() => {
+    if (!canConfirmSoloFromDraft) return;
+    if (selectedGuessValue == null) return;
+    send({ type: "soloCut", value: selectedGuessValue });
+    setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
+  }, [canConfirmSoloFromDraft, selectedGuessValue, send]);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -1262,6 +1275,7 @@ export function GameBoard({
                     pendingAction={pendingAction}
                     selectedGuessTile={selectedGuessTile}
                     selectedGuessValue={selectedGuessValue}
+                    canConfirmSoloFromDraft={canConfirmSoloFromDraft}
                     mission9SelectedGuessBlocked={mission9SelectedGuessBlocked}
                     mission9ActiveValue={mission9ActiveValue}
                     mission11RevealAttemptAvailable={mission11RevealAttemptAvailable}
@@ -1273,6 +1287,7 @@ export function GameBoard({
                       )
                     }
                     onMission11RevealAttempt={stageMission11RevealAttempt}
+                    onConfirmSoloFromDraft={confirmSoloFromDraft}
                     onCancel={cancelPendingAction}
                     onConfirm={confirmPendingAction}
                   />
@@ -1422,36 +1437,12 @@ export function GameBoard({
                               }
                               if (tile.color === "red") return;
 
-                              const tileValue = tile.gameValue;
-                              const canStageSolo =
-                                tileValue != null &&
-                                tileValue !== "RED" &&
-                                tileValue === selectedGuessValue &&
-                                soloValueSet.has(tileValue) &&
-                                !isMission9BlockedValue(tileValue);
-
                               if (selectedGuessTile == null) {
                                 setSelectedGuessTile(tileIndex);
                                 return;
                               }
                               if (selectedGuessTile === tileIndex) {
-                                if (canStageSolo) {
-                                  setPendingAction({
-                                    kind: "solo_cut",
-                                    value: tileValue,
-                                    actorTileIndex: tileIndex,
-                                  });
-                                  return;
-                                }
                                 setSelectedGuessTile(null);
-                                return;
-                              }
-                              if (canStageSolo) {
-                                setPendingAction({
-                                  kind: "solo_cut",
-                                  value: tileValue,
-                                  actorTileIndex: tileIndex,
-                                });
                                 return;
                               }
                               setSelectedGuessTile(tileIndex);
@@ -1875,11 +1866,13 @@ function PendingActionStrip({
   pendingAction,
   selectedGuessTile,
   selectedGuessValue,
+  canConfirmSoloFromDraft,
   mission9SelectedGuessBlocked,
   mission9ActiveValue,
   mission11RevealAttemptAvailable,
   canConfirm,
   onMission11RevealAttempt,
+  onConfirmSoloFromDraft,
   onConfirm,
   onCancel,
 }: {
@@ -1887,11 +1880,13 @@ function PendingActionStrip({
   pendingAction: PendingAction | null;
   selectedGuessTile: number | null;
   selectedGuessValue: ClientGameState["players"][number]["hand"][number]["gameValue"] | null;
+  canConfirmSoloFromDraft: boolean;
   mission9SelectedGuessBlocked: boolean;
   mission9ActiveValue?: number;
   mission11RevealAttemptAvailable: boolean;
   canConfirm: boolean;
   onMission11RevealAttempt: () => void;
+  onConfirmSoloFromDraft: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -1929,7 +1924,7 @@ function PendingActionStrip({
         </div>
         <div className={PANEL_TEXT_CLASS}>
           Selected your wire <span className="font-semibold">{wireLabel(selectedGuessTile)}</span>{" "}
-          (value {String(selectedGuessValue)}). Click an opponent wire for Dual Cut, or click a highlighted own wire for Solo Cut.
+          (value {String(selectedGuessValue)}). Click an opponent wire for Dual Cut.
         </div>
         {mission9SelectedGuessBlocked && (
           <div className={PANEL_SUBTEXT_CLASS}>
@@ -1941,13 +1936,24 @@ function PendingActionStrip({
           </div>
         )}
         <div className="mt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className={BUTTON_SECONDARY_CLASS}
-          >
-            Cancel
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className={BUTTON_SECONDARY_CLASS}
+            >
+              Cancel
+            </button>
+            {canConfirmSoloFromDraft && (
+              <button
+                type="button"
+                onClick={onConfirmSoloFromDraft}
+                className={BUTTON_PRIMARY_CLASS}
+              >
+                Confirm Solo Cut ({String(selectedGuessValue)})
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
