@@ -11,7 +11,7 @@ import {
   EQUIPMENT_DEFS,
   requiresSetupInfoTokenForMission,
 } from "@bomb-busters/shared";
-import { BoardArea } from "./Board/BoardArea.js";
+import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ActionPanel } from "./Actions/ActionPanel.js";
@@ -952,6 +952,10 @@ function Header({
       </div>
 
       <div className="flex items-center gap-4 text-sm">
+        <DetonatorDial
+          position={gameState.board.detonatorPosition}
+          max={gameState.board.detonatorMax}
+        />
         {timerDisplay && (
           <div
             data-testid="mission-timer"

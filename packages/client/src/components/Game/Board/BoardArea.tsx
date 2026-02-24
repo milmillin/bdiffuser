@@ -68,15 +68,30 @@ export function ScrollableRow({ children }: { children: ReactNode }) {
   );
 }
 
-function getBlueRangeForMission(
+function getMissionSetupInfo(
   missionId: MissionId,
   playerCount: number,
-): { minValue: number; maxValue: number } {
+): { blueRange: { minValue: number; maxValue: number }; redCount: number; yellowCount: number } {
   try {
-    return resolveMissionSetup(missionId, playerCount).setup.blue;
+    const { setup } = resolveMissionSetup(missionId, playerCount);
+    return {
+      blueRange: setup.blue,
+      redCount: wirePoolCount(setup.red),
+      yellowCount: wirePoolCount(setup.yellow),
+    };
   } catch {
-    // Fallback keeps the track fully enabled if setup resolution fails.
-    return { minValue: 1, maxValue: 12 };
+    return { blueRange: { minValue: 1, maxValue: 12 }, redCount: 0, yellowCount: 0 };
+  }
+}
+
+function wirePoolCount(spec: { kind: string; count?: number; keep?: number; values?: readonly number[] }): number {
+  switch (spec.kind) {
+    case "none": return 0;
+    case "exact": return spec.count ?? 0;
+    case "exact_same_value": return spec.count ?? 0;
+    case "out_of": return spec.keep ?? 0;
+    case "fixed": return spec.values?.length ?? 0;
+    default: return 0;
   }
 }
 
@@ -89,7 +104,9 @@ export function BoardArea({
   missionId: MissionId;
   playerCount: number;
 }) {
-  const blueRange = getBlueRangeForMission(missionId, playerCount);
+  const { blueRange, redCount, yellowCount } = getMissionSetupInfo(missionId, playerCount);
+  const redRevealed = board.markers.filter((m) => m.color === "red" && m.confirmed).length;
+  const yellowRevealed = board.markers.filter((m) => m.color === "yellow" && m.confirmed).length;
 
   return (
     <div className="flex items-center gap-4 px-4 py-1.5 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0" data-testid="board-area">
@@ -98,10 +115,22 @@ export function BoardArea({
         markers={board.markers}
         blueRange={blueRange}
       />
-      <DetonatorDial
-        position={board.detonatorPosition}
-        max={board.detonatorMax}
-      />
+      {(redCount > 0 || yellowCount > 0) && (
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {redCount > 0 && (
+            <div className="flex items-center gap-1" data-testid="red-wire-count">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-[10px] font-bold text-red-400">{redRevealed}/{redCount}</span>
+            </div>
+          )}
+          {yellowCount > 0 && (
+            <div className="flex items-center gap-1" data-testid="yellow-wire-count">
+              <div className="w-3 h-3 rounded-[1px] bg-yellow-500" />
+              <span className="text-[10px] font-bold text-yellow-400">{yellowRevealed}/{yellowCount}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -115,7 +144,7 @@ const SQUARE_COLORS = [
   { bg: "bg-red-950", border: "border-red-700", filled: "bg-red-600" },
 ] as const;
 
-function DetonatorDial({
+export function DetonatorDial({
   position,
   max,
 }: {
@@ -124,8 +153,8 @@ function DetonatorDial({
 }) {
   const TOTAL = 6;
   const isDead = position >= max;
-  // Marker starts `max + 1` squares from the right (e.g. max=2 → index 3)
-  const startIndex = TOTAL - max - 1;
+  // Marker starts `max` squares from the right (e.g. max=2 → index 4)
+  const startIndex = TOTAL - max;
 
   return (
     <div className="flex items-center gap-2 flex-shrink-0" data-testid="detonator-dial">
@@ -174,8 +203,8 @@ function ValidationTrack({
   blueRange: { minValue: number; maxValue: number };
 }) {
   return (
-    <ScrollableRow>
-      <div className="flex items-end gap-0.5 mx-auto w-fit">
+    <div className="flex-1 min-w-0">
+      <div className="flex flex-wrap items-end gap-0.5 justify-center">
         {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
           const isUnused =
             value < blueRange.minValue || value > blueRange.maxValue;
@@ -232,7 +261,7 @@ function ValidationTrack({
           );
         })}
       </div>
-    </ScrollableRow>
+    </div>
   );
 }
 
