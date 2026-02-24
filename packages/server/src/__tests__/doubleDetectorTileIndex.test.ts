@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -307,6 +308,106 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     }
     expect(state.result).toBe("loss_red_wire");
     expect(state.phase).toBe("finished");
+  });
+
+  it("ignores info-token override when it points at a red wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeRedTile({ id: "r1" }),
+        makeTile({ id: "t2", color: "blue", gameValue: 3 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Malicious/invalid override targeting the red wire should be ignored.
+    const resolveAction = resolveDetectorTileChoice(state, undefined, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.explosion).toBeUndefined();
+      expect(resolveAction.infoTokenPlacedIndex).toBe(1);
+    }
+    expect(target.infoTokens).toEqual([
+      {
+        value: 3,
+        position: 1,
+        isYellow: false,
+      },
+    ]);
+  });
+
+  it("mission 11: ignores info-token override when it points at hidden red-like wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 7 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 3 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 11,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    });
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Hidden red-like wires should be treated like red for token fallback.
+    const resolveAction = resolveDetectorTileChoice(state, undefined, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.explosion).toBeUndefined();
+      expect(resolveAction.infoTokenPlacedIndex).toBe(1);
+    }
+    expect(target.infoTokens).toEqual([
+      {
+        value: 3,
+        position: 1,
+        isYellow: false,
+      },
+    ]);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
   });
 
   it("places info token when both designated wires are non-red and neither matches", () => {

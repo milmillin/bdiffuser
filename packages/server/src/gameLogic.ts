@@ -1207,9 +1207,19 @@ function resolveDoubleDetectorNoMatch(
   let infoTokenTileIndex: number;
   let infoTokenTile: WireTile;
 
-  if (infoTokenTileIndexOverride != null && (infoTokenTileIndexOverride === tileIndex1 || infoTokenTileIndexOverride === tileIndex2)) {
-    infoTokenTileIndex = infoTokenTileIndexOverride;
-    infoTokenTile = infoTokenTileIndexOverride === tileIndex1 ? tile1 : tile2;
+  const overrideTargetsDesignatedWire =
+    infoTokenTileIndexOverride != null &&
+    (infoTokenTileIndexOverride === tileIndex1 || infoTokenTileIndexOverride === tileIndex2);
+  const overrideTargetsRedLikeWire =
+    infoTokenTileIndexOverride === tileIndex1 ? tile1IsRed
+    : infoTokenTileIndexOverride === tileIndex2 ? tile2IsRed
+    : false;
+  const canUseInfoTokenTileOverride =
+    overrideTargetsDesignatedWire && !overrideTargetsRedLikeWire;
+
+  if (canUseInfoTokenTileOverride) {
+    infoTokenTileIndex = infoTokenTileIndexOverride as number;
+    infoTokenTile = infoTokenTileIndex === tileIndex1 ? tile1 : tile2;
   } else if (tile1IsRed && !tile2IsRed) {
     infoTokenTileIndex = tileIndex2;
     infoTokenTile = tile2;
