@@ -523,8 +523,11 @@ export function GameBoard({
                 )
               )}
 
+              {/* Player stand + actions — always at the bottom */}
+              {me && (
+                <div className="mt-auto flex flex-col gap-2">
               {/* Equipment mode panel (unified for all equipment types) */}
-              {equipmentMode && me && (
+              {equipmentMode && (
                 <EquipmentModePanel
                   mode={equipmentMode}
                   gameState={gameState}
@@ -536,7 +539,7 @@ export function GameBoard({
               )}
 
               {/* Playing phase: actions (including anytime equipment off-turn) */}
-              {showActionPanel && !equipmentMode && me && (
+              {showActionPanel && !equipmentMode && (
                 <ActionPanel
                   gameState={gameState}
                   send={send}
@@ -607,10 +610,6 @@ export function GameBoard({
                   )}
                 </div>
               )}
-
-              {/* Player stand — always at the bottom */}
-              {me && (
-                <div className="mt-auto">
                 <PlayerStand
                   player={me}
                   isOpponent={false}
