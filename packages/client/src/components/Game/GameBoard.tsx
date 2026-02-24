@@ -2148,34 +2148,53 @@ function Header({
 
   return (
     <div
-      className="flex items-center justify-between px-4 py-2 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0"
+      className="flex flex-col md:flex-row md:items-center md:justify-between px-3 md:px-4 py-1.5 md:py-2 gap-1 md:gap-0 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0"
       data-testid="game-header"
     >
-      <div className="flex items-center gap-3">
-        <h1 className="text-lg font-black">
-          BOMB<span className="text-red-500">BUSTERS</span>
-        </h1>
-        <span className="text-[9px] font-mono text-gray-600 select-none">{`${APP_COMMIT_ID} | v${APP_VERSION}`}</span>
-        <span className="text-sm text-gray-400" data-testid="mission-label">
-          Mission #{gameState.mission}
-        </span>
-        <code
-          className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono tracking-wider"
-          data-testid="room-code"
-        >
-          {gameState.roomId}
-        </code>
-        {gameState.isSpectator && (
-          <span
-            className="text-xs font-bold bg-purple-600/80 text-white px-2 py-0.5 rounded"
-            data-testid="spectator-badge"
-          >
-            SPECTATOR
+      {/* Row 1: Brand + context (+ mobile-only turn/rules) */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <h1 className="text-sm md:text-lg font-black shrink-0">
+            BOMB<span className="text-red-500">BUSTERS</span>
+          </h1>
+          <span className="hidden md:inline text-[9px] font-mono text-gray-600 select-none">{`${APP_COMMIT_ID} | v${APP_VERSION}`}</span>
+          <span className="text-xs md:text-sm text-gray-400 shrink-0" data-testid="mission-label">
+            <span className="md:hidden">M#{gameState.mission}</span>
+            <span className="hidden md:inline">Mission #{gameState.mission}</span>
           </span>
-        )}
+          <code
+            className="hidden sm:inline text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono tracking-wider"
+            data-testid="room-code"
+          >
+            {gameState.roomId}
+          </code>
+          {gameState.isSpectator && (
+            <span
+              className="text-[10px] md:text-xs font-bold bg-purple-600/80 text-white px-1.5 md:px-2 py-0.5 rounded shrink-0"
+              data-testid="spectator-badge"
+            >
+              <span className="md:hidden">SPEC</span>
+              <span className="hidden md:inline">SPECTATOR</span>
+            </span>
+          )}
+        </div>
+        {/* Mobile-only: turn + rules in row 1 */}
+        <div className="flex md:hidden items-center gap-2 shrink-0 ml-2">
+          <div className="text-xs text-gray-400" data-testid="turn-number-mobile">
+            T<span className="font-bold text-white">{gameState.turnNumber}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenRules}
+            className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+          >
+            Rules
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4 text-sm">
+      {/* Row 2: Gameplay-critical status */}
+      <div className="flex items-center gap-2 md:gap-4 text-sm">
         <DetonatorDial
           position={gameState.board.detonatorPosition}
           max={gameState.board.detonatorMax}
@@ -2183,7 +2202,7 @@ function Header({
         {timerDisplay && (
           <div
             data-testid="mission-timer"
-            className={`px-2 py-0.5 rounded font-bold ${
+            className={`px-1.5 md:px-2 py-0.5 rounded font-bold text-xs md:text-sm ${
               timerDisplay.isCritical
                 ? "bg-red-700/80 text-white"
                 : "bg-amber-700/70 text-white"
@@ -2192,31 +2211,33 @@ function Header({
             ⏱ {timerDisplay.text}
           </div>
         )}
-        <div data-testid="turn-number">
+        <div className="hidden md:block" data-testid="turn-number">
           Turn{" "}
           <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
         <button
           type="button"
           onClick={onOpenRules}
-          className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+          className="hidden md:block rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
         >
           Rules
         </button>
-        <div className="flex items-center gap-1.5" data-testid="player-list">
+        <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto" data-testid="player-list">
           {gameState.players.map((p) => {
             const isCurrentTurn = p.id === currentPlayer?.id;
             const isMe = p.id === playerId;
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                title={p.name}
+                className={`flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-full text-[11px] md:text-xs font-medium shrink-0 ${
                   isCurrentTurn
                     ? "ring-2 ring-yellow-500 bg-gray-700 text-white"
                     : "bg-gray-800 text-gray-400"
                 }`}
               >
-                {p.name}
+                <span className="md:hidden">{p.name.slice(0, 3)}</span>
+                <span className="hidden md:inline">{p.name}</span>
                 {isMe && (
                   <span className="bg-blue-600 text-white text-[10px] rounded px-1 font-bold leading-tight">
                     YOU
