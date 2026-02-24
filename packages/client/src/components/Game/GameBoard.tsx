@@ -228,6 +228,8 @@ export function GameBoard({
         );
   const useFalseSetupTokenMode =
     !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
+  const hasXWireEquipmentRestriction =
+    gameState.mission === 20 || gameState.mission === 35;
   const dynamicTurnActive =
     gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName = (() => {
@@ -1043,7 +1045,7 @@ export function GameBoard({
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
                               if (!tile || tile.cut) return;
-                              if (gameState.mission === 20 && tile.isXMarked)
+                              if (hasXWireEquipmentRestriction && tile.isXMarked)
                                 return;
                               setTalkiesWalkiesSelection(
                                 talkiesWalkiesSelection === tileIndex
@@ -1157,7 +1159,7 @@ export function GameBoard({
                             me
                           ? (tile: VisibleTile) =>
                               !tile.cut &&
-                              !(gameState.mission === 20 && tile.isXMarked)
+                              !(hasXWireEquipmentRestriction && tile.isXMarked)
                           : playingInteractionEnabled &&
                               isMyTurn
                             ? (tile: VisibleTile) => {

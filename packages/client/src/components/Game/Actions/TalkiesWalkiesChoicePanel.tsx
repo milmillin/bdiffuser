@@ -22,10 +22,11 @@ export function TalkiesWalkiesChoicePanel({
     forced.actorId === playerId
       ? "You"
       : (gameState.players.find((player) => player.id === forced.actorId)?.name ?? "Someone");
+  const hasXWireEquipmentRestriction = gameState.mission === 20 || gameState.mission === 35;
 
   const selectableIndices = me.hand
     .map((tile, idx) => ({ tile, idx }))
-    .filter(({ tile }) => !tile.cut && !(gameState.mission === 20 && tile.isXMarked))
+    .filter(({ tile }) => !tile.cut && !(hasXWireEquipmentRestriction && tile.isXMarked))
     .map(({ idx }) => idx);
 
   const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
