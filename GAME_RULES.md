@@ -1654,6 +1654,10 @@ Baseline assumption used in this section:
 
 - Failed cuts don't place Info tokens, and you cannot cut a wire indicated by an Info token.
 
+### Constraint I
+
+- You cannot cut the far-right wire (highest number) on teammates' tile stands.
+
 ## Challenge Cards
 
 ### Challenge 1
