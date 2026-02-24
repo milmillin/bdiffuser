@@ -46,4 +46,29 @@ describe("PlayerStand", () => {
 
     expect(html).toContain("/images/info_x3.png");
   });
+
+  it("does not render duplicated info tokens stacked on the same wire", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5 })],
+      infoTokens: [
+        { value: 5, position: 0, isYellow: false },
+        { value: 5, position: 0, isYellow: false },
+      ],
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    const matches = html.match(/alt="Info: 5"/g) ?? [];
+    expect(matches).toHaveLength(1);
+  });
 });

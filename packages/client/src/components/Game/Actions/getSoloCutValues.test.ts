@@ -6,7 +6,7 @@ import {
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { getSoloCutValues } from "./ActionPanel.js";
+import { getSoloCutValues } from "./actionRules.js";
 
 // Mission 2 with 2 players has yellow: exact(2) in its schema.
 

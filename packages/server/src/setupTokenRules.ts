@@ -235,6 +235,16 @@ export function validateSetupInfoTokenPlacement(
     return legalityError("TILE_ALREADY_CUT", "Cannot place token on a cut wire");
   }
 
+  const hasTokenOnWire = player.infoTokens.some(
+    (token) => token.position === tileIndex || token.positionB === tileIndex,
+  );
+  if (hasTokenOnWire) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "This wire already has an info token",
+    );
+  }
+
   // Mission 17: captain places false tokens and may not place on red wires.
   if (state.mission === 17 && player.isCaptain) {
     if (tile.color === "red") {

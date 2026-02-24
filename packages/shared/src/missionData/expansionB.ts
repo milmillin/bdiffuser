@@ -88,7 +88,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
       yellow: none(),
       equipment: { mode: "default", excludedUnlockValues: [10] },
     },
-    behaviorHooks: ["mission_54_red_stack_and_oxygen"],
+    behaviorHooks: ["mission_54_red_stack_and_oxygen", "mission_54_audio_prompt"],
     hookRules: [
       {
         kind: "oxygen_progression",
@@ -96,6 +96,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
         perTurnCost: 1,
         initialPlayerOxygen: 1,
       },
+      { kind: "audio_prompt", audioFile: "mission_54" },
     ],
     notes: ["FAQ: If insufficient oxygen, skip and detonator +1. But if you can play, you must play."],
   });

@@ -5,17 +5,11 @@ import { CHARACTER_IMAGES, CHARACTER_CARD_TEXT } from "@bomb-busters/shared";
 export function CharacterCardOverlay({
   characterId,
   characterUsed,
-  isOwnCharacter,
-  isMyTurn,
   onClose,
-  onUseAbility,
 }: {
   characterId: CharacterId;
   characterUsed: boolean;
-  isOwnCharacter: boolean;
-  isMyTurn: boolean;
   onClose: () => void;
-  onUseAbility?: () => void;
 }) {
   const card = CHARACTER_CARD_TEXT[characterId];
   const image = CHARACTER_IMAGES[characterId];
@@ -27,9 +21,6 @@ export function CharacterCardOverlay({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
-
-  const canUse =
-    isOwnCharacter && isMyTurn && !characterUsed && !card.comingSoon;
 
   return (
     <div
@@ -115,28 +106,6 @@ export function CharacterCardOverlay({
           )}
         </div>
 
-        {/* Action button */}
-        <div className="px-4 pb-4">
-          {isOwnCharacter && !characterUsed && card.comingSoon && (
-            <button
-              type="button"
-              disabled
-              className="w-full py-2 rounded-lg bg-gray-700 text-gray-400 font-bold text-sm cursor-not-allowed"
-            >
-              Coming Soon
-            </button>
-          )}
-          {canUse && onUseAbility && (
-            <button
-              type="button"
-              onClick={onUseAbility}
-              data-testid="use-character-ability"
-              className="w-full py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-sm transition-colors"
-            >
-              Use Ability
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

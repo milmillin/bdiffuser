@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type {
   MissionId,
   GameLogEntry,
@@ -21,6 +22,7 @@ export function RightPanel({
   chatMessages,
   send,
   playerId,
+  missionExtras,
 }: {
   missionId: MissionId;
   log: GameLogEntry[];
@@ -29,6 +31,7 @@ export function RightPanel({
   chatMessages: ChatMessage[];
   send: (msg: ClientMessage) => void;
   playerId: string;
+  missionExtras?: ReactNode;
 }) {
   return (
     <div
@@ -38,6 +41,7 @@ export function RightPanel({
       {/* Top: scrollable info area */}
       <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">
         <MissionCard missionId={missionId} />
+        {missionExtras}
       </div>
 
       {/* Bottom: action log / chat */}

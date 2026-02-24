@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { playExplosionBoom } from "../../audio/audio.js";
 
 /** Seeded random so particle layout is stable across renders */
 function seededRandom(seed: number) {
@@ -27,6 +28,7 @@ export function ExplosionEffect() {
   const [phase, setPhase] = useState<"flash" | "explode" | "settle">("flash");
 
   useEffect(() => {
+    playExplosionBoom();
     const t1 = setTimeout(() => setPhase("explode"), 150);
     const t2 = setTimeout(() => setPhase("settle"), 1800);
     return () => { clearTimeout(t1); clearTimeout(t2); };

@@ -227,6 +227,21 @@ describe("setupTokenRules", () => {
       expect(error).toBeNull();
     });
 
+    it("rejects stacking setup info tokens on the same wire", () => {
+      const player = makePlayer({
+        hand: [
+          makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" }),
+        ],
+        infoTokens: [{ value: 3, position: 0, isYellow: false }],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(1, player), player, 3, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "This wire already has an info token",
+      });
+    });
+
     it("rejects non-integer and out-of-range values", () => {
       const player = makePlayer({
         hand: [makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" })],

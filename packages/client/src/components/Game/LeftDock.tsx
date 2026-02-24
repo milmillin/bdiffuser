@@ -119,6 +119,8 @@ export function LeftDock({
   missionId,
   playerCount,
   onOpenRules,
+  onSelectEquipmentAction,
+  onSelectPersonalSkill,
 }: {
   equipment: BoardState["equipment"];
   character?: CharacterId | null;
@@ -126,6 +128,8 @@ export function LeftDock({
   missionId: MissionId;
   playerCount: number;
   onOpenRules: () => void;
+  onSelectEquipmentAction?: (equipmentId: string) => void;
+  onSelectPersonalSkill?: () => void;
 }) {
   const [modalTab, setModalTab] = useState<TabId | null>(null);
   const [hoveredTab, setHoveredTab] = useState<TabId | null>(null);
@@ -205,7 +209,13 @@ export function LeftDock({
             {character && charText && (
               <TabButton
                 active={modalTab === "equip_personal"}
-                onClick={() => setModalTab("equip_personal")}
+                onClick={() => {
+                  if (onSelectPersonalSkill) {
+                    onSelectPersonalSkill();
+                    return;
+                  }
+                  setModalTab("equip_personal");
+                }}
                 onHover={handleHover}
                 tabId="equip_personal"
                 title={`${charText.name} – ${characterUsed ? "Used" : "Ready"}`}
@@ -231,7 +241,13 @@ export function LeftDock({
                 <TabButton
                   key={eq.id}
                   active={modalTab === tabId}
-                  onClick={() => setModalTab(tabId)}
+                  onClick={() => {
+                    if (onSelectEquipmentAction) {
+                      onSelectEquipmentAction(eq.id);
+                      return;
+                    }
+                    setModalTab(tabId);
+                  }}
                   onHover={handleHover}
                   tabId={tabId}
                   title={`${eq.name} – ${getStatusLabel(eq).label}`}
