@@ -1555,33 +1555,31 @@ export function GameBoard({
             </div>
           )}
 
-          {/* Sidebar: mission card + action log / chat (desktop only) */}
-          <div className="hidden md:grid">
-            <RightPanel
-              missionId={gameState.mission}
-              log={gameState.log}
-              players={gameState.players}
-              result={gameState.result}
-              chatMessages={chatMessages}
-              send={send}
-              playerId={playerId}
-              missionExtras={
-                <ActionMissionHints
-                  mission={gameState.mission}
-                  isMyTurn={isMyTurn}
-                  mission11RevealBlockedHint={mission11RevealBlockedHint}
-                  mission9ActiveValue={mission9ActiveValue}
-                  mission9RequiredCuts={mission9RequiredCuts}
-                  mission9ActiveProgress={mission9ActiveProgress}
-                  mission9DualGuessBlocked={
-                    mission9PendingDualBlocked || mission9SelectedGuessBlocked
-                  }
-                  mission9HasYellowSoloValue={mission9HasYellowSoloValue}
-                  forceRevealReds={forceRevealReds}
-                />
-              }
-            />
-          </div>
+          {/* Sidebar: mission card + action log / chat (hidden on mobile via RightPanel's own classes) */}
+          <RightPanel
+            missionId={gameState.mission}
+            log={gameState.log}
+            players={gameState.players}
+            result={gameState.result}
+            chatMessages={chatMessages}
+            send={send}
+            playerId={playerId}
+            missionExtras={
+              <ActionMissionHints
+                mission={gameState.mission}
+                isMyTurn={isMyTurn}
+                mission11RevealBlockedHint={mission11RevealBlockedHint}
+                mission9ActiveValue={mission9ActiveValue}
+                mission9RequiredCuts={mission9RequiredCuts}
+                mission9ActiveProgress={mission9ActiveProgress}
+                mission9DualGuessBlocked={
+                  mission9PendingDualBlocked || mission9SelectedGuessBlocked
+                }
+                mission9HasYellowSoloValue={mission9HasYellowSoloValue}
+                forceRevealReds={forceRevealReds}
+              />
+            }
+          />
         </div>
 
       </div>
