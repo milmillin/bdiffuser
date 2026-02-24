@@ -3340,7 +3340,7 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
     const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
 
     for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
-      if (ctx.state.phase === "finished") return;
+      if (ctx.state.result != null) return;
 
       const actor = ctx.state.players[ctx.state.currentPlayerIndex];
       if (!actor) return;

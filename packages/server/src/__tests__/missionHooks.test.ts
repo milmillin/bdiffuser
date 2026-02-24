@@ -1133,6 +1133,8 @@ describe("missionHooks dispatcher", () => {
       expect(state.phase).toBe("finished");
       expect(state.result).toBe("loss_detonator");
       expect(state.board.detonatorPosition).toBe(3);
+      expect(state.currentPlayerIndex).toBe(0);
+      expect(state.turnNumber).toBe(11);
     });
 
     it("mission 9: explodes when current player has only blocked wires and no dualCut targets", () => {
