@@ -436,6 +436,45 @@ describe("missionHooks dispatcher", () => {
       expect(teammateUpsideDownCount).toBe(0);
     });
 
+    it("mission 56: places each flipped wire at far right of the stand", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "p1-1", color: "blue", gameValue: 1, sortValue: 1 }),
+          makeTile({ id: "p1-2", color: "blue", gameValue: 2, sortValue: 2 }),
+          makeTile({ id: "p1-3", color: "blue", gameValue: 3, sortValue: 3 }),
+          makeTile({ id: "p1-4", color: "blue", gameValue: 4, sortValue: 4 }),
+        ],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [
+          makeTile({ id: "p2-1", color: "blue", gameValue: 5, sortValue: 5 }),
+          makeTile({ id: "p2-2", color: "blue", gameValue: 6, sortValue: 6 }),
+          makeTile({ id: "p2-3", color: "blue", gameValue: 7, sortValue: 7 }),
+          makeTile({ id: "p2-4", color: "blue", gameValue: 8, sortValue: 8 }),
+        ],
+      });
+      const state = makeGameState({
+        mission: 56,
+        players: [p1, p2],
+        log: [],
+      });
+
+      dispatchHooks(56, { point: "setup", state });
+
+      for (const player of state.players) {
+        const upsideDownIndices = player.hand
+          .map((tile, index) =>
+            (tile as unknown as { upsideDown?: boolean }).upsideDown === true ? index : -1,
+          )
+          .filter((index) => index >= 0);
+
+        expect(upsideDownIndices).toHaveLength(1);
+        expect(upsideDownIndices[0]).toBe(player.hand.length - 1);
+      }
+    });
+
     it("mission 65: deals Number cards as equally as possible from captain clockwise", () => {
       const p1 = makePlayer({ id: "p1", isCaptain: false });
       const p2 = makePlayer({ id: "p2", isCaptain: false });

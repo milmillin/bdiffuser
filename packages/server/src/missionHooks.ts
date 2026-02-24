@@ -2626,6 +2626,34 @@ function moveArrayItem<T>(arr: T[], fromIndex: number, toIndex: number): void {
 }
 
 /**
+ * Mission 56 setup: move the selected flipped wire to the far-right
+ * position of the same stand.
+ */
+function applyMission56FlippedWirePlacement(
+  player: import("@bomb-busters/shared").Player,
+  selectedTileIds: readonly string[],
+): void {
+  if (selectedTileIds.length !== 1) return;
+
+  const hand = [...player.hand];
+  if (hand.length === 0) return;
+
+  const selectedIndex = hand.findIndex((tile) => tile.id === selectedTileIds[0]);
+  if (selectedIndex < 0) return;
+
+  const standIndex = hookFlatIndexToStandIndex(player, selectedIndex);
+  const standRange =
+    standIndex == null ? null : resolveHookStandRange(player, standIndex);
+  const targetIndex =
+    standRange && standRange.endExclusive > standRange.start
+      ? standRange.endExclusive - 1
+      : hand.length - 1;
+
+  moveArrayItem(hand, selectedIndex, targetIndex);
+  player.hand = hand;
+}
+
+/**
  * Mission 64 setup: once two flipped wires are selected, reposition them so:
  * - lower value goes to far-left of stand 1
  * - higher value goes to far-right of stand 2 (if present), otherwise stand 1
@@ -2981,6 +3009,10 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
       const selectedTileIds = selected
         .map((idx) => player.hand[idx]?.id)
         .filter((id): id is string => typeof id === "string");
+
+      if (ctx.state.mission === 56) {
+        applyMission56FlippedWirePlacement(player, selectedTileIds);
+      }
 
       if (ctx.state.mission === 64) {
         applyMission64FlippedWirePlacement(player, selectedTileIds);
