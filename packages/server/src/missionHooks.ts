@@ -2740,6 +2740,100 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
   },
 });
 
+function getMission38CaptainFlippedWire(
+  state: Readonly<GameState>,
+): {
+  captainId: string;
+  flippedTileIndex: number;
+} | null {
+  if (state.mission !== 38) return null;
+
+  const captain = state.players.find((player) => player.isCaptain);
+  if (!captain) return null;
+
+  const flippedTileIndex = captain.hand.findIndex((tile) =>
+    !tile.cut && (tile as WireTile & { upsideDown?: boolean }).upsideDown === true,
+  );
+  if (flippedTileIndex === -1) return null;
+
+  return {
+    captainId: captain.id,
+    flippedTileIndex,
+  };
+}
+
+function canSoloCutValue(
+  state: Readonly<GameState>,
+  actor: Readonly<GameState["players"][number]>,
+  value: GameState["players"][number]["hand"][number]["gameValue"],
+): boolean {
+  let actorCount = 0;
+  let totalCount = 0;
+
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (tile.cut || tile.gameValue !== value) continue;
+      totalCount += 1;
+      if (player.id === actor.id) {
+        actorCount += 1;
+      }
+    }
+  }
+
+  if (totalCount !== actorCount) return false;
+  if (typeof value === "number") {
+    return actorCount === 2 || actorCount === 4;
+  }
+  return value === "YELLOW";
+}
+
+function shouldAutoSkipMission38Turn(
+  state: Readonly<GameState>,
+  actor: Readonly<GameState["players"][number]>,
+  captainId: string,
+  flippedTileIndex: number,
+): boolean {
+  if (actor.id === captainId) return false;
+
+  const actorUncut = actor.hand.filter((tile) => !tile.cut);
+  if (actorUncut.length === 0) return false;
+
+  const nonRedValues = new Set(
+    actorUncut
+      .map((tile) => tile.gameValue)
+      .filter((value): value is Exclude<typeof value, "RED"> => value !== "RED"),
+  );
+  if (nonRedValues.size === 0) return false;
+
+  let hasFlippedWireAsTarget = false;
+
+  for (const value of nonRedValues) {
+    if (canSoloCutValue(state, actor, value)) {
+      return false;
+    }
+
+    for (const targetPlayer of state.players) {
+      if (targetPlayer.id === actor.id) continue;
+
+      for (let i = 0; i < targetPlayer.hand.length; i++) {
+        const tile = targetPlayer.hand[i];
+        if (tile.cut || tile.gameValue !== value) continue;
+
+        const isCaptainFlippedWire =
+          targetPlayer.id === captainId && i === flippedTileIndex;
+
+        if (isCaptainFlippedWire) {
+          hasFlippedWireAsTarget = true;
+        } else {
+          return false;
+        }
+      }
+    }
+  }
+
+  return hasFlippedWireAsTarget;
+}
+
 /**
  * Missions 38, 56, 64: Upside-down wires.
  * Mission 38 flips only the captain's wire; missions 56/64 flip wires
@@ -2747,38 +2841,31 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
  */
 registerHookHandler<"upside_down_wire">("upside_down_wire", {
   validate(_rule: UpsideDownWireRuleDef, ctx: ValidateHookContext): HookResult | void {
-    if (ctx.state.mission !== 38) return;
-
-    const captain = ctx.state.players.find((player) => player.isCaptain);
-    if (!captain) return;
-
-    const flippedTileIndex = captain.hand.findIndex((tile) =>
-      !tile.cut && (tile as WireTile & { upsideDown?: boolean }).upsideDown === true,
-    );
-    if (flippedTileIndex === -1) return;
-    if (ctx.action.actorId === captain.id) return;
+    const flippedWire = getMission38CaptainFlippedWire(ctx.state);
+    if (!flippedWire) return;
+    if (ctx.action.actorId === flippedWire.captainId) return;
 
     const targetsCaptainFlippedWire = (() => {
       if (ctx.action.type === "dualCut") {
         return (
-          ctx.action.targetPlayerId === captain.id &&
-          ctx.action.targetTileIndex === flippedTileIndex
+          ctx.action.targetPlayerId === flippedWire.captainId &&
+          ctx.action.targetTileIndex === flippedWire.flippedTileIndex
         );
       }
 
       if (ctx.action.type === "dualCutDoubleDetector") {
         return (
-          ctx.action.targetPlayerId === captain.id &&
-          (ctx.action.tileIndex1 === flippedTileIndex ||
-            ctx.action.tileIndex2 === flippedTileIndex)
+          ctx.action.targetPlayerId === flippedWire.captainId &&
+          (ctx.action.tileIndex1 === flippedWire.flippedTileIndex ||
+            ctx.action.tileIndex2 === flippedWire.flippedTileIndex)
         );
       }
 
       if (ctx.action.type === "simultaneousCut") {
         const cuts = Array.isArray(ctx.action.cuts) ? ctx.action.cuts : [];
         return cuts.some((cut) =>
-          (cut as { targetPlayerId?: unknown }).targetPlayerId === captain.id &&
-          (cut as { targetTileIndex?: unknown }).targetTileIndex === flippedTileIndex,
+          (cut as { targetPlayerId?: unknown }).targetPlayerId === flippedWire.captainId &&
+          (cut as { targetTileIndex?: unknown }).targetTileIndex === flippedWire.flippedTileIndex,
         );
       }
 
@@ -2788,8 +2875,8 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
       ) {
         const targets = Array.isArray(ctx.action.targets) ? ctx.action.targets : [];
         return targets.some((target) =>
-          (target as { playerId?: unknown }).playerId === captain.id &&
-          (target as { tileIndex?: unknown }).tileIndex === flippedTileIndex,
+          (target as { playerId?: unknown }).playerId === flippedWire.captainId &&
+          (target as { tileIndex?: unknown }).tileIndex === flippedWire.flippedTileIndex,
         );
       }
 
@@ -2802,6 +2889,68 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
       validationCode: "MISSION_RULE_VIOLATION",
       validationError: "Mission 38: only the Captain can cut the Captain's flipped wire",
     };
+  },
+
+  endTurn(_rule: UpsideDownWireRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+
+    const flippedWire = getMission38CaptainFlippedWire(ctx.state);
+    if (!flippedWire) return;
+
+    const playerCount = ctx.state.players.length;
+    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+
+    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!actor) return;
+
+      if (
+        !shouldAutoSkipMission38Turn(
+          ctx.state,
+          actor,
+          flippedWire.captainId,
+          flippedWire.flippedTileIndex,
+        )
+      ) {
+        return;
+      }
+
+      ctx.state.board.detonatorPosition += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actor.id,
+        action: "hookEffect",
+        detail:
+          `upside_down_wire:auto_skip|player=${actor.id}` +
+          `|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.phase = "finished";
+        ctx.state.result = "loss_detonator";
+        emitMissionFailureTelemetry(
+          ctx.state,
+          "loss_detonator",
+          actor.id,
+          flippedWire.captainId,
+        );
+        return;
+      }
+
+      let nextPlayerIndex = ctx.state.currentPlayerIndex;
+      for (let offset = 1; offset <= playerCount; offset++) {
+        const candidateIndex = (ctx.state.currentPlayerIndex + offset) % playerCount;
+        const candidate = ctx.state.players[candidateIndex];
+        if (candidate?.hand.some((tile) => !tile.cut)) {
+          nextPlayerIndex = candidateIndex;
+          break;
+        }
+      }
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+      ctx.state.turnNumber += 1;
+    }
   },
 
   setup(rule: UpsideDownWireRuleDef, ctx: SetupHookContext): void {

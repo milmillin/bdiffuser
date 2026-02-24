@@ -911,6 +911,49 @@ describe("missionHooks dispatcher", () => {
       expect(state.campaign?.numberCards?.discard).toHaveLength(0);
     });
 
+    it("mission 38: auto-skips non-captain when only successful cut target is captain flipped wire", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "captain-flipped", gameValue: 7, cut: false }),
+          makeTile({ id: "captain-other", gameValue: 9, cut: true }),
+        ],
+      });
+      (captain.hand[0] as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [makeTile({ id: "stuck-7", gameValue: 7, cut: false })],
+      });
+
+      const next = makePlayer({
+        id: "next",
+        hand: [makeTile({ id: "next-2", gameValue: 2, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 38,
+        players: [captain, stuck, next],
+        currentPlayerIndex: 1,
+        turnNumber: 4,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        log: [],
+      });
+
+      dispatchHooks(38, { point: "endTurn", state });
+
+      expect(state.currentPlayerIndex).toBe(2);
+      expect(state.turnNumber).toBe(5);
+      expect(state.board.detonatorPosition).toBe(2);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("upside_down_wire:auto_skip|player=stuck"),
+      );
+      expect(skipLog).toBeDefined();
+    });
+
     it("mission 65: auto-skips a stuck player and advances detonator", () => {
       const p1 = makePlayer({
         id: "p1",
