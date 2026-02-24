@@ -207,83 +207,93 @@ function ValidationTrack({
   markers: { value: number; color: string; confirmed?: boolean }[];
   blueRange: { minValue: number; maxValue: number };
 }) {
+  const renderValueItem = (value: number) => {
+    const isUnused =
+      value < blueRange.minValue || value > blueRange.maxValue;
+    const cutCount = track[value] ?? 0;
+    const validated = cutCount >= 4;
+    const compactState =
+      cutCount <= 0 ? "empty" : validated ? "full" : "half";
+    const isMarkerUnused =
+      value < blueRange.minValue || value >= blueRange.maxValue;
+    const yellowMarker = isMarkerUnused
+      ? undefined
+      : markers.find((m) => m.value === value && m.color === "yellow");
+    const redMarker = isMarkerUnused
+      ? undefined
+      : markers.find((m) => m.value === value && m.color === "red");
+
+    return (
+      <div key={value} className="flex items-end gap-0.5">
+        {/* Blue value column */}
+        <div
+          data-testid={`validation-slot-${value}`}
+          className={`flex flex-col items-center gap-0.5 ${isUnused ? "opacity-40" : ""}`}
+        >
+          <span
+            className={`text-[10px] font-bold ${
+              isUnused
+                ? "text-gray-600"
+                : validated
+                  ? "text-green-400"
+                  : "text-gray-400"
+            }`}
+          >
+            {value}
+          </span>
+          <div className="hidden lg:flex gap-0.5">
+            {Array.from({ length: 4 }, (_, j) => (
+              <div
+                key={j}
+                className={`w-4 h-4 rounded-[1px] transition-all duration-300 ${
+                  !isUnused && j < cutCount
+                    ? validated ? "bg-green-500" : "bg-blue-500"
+                    : isUnused
+                      ? "bg-gray-900/70"
+                      : "bg-[var(--color-bomb-dark)]"
+                }`}
+              />
+            ))}
+          </div>
+          <div
+            className={`lg:hidden relative w-4 h-4 rounded-[1px] overflow-hidden ${
+              isUnused ? "bg-gray-900/70" : "bg-[var(--color-bomb-dark)]"
+            }`}
+          >
+            {!isUnused && compactState !== "empty" && (
+              <div
+                className={`absolute inset-y-0 left-0 transition-all duration-300 ${
+                  compactState === "full"
+                    ? "w-full bg-green-500"
+                    : "w-1/2 bg-blue-500"
+                }`}
+              />
+            )}
+          </div>
+        </div>
+        {/* Yellow then Red markers between columns */}
+        {value <= 11 && (
+          <div className={`flex items-center gap-0.5 px-0.5 pb-0.5 ${isMarkerUnused ? "opacity-40" : ""}`}>
+            <MarkerIndicator marker={yellowMarker} shape="square" />
+            <MarkerIndicator marker={redMarker} shape="circle" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const row1 = Array.from({ length: 6 }, (_, i) => i + 1);
+  const row2 = Array.from({ length: 6 }, (_, i) => i + 7);
+
   return (
     <div className="flex-1 min-w-0">
-      <div className="flex flex-wrap items-end gap-0.5 justify-center">
-        {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
-          const isUnused =
-            value < blueRange.minValue || value > blueRange.maxValue;
-          const cutCount = track[value] ?? 0;
-          const validated = cutCount >= 4;
-          const compactState =
-            cutCount <= 0 ? "empty" : validated ? "full" : "half";
-          const isMarkerUnused =
-            value < blueRange.minValue || value >= blueRange.maxValue;
-          const yellowMarker = isMarkerUnused
-            ? undefined
-            : markers.find((m) => m.value === value && m.color === "yellow");
-          const redMarker = isMarkerUnused
-            ? undefined
-            : markers.find((m) => m.value === value && m.color === "red");
-
-          return (
-            <div key={value} className="flex items-end gap-0.5">
-              {/* Blue value column */}
-              <div
-                data-testid={`validation-slot-${value}`}
-                className={`flex flex-col items-center gap-0.5 ${isUnused ? "opacity-40" : ""}`}
-              >
-                <span
-                  className={`text-[10px] font-bold ${
-                    isUnused
-                      ? "text-gray-600"
-                      : validated
-                        ? "text-green-400"
-                        : "text-gray-400"
-                  }`}
-                >
-                  {value}
-                </span>
-                <div className="hidden lg:flex gap-0.5">
-                  {Array.from({ length: 4 }, (_, j) => (
-                    <div
-                      key={j}
-                      className={`w-4 h-4 rounded-[1px] transition-all duration-300 ${
-                        !isUnused && j < cutCount
-                          ? validated ? "bg-green-500" : "bg-blue-500"
-                          : isUnused
-                            ? "bg-gray-900/70"
-                            : "bg-[var(--color-bomb-dark)]"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div
-                  className={`lg:hidden relative w-4 h-4 rounded-[1px] overflow-hidden ${
-                    isUnused ? "bg-gray-900/70" : "bg-[var(--color-bomb-dark)]"
-                  }`}
-                >
-                  {!isUnused && compactState !== "empty" && (
-                    <div
-                      className={`absolute inset-y-0 left-0 transition-all duration-300 ${
-                        compactState === "full"
-                          ? "w-full bg-green-500"
-                          : "w-1/2 bg-blue-500"
-                      }`}
-                    />
-                  )}
-                </div>
-              </div>
-              {/* Yellow then Red markers between columns */}
-              {value <= 11 && (
-                <div className={`flex items-center gap-0.5 px-0.5 pb-0.5 ${isMarkerUnused ? "opacity-40" : ""}`}>
-                  <MarkerIndicator marker={yellowMarker} shape="square" />
-                  <MarkerIndicator marker={redMarker} shape="circle" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="flex flex-col items-center gap-0.5">
+        <div className="flex items-end gap-px sm:gap-0.5 justify-center">
+          {row1.map(renderValueItem)}
+        </div>
+        <div className="flex items-end gap-px sm:gap-0.5 justify-center">
+          {row2.map(renderValueItem)}
+        </div>
       </div>
     </div>
   );
