@@ -277,8 +277,8 @@ export function CardStrip({
             >
               Close
             </button>
-            <div className="min-h-0 overflow-y-auto overscroll-none grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="w-full aspect-[739/1040] max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900">
+            <div className="min-h-0 grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <div className="shrink-0 w-full aspect-[739/1040] max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900">
                 {previewCard.previewImage ? (
                   <img
                     src={`/images/${previewCard.previewImage}`}
@@ -289,7 +289,7 @@ export function CardStrip({
                   <div className="h-full w-full bg-slate-900" />
                 )}
               </div>
-              <div className="space-y-4 pr-2 text-white">
+              <div className="space-y-4 pr-2 text-white min-h-0 max-h-[40dvh] sm:max-h-none overflow-y-auto overscroll-none">
                 <div className="text-base font-bold leading-tight">
                   {previewCard.name}
                 </div>
