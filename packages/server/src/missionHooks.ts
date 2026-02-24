@@ -443,6 +443,7 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
 import type {
   BunkerFlowRuleDef,
   ChallengeRewardsRuleDef,
+  ConstraintEnforcementRuleDef,
   ForcedGeneralRadarFlowRuleDef,
   InternFailureExplodesRuleDef,
   SequencePriorityRuleDef,
@@ -457,6 +458,7 @@ import type {
   SimultaneousFourCutRuleDef,
   YellowTriggerTokenPassRuleDef,
 } from "@bomb-busters/shared";
+import { CONSTRAINT_CARD_DEFS } from "@bomb-busters/shared";
 
 const MISSION_NUMBER_VALUES = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
@@ -1846,5 +1848,239 @@ registerHookHandler<"yellow_trigger_token_pass">("yellow_trigger_token_pass", {
       detail: `m22:yellow_trigger_token_pass:triggered|yellowCount=${yellowCount}|order=${passingOrder.join(",")}`,
       timestamp: Date.now(),
     });
+  },
+});
+
+// ── Constraint Enforcement ──────────────────────────────────
+
+/**
+ * Get active constraints for a player (both global and personal).
+ */
+function getActiveConstraints(
+  state: Readonly<GameState>,
+  playerId: string,
+): string[] {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return [];
+
+  const active: string[] = [];
+  for (const c of constraints.global) {
+    if (c.active) active.push(c.id);
+  }
+  const personal = constraints.perPlayer[playerId];
+  if (personal) {
+    for (const c of personal) {
+      if (c.active) active.push(c.id);
+    }
+  }
+  return active;
+}
+
+/**
+ * Extract the cut value from a validate action context.
+ */
+function extractCutValue(action: ValidateHookContext["action"]): number | "YELLOW" | null {
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    return action.guessValue as number | "YELLOW";
+  }
+  if (action.type === "soloCut") {
+    return action.value as number | "YELLOW";
+  }
+  return null;
+}
+
+/**
+ * Constraint enforcement for campaign missions.
+ *
+ * Setup: Initializes constraints from rule definition.
+ * Validate: Checks each active constraint against the proposed action.
+ * Resolve: Constraint L doubles the detonator advance on failed dual cuts.
+ */
+registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
+  setup(rule: ConstraintEnforcementRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+
+    const cards = rule.constraintIds
+      .map((id) => {
+        const def = CONSTRAINT_CARD_DEFS.find((c) => c.id === id);
+        return def
+          ? { id: def.id, name: def.name, description: def.description, active: true }
+          : null;
+      })
+      .filter((c): c is NonNullable<typeof c> => c != null);
+
+    if (rule.scope === "global") {
+      ctx.state.campaign.constraints = {
+        global: cards,
+        perPlayer: {},
+      };
+    } else {
+      const perPlayer: Record<string, typeof cards> = {};
+      // Distribute cards round-robin to players
+      for (let i = 0; i < cards.length; i++) {
+        const player = ctx.state.players[i % ctx.state.players.length];
+        perPlayer[player.id] ??= [];
+        perPlayer[player.id].push({ ...cards[i] });
+      }
+      ctx.state.campaign.constraints = {
+        global: [],
+        perPlayer,
+      };
+    }
+
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `constraint_enforcement:scope=${rule.scope}|ids=${rule.constraintIds.join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: ConstraintEnforcementRuleDef, ctx: ValidateHookContext): HookResult | void {
+    const actorId = ctx.action.actorId;
+    const active = getActiveConstraints(ctx.state, actorId);
+    if (active.length === 0) return;
+
+    const cutValue = extractCutValue(ctx.action);
+
+    for (const constraintId of active) {
+      switch (constraintId) {
+        case "A": // Even Wires Only
+          if (typeof cutValue === "number" && cutValue % 2 !== 0) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint A: You must cut only even wires",
+            };
+          }
+          break;
+
+        case "B": // Odd Wires Only
+          if (typeof cutValue === "number" && cutValue % 2 === 0) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint B: You must cut only odd wires",
+            };
+          }
+          break;
+
+        case "C": // Wires 1–6 Only
+          if (typeof cutValue === "number" && (cutValue < 1 || cutValue > 6)) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint C: You must cut only wires 1 to 6",
+            };
+          }
+          break;
+
+        case "D": // Wires 7–12 Only
+          if (typeof cutValue === "number" && (cutValue < 7 || cutValue > 12)) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint D: You must cut only wires 7 to 12",
+            };
+          }
+          break;
+
+        case "E": // Wires 4–9 Only
+          if (typeof cutValue === "number" && (cutValue < 4 || cutValue > 9)) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint E: You must cut only wires 4 to 9",
+            };
+          }
+          break;
+
+        case "F": // No Wires 4–9
+          if (typeof cutValue === "number" && cutValue >= 4 && cutValue <= 9) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint F: You cannot cut wires 4 to 9",
+            };
+          }
+          break;
+
+        case "I": // No Far-Right Wire
+          if (ctx.action.type === "dualCut") {
+            const targetPlayerId = ctx.action.targetPlayerId as string;
+            const targetTileIndex = ctx.action.targetTileIndex as number;
+            const target = ctx.state.players.find((p) => p.id === targetPlayerId);
+            if (target) {
+              const uncutIndices = target.hand
+                .map((_, i) => i)
+                .filter((i) => !target.hand[i].cut);
+              const maxIndex = Math.max(...uncutIndices);
+              if (targetTileIndex === maxIndex) {
+                return {
+                  validationCode: "MISSION_RULE_VIOLATION",
+                  validationError: "Constraint I: You cannot cut the far-right wire",
+                };
+              }
+            }
+          }
+          break;
+
+        case "J": // No Far-Left Wire
+          if (ctx.action.type === "dualCut") {
+            const targetPlayerId = ctx.action.targetPlayerId as string;
+            const targetTileIndex = ctx.action.targetTileIndex as number;
+            const target = ctx.state.players.find((p) => p.id === targetPlayerId);
+            if (target) {
+              const uncutIndices = target.hand
+                .map((_, i) => i)
+                .filter((i) => !target.hand[i].cut);
+              const minIndex = Math.min(...uncutIndices);
+              if (targetTileIndex === minIndex) {
+                return {
+                  validationCode: "MISSION_RULE_VIOLATION",
+                  validationError: "Constraint J: You cannot cut the far-left wire",
+                };
+              }
+            }
+          }
+          break;
+
+        case "K": // No Solo Cut
+          if (ctx.action.type === "soloCut") {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint K: You cannot do a Solo Cut action",
+            };
+          }
+          break;
+
+        // G (No Equipment) is enforced in equipment.ts validation
+        // H (No Info on Fail) is enforced at resolve time
+        // L (Double Detonator) is enforced at resolve time
+      }
+    }
+  },
+
+  resolve(_rule: ConstraintEnforcementRuleDef, ctx: ResolveHookContext): HookResult | void {
+    if (ctx.action.type !== "dualCut") return;
+    if (ctx.cutSuccess) return;
+
+    const actorId = ctx.action.actorId;
+    const active = getActiveConstraints(ctx.state, actorId);
+
+    // Constraint L: double detonator advance on failed dual cut
+    if (active.includes("L")) {
+      // The base game already advanced detonator by 1; advance by 1 more
+      ctx.state.board.detonatorPosition += 1;
+
+      ctx.state.log.push({
+        turn: ctx.state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail: "constraint_L:double_detonator:+1_extra",
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+      }
+    }
   },
 });

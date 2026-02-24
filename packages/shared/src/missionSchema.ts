@@ -24,6 +24,7 @@ import { ALL_MISSION_IDS, type MissionId } from "./types.js";
 export type {
   BlueAsRedRuleDef,
   BlueWireSpec,
+  ConstraintEnforcementRuleDef,
   DynamicTurnOrderRuleDef,
   EquipmentDoubleLockRuleDef,
   ChallengeRewardsRuleDef,

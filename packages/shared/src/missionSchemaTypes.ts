@@ -241,6 +241,18 @@ export interface YellowTriggerTokenPassRuleDef {
 }
 
 /**
+ * Constraint enforcement: validates player actions against active constraint cards.
+ * Constraints may be global (apply to all) or per-player.
+ */
+export interface ConstraintEnforcementRuleDef {
+  kind: "constraint_enforcement";
+  /** Which constraint cards to draw at setup. Empty means configured by mission data. */
+  constraintIds: readonly string[];
+  /** Whether constraints are personal (per-player) or global. */
+  scope: "global" | "per_player";
+}
+
+/**
  * Discriminated union of all resolved hook rule definitions.
  * Extend this union as more hooks are resolved in later milestones.
  */
@@ -259,7 +271,8 @@ export type MissionHookRuleDef =
   | InternFailureExplodesRuleDef
   | ForcedGeneralRadarFlowRuleDef
   | SimultaneousFourCutRuleDef
-  | YellowTriggerTokenPassRuleDef;
+  | YellowTriggerTokenPassRuleDef
+  | ConstraintEnforcementRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 
