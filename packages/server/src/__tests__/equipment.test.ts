@@ -1373,7 +1373,7 @@ describe("equipment execution", () => {
     expect(state.players[1].infoTokens).toEqual([]);
   });
 
-  it("talkies-walkies does not discard non-count info tokens on swapped wires", () => {
+  it("talkies-walkies moves single-wire info tokens with the swapped wire", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [
@@ -1406,14 +1406,55 @@ describe("equipment execution", () => {
     });
 
     expect(action.type).toBe("equipmentUsed");
-    // Normal numeric tokens should NOT be discarded
-    // After re-sort: actor hand [t1(sv7), a2(sv5)] → [a2(sv5), t1(sv7)]
-    // Token was at position 0 (tile a1→t1), t1 now at index 1 → position remaps 0→1
+    // Base FAQ: token follows the swapped wire to the recipient stand.
+    // The teammate's token moves with t1 into actor's hand and remaps on sort.
     expect(state.players[0].infoTokens).toEqual([
-      { value: 3, position: 1, isYellow: false },
+      { value: 7, position: 1, isYellow: false },
     ]);
     expect(state.players[1].infoTokens).toEqual([
-      { value: 7, position: 0, isYellow: false },
+      { value: 3, position: 0, isYellow: false },
+    ]);
+  });
+
+  it("mission 40: talkies-walkies keeps x1/x2/x3 tokens and moves them with swapped wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "a2", gameValue: 8, sortValue: 8 }),
+      ],
+      infoTokens: [
+        { value: 0, countHint: 2, position: 0, isYellow: false },
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 5, sortValue: 5 })],
+      infoTokens: [
+        { value: 0, parity: "odd", position: 0, isYellow: false },
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+    state.mission = 40;
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+      teammateTileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies");
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 0, parity: "odd", position: 0, isYellow: false },
+    ]);
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 0, countHint: 2, position: 0, isYellow: false },
     ]);
   });
 

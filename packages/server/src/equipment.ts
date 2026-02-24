@@ -924,27 +924,61 @@ function validateTalkiesWalkiesPayload(
 }
 
 function swapTalkiesWires(
+  state: GameState,
   actor: Player,
   teammate: Player,
   myTileIndex: number,
   teammateTileIndex: number,
 ): void {
+  const actorTransfer = collectSwappedWireTokens(state, actor, myTileIndex);
+  const teammateTransfer = collectSwappedWireTokens(state, teammate, teammateTileIndex);
+
   const mine = actor.hand[myTileIndex];
   const theirs = teammate.hand[teammateTileIndex];
   actor.hand[myTileIndex] = theirs;
   teammate.hand[teammateTileIndex] = mine;
 
-  // Mission 24 FAQ: x1/x2/x3 count tokens on swapped wires are discarded.
-  actor.infoTokens = actor.infoTokens.filter(
-    (t) => !(t.position === myTileIndex && t.countHint != null),
-  );
-  teammate.infoTokens = teammate.infoTokens.filter(
-    (t) => !(t.position === teammateTileIndex && t.countHint != null),
-  );
+  // Base rule: token on a swapped wire follows that wire.
+  for (const token of teammateTransfer) {
+    actor.infoTokens.push({
+      ...token,
+      position: myTileIndex,
+    });
+  }
+  for (const token of actorTransfer) {
+    teammate.infoTokens.push({
+      ...token,
+      position: teammateTileIndex,
+    });
+  }
 
   // Re-sort both hands by sortValue and remap info-token positions.
   resortHandAndRemapTokens(actor);
   resortHandAndRemapTokens(teammate);
+}
+
+function collectSwappedWireTokens(
+  state: Readonly<GameState>,
+  owner: Player,
+  swappedIndex: number,
+): Player["infoTokens"] {
+  const transferable: Player["infoTokens"] = [];
+
+  owner.infoTokens = owner.infoTokens.filter((token) => {
+    if (token.position !== swappedIndex || token.positionB != null) {
+      return true;
+    }
+
+    // Mission 24 FAQ override: x1/x2/x3 tokens are discarded when swapped.
+    if (state.mission === 24 && token.countHint != null) {
+      return false;
+    }
+
+    transferable.push(token);
+    return false;
+  });
+
+  return transferable;
 }
 
 function resortHandAndRemapTokens(player: Player): void {
@@ -1114,6 +1148,7 @@ export function executeUseEquipment(
       }
 
       swapTalkiesWires(
+        state,
         actor,
         teammate,
         payload.myTileIndex,
@@ -1718,6 +1753,7 @@ export function executeCharacterAbility(
       }
 
       swapTalkiesWires(
+        state,
         actor,
         teammate,
         payload.myTileIndex,
@@ -1820,7 +1856,7 @@ export function resolveTalkiesWalkiesTileChoice(
   const teammate = state.players.find((player) => player.id === forced.targetPlayerId);
   if (!teammate) throw new Error("Talkies-Walkies target player not found");
 
-  swapTalkiesWires(actor, teammate, forced.actorTileIndex, teammateTileIndex);
+  swapTalkiesWires(state, actor, teammate, forced.actorTileIndex, teammateTileIndex);
   state.pendingForcedAction = undefined;
 
   addLog(
