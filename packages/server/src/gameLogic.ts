@@ -784,6 +784,31 @@ export function executeSimultaneousFourCut(
     state.campaign ??= {};
     state.campaign.mission23SpecialActionDone = true;
 
+    // Mission 39: after the special action succeeds, deal all remaining
+    // Number cards equally starting from the captain, clockwise.
+    if (state.mission === 39) {
+      const numberCards = state.campaign.numberCards;
+      if (numberCards) {
+        const playerCount = state.players.length;
+        const captainIndex = state.players.findIndex((player) => player.isCaptain);
+        const startIndex = captainIndex >= 0 ? captainIndex : 0;
+
+        numberCards.playerHands = {};
+        for (const player of state.players) {
+          numberCards.playerHands[player.id] = [];
+        }
+
+        let dealt = 0;
+        while (numberCards.deck.length > 0 && playerCount > 0) {
+          const recipient = state.players[(startIndex + dealt) % playerCount];
+          const card = numberCards.deck.shift()!;
+          card.faceUp = false;
+          numberCards.playerHands[recipient.id].push(card);
+          dealt++;
+        }
+      }
+    }
+
     // Unlock all remaining face-down equipment
     for (const card of state.board.equipment) {
       if (card.faceDown) {
@@ -800,7 +825,9 @@ export function executeSimultaneousFourCut(
       state,
       actorId,
       "simultaneousFourCut",
-      `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
+      state.mission === 39
+        ? `designated 4 wires of value ${targetValue} — all match! Remaining Number cards dealt.`
+        : `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
     );
 
     if (checkWin(state)) {

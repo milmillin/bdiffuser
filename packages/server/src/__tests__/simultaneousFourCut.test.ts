@@ -348,6 +348,71 @@ describe("executeSimultaneousFourCut", () => {
     }
   });
 
+  it("mission 39 success: deals remaining Number cards starting from captain", () => {
+    const state = makeGameState({
+      mission: 39,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-1", gameValue: 3 }),
+            makeTile({ id: "p1-2", gameValue: 5 }),
+          ],
+          isCaptain: false,
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-1", gameValue: 5 }),
+            makeTile({ id: "p2-2", gameValue: 5 }),
+          ],
+          isCaptain: true,
+        }),
+        makePlayer({
+          id: "p3",
+          hand: [
+            makeTile({ id: "p3-1", gameValue: 5 }),
+            makeTile({ id: "p3-2", gameValue: 7 }),
+          ],
+          isCaptain: false,
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "visible-5", value: 5, faceUp: true })],
+          deck: [
+            makeNumberCard({ id: "d1", value: 1, faceUp: true }),
+            makeNumberCard({ id: "d2", value: 2, faceUp: true }),
+            makeNumberCard({ id: "d3", value: 3, faceUp: true }),
+            makeNumberCard({ id: "d4", value: 4, faceUp: true }),
+            makeNumberCard({ id: "d5", value: 5, faceUp: true }),
+          ],
+        }),
+      },
+    });
+
+    const action = executeSimultaneousFourCut(state, "p1", [
+      { playerId: "p1", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+      { playerId: "p3", tileIndex: 0 },
+    ]);
+
+    expect(action.type).toBe("simultaneousFourCutResult");
+    expect(state.campaign?.numberCards?.deck).toHaveLength(0);
+
+    const playerHands = state.campaign?.numberCards?.playerHands ?? {};
+    expect(playerHands.p1?.map((card) => card.value)).toEqual([3]);
+    expect(playerHands.p2?.map((card) => card.value)).toEqual([1, 4]);
+    expect(playerHands.p3?.map((card) => card.value)).toEqual([2, 5]);
+
+    const allDealt = [...(playerHands.p1 ?? []), ...(playerHands.p2 ?? []), ...(playerHands.p3 ?? [])];
+    expect(allDealt).toHaveLength(5);
+    expect(allDealt.every((card) => card.faceUp === false)).toBe(true);
+    expect(state.campaign?.numberCards?.visible[0]?.value).toBe(5);
+  });
+
   it("failure: mismatch causes explosion", () => {
     const t2 = makeTile({ id: "t2", gameValue: 5 });
     const t3 = makeTile({ id: "t3", gameValue: 7 }); // mismatch!
