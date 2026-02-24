@@ -91,6 +91,33 @@ describe("mission progression hooks", () => {
     expect(state.phase).toBe("finished");
   });
 
+  it("mission 49 setup distributes oxygen per player count", () => {
+    const cases: Array<{ playerCount: 2 | 3 | 4 | 5; expectedPerPlayer: number }> = [
+      { playerCount: 2, expectedPerPlayer: 7 },
+      { playerCount: 3, expectedPerPlayer: 6 },
+      { playerCount: 4, expectedPerPlayer: 5 },
+      { playerCount: 5, expectedPerPlayer: 4 },
+    ];
+
+    for (const { playerCount, expectedPerPlayer } of cases) {
+      const players = Array.from({ length: playerCount }, (_, idx) =>
+        makePlayer({ id: `p${idx + 1}` }),
+      );
+      const state = makeGameState({
+        mission: 49,
+        log: [],
+        players,
+      });
+
+      dispatchHooks(49, { point: "setup", state });
+
+      expect(state.campaign?.oxygen?.pool).toBe(0);
+      for (const player of players) {
+        expect(state.campaign?.oxygen?.playerOxygen[player.id]).toBe(expectedPerPlayer);
+      }
+    }
+  });
+
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
     const state = makeGameState({
       mission: 55,

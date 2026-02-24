@@ -17,9 +17,15 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     hookRules: [
       {
         kind: "oxygen_progression",
-        initialPool: 10,
+        initialPool: 0,
         perTurnCost: 1,
-        initialPlayerOxygen: 1,
+        initialPlayerOxygen: 4,
+        initialPlayerOxygenByPlayerCount: {
+          2: 7,
+          3: 6,
+          4: 5,
+          5: 4,
+        },
         rotatePlayerOxygen: true,
       },
     ],

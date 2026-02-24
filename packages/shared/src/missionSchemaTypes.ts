@@ -146,10 +146,14 @@ export interface OxygenProgressionRuleDef {
   kind: "oxygen_progression";
   /** Initial shared oxygen pool for mission start. */
   initialPool: number;
+  /** Optional mission-specific shared-pool setup overrides by player count. */
+  initialPoolByPlayerCount?: Partial<Record<PlayerCount, number>>;
   /** Oxygen spent at each end-turn hook execution. */
   perTurnCost: number;
   /** Optional per-player oxygen stock at setup time. */
   initialPlayerOxygen?: number;
+  /** Optional mission-specific per-player stock setup overrides by player count. */
+  initialPlayerOxygenByPlayerCount?: Partial<Record<PlayerCount, number>>;
   /** Rotate per-player oxygen ownership clockwise each turn. */
   rotatePlayerOxygen?: boolean;
 }

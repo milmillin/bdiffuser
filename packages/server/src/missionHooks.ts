@@ -1315,8 +1315,17 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
   setup(rule: OxygenProgressionRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
 
-    const initialPool = Math.max(0, Math.floor(rule.initialPool));
-    const initialPlayerOxygen = Math.max(0, Math.floor(rule.initialPlayerOxygen ?? 0));
+    const playerCount = ctx.state.players.length as 2 | 3 | 4 | 5;
+    const initialPool = Math.max(
+      0,
+      Math.floor(rule.initialPoolByPlayerCount?.[playerCount] ?? rule.initialPool),
+    );
+    const initialPlayerOxygen = Math.max(
+      0,
+      Math.floor(
+        rule.initialPlayerOxygenByPlayerCount?.[playerCount] ?? (rule.initialPlayerOxygen ?? 0),
+      ),
+    );
     const playerOxygen: Record<string, number> = {};
     for (const player of ctx.state.players) {
       playerOxygen[player.id] = initialPlayerOxygen;
