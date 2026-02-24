@@ -43,7 +43,7 @@ describe("GameBoard setup info token mission rules", () => {
     });
 
     const html = renderBoard(toClientGameState(state, "captain"), "captain");
-    expect(html).toContain("Mission setup rule: you do not place an info token.");
+    expect(html).toContain("Mission rule: you do not place an info token.");
     expect(html).not.toContain("Select a blue wire tile on your stand to place an info token.");
   });
 
@@ -68,7 +68,7 @@ describe("GameBoard setup info token mission rules", () => {
     });
 
     const html = renderBoard(toClientGameState(state, "captain"), "captain");
-    expect(html).toContain("Mission setup rule: you do not place an info token.");
+    expect(html).toContain("Mission rule: you do not place an info token.");
     expect(html).not.toContain("Select a blue wire tile on your stand to place an info token.");
   });
 

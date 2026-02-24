@@ -436,33 +436,6 @@ export function GameBoard({
                   ))}
                 </div>
 
-                {/* Setup phase: info token placement */}
-                {isSetup && isMyTurn && me && (
-                  <InfoTokenSetup
-                    player={me}
-                    selectedTileIndex={selectedInfoTile}
-                    selectedTokenValue={selectedInfoTokenValue}
-                    requiresToken={requiresSetupToken}
-                    useFalseTokenMode={useFalseSetupTokenMode}
-                    send={send}
-                    onPlaced={() => {
-                      setSelectedInfoTile(null);
-                      setSelectedInfoTokenValue(null);
-                    }}
-                    onSelectedTokenValueChange={setSelectedInfoTokenValue}
-                  />
-                )}
-
-                {isSetup && !isMyTurn && (
-                  <div className="text-center py-2 text-gray-400">
-                    Waiting for{" "}
-                    <span className="text-white font-bold">
-                      {currentPlayer?.name}
-                    </span>{" "}
-                    to place their info token...
-                  </div>
-                )}
-
                 {dynamicTurnActive && (
                   <div className="rounded-lg border border-sky-600/50 bg-sky-900/25 px-3 py-2 text-xs text-sky-100">
                     <div className="font-bold uppercase tracking-wide text-sky-200">
@@ -718,6 +691,32 @@ export function GameBoard({
                   />
                 )}
 
+                {/* Setup phase: info token placement */}
+                {isSetup && isMyTurn && (
+                  <InfoTokenSetup
+                    player={me}
+                    selectedTileIndex={selectedInfoTile}
+                    selectedTokenValue={selectedInfoTokenValue}
+                    requiresToken={requiresSetupToken}
+                    useFalseTokenMode={useFalseSetupTokenMode}
+                    send={send}
+                    onPlaced={() => {
+                      setSelectedInfoTile(null);
+                      setSelectedInfoTokenValue(null);
+                    }}
+                    onSelectedTokenValueChange={setSelectedInfoTokenValue}
+                  />
+                )}
+
+                {isSetup && !isMyTurn && (
+                  <div className="bg-[var(--color-bomb-surface)] rounded-lg p-2 text-xs text-center text-gray-400">
+                    Waiting for{" "}
+                    <span className="text-white font-bold">
+                      {currentPlayer?.name}
+                    </span>{" "}
+                    to place their info token...
+                  </div>
+                )}
                 <PlayerStand
                   player={me}
                   isOpponent={false}
