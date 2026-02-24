@@ -269,6 +269,27 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.discard).toHaveLength(0);
     });
 
+    it("mission 47: initializes all Number cards faceup in the shared visible area", () => {
+      const state = makeGameState({
+        mission: 47,
+        log: [],
+      });
+
+      dispatchHooks(47, { point: "setup", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards!.visible).toHaveLength(12);
+      expect(numberCards!.visible.every((card) => card.faceUp)).toBe(true);
+      expect(numberCards!.deck).toHaveLength(0);
+      expect(numberCards!.discard).toHaveLength(0);
+
+      const values = [...new Set(numberCards!.visible.map((card) => card.value))].sort(
+        (a, b) => a - b,
+      );
+      expect(values).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    });
+
     it("mission 35: marks one blue X wire at far right of each stand", () => {
       const captain = makePlayer({
         id: "captain",

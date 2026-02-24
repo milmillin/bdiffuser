@@ -3165,16 +3165,17 @@ registerHookHandler<"squeak_number_challenge">("squeak_number_challenge", {
  */
 registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
   setup(_rule: AddSubtractNumberCardsRuleDef, ctx: SetupHookContext): void {
-    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const visibleValues = shuffle([...MISSION_NUMBER_VALUES]);
 
     ctx.state.campaign ??= {};
     ctx.state.campaign.numberCards = {
-      visible: [],
-      deck: deckValues.map((value, idx) => ({
+      // Mission 47 setup starts with all Number cards visible.
+      visible: visibleValues.map((value, idx) => ({
         id: `m47-deck-${idx}-${value}`,
         value,
-        faceUp: false,
+        faceUp: true,
       })),
+      deck: [],
       discard: [],
       playerHands: {},
     };
