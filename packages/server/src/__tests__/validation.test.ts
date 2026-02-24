@@ -1396,4 +1396,40 @@ describe("constraint I/J stand boundaries", () => {
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
     expect(error!.message).toBe("Constraint J: You cannot cut the far-left wire");
   });
+
+  it("constraint I blocks Double Detector when it could cut a far-right wire", () => {
+    const state = buildConstraintState("I");
+    state.players[0]!.character = "double_detector";
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Constraint I: You cannot cut the far-right wire");
+  });
+
+  it("constraint J blocks Double Detector when it could cut a far-left wire", () => {
+    const state = buildConstraintState("J");
+    state.players[0]!.character = "double_detector";
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 2,
+      tileIndex2: 3,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Constraint J: You cannot cut the far-left wire");
+  });
 });

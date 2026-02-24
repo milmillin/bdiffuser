@@ -2191,6 +2191,45 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
     const active = getActiveConstraints(ctx.state, actorId);
     if (active.length === 0) return;
 
+    const targetsRestrictedStandEdge = (
+      targetPlayerId: string,
+      targetTileIndices: readonly number[],
+      edge: "left" | "right",
+    ): boolean => {
+      const target = ctx.state.players.find((p) => p.id === targetPlayerId);
+      if (!target) return false;
+
+      for (const targetTileIndex of targetTileIndices) {
+        const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
+        const standRange = targetStandIndex == null
+          ? null
+          : resolveHookStandRange(target, targetStandIndex);
+        if (!standRange) {
+          continue;
+        }
+
+        const uncutIndices = target.hand
+          .map((_, i) => i)
+          .filter(
+            (i) =>
+              i >= standRange.start &&
+              i < standRange.endExclusive &&
+              !target.hand[i].cut,
+          );
+        if (uncutIndices.length === 0) {
+          continue;
+        }
+
+        const edgeIndex =
+          edge === "right" ? Math.max(...uncutIndices) : Math.min(...uncutIndices);
+        if (targetTileIndex === edgeIndex) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
     const cutValue = extractCutValue(ctx.action);
 
     for (const constraintId of active) {
@@ -2251,66 +2290,60 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
 
         case "I": // No Far-Right Wire
           if (ctx.action.type === "dualCut") {
-            const targetPlayerId = ctx.action.targetPlayerId as string;
-            const targetTileIndex = ctx.action.targetTileIndex as number;
-            const target = ctx.state.players.find((p) => p.id === targetPlayerId);
-            if (target) {
-              const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
-              const standRange = targetStandIndex == null
-                ? null
-                : resolveHookStandRange(target, targetStandIndex);
-              if (standRange) {
-                const uncutIndices = target.hand
-                  .map((_, i) => i)
-                  .filter(
-                    (i) =>
-                      i >= standRange.start &&
-                      i < standRange.endExclusive &&
-                      !target.hand[i].cut,
-                  );
-                if (uncutIndices.length > 0) {
-                  const maxIndex = Math.max(...uncutIndices);
-                  if (targetTileIndex === maxIndex) {
-                    return {
-                      validationCode: "MISSION_RULE_VIOLATION",
-                      validationError: "Constraint I: You cannot cut the far-right wire",
-                    };
-                  }
-                }
-              }
+            if (
+              targetsRestrictedStandEdge(
+                ctx.action.targetPlayerId as string,
+                [ctx.action.targetTileIndex as number],
+                "right",
+              )
+            ) {
+              return {
+                validationCode: "MISSION_RULE_VIOLATION",
+                validationError: "Constraint I: You cannot cut the far-right wire",
+              };
+            }
+          } else if (ctx.action.type === "dualCutDoubleDetector") {
+            if (
+              targetsRestrictedStandEdge(
+                ctx.action.targetPlayerId as string,
+                [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
+                "right",
+              )
+            ) {
+              return {
+                validationCode: "MISSION_RULE_VIOLATION",
+                validationError: "Constraint I: You cannot cut the far-right wire",
+              };
             }
           }
           break;
 
         case "J": // No Far-Left Wire
           if (ctx.action.type === "dualCut") {
-            const targetPlayerId = ctx.action.targetPlayerId as string;
-            const targetTileIndex = ctx.action.targetTileIndex as number;
-            const target = ctx.state.players.find((p) => p.id === targetPlayerId);
-            if (target) {
-              const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
-              const standRange = targetStandIndex == null
-                ? null
-                : resolveHookStandRange(target, targetStandIndex);
-              if (standRange) {
-                const uncutIndices = target.hand
-                  .map((_, i) => i)
-                  .filter(
-                    (i) =>
-                      i >= standRange.start &&
-                      i < standRange.endExclusive &&
-                      !target.hand[i].cut,
-                  );
-                if (uncutIndices.length > 0) {
-                  const minIndex = Math.min(...uncutIndices);
-                  if (targetTileIndex === minIndex) {
-                    return {
-                      validationCode: "MISSION_RULE_VIOLATION",
-                      validationError: "Constraint J: You cannot cut the far-left wire",
-                    };
-                  }
-                }
-              }
+            if (
+              targetsRestrictedStandEdge(
+                ctx.action.targetPlayerId as string,
+                [ctx.action.targetTileIndex as number],
+                "left",
+              )
+            ) {
+              return {
+                validationCode: "MISSION_RULE_VIOLATION",
+                validationError: "Constraint J: You cannot cut the far-left wire",
+              };
+            }
+          } else if (ctx.action.type === "dualCutDoubleDetector") {
+            if (
+              targetsRestrictedStandEdge(
+                ctx.action.targetPlayerId as string,
+                [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
+                "left",
+              )
+            ) {
+              return {
+                validationCode: "MISSION_RULE_VIOLATION",
+                validationError: "Constraint J: You cannot cut the far-left wire",
+              };
             }
           }
           break;
