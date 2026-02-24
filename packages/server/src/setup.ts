@@ -387,8 +387,10 @@ export function setupGame(
 
   // Rule Sticker A (missions 9+): Add False Bottom to equipment pool for
   // missions with yellow wires, unless already present.
+  // Mission 41 explicitly replaces/discards False Bottom if drawn.
   if (
     mission >= 9 &&
+    mission !== 41 &&
     setup.yellow.kind !== "none" &&
     !equipment.some((eq) => eq.id === "false_bottom")
   ) {

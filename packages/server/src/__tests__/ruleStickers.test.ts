@@ -51,6 +51,14 @@ describe("Rule Sticker A — False Bottom (missions 9+)", () => {
 
     expect(board.equipment.filter((eq) => eq.id === "false_bottom")).toHaveLength(1);
   });
+
+  it("mission 41 replaces false_bottom instead of keeping it in the equipment row", () => {
+    const missionId = 41 as MissionId;
+    const players = createPlayers(firstAllowedPlayerCount(missionId));
+    const { board } = setupGame(players, missionId);
+
+    expect(board.equipment.some((eq) => eq.id === "false_bottom")).toBe(false);
+  });
 });
 
 describe("Rule Sticker C — Campaign Equipment (missions 55+)", () => {
