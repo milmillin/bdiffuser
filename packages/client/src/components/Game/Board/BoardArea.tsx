@@ -49,7 +49,7 @@ export function ScrollableRow({ children }: { children: ReactNode }) {
       )}
       <div
         ref={ref}
-        className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex justify-center"
+        className="overflow-x-auto overscroll-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex justify-center"
       >
         {children}
       </div>

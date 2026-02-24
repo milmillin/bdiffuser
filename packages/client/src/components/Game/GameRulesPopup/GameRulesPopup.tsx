@@ -158,7 +158,7 @@ export function GameRulesPopup({
           {/* Scrollable content */}
           <div
             ref={contentRef}
-            className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-none px-4 py-3"
           >
             <div className="space-y-5">
               {filteredSections.map((section) => (
@@ -168,7 +168,7 @@ export function GameRulesPopup({
           </div>
 
           {/* TOC sidebar — hidden on small screens */}
-          <div className="hidden w-56 shrink-0 overflow-y-auto border-l border-gray-700 px-2 py-3 lg:block">
+          <div className="hidden w-56 shrink-0 overflow-y-auto overscroll-none border-l border-gray-700 px-2 py-3 lg:block">
             <TableOfContents
               sections={filteredSections}
               activeId={activeId}

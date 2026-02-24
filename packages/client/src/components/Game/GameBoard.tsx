@@ -370,7 +370,7 @@ export function GameBoard({
             style={{ gridTemplateRows: "1fr auto" }}
           >
             {/* Scrollable top area */}
-            <div className="overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
+            <div className="overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0">
               <div className="w-full min-w-0 flex flex-col gap-2 overflow-x-hidden">
                 {/* Opponents area */}
                 <div className="flex gap-2 justify-center overflox-x-hidden flex-wrap min-w-0 w-full">

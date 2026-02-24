@@ -167,7 +167,7 @@ export function LeftDock({
       <div className="block relative flex-shrink-0 w-9 z-20">
         <div className="absolute inset-y-0 left-0 flex">
           {/* Tab strip */}
-          <div className="flex flex-col w-9 py-1 gap-1.5 overflow-y-auto flex-shrink-0">
+          <div className="flex flex-col w-9 py-1 gap-1.5 overflow-y-auto overscroll-none flex-shrink-0">
             {/* Mission front tab */}
             <TabButton
               active={modalTab === "mission_front"}
@@ -326,7 +326,7 @@ function CardModal({
       onClick={onClose}
     >
       <div
-        className="max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl"
+        className="max-w-lg w-full max-h-[90vh] overflow-y-auto overscroll-none rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ background: "linear-gradient(180deg, #1e2235 0%, #131720 40%, #171c28 100%)" }}
       >
@@ -386,7 +386,7 @@ function CardModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full overflow-y-auto px-4 py-4 pt-10 space-y-3">
+                  <div className="h-full overflow-y-auto overscroll-none px-4 py-4 pt-10 space-y-3">
                     <div className="space-y-1">
                       <div className="text-xs uppercase tracking-wide text-violet-300">Personal Equipment</div>
                       <div className="text-lg font-bold text-white leading-tight">{charText.abilityName}</div>
@@ -449,7 +449,7 @@ function CardModal({
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full overflow-y-auto px-4 py-4 pt-10 space-y-3">
+                  <div className="h-full overflow-y-auto overscroll-none px-4 py-4 pt-10 space-y-3">
                     <div className="space-y-1">
                       <div className="text-xs uppercase tracking-wide text-gray-400">
                         {eq.faceDown && !eq.unlocked ? "Face-down equipment" : `Equipment ${eq.unlockValue}`}

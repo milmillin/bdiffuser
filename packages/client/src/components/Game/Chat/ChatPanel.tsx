@@ -44,7 +44,7 @@ export function ChatPanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0"
+        className="flex-1 overflow-y-auto overscroll-none p-2 space-y-1 min-h-0"
       >
         {messages.map((msg) => (
           <ChatBubble key={msg.id} msg={msg} isOwn={msg.senderId === playerId} />

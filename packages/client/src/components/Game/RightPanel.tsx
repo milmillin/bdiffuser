@@ -32,11 +32,11 @@ export function RightPanel({
 }) {
   return (
     <div
-      className="grid w-72 flex-shrink-0 gap-3 overflow-hidden"
+      className="grid w-48 md:w-60 lg:w-72 xl:w-80 flex-shrink-0 gap-3 overflow-hidden"
       style={{ gridTemplateRows: "1fr auto" }}
     >
       {/* Top: scrollable info area */}
-      <div className="min-h-0 overflow-y-auto space-y-3">
+      <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">
         <MissionCard missionId={missionId} />
       </div>
 

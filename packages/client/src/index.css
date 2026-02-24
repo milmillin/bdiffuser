@@ -15,6 +15,7 @@ body {
   color: white;
   font-family: system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  overscroll-behavior: none;
 }
 
 /* Wire tile flip animation */

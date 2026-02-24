@@ -89,7 +89,7 @@ export function PlayerStand({
         const colWidth = "1.5rem";
         return (
           <ScrollableRow>
-          <div className={`grid gap-x-1 mx-auto w-fit`}
+          <div className={`grid gap-x-1 mx-auto min-w-0`}
             style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
           >
             {/* Row 1: info tokens */}

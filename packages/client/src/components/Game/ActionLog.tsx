@@ -25,7 +25,7 @@ export function ActionLog({
     <div className="flex flex-col h-full w-full">
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0"
+        className="flex-1 overflow-y-auto overscroll-none p-2 space-y-1 min-h-0"
       >
         {log.length === 0 && (
           <div className="text-xs text-gray-600 italic">No actions yet.</div>
