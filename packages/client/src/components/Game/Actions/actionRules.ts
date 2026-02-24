@@ -116,6 +116,11 @@ export function getSoloCutValues(
 
   const myUncut = me.hand.filter((t) => !t.cut);
   const values: (number | "YELLOW")[] = [];
+  const mission35HasUncutYellowWires =
+    state.mission === 35 &&
+    state.players.some((player) =>
+      player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
+    );
 
   const valueCounts = new Map<string, number>();
   for (const tile of myUncut) {
@@ -127,6 +132,12 @@ export function getSoloCutValues(
   for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
+      if (
+        mission35HasUncutYellowWires
+        && myUncut.some((tile) => tile.gameValue === value && tile.isXMarked)
+      ) {
+        continue;
+      }
       const alreadyCut = state.board.validationTrack[value] ?? 0;
       const remaining = BLUE_COPIES_PER_VALUE - alreadyCut;
       if (myCount >= remaining && remaining > 0) {

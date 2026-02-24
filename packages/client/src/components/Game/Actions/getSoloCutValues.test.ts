@@ -132,6 +132,64 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
     expect(values).not.toContain("YELLOW");
   });
+
+  it("does NOT offer numeric solo cut values for mission 35 X-marked wires while yellow wires remain", () => {
+    const state = makeGameState({
+      mission: 35,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 2 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "x1", gameValue: 5, isXMarked: true }),
+            makeTile({ id: "x2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "teammate",
+          hand: [makeYellowTile({ id: "y1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(5);
+  });
+
+  it("offers mission 35 X-marked numeric solo value after all yellow wires are cut", () => {
+    const state = makeGameState({
+      mission: 35,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 2 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "x1", gameValue: 5, isXMarked: true }),
+            makeTile({ id: "x2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "teammate",
+          hand: [makeYellowTile({ id: "y1", cut: true })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).toContain(5);
+  });
 });
 
 describe("canRevealReds mission rules", () => {
