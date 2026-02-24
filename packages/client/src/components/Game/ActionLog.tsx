@@ -22,10 +22,7 @@ export function ActionLog({
     players.find((p) => p.id === id)?.name ?? id;
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-bomb-surface)] rounded-xl border border-gray-700">
-      <div className="px-3 py-2 border-b border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wide flex-shrink-0">
-        Action Log
-      </div>
+    <div className="flex flex-col h-full w-full">
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0"

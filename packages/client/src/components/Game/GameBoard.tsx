@@ -18,8 +18,7 @@ import { ActionPanel } from "./Actions/ActionPanel.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
-import { ChatPanel } from "./Chat/ChatPanel.js";
-import { ActionLog } from "./ActionLog.js";
+import { RightPanel } from "./RightPanel.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
 import { EquipmentModePanel } from "./Actions/EquipmentModePanel.js";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
@@ -811,23 +810,16 @@ export function GameBoard({
             )}
           </div>
 
-          {/* Sidebar: action log + chat */}
-          <div className="flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
-            <div className="flex-1 min-h-0 flex flex-col">
-              <ActionLog
-                log={gameState.log}
-                players={gameState.players}
-                result={gameState.result}
-              />
-            </div>
-            <div className="flex-1 min-h-0 flex flex-col">
-              <ChatPanel
-                messages={chatMessages}
-                send={send}
-                playerId={playerId}
-              />
-            </div>
-          </div>
+          {/* Sidebar: mission card + action log / chat */}
+          <RightPanel
+            missionId={gameState.mission}
+            log={gameState.log}
+            players={gameState.players}
+            result={gameState.result}
+            chatMessages={chatMessages}
+            send={send}
+            playerId={playerId}
+          />
         </div>
 
         {/* Mobile bottom drawer */}

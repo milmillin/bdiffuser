@@ -38,13 +38,9 @@ export function ChatPanel({
 
   return (
     <div
-      className="flex flex-col bg-[var(--color-bomb-surface)] rounded-lg border border-gray-700 h-full"
+      className="flex flex-col h-full"
       data-testid="chat-panel"
     >
-      <div className="px-3 py-2 border-b border-gray-700 flex-shrink-0">
-        <h3 className="text-sm font-bold text-gray-300">Team Chat</h3>
-      </div>
-
       <div
         ref={scrollRef}
         onScroll={handleScroll}
