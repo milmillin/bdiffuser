@@ -84,13 +84,11 @@ export function GameBoard({
   send,
   playerId,
   chatMessages,
-  onPlayAgain,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
   chatMessages: ChatMessage[];
-  onPlayAgain?: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isFinished = gameState.phase === "finished";
@@ -587,29 +585,6 @@ export function GameBoard({
                 />
               )}
 
-              {/* Game over banner */}
-              {isFinished && (
-                <div className="rounded-xl p-4 text-center space-y-3" data-testid="game-over-banner">
-                  <div className={`text-2xl font-black ${gameState.result === "win" ? "text-green-400" : "text-red-500"}`}>
-                    {gameState.result === "win" ? "MISSION COMPLETE!" : gameState.result === "loss_timer" ? "TIME'S UP!" : "BOOM!"}
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {gameState.result === "win" && "All wires have been safely cut!"}
-                    {gameState.result === "loss_red_wire" && "A red wire was cut and the bomb exploded!"}
-                    {gameState.result === "loss_detonator" && "The detonator reached the end!"}
-                    {gameState.result === "loss_timer" && "The mission timer expired!"}
-                  </p>
-                  {onPlayAgain && (
-                    <button
-                      onClick={onPlayAgain}
-                      data-testid="play-again"
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-sm transition-colors"
-                    >
-                      Play Again
-                    </button>
-                  )}
-                </div>
-              )}
                 <PlayerStand
                   player={me}
                   isOpponent={false}

@@ -29,6 +29,26 @@ function countCutValue(state: ClientGameState, value: number): number {
   return count;
 }
 
+function TrackerBar({ label, position, max }: { label: string; position: number; max: number }) {
+  const pct = max > 0 ? Math.min(100, (position / max) * 100) : 0;
+  const barColor = pct >= 80 ? "bg-red-500" : pct >= 50 ? "bg-amber-500" : "bg-emerald-500";
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-300 font-semibold w-12">{label}</span>
+      <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-xs font-bold text-gray-200 tabular-nums">
+        {position}/{max}
+      </span>
+    </div>
+  );
+}
+
 function SequencePriorityHint({ gameState }: { gameState: ClientGameState }) {
   const visible = gameState.campaign?.numberCards?.visible ?? [];
   if (visible.length < 3) return null;
@@ -130,7 +150,7 @@ function CampaignObjectsHint({
 
   const globalConstraints =
     campaign.constraints?.global.filter((constraint) => constraint.active) ?? [];
-  const perPlayerConstraints: { playerName: string; labels: string[] }[] = [];
+  const perPlayerConstraints: { playerName: string; cards: typeof globalConstraints }[] = [];
   for (const [playerId, cards] of Object.entries(campaign.constraints?.perPlayer ?? {})) {
     const activeCards = cards.filter((constraint) => constraint.active);
     if (activeCards.length === 0) continue;
@@ -139,7 +159,7 @@ function CampaignObjectsHint({
       playerId;
     perPlayerConstraints.push({
       playerName,
-      labels: activeCards.map((constraint) => constraint.name || constraint.id),
+      cards: activeCards,
     });
   }
 
@@ -202,64 +222,134 @@ function CampaignObjectsHint({
       )}
 
       {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1">
+        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
           <div className="text-[10px] uppercase text-gray-400">Constraints</div>
           {globalConstraints.length > 0 && (
-            <div className="text-xs text-gray-200">
-              Global: {globalConstraints.map((constraint) => constraint.name || constraint.id).join(", ")}
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase">Global</div>
+              <div className="flex flex-wrap gap-1">
+                {globalConstraints.map((constraint) => (
+                  <div
+                    key={constraint.id}
+                    className="group relative rounded border border-red-500/60 bg-red-950/30 px-2 py-1 text-xs text-red-200 cursor-default"
+                    title={constraint.description}
+                  >
+                    <span className="font-semibold">{constraint.id}</span>{" "}
+                    <span className="text-red-300/80">{constraint.name || constraint.id}</span>
+                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-48 rounded bg-gray-900 border border-red-500/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
+                      {constraint.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {perPlayerConstraints.map((entry) => (
-            <div key={entry.playerName} className="text-xs text-gray-300">
-              {entry.playerName}: {entry.labels.join(", ")}
+            <div key={entry.playerName} className="space-y-1">
+              <div className="text-[10px] text-gray-500">{entry.playerName}</div>
+              <div className="flex flex-wrap gap-1">
+                {entry.cards.map((constraint) => (
+                  <div
+                    key={constraint.id}
+                    className="group relative rounded border border-amber-500/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200 cursor-default"
+                    title={constraint.description}
+                  >
+                    <span className="font-semibold">{constraint.id}</span>{" "}
+                    <span className="text-amber-300/80">{constraint.name || constraint.id}</span>
+                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-48 rounded bg-gray-900 border border-amber-500/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
+                      {constraint.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {(activeChallenges.length > 0 || completedChallenges.length > 0 || challengeDeckCount > 0) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1">
+        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
           <div className="text-[10px] uppercase text-gray-400">Challenges</div>
           {activeChallenges.length > 0 && (
-            <div className="text-xs text-gray-200">
-              Active: {activeChallenges.map((challenge) => challenge.name || challenge.id).join(", ")}
+            <div className="space-y-1">
+              <div className="flex flex-wrap gap-1">
+                {activeChallenges.map((challenge) => (
+                  <div
+                    key={challenge.id}
+                    className="group relative rounded border border-amber-400/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200 cursor-default"
+                    title={challenge.description}
+                  >
+                    <span className="font-semibold">#{challenge.id}</span>{" "}
+                    <span className="text-amber-300/80">{challenge.name}</span>
+                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-52 rounded bg-gray-900 border border-amber-400/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
+                      {challenge.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {completedChallenges.length > 0 && (
-            <div className="text-xs text-gray-300">
-              Completed: {completedChallenges.map((challenge) => challenge.name || challenge.id).join(", ")}
+            <div className="flex flex-wrap gap-1">
+              {completedChallenges.map((challenge) => (
+                <div
+                  key={challenge.id}
+                  className="rounded border border-emerald-500/50 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-300 line-through opacity-70"
+                  title={`Completed: ${challenge.description}`}
+                >
+                  <span className="font-semibold">#{challenge.id}</span>{" "}
+                  {challenge.name}
+                </div>
+              ))}
             </div>
           )}
           {challengeDeckCount > 0 && (
-            <div className="text-xs text-gray-400">Deck remaining: {challengeDeckCount}</div>
+            <div className="text-xs text-gray-400">Deck: {challengeDeckCount} remaining</div>
           )}
         </div>
       )}
 
       {oxygen && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1">
+        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
           <div className="text-[10px] uppercase text-gray-400">Oxygen</div>
-          <div className="text-xs text-gray-200">Pool: {oxygen.pool}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-sky-300 font-semibold">Pool</span>
+            <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all bg-sky-500"
+                style={{ width: `${Math.min(100, (oxygen.pool / Math.max(oxygen.pool, 10)) * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-sky-200 tabular-nums">{oxygen.pool}</span>
+          </div>
           {oxygenByPlayer.length > 0 && (
-            <div className="text-xs text-gray-300">
-              {oxygenByPlayer.map((entry) => `${entry.name}: ${entry.amount}`).join(" | ")}
+            <div className="flex flex-wrap gap-2">
+              {oxygenByPlayer.map((entry) => (
+                <span key={entry.name} className="inline-flex items-center gap-1 rounded bg-sky-900/40 px-1.5 py-0.5 text-[11px] text-sky-200">
+                  {entry.name}: <span className="font-bold">{entry.amount}</span>
+                </span>
+              ))}
             </div>
           )}
         </div>
       )}
 
       {(campaign.nanoTracker || campaign.bunkerTracker) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1">
+        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
           <div className="text-[10px] uppercase text-gray-400">Trackers</div>
           {campaign.nanoTracker && (
-            <div className="text-xs text-gray-200">
-              Nano: {campaign.nanoTracker.position}/{campaign.nanoTracker.max}
-            </div>
+            <TrackerBar
+              label="Nano"
+              position={campaign.nanoTracker.position}
+              max={campaign.nanoTracker.max}
+            />
           )}
           {campaign.bunkerTracker && (
-            <div className="text-xs text-gray-300">
-              Bunker: {campaign.bunkerTracker.position}/{campaign.bunkerTracker.max}
-            </div>
+            <TrackerBar
+              label="Bunker"
+              position={campaign.bunkerTracker.position}
+              max={campaign.bunkerTracker.max}
+            />
           )}
         </div>
       )}

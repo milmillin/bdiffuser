@@ -34,6 +34,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       yellow: exact(4),
     },
     behaviorHooks: ["mission_42_audio_prompt"],
+    hookRules: [{ kind: "audio_prompt", audioFile: "mission_42" }],
   });
 
   setMission(43, {

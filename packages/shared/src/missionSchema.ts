@@ -22,6 +22,7 @@ import type {
 } from "./missionSchemaTypes.js";
 import { ALL_MISSION_IDS, type MissionId } from "./types.js";
 export type {
+  AudioPromptRuleDef,
   BlueAsRedRuleDef,
   BlueWireSpec,
   ConstraintEnforcementRuleDef,
@@ -33,6 +34,8 @@ export type {
   InternFailureExplodesRuleDef,
   BunkerFlowRuleDef,
   NanoProgressionRuleDef,
+  NoMarkersMemoryModeRuleDef,
+  NoSpokenNumbersRuleDef,
   NumberDeckEquipmentRevealRuleDef,
   OxygenProgressionRuleDef,
   MissionDifficulty,

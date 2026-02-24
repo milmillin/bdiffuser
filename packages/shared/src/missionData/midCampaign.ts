@@ -40,6 +40,7 @@ export function registerMidCampaignMissions(setMission: MissionSetter): void {
       yellow: outOf(2, 3),
     },
     behaviorHooks: ["mission_19_audio_prompt"],
+    hookRules: [{ kind: "audio_prompt", audioFile: "mission_19" }],
   });
 
   setMission(20, {

@@ -253,6 +253,32 @@ export interface ConstraintEnforcementRuleDef {
 }
 
 /**
+ * Missions 19, 30, 42: Audio prompt required.
+ * Players must use a mobile device/app for sound effects.
+ */
+export interface AudioPromptRuleDef {
+  kind: "audio_prompt";
+  /** Mission-specific audio file identifier. */
+  audioFile: string;
+}
+
+/**
+ * Mission 25: No spoken numbers.
+ * Players cannot say any numbers aloud during the mission.
+ */
+export interface NoSpokenNumbersRuleDef {
+  kind: "no_spoken_numbers";
+}
+
+/**
+ * Mission 50: No markers / memory mode.
+ * No info tokens are placed on failed cuts. Players must remember wire values.
+ */
+export interface NoMarkersMemoryModeRuleDef {
+  kind: "no_markers_memory_mode";
+}
+
+/**
  * Discriminated union of all resolved hook rule definitions.
  * Extend this union as more hooks are resolved in later milestones.
  */
@@ -272,7 +298,10 @@ export type MissionHookRuleDef =
   | ForcedGeneralRadarFlowRuleDef
   | SimultaneousFourCutRuleDef
   | YellowTriggerTokenPassRuleDef
-  | ConstraintEnforcementRuleDef;
+  | ConstraintEnforcementRuleDef
+  | AudioPromptRuleDef
+  | NoSpokenNumbersRuleDef
+  | NoMarkersMemoryModeRuleDef;
 
 // ── Source Reference Metadata ──────────────────────────────────
 

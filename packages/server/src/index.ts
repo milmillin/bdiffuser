@@ -353,9 +353,31 @@ export class BombBustersServer extends Server<Env> {
     this.broadcastLobby();
   }
 
-  handleSelectCharacter(_conn: Connection, _character: CharacterId) {
-    // Characters are assigned randomly at game start; lobby selection is disabled.
-    return;
+  handleSelectCharacter(conn: Connection, character: CharacterId) {
+    // Rule Sticker B (missions 31+): non-captain players may replace their
+    // character with an E1-E4 character during setup.
+    const gs = this.room.gameState;
+    if (!gs || gs.phase !== "setup_info_tokens") return;
+    if (this.room.mission < 31) return;
+
+    const player = gs.players.find((p) => p.id === conn.id);
+    if (!player || player.isCaptain) return;
+
+    // Only E1-E4 characters are selectable replacements.
+    const expertChars: CharacterId[] = [
+      "character_e1",
+      "character_e2",
+      "character_e3",
+      "character_e4",
+    ];
+    if (!expertChars.includes(character)) return;
+
+    // Ensure the chosen character isn't already taken by another player.
+    if (gs.players.some((p) => p.character === character)) return;
+
+    player.character = character;
+    player.characterUsed = false;
+    this.broadcastGameState();
   }
 
   handleSelectMission(conn: Connection, mission: MissionId) {

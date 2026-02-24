@@ -10,6 +10,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
     setup: { ...defaultSetup(), red: exact(2) },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_25_no_spoken_numbers"],
+    hookRules: [{ kind: "no_spoken_numbers" }],
   });
 
   setMission(26, {
@@ -67,6 +68,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       yellow: exact(4),
     },
     behaviorHooks: ["mission_30_audio_prompt"],
+    hookRules: [{ kind: "audio_prompt", audioFile: "mission_30" }],
   });
 
   setMission(31, {

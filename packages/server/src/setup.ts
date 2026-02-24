@@ -329,6 +329,48 @@ export function setupGame(
 
   const equipment = createEquipmentCards(config.equipmentCount, setup.equipment);
 
+  // Rule Sticker A (missions 9+): Add False Bottom to equipment pool for
+  // missions with yellow wires, unless already present.
+  if (
+    mission >= 9 &&
+    setup.yellow.kind !== "none" &&
+    !equipment.some((eq) => eq.id === "false_bottom")
+  ) {
+    const fb = EQUIPMENT_DEFS.find((def) => def.id === "false_bottom");
+    if (fb) {
+      equipment.push({
+        id: fb.id,
+        name: fb.name,
+        description: fb.description,
+        unlockValue: fb.unlockValue,
+        unlocked: false,
+        used: false,
+        image: fb.image,
+      });
+    }
+  }
+
+  // Rule Sticker C (missions 55+): Add campaign equipment cards to the pool,
+  // unless the mission schema already included them.
+  if (mission >= 55 && !setup.equipment.includeCampaignEquipment) {
+    const existingIds = new Set(equipment.map((eq) => eq.id));
+    const campaignDefs = EQUIPMENT_DEFS.filter(
+      (def) => def.pool === "campaign" && !existingIds.has(def.id),
+    );
+    shuffle(campaignDefs);
+    for (const def of campaignDefs) {
+      equipment.push({
+        id: def.id,
+        name: def.name,
+        description: def.description,
+        unlockValue: def.unlockValue,
+        unlocked: false,
+        used: false,
+        image: def.image,
+      });
+    }
+  }
+
   const board: BoardState = {
     detonatorPosition: config.detonatorStart,
     detonatorMax: config.detonatorMax,

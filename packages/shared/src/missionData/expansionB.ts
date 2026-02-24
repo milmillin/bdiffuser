@@ -38,6 +38,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3), yellow: exact(4) } },
     behaviorHooks: ["mission_50_no_markers_memory_mode"],
+    hookRules: [{ kind: "no_markers_memory_mode" }],
   });
 
   setMission(51, {

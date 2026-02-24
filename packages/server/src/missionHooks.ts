@@ -441,11 +441,14 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
 // ── Built-in Hook Handlers (Missions 9/10/11/12/14/15/23/43+/66) ──────
 
 import type {
+  AudioPromptRuleDef,
   BunkerFlowRuleDef,
   ChallengeRewardsRuleDef,
   ConstraintEnforcementRuleDef,
   ForcedGeneralRadarFlowRuleDef,
   InternFailureExplodesRuleDef,
+  NoMarkersMemoryModeRuleDef,
+  NoSpokenNumbersRuleDef,
   SequencePriorityRuleDef,
   TimerRuleDef,
   DynamicTurnOrderRuleDef,
@@ -2082,5 +2085,64 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
       }
     }
+  },
+});
+
+// ── Simple informational hooks (missions 19/25/30/42/50) ──────────
+
+/**
+ * Missions 19, 30, 42: Audio prompt.
+ * No server-side logic needed — this is a client-side display hint that a
+ * sound file must be played. The handler is registered so the hook system
+ * doesn't throw an "unknown hook kind" error.
+ */
+registerHookHandler<"audio_prompt">("audio_prompt", {
+  setup(_rule: AudioPromptRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "",
+      action: "hook",
+      detail: `audio_prompt:${_rule.audioFile}:play_sound_file`,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 25: No spoken numbers.
+ * Communication restriction — no server enforcement needed, but the hook
+ * is registered for the dispatch system.
+ */
+registerHookHandler<"no_spoken_numbers">("no_spoken_numbers", {
+  setup(_rule: NoSpokenNumbersRuleDef, ctx: SetupHookContext): void {
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "",
+      action: "hook",
+      detail: "no_spoken_numbers:active",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 50: No markers / memory mode.
+ * On failed cuts, no info tokens are placed. This is enforced in gameLogic.ts
+ * via the campaign state flag. The hook sets it up.
+ */
+registerHookHandler<"no_markers_memory_mode">("no_markers_memory_mode", {
+  setup(_rule: NoMarkersMemoryModeRuleDef, ctx: SetupHookContext): void {
+    if (!ctx.state.campaign) {
+      ctx.state.campaign = {};
+    }
+    // Set a flag that gameLogic will check when placing info tokens on failure.
+    (ctx.state.campaign as Record<string, unknown>).noMarkersMemoryMode = true;
+    ctx.state.log.push({
+      turn: 0,
+      playerId: "",
+      action: "hook",
+      detail: "no_markers_memory_mode:active",
+      timestamp: Date.now(),
+    });
   },
 });
