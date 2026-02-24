@@ -164,7 +164,7 @@ export function LeftDock({
 
   return (
     <>
-      <div className="block relative flex-shrink-0 w-9 z-20">
+      <div className="relative flex-shrink-0 w-9 z-20 h-full">
         <div className="absolute inset-y-0 left-0 flex">
           {/* Tab strip */}
           <div className="flex flex-col w-9 py-1 gap-1.5 overflow-y-auto overscroll-none flex-shrink-0">

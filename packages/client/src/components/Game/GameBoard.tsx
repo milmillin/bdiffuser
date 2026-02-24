@@ -19,6 +19,8 @@ import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel } from "./RightPanel.js";
+import { ActionLog } from "./ActionLog.js";
+import { ChatPanel } from "./Chat/ChatPanel.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
 import { EquipmentModePanel } from "./Actions/EquipmentModePanel.js";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
@@ -353,7 +355,7 @@ export function GameBoard({
           style={{ gridTemplateColumns: "auto 1fr auto" }}
         >
           {/* Left dock: mission & equipment cards */}
-          <div className="hidden md:block">
+          <div className="overflow-y-auto overscroll-none min-h-0 h-full">
             <LeftDock
               equipment={gameState.board.equipment}
               character={me?.character}
