@@ -25,7 +25,7 @@ describe('challenge_rewards hook', () => {
     dispatchHooks(CHALLENGE_MISSION_ID, { point: 'setup', state });
 
     expect(state.campaign?.challenges).toBeDefined();
-    expect(state.campaign!.challenges!.active.length).toBeGreaterThan(0);
+    expect(state.campaign!.challenges!.active.length).toBe(state.players.length);
     expect(state.campaign!.challenges!.deck.length).toBeGreaterThan(0);
   });
 
@@ -159,9 +159,9 @@ describe('challenge_rewards hook', () => {
     });
 
     expect(state.campaign!.challenges!.completed).toHaveLength(1);
-    expect(state.campaign!.challenges!.active).toHaveLength(1);
+    expect(state.campaign!.challenges!.active).toHaveLength(2);
     expect(state.campaign!.challenges!.active[0].id).toBe('challenge-value-3-1');
-    expect(state.campaign!.challenges!.deck).toHaveLength(1);
-    expect(state.campaign!.challenges!.deck[0].id).toBe('challenge-value-7-2');
+    expect(state.campaign!.challenges!.active[1].id).toBe('challenge-value-7-2');
+    expect(state.campaign!.challenges!.deck).toHaveLength(0);
   });
 });

@@ -95,13 +95,13 @@ describe("mission progression hooks", () => {
     const state = makeGameState({
       mission: 55,
       log: [],
-      players: [makePlayer({ id: "p1" })],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" }), makePlayer({ id: "p3" })],
       board: makeBoardState({ detonatorPosition: 2, detonatorMax: 4 }),
     });
     dispatchHooks(55, { point: "setup", state });
 
     const active = state.campaign?.challenges?.active ?? [];
-    expect(active.length).toBe(1);
+    expect(active.length).toBe(3);
     const target = parseChallengeValue(active[0]?.id ?? "");
     expect(target).not.toBeNull();
 
@@ -114,8 +114,25 @@ describe("mission progression hooks", () => {
     });
 
     expect(state.campaign?.challenges?.completed.length).toBe(1);
-    expect(state.campaign?.challenges?.active.length).toBe(1);
+    expect(state.campaign?.challenges?.active.length).toBe(3);
     expect(state.board.detonatorPosition).toBe(1);
+  });
+
+  it("mission 60 setup creates one active challenge per player", () => {
+    const state = makeGameState({
+      mission: 60,
+      log: [],
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "p2" }),
+        makePlayer({ id: "p3" }),
+        makePlayer({ id: "p4" }),
+      ],
+    });
+
+    dispatchHooks(60, { point: "setup", state });
+
+    expect(state.campaign?.challenges?.active.length).toBe(4);
   });
 
   it("mission 66 bunker flow setup + resolve advances bunker tracker and action pointer", () => {

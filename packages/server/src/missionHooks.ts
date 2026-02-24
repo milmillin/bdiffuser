@@ -651,6 +651,16 @@ function buildChallengeDeck(totalCount: number) {
   return cards;
 }
 
+function getDesiredChallengeActiveCount(
+  rule: ChallengeRewardsRuleDef,
+  playerCount: number,
+): number {
+  if (rule.activeCountMode === "per_player") {
+    return Math.max(1, Math.floor(playerCount));
+  }
+  return Math.max(1, Math.floor(rule.activeCount));
+}
+
 function getCutCountForValue(state: Readonly<GameState>, value: number): number {
   let count = 0;
   for (const player of state.players) {
@@ -1372,7 +1382,7 @@ registerHookHandler<"challenge_rewards">("challenge_rewards", {
   setup(rule: ChallengeRewardsRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
 
-    const activeCount = Math.max(1, Math.floor(rule.activeCount));
+    const activeCount = getDesiredChallengeActiveCount(rule, ctx.state.players.length);
     const deck = buildChallengeDeck(Math.max(8, activeCount + 6));
     const active = deck.splice(0, activeCount);
     ctx.state.campaign!.challenges = {
@@ -1414,7 +1424,7 @@ registerHookHandler<"challenge_rewards">("challenge_rewards", {
 
     challenges.active = stillActive;
 
-    const desiredActiveCount = Math.max(1, Math.floor(rule.activeCount));
+    const desiredActiveCount = getDesiredChallengeActiveCount(rule, ctx.state.players.length);
     while (challenges.active.length < desiredActiveCount && challenges.deck.length > 0) {
       const next = challenges.deck.shift()!;
       next.completed = false;
