@@ -825,7 +825,14 @@ export function validateActionWithHooks(
     );
   }
 
-  if (action.type !== "revealReds" && action.type !== "simultaneousRedCut" && isRevealRedsForced(state, actor)) {
+  const allowsSimultaneousInsteadOfReveal =
+    action.type === "simultaneousRedCut" && state.mission === 13;
+
+  if (
+    action.type !== "revealReds" &&
+    !allowsSimultaneousInsteadOfReveal &&
+    isRevealRedsForced(state, actor)
+  ) {
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",

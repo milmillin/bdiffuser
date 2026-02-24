@@ -1254,6 +1254,39 @@ describe("forced reveal reds state", () => {
 
     expect(error).toBeNull();
   });
+
+  it("blocks mission 48 simultaneous yellow action when actor must reveal reds", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const teammateA = makePlayer({
+      id: "teammate-a",
+      hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const teammateB = makePlayer({
+      id: "teammate-b",
+      hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, teammateA, teammateB],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "simultaneousRedCut",
+      actorId: "actor",
+      targets: [
+        { playerId: "actor", tileIndex: 0 },
+        { playerId: "teammate-a", tileIndex: 0 },
+        { playerId: "teammate-b", tileIndex: 0 },
+      ],
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
+  });
 });
 
 describe("forced action blocking", () => {
