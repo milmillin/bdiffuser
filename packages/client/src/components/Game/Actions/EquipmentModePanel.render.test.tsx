@@ -221,9 +221,9 @@ describe("EquipmentModePanel — label_eq", () => {
 // ── label_neq ────────────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — label_neq", () => {
-  it("step 1: shows instruction to click an uncut wire", () => {
+  it("step 1: shows instruction to click a wire", () => {
     const html = renderMode({ kind: "label_neq", firstTileIndex: null });
-    expect(html).toContain("Click one of your uncut wires");
+    expect(html).toContain("Click one of your wires");
   });
 
   it("step 2: shows adjacent text after selecting a wire", () => {
