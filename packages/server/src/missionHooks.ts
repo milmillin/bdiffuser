@@ -2948,6 +2948,67 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
       }
     }
   },
+
+  endTurn(_rule: PersonalNumberCardsRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    const playerHands = numberCards?.playerHands;
+    if (!numberCards || !playerHands) return;
+
+    const playerCount = ctx.state.players.length;
+    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+
+    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+      if (ctx.state.phase === "finished") return;
+
+      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!actor) return;
+
+      const uncutTiles = actor.hand.filter((tile) => !tile.cut);
+      const hasUncutNonRed = uncutTiles.some((tile) => tile.gameValue !== "RED");
+      if (!hasUncutNonRed) return;
+
+      const actorCards = playerHands[actor.id] ?? [];
+      const faceUpValues = new Set(
+        actorCards.filter((card) => card.faceUp).map((card) => card.value),
+      );
+      const hasMatchingFaceUpValue = uncutTiles.some(
+        (tile) => typeof tile.gameValue === "number" && faceUpValues.has(tile.gameValue),
+      );
+      if (hasMatchingFaceUpValue) return;
+
+      ctx.state.board.detonatorPosition += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actor.id,
+        action: "hookEffect",
+        detail:
+          `personal_number_cards:auto_skip|player=${actor.id}` +
+          `|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.phase = "finished";
+        ctx.state.result = "loss_detonator";
+        return;
+      }
+
+      let nextPlayerIndex = ctx.state.currentPlayerIndex;
+      for (let offset = 1; offset <= playerCount; offset++) {
+        const candidateIndex = (ctx.state.currentPlayerIndex + offset) % playerCount;
+        const candidate = ctx.state.players[candidateIndex];
+        if (candidate?.hand.some((tile) => !tile.cut)) {
+          nextPlayerIndex = candidateIndex;
+          break;
+        }
+      }
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+      ctx.state.turnNumber += 1;
+    }
+  },
 });
 
 // ── Unique mission hooks ──────────────────────────────────────────

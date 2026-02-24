@@ -911,6 +911,97 @@ describe("missionHooks dispatcher", () => {
       expect(state.campaign?.numberCards?.discard).toHaveLength(0);
     });
 
+    it("mission 65: auto-skips a stuck player and advances detonator", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-1", gameValue: 4, cut: false })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [
+          makeTile({ id: "p2-1", gameValue: 2, cut: false }),
+          makeTile({
+            id: "p2-red",
+            color: "red",
+            gameValue: "RED",
+            sortValue: 2.5,
+            cut: false,
+          }),
+        ],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [makeTile({ id: "p3-1", gameValue: 6, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 65,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 7,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [],
+            discard: [],
+            playerHands: {
+              p1: [{ id: "c-p1-4", value: 4, faceUp: true }],
+              p2: [{ id: "c-p2-9", value: 9, faceUp: true }],
+              p3: [{ id: "c-p3-6", value: 6, faceUp: true }],
+            },
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(65, { point: "endTurn", state });
+
+      expect(state.currentPlayerIndex).toBe(2);
+      expect(state.turnNumber).toBe(8);
+      expect(state.board.detonatorPosition).toBe(2);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("personal_number_cards:auto_skip|player=p2"),
+      );
+      expect(skipLog).toBeDefined();
+    });
+
+    it("mission 65: mandatory skip can trigger detonator loss", () => {
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [makeTile({ id: "s-1", gameValue: 2, cut: false })],
+      });
+      const done = makePlayer({
+        id: "done",
+        hand: [makeTile({ id: "d-1", gameValue: 3, cut: true })],
+      });
+      const state = makeGameState({
+        mission: 65,
+        players: [stuck, done],
+        currentPlayerIndex: 0,
+        turnNumber: 11,
+        board: makeBoardState({ detonatorPosition: 2, detonatorMax: 3 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [],
+            discard: [],
+            playerHands: {
+              stuck: [{ id: "c-stuck-9", value: 9, faceUp: true }],
+              done: [{ id: "c-done-3", value: 3, faceUp: true }],
+            },
+          },
+        },
+      });
+
+      dispatchHooks(65, { point: "endTurn", state });
+
+      expect(state.phase).toBe("finished");
+      expect(state.result).toBe("loss_detonator");
+      expect(state.board.detonatorPosition).toBe(3);
+    });
+
     it("mission 9: explodes when current player has only blocked wires and no dualCut targets", () => {
       // Cards [2, 5, 8], pointer=0 → blocked: 5, 8
       // Current player (index 0) only has value-5 wires (blocked)
