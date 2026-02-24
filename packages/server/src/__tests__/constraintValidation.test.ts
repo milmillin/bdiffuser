@@ -163,10 +163,49 @@ describe("constraint enforcement validation", () => {
     expect(result.validationError).toBeUndefined();
   });
 
-  it("Constraint H does not reject at validate hook (enforced in resolve path)", () => {
+  it("Constraint H rejects cutting a wire indicated by an Info token", () => {
     const state = stateWithConstraint("H");
-    const result = validateDualCut(state, 5);
+    state.players[1].infoTokens.push({
+      value: 3,
+      position: 0,
+      isYellow: false,
+    });
+
+    const result = validateDualCut(state, 5, 0);
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toBe(
+      "Constraint H: You cannot cut a wire indicated by an Info token",
+    );
+  });
+
+  it("Constraint H allows cuts that do not target an Info-token-marked wire", () => {
+    const state = stateWithConstraint("H");
+    state.players[1].infoTokens.push({
+      value: 8,
+      position: 1,
+      isYellow: false,
+    });
+
+    const result = validateDualCut(state, 5, 0);
     expect(result.validationError).toBeUndefined();
+  });
+
+  it("Constraint H rejects solo cuts when a matching actor wire has an Info token", () => {
+    const state = stateWithConstraint("H", {
+      actorHandValues: [5, 5],
+      targetHandValues: [2, 7],
+    });
+    state.players[0].infoTokens.push({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+
+    const result = validateSoloCut(state, 5);
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toBe(
+      "Constraint H: You cannot cut a wire indicated by an Info token",
+    );
   });
 
   it("Constraint I rejects cutting the far-right uncut target tile", () => {

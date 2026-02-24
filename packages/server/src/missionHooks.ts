@@ -2231,6 +2231,79 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
     };
 
     const cutValue = extractCutValue(ctx.action);
+    const targetsMarkedByInfoToken = (): boolean => {
+      const targetIndicesByPlayer = new Map<string, Set<number>>();
+      const addTargetIndex = (playerId: string, tileIndex: number): void => {
+        if (!Number.isInteger(tileIndex) || tileIndex < 0) return;
+        const existing = targetIndicesByPlayer.get(playerId);
+        if (existing) {
+          existing.add(tileIndex);
+          return;
+        }
+        targetIndicesByPlayer.set(playerId, new Set([tileIndex]));
+      };
+
+      if (ctx.action.type === "dualCut") {
+        if (typeof ctx.action.targetPlayerId === "string" && typeof ctx.action.targetTileIndex === "number") {
+          addTargetIndex(ctx.action.targetPlayerId, ctx.action.targetTileIndex);
+        }
+      } else if (ctx.action.type === "dualCutDoubleDetector") {
+        if (
+          typeof ctx.action.targetPlayerId === "string" &&
+          typeof ctx.action.tileIndex1 === "number" &&
+          typeof ctx.action.tileIndex2 === "number"
+        ) {
+          addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex1);
+          addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex2);
+        }
+      } else if (ctx.action.type === "simultaneousCut") {
+        const cuts = Array.isArray(ctx.action.cuts) ? ctx.action.cuts : [];
+        for (const cut of cuts) {
+          const targetPlayerId = (cut as { targetPlayerId?: unknown }).targetPlayerId;
+          const targetTileIndex = (cut as { targetTileIndex?: unknown }).targetTileIndex;
+          if (typeof targetPlayerId === "string" && typeof targetTileIndex === "number") {
+            addTargetIndex(targetPlayerId, targetTileIndex);
+          }
+        }
+      } else if (ctx.action.type === "simultaneousRedCut" || ctx.action.type === "simultaneousFourCut") {
+        const targets = Array.isArray(ctx.action.targets) ? ctx.action.targets : [];
+        for (const target of targets) {
+          const playerId = (target as { playerId?: unknown }).playerId;
+          const tileIndex = (target as { tileIndex?: unknown }).tileIndex;
+          if (typeof playerId === "string" && typeof tileIndex === "number") {
+            addTargetIndex(playerId, tileIndex);
+          }
+        }
+      } else if (ctx.action.type === "soloCut") {
+        const cutValue = ctx.action.value;
+        if (typeof cutValue === "number" || cutValue === "YELLOW") {
+          const actor = ctx.state.players.find((p) => p.id === actorId);
+          if (actor) {
+            actor.hand.forEach((tile, index) => {
+              if (!tile.cut && tile.gameValue === cutValue) {
+                addTargetIndex(actor.id, index);
+              }
+            });
+          }
+        }
+      }
+
+      for (const [targetPlayerId, tileIndices] of targetIndicesByPlayer) {
+        const targetPlayer = ctx.state.players.find((p) => p.id === targetPlayerId);
+        if (!targetPlayer) continue;
+        for (const tileIndex of tileIndices) {
+          if (
+            targetPlayer.infoTokens.some(
+              (token) => token.position === tileIndex || token.positionB === tileIndex,
+            )
+          ) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
 
     for (const constraintId of active) {
       switch (constraintId) {
@@ -2284,6 +2357,15 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
             return {
               validationCode: "MISSION_RULE_VIOLATION",
               validationError: "Constraint F: You cannot cut wires 4 to 9",
+            };
+          }
+          break;
+
+        case "H": // No cuts on info-token-marked wires
+          if (targetsMarkedByInfoToken()) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint H: You cannot cut a wire indicated by an Info token",
             };
           }
           break;
@@ -2358,7 +2440,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
           break;
 
         // G (No Equipment) is enforced in equipment.ts validation
-        // H (No Info on Fail) is enforced at resolve time
+        // H (No Info on Fail) and Post-it prohibition are not enforced here
         // L (Double Detonator) is enforced at resolve time
       }
     }
