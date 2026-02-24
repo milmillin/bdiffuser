@@ -343,6 +343,31 @@ describe("missionHooks dispatcher", () => {
       expect(renderLogDetail(setupLog!.detail)).toBe("hidden_equipment_pile:7");
     });
 
+    it("mission 39: initializes visible Number card and 8-card deck", () => {
+      const state = makeGameState({
+        mission: 39,
+        log: [],
+      });
+
+      dispatchHooks(39, { point: "setup", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards!.visible).toHaveLength(1);
+      expect(numberCards!.visible[0].faceUp).toBe(true);
+      expect(numberCards!.visible[0].value).toBeGreaterThanOrEqual(1);
+      expect(numberCards!.visible[0].value).toBeLessThanOrEqual(12);
+      expect(numberCards!.deck).toHaveLength(8);
+      expect(numberCards!.deck.every((card) => card.faceUp === false)).toBe(true);
+      expect(numberCards!.discard).toHaveLength(0);
+
+      const allValues = [
+        numberCards!.visible[0].value,
+        ...numberCards!.deck.map((card) => card.value),
+      ];
+      expect(new Set(allValues).size).toBe(allValues.length);
+    });
+
     it("mission 9: initializes sequence cards and pointer", () => {
       const state = makeGameState({ mission: 9, log: [] });
       dispatchHooks(9, { point: "setup", state });

@@ -2928,6 +2928,27 @@ registerHookHandler<"false_info_tokens">("false_info_tokens", {
  */
 registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
   setup(rule: SimultaneousMultiCutRuleDef, ctx: SetupHookContext): void {
+    // Mission 39 requires a visible Number card target for the 4-wire action.
+    // Initialize one face-up card plus an 8-card face-down deck.
+    if (ctx.state.mission === 39) {
+      const values = shuffle([...MISSION_NUMBER_VALUES]);
+      const visibleValue = values.shift();
+      if (visibleValue != null) {
+        const deckValues = values.slice(0, 8);
+        ctx.state.campaign ??= {};
+        ctx.state.campaign.numberCards = {
+          visible: [{ id: `m39-visible-${visibleValue}`, value: visibleValue, faceUp: true }],
+          deck: deckValues.map((value, index) => ({
+            id: `m39-deck-${index}-${value}`,
+            value,
+            faceUp: false,
+          })),
+          discard: [],
+          playerHands: {},
+        };
+      }
+    }
+
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
