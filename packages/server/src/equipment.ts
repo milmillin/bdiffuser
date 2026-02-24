@@ -32,8 +32,8 @@ import {
   isPlayersTurn,
   validateDualCutWithHooks,
 } from "./validation.js";
-import { executeDualCut, advanceTurn } from "./gameLogic.js";
-import { dispatchHooks, hasActiveConstraint } from "./missionHooks.js";
+import { executeDualCut, advanceTurn, clearSatisfiedSecondaryEquipmentLocks } from "./gameLogic.js";
+import { dispatchHooks, hasActiveConstraint, emitMissionFailureTelemetry } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 
@@ -1448,13 +1448,58 @@ export function executeUseEquipment(
         .map((tile, index) => ({ tile, index }))
         .filter((e) => !e.tile.cut && e.tile.gameValue === payload.value);
       const toCut = matchingUncut.slice(0, 2);
-      for (const entry of toCut) {
-        entry.tile.cut = true;
+
+      // Cut first tile; mission hooks may immediately end the game.
+      toCut[0].tile.cut = true;
+
+      // Dispatch resolve hooks (blue_as_red, nano progression, etc.)
+      const resolveResult = dispatchHooks(state.mission, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId, value: payload.value, tilesCut: toCut.length },
+        cutValue: payload.value,
+        cutSuccess: true,
+      });
+
+      // Check if hooks ended the game (e.g. blue_as_red explosion)
+      if (state.phase === "finished" && state.result) {
+        updateMarkerConfirmations(state);
+        addLog(
+          state,
+          actorId,
+          "useEquipment",
+          `used Fast Pass — cut value ${payload.value} triggered a hook effect!`,
+        );
+        return { type: "gameOver", result: state.result };
+      }
+
+      // Cut remaining tiles
+      for (let i = 1; i < toCut.length; i++) {
+        toCut[i].tile.cut = true;
       }
 
       updateValidationTrack(state, payload.value);
-      checkEquipUnlock(state, payload.value);
+      if (!resolveResult.overrideEquipmentUnlock) {
+        checkEquipUnlock(state, payload.value);
+      } else {
+        checkEquipUnlock(state, payload.value, resolveResult.equipmentUnlockThreshold ?? 2);
+      }
+      clearSatisfiedSecondaryEquipmentLocks(state);
       updateMarkerConfirmations(state);
+
+      // Check detonator loss (hooks may have advanced the detonator)
+      if (checkDetonatorLoss(state)) {
+        state.result = "loss_detonator";
+        state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+        addLog(
+          state,
+          actorId,
+          "useEquipment",
+          `used Fast Pass — detonator triggered!`,
+        );
+        return { type: "gameOver", result: "loss_detonator" };
+      }
 
       addLog(
         state,

@@ -858,7 +858,7 @@ export function EquipmentModePanel({
     case "fast_pass": {
       content = (
         <div className="space-y-2">
-          <div>Choose a value to reveal (1–12):</div>
+          <div>Choose a value to cut (1–12):</div>
           <div className="grid grid-cols-4 gap-1">
             {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
               const isSelected = mode.selectedValue === value;

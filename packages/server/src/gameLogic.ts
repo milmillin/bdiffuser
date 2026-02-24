@@ -114,7 +114,7 @@ function checkEquipmentUnlock(
  * Clears per-equipment secondary lock metadata once its requirement is met.
  * This is used by mission-12 style "number card on equipment" locks.
  */
-function clearSatisfiedSecondaryEquipmentLocks(state: GameState): void {
+export function clearSatisfiedSecondaryEquipmentLocks(state: GameState): void {
   const countCutValue = (value: number): number => {
     let count = 0;
     for (const player of state.players) {
