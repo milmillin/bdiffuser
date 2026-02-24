@@ -2,7 +2,66 @@
 
 This document is a comprehensive, structured rewrite of the English rulebook PDF (`v1.0`, US edition 2024), intended as an implementation/reference spec.
 
-## 1. Game Overview
+## Table of Contents
+
+- [Quick Play Summary](#quick-play-summary)
+- [Part I: Overview & Components](#part-i-overview--components)
+  - [Game Overview](#game-overview)
+  - [Components](#components)
+  - [Mission Structure and Progression](#mission-structure-and-progression)
+  - [Rule Priority](#rule-priority)
+- [Part II: Setup](#part-ii-setup)
+  - [Setup (Full Sequence)](#setup-full-sequence)
+  - [Shared Information and Hidden Information](#shared-information-and-hidden-information)
+- [Part III: Gameplay — Actions & Rules](#part-iii-gameplay--actions--rules)
+  - [Turn Order and Required Action](#turn-order-and-required-action)
+  - [Dual Cut Action](#dual-cut-action)
+  - [Solo Cut Action](#solo-cut-action)
+  - [Reveal Your Red Wires Action](#reveal-your-red-wires-action)
+  - [Yellow Wire Rules](#yellow-wire-rules)
+  - [Red Wire Rules](#red-wire-rules)
+  - [Validation Tokens](#validation-tokens)
+- [Part IV: Equipment & Characters](#part-iv-equipment--characters)
+  - [Equipment Cards (Shared Equipment)](#equipment-cards-shared-equipment)
+  - [Character Cards (Personal Equipment)](#character-cards-personal-equipment)
+- [Part V: End of Mission & Clarifications](#part-v-end-of-mission--clarifications)
+  - [End of Mission](#end-of-mission)
+  - [Clarifications](#clarifications)
+- [Part VI: Mission Cards (1–66)](#part-vi-mission-cards-166)
+- [Part VII: Reference Cards](#part-vii-reference-cards)
+  - [Constraint Cards](#constraint-cards)
+  - [Challenge Cards](#challenge-cards)
+- [Rulebook Notes and Non-Gameplay References](#rulebook-notes-and-non-gameplay-references)
+- [Source](#source)
+
+---
+
+## Quick Play Summary
+
+Setup summary:
+
+- Choose mission, assign Captain, choose characters.
+- Build mission wire pool per mission instructions.
+- Deal/sort wires into stand(s).
+- Set detonator by player count.
+- Set available equipment (count = players) as initially locked.
+- Each player places one non-yellow info token on one of their own blue wires.
+
+Turn summary:
+
+- Do exactly one: Dual Cut, Solo Cut, or Reveal Your Red Wires.
+- Resolve success/failure fully (cut/reveal, info-token placement, detonator movement, loss checks).
+
+Win/Loss summary:
+
+- Win when all stands are empty.
+- Lose on red-triggered explosion or detonator skull/end.
+
+---
+
+## Part I: Overview & Components
+
+### Game Overview
 
 `Bomb Busters` is a fully cooperative game.
 
@@ -15,7 +74,7 @@ This document is a comprehensive, structured rewrite of the English rulebook PDF
 
 The game is mission-based and difficulty increases over missions. Mission cards may introduce additional rules that are not in the base rulebook.
 
-## 2. Components
+### Components
 
 Core components listed in the rulebook:
 
@@ -38,7 +97,7 @@ Core components listed in the rulebook:
 - 1 Bomb Busters standee (used in mission 66).
 - 1 rules booklet.
 
-## 3. Mission Structure and Progression
+### Mission Structure and Progression
 
 - Training missions are grouped as:
   - Novice: missions 1-3.
@@ -52,7 +111,15 @@ Mission cards are two-sided:
 - Front: setup instructions.
 - Back: special mission rule(s), which can override or extend base rules.
 
-## 4. Setup (Full Sequence)
+### Rule Priority
+
+When mission-card special rules conflict with base rules, mission-card instructions take precedence for that mission.
+
+---
+
+## Part II: Setup
+
+### Setup (Full Sequence)
 
 1. Choose a mission card.
 2. Choose a Captain:
@@ -99,7 +166,7 @@ Mission cards are two-sided:
    - Yellow info token cannot be used during setup.
    - A player with 2 stands still places only 1 info token total.
 
-## 5. Shared Information and Hidden Information
+### Shared Information and Hidden Information
 
 - Your own hand: fully known to you.
 - Teammates' uncut wires: hidden from you.
@@ -107,7 +174,11 @@ Mission cards are two-sided:
 - Info tokens on stands: public hints.
 - Board markers indicate which red/yellow values are known or only possible (`?`) depending on mission setup.
 
-## 6. Turn Order and Required Action
+---
+
+## Part III: Gameplay — Actions & Rules
+
+### Turn Order and Required Action
 
 - Turn order is clockwise, starting with the Captain.
 - On your turn, you must choose exactly one action:
@@ -115,9 +186,9 @@ Mission cards are two-sided:
   - Solo Cut
   - Reveal Your Red Wires
 
-## 7. Dual Cut Action
+### Dual Cut Action
 
-### 7.1 Declaration
+#### Declaration
 
 The active player:
 
@@ -125,14 +196,14 @@ The active player:
 - States a value guess for that wire.
 - Must also have an identical wire in their own hand to complete a successful dual cut.
 
-### 7.2 Success
+#### Success
 
 If guessed value matches target wire:
 
 - Teammate reveals/cuts that chosen wire (face up, in front of their stand, preserving slot context).
 - Active player reveals/cuts one identical wire from their own hand.
 
-### 7.3 Failure
+#### Failure
 
 If guessed value does not match:
 
@@ -148,7 +219,7 @@ Additional note:
 
 > **FAQ:** You may intentionally announce an incorrect number during Dual Cut (e.g. to avoid pointing at a red wire or to signal information to teammates).
 
-## 8. Solo Cut Action
+### Solo Cut Action
 
 You may perform Solo Cut only when all remaining copies of a value that are still in the game are in your own hand.
 
@@ -162,13 +233,13 @@ You may perform Solo Cut only when all remaining copies of a value that are stil
 
 > **FAQ:** You cannot Solo Cut 3-of-a-kind. Wires are always cut as 2 or 4-of-a-kind. If you hold 3 copies, you must wait for one to be cut via Dual Cut first.
 
-## 9. Reveal Your Red Wires Action
+### Reveal Your Red Wires Action
 
 This action is legal only if every remaining uncut wire in your hand is red.
 
 - You reveal those red wires face up in front of your stand.
 
-## 10. Yellow Wire Rules
+### Yellow Wire Rules
 
 Yellow wires follow special value logic:
 
@@ -184,37 +255,41 @@ Cutting yellow wires:
   - Place the yellow info token to reveal true value on targeted wire.
 - Solo Cut with yellow is allowed only if one player holds all remaining yellow wires still in the game.
 
-## 11. Red Wire Rules
+### Red Wire Rules
 
 - Red wires represent bomb risk.
 - If rules call for red-triggered explosion (for example failed Dual Cut on targeted red), mission immediately fails.
 - During gameplay value logic, red wires are treated as shared `RED` category (quick-reference reminder), even though printed decimals are used for setup sorting.
 
-## 12. Validation Tokens
+### Validation Tokens
 
 - When all four blue wires of the same number have been cut, place one validation token on that board number.
 - This is a public memory aid only (state reminder).
 
-## 13. Equipment Cards (Shared Equipment)
+---
 
-### 13.1 Availability
+## Part IV: Equipment & Characters
+
+### Equipment Cards (Shared Equipment)
+
+#### Availability
 
 - Only the equipment cards selected during setup (count = player count) are available in that mission.
 - A card becomes usable once two wires of the card's trigger value have been cut.
 - To show activation, slide/reveal the card to show green checkmark state.
 
-### 13.2 Usage Limits
+#### Usage Limits
 
 - Each equipment card is one-time use.
 - After use, flip facedown.
 - Most equipment can be used by anyone at almost any time (including outside active turn) unless card text says otherwise.
 - Multiple equipment cards can be chained in sequence.
 
-### 13.3 Combination Note
+#### Combination Note
 
 - X-ray or Y-ray equipment can be combined with Double/Triple/Super Detector style effects (as noted in rulebook).
 
-### 13.4 Standard Equipment Card Reference (1-12)
+#### Standard Equipment Card Reference (1-12)
 
 Card text extracted from equipment cards `1` through `12`:
 
@@ -279,7 +354,7 @@ Card text extracted from equipment cards `1` through `12`:
   - 1 of the 2 can already be cut.
   - Any 2 yellow wires or any 2 red wires are considered identical.
 
-### 13.5 Additional Equipment Card Assets (Campaign/Later Missions)
+#### Additional Equipment Card Assets (Campaign/Later Missions)
 
 Additional card text extracted from later-mission equipment cards:
 
@@ -306,16 +381,16 @@ Additional card text extracted from later-mission equipment cards:
   - Everyone sees where this wire comes from and ends up.
   > **FAQ:** If the receiving player has 2 stands, they choose which stand to place the wire on.
 
-### 13.6 Equipment Back Art
+#### Equipment Back Art
 
 - Equipment back card art has no rules text.
 
-## 14. Character Cards (Personal Equipment)
+### Character Cards (Personal Equipment)
 
 - Each player's character has one personal equipment power usable once per mission.
 - After use, flip character card facedown.
 
-### 14.1 Base Characters (1-5)
+#### Base Characters (1-5)
 
 - Character `1` (Captain): personal equipment is Double Detector.
 - Character `2`: personal equipment is Double Detector.
@@ -323,14 +398,14 @@ Additional card text extracted from later-mission equipment cards:
 - Character `4`: personal equipment is Double Detector.
 - Character `5`: personal equipment is Double Detector.
 
-### 14.2 New Characters (E1-E4, available from Mission 31+, see Rule Sticker B)
+#### New Characters (E1-E4, available from Mission 31+, see Rule Sticker B)
 
 - Character `E1`: personal equipment is General Radar (see Equipment `8`).
 - Character `E2`: personal equipment is Walkie-Talkies (see Equipment `2`).
 - Character `E3`: personal equipment is Triple Detector (see Equipment `3`).
 - Character `E4`: personal equipment is X or Y Ray (see Equipment `10`).
 
-### 14.3 Double Detector Rules
+#### Double Detector Rules
 
 - **Double Detector** (once per mission):
   - During Dual Cut, active player declares one value and points to 2 wires in one teammate stand (instead of 1).
@@ -343,7 +418,11 @@ Additional card text extracted from later-mission equipment cards:
 
 > **FAQ:** The 2 designated wires need not be adjacent (but logically they often are). Both wires must be on the same stand (cannot span 2 stands of one player). If both designated wires are red, the bomb explodes. If only one is red, the bomb explodes only if the player chooses to reveal the red one; proper play is to place the info token on the non-red wire. You cannot announce YELLOW (or RED) with Double Detector — only values 1-12.
 
-## 15. End of Mission
+---
+
+## Part V: End of Mission & Clarifications
+
+### End of Mission
 
 Mission success:
 
@@ -358,16 +437,16 @@ After failure:
 
 - Change Captain and replay/restart mission.
 
-## 16. Clarifications
+### Clarifications
 
-### 16.1 No More Wires
+#### No More Wires
 
 If a player has no wires left:
 
 - Their turns are skipped.
 - Remaining players continue clockwise until mission resolves.
 
-### 16.2 Communication Limits
+#### Communication Limits
 
 Forbidden:
 
@@ -382,50 +461,17 @@ Allowed:
 - Discussing timing/use of equipment.
 - Reminding teammates about available powers or mission special rules.
 
-### 16.3 Mistake (Wrong Value Announced)
+#### Mistake (Wrong Value Announced)
 
 > **FAQ:** If a player mistakenly announces a value that is not in their hand during a Dual Cut, cut another wire the player does have, AND advance the detonator 1 notch.
 
-### 16.4 Info Token Shortage
+#### Info Token Shortage
 
 > **FAQ:** If the needed info token is unavailable (both copies are in use), take one that is no longer useful (e.g. its wire has already been cut). If none can be repurposed, say the value aloud and point — teammates must remember.
 
-## 17. Rule Priority
+---
 
-When mission-card special rules conflict with base rules, mission-card instructions take precedence for that mission.
-
-## 18. Quick Play Summary
-
-Setup summary:
-
-- Choose mission, assign Captain, choose characters.
-- Build mission wire pool per mission instructions.
-- Deal/sort wires into stand(s).
-- Set detonator by player count.
-- Set available equipment (count = players) as initially locked.
-- Each player places one non-yellow info token on one of their own blue wires.
-
-Turn summary:
-
-- Do exactly one: Dual Cut, Solo Cut, or Reveal Your Red Wires.
-- Resolve success/failure fully (cut/reveal, info-token placement, detonator movement, loss checks).
-
-Win/Loss summary:
-
-- Win when all stands are empty.
-- Lose on red-triggered explosion or detonator skull/end.
-
-## 19. Rulebook Notes and Non-Gameplay References
-
-- Some mission cards include a QR code that points to an audio file.
-  - Fallback URL in rulebook: `www.pegasusna.com/bombbusters-en`
-- Audio credits URL in footer: `www.pegasusna.com/bombbusters-audiocredits-en`
-- Rulebook wording inconsistency to be aware of:
-  - Character equipment is described as usable "once per mission" in the character rules section.
-  - Quick reference says "once per game."
-  - For campaign play, the detailed character-rules wording ("once per mission") is typically interpreted as authoritative unless a mission says otherwise.
-
-## 20. Mission Cards 1-66
+## Part VI: Mission Cards (1–66)
 
 Normalization note:
 
@@ -1510,99 +1556,115 @@ Baseline assumption used in this section:
 
 > **FAQ:** The standee must move after every cut (success or failure). On hash-marked squares, you must perform a SUCCESSFUL cut matching the ACTION constraint to trigger the action; regardless of success, do not move on hash squares.
 
-## Constraint Cards
+---
 
-### Constraint A
+## Part VII: Reference Cards
+
+### Constraint Cards
+
+#### Constraint A
 
 - You must cut only even wires.
 
-### Constraint B
+#### Constraint B
 
 - You must cut only odd wires.
 
-### Constraint C
+#### Constraint C
 
 - You must cut only wires 1 to 6.
 
-### Constraint D
+#### Constraint D
 
 - You must cut only wires 7 to 12.
 
-### Constraint E
+#### Constraint E
 
 - You must cut only wires 4 to 9.
 
-### Constraint F
+#### Constraint F
 
 - You cannot cut wires 4 to 9.
 
-### Constraint G
+#### Constraint G
 
 - You CANNOT use Equipment cards or your own personal equipment.
 
-### Constraint H
+#### Constraint H
 
 - If your cut or a cut in your hand fails, do not place an Info token (and do not reveal the value).
 - You cannot cut a wire indicated by an Info token.
 - P.S. Equipment `4` (Post-it) cannot be used.
 
-### Constraint I
+#### Constraint I
 
 - You cannot cut the far-right wire (highest number) on teammates' tile stands.
 
-### Constraint J
+#### Constraint J
 
 - You cannot cut the far-left wire (lowest number) on teammates' tile stands.
 
-### Constraint K
+#### Constraint K
 
 - You cannot do a Solo Cut action.
 
-### Constraint L
+#### Constraint L
 
 - If the cut fails, the detonator dial advances 2 spaces (instead of 1).
 
-## Challenge Cards
+### Challenge Cards
 
-### Challenge 1
+#### Challenge 1
 
 - Instead of their action, a bomb disposal expert cuts a teammate's wire, saying "It is RED." If that wire is not RED, the bomb explodes!
 
-### Challenge 2
+#### Challenge 2
 
 - 4 bomb disposal experts consecutively cut EVEN numbers.
 
-### Challenge 3
+#### Challenge 3
 
 - Uncut wires on a tile stand consist of 2-wire pairs (separated by cut wires).
 
-### Challenge 4
+#### Challenge 4
 
 - The sum of the first 3 Validation tokens used equals 18.
 
-### Challenge 5
+#### Challenge 5
 
 - 2 bomb disposal experts consecutively perform the SOLO Cut action.
 
-### Challenge 6
+#### Challenge 6
 
 - On a single tile stand, at least 5 uncut wires have been isolated (the adjacent wires have been cut).
 
-### Challenge 7
+#### Challenge 7
 
 - 3 bomb disposal experts consecutively cut sequential values (either up or down). Examples: 8-9-10 or 5-4-3.
 
-### Challenge 8
+#### Challenge 8
 
 - The first 2 Validation tokens are put on these numbers. Put 2 faceup Number cards HERE.
 
-### Challenge 9
+#### Challenge 9
 
 - A tile stand has only uncut ODD wires (a minimum of 6 wires). Ignore RED and YELLOW wires.
 
-### Challenge 10
+#### Challenge 10
 
 - On a single tile stand, at least 7 wires have been cut, but the 2 wires on each end have not been cut yet.
+
+---
+
+## Rulebook Notes and Non-Gameplay References
+
+- Some mission cards include a QR code that points to an audio file.
+  - Fallback URL in rulebook: `www.pegasusna.com/bombbusters-en`
+- Audio credits URL in footer: `www.pegasusna.com/bombbusters-audiocredits-en`
+- Rulebook wording inconsistency to be aware of:
+  - Character equipment is described as usable "once per mission" in the character rules section.
+  - Quick reference says "once per game."
+  - For campaign play, the detailed character-rules wording ("once per mission") is typically interpreted as authoritative unless a mission says otherwise.
 
 ---
 
