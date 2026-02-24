@@ -18,6 +18,14 @@ body {
   overscroll-behavior: none;
 }
 
+img {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* Wire tile flip animation */
 .tile-flip {
   transition: transform 0.6s;
