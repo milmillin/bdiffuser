@@ -238,7 +238,7 @@ export function LeftDock({
           className="fixed left-11 z-30 pointer-events-none"
           style={{ top: hoverY }}
         >
-          <div className="w-96 rounded-lg overflow-hidden shadow-[4px_4px_16px_rgba(0,0,0,0.7)] border border-gray-700/50">
+          <div className="w-96 rounded-[1.15rem] overflow-hidden shadow-[4px_4px_16px_rgba(0,0,0,0.7)] border border-gray-700/50">
             <img src={hoverImage} alt="" className="w-full h-auto" />
           </div>
         </div>
@@ -301,7 +301,7 @@ function CardModal({
               <button
                 type="button"
                 onClick={() => toggleCard(`personal-${character}`)}
-                className={`relative w-full rounded-lg border shadow-lg h-[28rem] text-left overflow-hidden ${
+                className={`relative w-full rounded-[1.15rem] border shadow-lg h-[28rem] text-left overflow-hidden ${
                   characterUsed
                     ? "border-gray-700 opacity-60 bg-gray-900"
                     : "border-violet-500 bg-violet-950/80"
@@ -368,7 +368,7 @@ function CardModal({
                 type="button"
                 key={eq.id}
                 onClick={() => toggleCard(eq.id)}
-                className={`relative w-full rounded-lg border shadow-lg h-[28rem] text-left overflow-hidden ${
+                className={`relative w-full rounded-[1.15rem] border shadow-lg h-[28rem] text-left overflow-hidden ${
                   eq.used
                     ? "border-gray-700 opacity-60 bg-gray-900"
                     : eq.unlocked

@@ -56,7 +56,7 @@ export function CharacterCardOverlay({
             <img
               src={`/images/${image}`}
               alt={card.name}
-              className="w-32 h-32 rounded-lg object-cover"
+              className="w-32 h-32 rounded-[1.15rem] object-cover"
             />
           </div>
         )}

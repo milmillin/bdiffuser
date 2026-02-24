@@ -67,7 +67,7 @@ function MissionCard({ missionId }: { missionId: MissionId }) {
     <button
       type="button"
       onClick={() => setShowBack((prev) => !prev)}
-      className="bg-[var(--color-bomb-surface)] rounded-lg border border-gray-700 overflow-hidden cursor-pointer"
+      className="bg-[var(--color-bomb-surface)] rounded-[1.15rem] border border-gray-700 overflow-hidden cursor-pointer"
     >
       <img
         src={showBack ? backSrc : frontSrc}
