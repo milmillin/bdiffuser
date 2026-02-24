@@ -12,6 +12,7 @@ import {
   BLUE_COPIES_PER_VALUE,
   DOUBLE_DETECTOR_CHARACTERS,
   EQUIPMENT_DEFS,
+  requiredSetupInfoTokenCountForMission,
   requiresSetupInfoTokenForMission,
   wireLabel,
 } from "@bomb-busters/shared";
@@ -902,6 +903,7 @@ export function GameBoard({
                     selectedTileIndex={selectedInfoTile}
                     selectedTokenValue={selectedInfoTokenValue}
                     requiresToken={requiresSetupToken}
+                    totalTokens={requiredSetupInfoTokenCountForMission(gameState.mission, gameState.players.length, me.isCaptain)}
                     useFalseTokenMode={useFalseSetupTokenMode}
                     send={send}
                     onPlaced={() => {
