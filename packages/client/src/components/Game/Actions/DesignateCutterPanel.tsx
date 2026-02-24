@@ -1,5 +1,15 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
+import {
+  BUTTON_OPTION_CLASS,
+  BUTTON_OPTION_SELECTED_CLASS,
+  BUTTON_PRIMARY_CLASS,
+  BUTTON_SECONDARY_CLASS,
+  PANEL_CLASS,
+  PANEL_SUBTEXT_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 export function DesignateCutterPanel({
   gameState,
@@ -25,18 +35,18 @@ export function DesignateCutterPanel({
 
   return (
     <div
-      className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+      className={PANEL_CLASS}
       data-testid="designate-cutter-panel"
     >
-      <div className="text-sm font-bold text-yellow-400">
+      <div className={PANEL_TITLE_CLASS}>
         Designate Who Cuts
       </div>
-      <div className="text-sm text-gray-300 space-y-1">
+      <div className={`${PANEL_TEXT_CLASS} space-y-1`}>
         <p>
           Number card drawn:{" "}
-          <span className="font-bold text-white text-base">{forced.value}</span>
+          <span className="font-bold text-slate-100 text-base">{forced.value}</span>
         </p>
-        <p className="text-xs text-gray-400">
+        <p className={PANEL_SUBTEXT_CLASS}>
           General Radar results for value {forced.value}:
         </p>
         <div className="flex flex-wrap gap-2">
@@ -47,8 +57,8 @@ export function DesignateCutterPanel({
                 key={p.id}
                 className={`text-xs px-2 py-0.5 rounded ${
                   hasWire
-                    ? "bg-green-800/50 text-green-300"
-                    : "bg-red-900/50 text-red-300"
+                    ? "bg-emerald-900/40 text-emerald-200"
+                    : "bg-rose-900/40 text-rose-200"
                 }`}
               >
                 {p.id === playerId ? "You" : p.name}:{" "}
@@ -58,7 +68,7 @@ export function DesignateCutterPanel({
           })}
         </div>
       </div>
-      <p className="text-sm text-gray-400">
+      <p className={PANEL_TEXT_CLASS}>
         Choose which player must cut a wire (including yourself).
       </p>
       <div className="flex items-center gap-2 flex-wrap">
@@ -67,14 +77,14 @@ export function DesignateCutterPanel({
             key={p.id}
             onClick={() => setSelectedPlayerId(p.id)}
             data-testid={`designate-player-${p.id}`}
-            className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+            className={`${
               forced.radarResults[p.id]
                 ? selectedPlayerId === p.id
-                  ? "bg-green-600 ring-2 ring-blue-300"
-                  : "bg-green-700 hover:bg-green-600"
+                  ? "bg-emerald-600 ring-2 ring-sky-300 px-4 py-1.5 rounded text-xs font-bold transition-colors"
+                  : "bg-emerald-700 hover:bg-emerald-600 px-4 py-1.5 rounded text-xs font-bold transition-colors"
                 : selectedPlayerId === p.id
-                  ? "bg-blue-500 ring-2 ring-blue-300"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  ? BUTTON_OPTION_SELECTED_CLASS
+                  : BUTTON_OPTION_CLASS
             }`}
           >
             {p.id === playerId ? "Myself" : p.name}
@@ -84,7 +94,7 @@ export function DesignateCutterPanel({
           </button>
         ))}
         {playersWithTiles.length === 0 && (
-          <span className="text-sm text-gray-500">No eligible players</span>
+          <span className={PANEL_SUBTEXT_CLASS}>No eligible players</span>
         )}
       </div>
       {selectedPlayerId != null && (
@@ -92,7 +102,7 @@ export function DesignateCutterPanel({
           <button
             type="button"
             onClick={() => setSelectedPlayerId(null)}
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold text-sm transition-colors"
+            className={BUTTON_SECONDARY_CLASS}
           >
             Cancel
           </button>
@@ -105,7 +115,7 @@ export function DesignateCutterPanel({
               }
             }}
             data-testid="designate-cutter-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm
           </button>

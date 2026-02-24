@@ -1,5 +1,15 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
+import {
+  BUTTON_OPTION_CLASS,
+  BUTTON_OPTION_SELECTED_CLASS,
+  BUTTON_PRIMARY_CLASS,
+  BUTTON_SECONDARY_CLASS,
+  PANEL_CLASS,
+  PANEL_SUBTEXT_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 export function ChooseNextPlayerPanel({
   gameState,
@@ -37,22 +47,22 @@ export function ChooseNextPlayerPanel({
 
   return (
     <div
-      className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+      className={PANEL_CLASS}
       data-testid="choose-next-player-panel"
     >
-      <div className="text-sm font-bold text-yellow-400">
+      <div className={PANEL_TITLE_CLASS}>
         Captain — Choose Who Acts Next
       </div>
-      <p className="text-sm text-gray-400">
+      <p className={PANEL_TEXT_CLASS}>
         Select which player takes the next turn.
       </p>
       {previousPlayerName && (
-        <p className="text-xs text-gray-500">
-          Previous player: <span className="text-gray-300 font-semibold">{previousPlayerName}</span>
+        <p className={PANEL_SUBTEXT_CLASS}>
+          Previous player: <span className="text-slate-200 font-semibold">{previousPlayerName}</span>
         </p>
       )}
       {hasAlternative && (
-        <p className="text-xs text-amber-300">
+        <p className={PANEL_TEXT_CLASS}>
           In mission 10 (3+ players), the same player cannot act twice in a row.
         </p>
       )}
@@ -62,17 +72,17 @@ export function ChooseNextPlayerPanel({
             key={p.id}
             onClick={() => setSelectedPlayerId(p.id)}
             data-testid={`choose-player-${p.id}`}
-            className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+            className={`${
               selectedPlayerId === p.id
-                ? "bg-blue-500 ring-2 ring-blue-300"
-                : "bg-blue-600 hover:bg-blue-700"
+                ? BUTTON_OPTION_SELECTED_CLASS
+                : BUTTON_OPTION_CLASS
             }`}
           >
             {p.name}
           </button>
         ))}
         {eligiblePlayers.length === 0 && (
-          <span className="text-sm text-gray-500">No eligible players</span>
+          <span className={PANEL_SUBTEXT_CLASS}>No eligible players</span>
         )}
       </div>
       {selectedPlayerId != null && (
@@ -80,7 +90,7 @@ export function ChooseNextPlayerPanel({
           <button
             type="button"
             onClick={() => setSelectedPlayerId(null)}
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold text-sm transition-colors"
+            className={BUTTON_SECONDARY_CLASS}
           >
             Cancel
           </button>
@@ -93,7 +103,7 @@ export function ChooseNextPlayerPanel({
               }
             }}
             data-testid="choose-player-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm
           </button>

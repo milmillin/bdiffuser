@@ -57,6 +57,14 @@ import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
 } from "./Actions/actionPanelMissionRules.js";
+import {
+  BUTTON_PRIMARY_CLASS,
+  BUTTON_SECONDARY_CLASS,
+  PANEL_CLASS,
+  PANEL_SUBTEXT_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./Actions/panelStyles.js";
 
 type UnknownForcedAction = {
   kind: string;
@@ -99,6 +107,7 @@ function getUnknownForcedAction(
 
 const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "double_detector",
+  "talkies_walkies",
   "triple_detector",
   "super_detector",
   "x_or_y_ray",
@@ -209,6 +218,13 @@ export function GameBoard({
   const cancelEquipmentMode = useCallback(() => {
     setEquipmentMode(null);
     setSelectedDockCardId(null);
+  }, []);
+  const clearEquipmentMode = useCallback(() => {
+    setEquipmentMode((prev) => {
+      if (!prev) return prev;
+      const reset = getInitialEquipmentMode(prev.kind as AnyEquipmentId);
+      return reset ?? prev;
+    });
   }, []);
 
   // Talkies-Walkies forced-action: teammate picks their own wire on the stand
@@ -1046,6 +1062,11 @@ export function GameBoard({
                   <MissionAudioPlayer gameState={gameState} send={send} />
                 )}
 
+              </div>
+            </div>
+            {/* Player stand + actions — always at the bottom */}
+            {me && (
+              <div className="flex flex-col gap-2 min-w-0">
                 {/* Playing phase: forced action (captain chooses next player) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -1146,49 +1167,43 @@ export function GameBoard({
                 {gameState.phase === "playing" &&
                   unknownForcedAction &&
                   (isUnknownForcedActionCaptain ? (
-                    <div
-                      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-center text-amber-200 space-y-2"
-                      data-testid="forced-action-fallback-captain"
-                    >
-                      <p>
+                    <div className={PANEL_CLASS} data-testid="forced-action-fallback-captain">
+                      <div className={PANEL_TITLE_CLASS}>Mission Action Required</div>
+                      <p className={PANEL_TEXT_CLASS}>
                         You must resolve a mission-required action before normal
                         turns continue.
                       </p>
-                      <p className="text-xs text-amber-300/90">
+                      <p className={PANEL_SUBTEXT_CLASS}>
                         This client version does not support this forced action
                         yet.
                       </p>
                       <button
                         type="button"
                         onClick={() => window.location.reload()}
-                        className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs font-bold transition-colors"
+                        className={BUTTON_PRIMARY_CLASS}
                       >
                         Reload Client
                       </button>
                     </div>
                   ) : (
-                    <div
-                      className="text-center py-2 text-gray-400"
-                      data-testid="waiting-forced-action"
-                    >
-                      Mission-required action is pending
-                      {forcedActionCaptainName ? (
-                        <>
-                          {" "}
-                          for{" "}
-                          <span className="text-yellow-400 font-bold">
-                            {forcedActionCaptainName}
-                          </span>
-                        </>
-                      ) : null}
-                      .
+                    <div className={PANEL_CLASS} data-testid="waiting-forced-action">
+                      <div className={PANEL_TITLE_CLASS}>Mission Action Required</div>
+                      <div className={PANEL_SUBTEXT_CLASS}>
+                        Mission-required action is pending
+                        {forcedActionCaptainName ? (
+                          <>
+                            {" "}
+                            for{" "}
+                            <span className="text-slate-200 font-bold">
+                              {forcedActionCaptainName}
+                            </span>
+                          </>
+                        ) : null}
+                        .
+                      </div>
                     </div>
                   ))}
-              </div>
-            </div>
-            {/* Player stand + actions — always at the bottom */}
-            {me && (
-              <div className="flex flex-col gap-2 min-w-0">
+
                 {/* Equipment mode panel (unified for all equipment types) */}
                 {equipmentMode && (
                   <EquipmentModePanel
@@ -1197,6 +1212,7 @@ export function GameBoard({
                     playerId={playerId}
                     send={send}
                     onCancel={cancelEquipmentMode}
+                    onClear={clearEquipmentMode}
                     onUpdateMode={setEquipmentMode}
                   />
                 )}
@@ -1854,18 +1870,18 @@ function PendingActionStrip({
     }
     return (
       <div
-        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs"
+        className={PANEL_CLASS}
         data-testid="pending-action-draft"
       >
-        <div className="font-bold text-blue-300 uppercase tracking-wide">
+        <div className={PANEL_TITLE_CLASS}>
           Action Draft
         </div>
-        <div className="text-gray-300">
+        <div className={PANEL_TEXT_CLASS}>
           Selected your wire <span className="font-semibold">{wireLabel(selectedGuessTile)}</span>{" "}
           (value {String(selectedGuessValue)}). Click an opponent wire for Dual Cut, or click a highlighted own wire for Solo Cut.
         </div>
         {mission9SelectedGuessBlocked && (
-          <div className="text-amber-300">
+          <div className={PANEL_SUBTEXT_CLASS}>
             Mission 9: this value cannot be used for Dual Cut right now
             {typeof mission9ActiveValue === "number"
               ? ` (need ${mission9ActiveValue})`
@@ -1877,7 +1893,7 @@ function PendingActionStrip({
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+            className={BUTTON_SECONDARY_CLASS}
           >
             Cancel
           </button>
@@ -1910,18 +1926,18 @@ function PendingActionStrip({
 
   return (
     <div
-      className="rounded-lg border border-emerald-500/50 bg-emerald-950/20 px-3 py-2 text-xs space-y-2"
+      className={PANEL_CLASS}
       data-testid="pending-action-strip"
     >
-      <div className="font-bold text-emerald-300 uppercase tracking-wide">
+      <div className={PANEL_TITLE_CLASS}>
         Pending Action
       </div>
-      <div className="text-gray-200">{summary}</div>
+      <div className={PANEL_TEXT_CLASS}>{summary}</div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+          className={BUTTON_SECONDARY_CLASS}
         >
           Cancel
         </button>
@@ -1929,11 +1945,7 @@ function PendingActionStrip({
           type="button"
           onClick={onConfirm}
           disabled={!canConfirm}
-          className={`px-3 py-1 rounded font-black transition-colors ${
-            canConfirm
-              ? "bg-green-600 hover:bg-green-500 text-white"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm
         </button>

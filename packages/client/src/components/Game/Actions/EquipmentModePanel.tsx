@@ -5,6 +5,15 @@ import type {
   EquipmentGuessValue,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
+import {
+  BUTTON_OPTION_CLASS,
+  BUTTON_OPTION_SELECTED_CLASS,
+  BUTTON_PRIMARY_CLASS,
+  BUTTON_SECONDARY_CLASS,
+  PANEL_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 export type EquipmentMode =
   | { kind: "post_it" }
@@ -55,114 +64,6 @@ export type EquipmentMode =
       targetTileIndex: number | null;
     };
 
-const MODE_COLORS: Record<
-  EquipmentMode["kind"],
-  { border: string; bg: string; title: string; confirm: string }
-> = {
-  post_it: {
-    border: "border-emerald-600/60",
-    bg: "bg-emerald-900/20",
-    title: "text-emerald-400",
-    confirm: "bg-emerald-600 hover:bg-emerald-500 text-white",
-  },
-  double_detector: {
-    border: "border-yellow-600/60",
-    bg: "bg-yellow-900/20",
-    title: "text-yellow-400",
-    confirm: "bg-yellow-600 hover:bg-yellow-500 text-black",
-  },
-  general_radar: {
-    border: "border-cyan-600/60",
-    bg: "bg-cyan-900/20",
-    title: "text-cyan-400",
-    confirm: "bg-cyan-600 hover:bg-cyan-500 text-white",
-  },
-  label_eq: {
-    border: "border-blue-600/60",
-    bg: "bg-blue-900/20",
-    title: "text-blue-400",
-    confirm: "bg-blue-600 hover:bg-blue-500 text-white",
-  },
-  label_neq: {
-    border: "border-orange-600/60",
-    bg: "bg-orange-900/20",
-    title: "text-orange-400",
-    confirm: "bg-orange-600 hover:bg-orange-500 text-white",
-  },
-  talkies_walkies: {
-    border: "border-indigo-600/60",
-    bg: "bg-indigo-900/20",
-    title: "text-indigo-400",
-    confirm: "bg-indigo-600 hover:bg-indigo-500 text-white",
-  },
-  emergency_batteries: {
-    border: "border-amber-600/60",
-    bg: "bg-amber-900/20",
-    title: "text-amber-400",
-    confirm: "bg-amber-600 hover:bg-amber-500 text-black",
-  },
-  coffee_mug: {
-    border: "border-lime-600/60",
-    bg: "bg-lime-900/20",
-    title: "text-lime-400",
-    confirm: "bg-lime-600 hover:bg-lime-500 text-black",
-  },
-  triple_detector: {
-    border: "border-purple-600/60",
-    bg: "bg-purple-900/20",
-    title: "text-purple-400",
-    confirm: "bg-purple-600 hover:bg-purple-500 text-white",
-  },
-  super_detector: {
-    border: "border-pink-600/60",
-    bg: "bg-pink-900/20",
-    title: "text-pink-400",
-    confirm: "bg-pink-600 hover:bg-pink-500 text-white",
-  },
-  x_or_y_ray: {
-    border: "border-violet-600/60",
-    bg: "bg-violet-900/20",
-    title: "text-violet-400",
-    confirm: "bg-violet-600 hover:bg-violet-500 text-white",
-  },
-  false_bottom: {
-    border: "border-teal-600/60",
-    bg: "bg-teal-900/20",
-    title: "text-teal-400",
-    confirm: "bg-teal-600 hover:bg-teal-500 text-white",
-  },
-  single_wire_label: {
-    border: "border-sky-600/60",
-    bg: "bg-sky-900/20",
-    title: "text-sky-400",
-    confirm: "bg-sky-600 hover:bg-sky-500 text-white",
-  },
-  emergency_drop: {
-    border: "border-rose-600/60",
-    bg: "bg-rose-900/20",
-    title: "text-rose-400",
-    confirm: "bg-rose-600 hover:bg-rose-500 text-white",
-  },
-  fast_pass: {
-    border: "border-fuchsia-600/60",
-    bg: "bg-fuchsia-900/20",
-    title: "text-fuchsia-400",
-    confirm: "bg-fuchsia-600 hover:bg-fuchsia-500 text-white",
-  },
-  disintegrator: {
-    border: "border-red-600/60",
-    bg: "bg-red-900/20",
-    title: "text-red-400",
-    confirm: "bg-red-600 hover:bg-red-500 text-white",
-  },
-  grappling_hook: {
-    border: "border-stone-600/60",
-    bg: "bg-stone-900/20",
-    title: "text-stone-300",
-    confirm: "bg-stone-600 hover:bg-stone-500 text-white",
-  },
-};
-
 const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   post_it: "Post-it Mode",
   double_detector: "Double Detector Mode",
@@ -188,33 +89,35 @@ function ModeWrapper({
   testId,
   children,
   onCancel,
+  onClear,
   confirmButton,
 }: {
   kind: EquipmentMode["kind"];
   testId?: string;
   children: React.ReactNode;
   onCancel: () => void;
+  onClear: () => void;
   confirmButton?: React.ReactNode;
 }) {
-  const colors = MODE_COLORS[kind];
   return (
     <div
-      className={`rounded-lg border ${colors.border} ${colors.bg} px-3 py-2 text-sm space-y-2`}
+      className={PANEL_CLASS}
       data-testid={testId ?? "equipment-mode-panel"}
     >
-      <div
-        className={`font-bold ${colors.title} uppercase tracking-wide text-xs`}
-      >
+      <div className={PANEL_TITLE_CLASS}>
         {MODE_TITLES[kind]}
       </div>
-      <div className="text-xs text-gray-300">{children}</div>
+      <div className={PANEL_TEXT_CLASS}>{children}</div>
       <div className="flex gap-2 flex-wrap">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-bold transition-colors"
+          className={BUTTON_SECONDARY_CLASS}
         >
           Cancel
+        </button>
+        <button type="button" onClick={onClear} className={BUTTON_SECONDARY_CLASS}>
+          Clear
         </button>
         {confirmButton}
       </div>
@@ -243,6 +146,7 @@ export function EquipmentModePanel({
   playerId,
   send,
   onCancel,
+  onClear,
   onUpdateMode,
 }: {
   mode: EquipmentMode;
@@ -250,12 +154,12 @@ export function EquipmentModePanel({
   playerId: string;
   send: (msg: ClientMessage) => void;
   onCancel: () => void;
+  onClear: () => void;
   onUpdateMode: (mode: EquipmentMode) => void;
 }) {
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
   const opponents = gameState.players.filter((p) => p.id !== playerId);
-  const colors = MODE_COLORS[mode.kind];
 
   const sendAndCancel = (msg: ClientMessage) => {
     send(msg);
@@ -306,7 +210,7 @@ export function EquipmentModePanel({
                   actorTileIndex: mode.guessTileIndex!,
                 })
               }
-              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm Double Detector
             </button>
@@ -352,10 +256,10 @@ export function EquipmentModePanel({
                   onClick={() =>
                     onUpdateMode({ ...mode, selectedValue: value })
                   }
-                  className={`px-2 py-1.5 rounded text-sm font-bold transition-colors ${
+                  className={`${
                     isSelected
-                      ? "bg-cyan-500 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      ? BUTTON_OPTION_SELECTED_CLASS
+                      : BUTTON_OPTION_CLASS
                   }`}
                 >
                   {value}
@@ -377,7 +281,7 @@ export function EquipmentModePanel({
                 payload: { kind: "general_radar", value: selectedValue },
               })
             }
-            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm General Radar
           </button>
@@ -412,9 +316,6 @@ export function EquipmentModePanel({
     }
 
     case "talkies_walkies": {
-      const selectableTeammates = opponents.filter((opponent) =>
-        opponent.hand.some((tile) => !tile.cut),
-      );
       const selectedTeammateName = opponents.find(
         (opponent) => opponent.id === mode.teammateId,
       )?.name;
@@ -434,37 +335,9 @@ export function EquipmentModePanel({
 
       content = (
         <div className="space-y-2">
-          <div>Select a teammate to swap with:</div>
-          <div className="flex gap-2 flex-wrap">
-            {selectableTeammates.map((opponent) => {
-              const isSelected = mode.teammateId === opponent.id;
-              return (
-                <button
-                  key={opponent.id}
-                  type="button"
-                  data-testid={`tw-target-${opponent.id}`}
-                  onClick={() =>
-                    onUpdateMode({
-                      ...mode,
-                      teammateId: isSelected ? null : opponent.id,
-                      teammateTileIndex: null,
-                    })
-                  }
-                  className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
-                    isSelected
-                      ? "bg-indigo-500 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                  }`}
-                >
-                  {opponent.name}
-                </button>
-              );
-            })}
-            {selectableTeammates.length === 0 && (
-              <div className="text-gray-400">
-                No eligible teammate has an uncut wire.
-              </div>
-            )}
+          <div>
+            Click one of your teammate's uncut wires on their stand, then click
+            one of your own uncut wires.
           </div>
           <div>
             {twAllComplete ? (
@@ -498,7 +371,7 @@ export function EquipmentModePanel({
                 },
               })
             }
-            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm Talkies-Walkies
           </button>
@@ -560,7 +433,7 @@ export function EquipmentModePanel({
                   },
                 })
               }
-              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm ({mode.selectedPlayerIds.length} selected)
             </button>
@@ -587,10 +460,10 @@ export function EquipmentModePanel({
                   onClick={() =>
                     onUpdateMode({ ...mode, selectedPlayerId: player.id })
                   }
-                  className={`px-3 py-1.5 rounded text-sm font-bold transition-colors ${
+                  className={`${
                     isSelected
-                      ? "bg-lime-500 text-black"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      ? BUTTON_OPTION_SELECTED_CLASS
+                      : BUTTON_OPTION_CLASS
                   }`}
                 >
                   {player.name}
@@ -615,7 +488,7 @@ export function EquipmentModePanel({
                 },
               })
             }
-            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm Coffee Mug
           </button>
@@ -657,7 +530,7 @@ export function EquipmentModePanel({
                   },
                 })
               }
-              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm Triple Detector
             </button>
@@ -738,7 +611,7 @@ export function EquipmentModePanel({
                   payload,
                 })
               }
-              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm Super Detector
             </button>
@@ -772,10 +645,10 @@ export function EquipmentModePanel({
                           targetStandIndex: standIndex,
                         })
                       }
-                      className={`px-2 py-1 rounded text-xs font-bold transition-colors ${
+                      className={`${
                         isSelected
-                          ? "bg-pink-500 text-white"
-                          : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                          ? BUTTON_OPTION_SELECTED_CLASS
+                          : BUTTON_OPTION_CLASS
                       }`}
                     >
                       Stand {standIndex + 1}
@@ -842,7 +715,7 @@ export function EquipmentModePanel({
                   },
                 })
               }
-              className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm X or Y Ray
             </button>
@@ -889,7 +762,7 @@ export function EquipmentModePanel({
               payload: { kind: "false_bottom" },
             })
           }
-          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm False Bottom
         </button>
@@ -915,7 +788,7 @@ export function EquipmentModePanel({
               payload: { kind: "emergency_drop" },
             })
           }
-          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm Emergency Drop
         </button>
@@ -940,10 +813,10 @@ export function EquipmentModePanel({
                       selectedValue: value,
                     })
                   }
-                  className={`px-2 py-1.5 rounded text-sm font-bold transition-colors ${
+                  className={`${
                     isSelected
-                      ? "bg-fuchsia-500 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      ? BUTTON_OPTION_SELECTED_CLASS
+                      : BUTTON_OPTION_CLASS
                   }`}
                 >
                   {value}
@@ -965,7 +838,7 @@ export function EquipmentModePanel({
                 payload: { kind: "fast_pass", value: selectedValue },
               })
             }
-            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm Fast Pass
           </button>
@@ -986,7 +859,7 @@ export function EquipmentModePanel({
               payload: { kind: "disintegrator" },
             })
           }
-          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm Disintegrator
         </button>
@@ -1021,7 +894,7 @@ export function EquipmentModePanel({
                 },
               })
             }
-            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm Grappling Hook
           </button>
@@ -1036,6 +909,7 @@ export function EquipmentModePanel({
       kind={mode.kind}
       testId={testId}
       onCancel={onCancel}
+      onClear={onClear}
       confirmButton={confirmButton}
     >
       {content}

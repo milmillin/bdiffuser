@@ -25,7 +25,7 @@ export function getOpponentTileSelectableFilter(
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut;
     case "talkies_walkies":
-      return () => false;
+      return (tile) => !tile.cut;
     case "triple_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut;
@@ -98,6 +98,10 @@ export function getOpponentSelectedTileIndex(
 ): number | undefined {
   if (!mode) return undefined;
   switch (mode.kind) {
+    case "talkies_walkies":
+      return mode.teammateId === oppId
+        ? (mode.teammateTileIndex ?? undefined)
+        : undefined;
     case "x_or_y_ray":
       return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
     case "grappling_hook":
@@ -180,13 +184,13 @@ export function handleOpponentTileClick(
       };
     }
     case "talkies_walkies": {
-      if (mode.teammateId === oppId) {
+      if (mode.teammateId === oppId && mode.teammateTileIndex === tileIndex) {
         return { ...mode, teammateId: null, teammateTileIndex: null };
       }
       return {
         ...mode,
         teammateId: oppId,
-        teammateTileIndex: null,
+        teammateTileIndex: tileIndex,
         myTileIndex: mode.myTileIndex,
       };
     }

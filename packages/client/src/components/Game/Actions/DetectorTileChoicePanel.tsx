@@ -1,6 +1,14 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
+import {
+  BUTTON_OPTION_CLASS,
+  BUTTON_OPTION_SELECTED_CLASS,
+  BUTTON_PRIMARY_CLASS,
+  PANEL_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 export function DetectorTileChoicePanel({
   gameState,
@@ -49,17 +57,17 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
+        className={PANEL_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className="font-bold text-blue-300 uppercase tracking-wide">
+        <div className={PANEL_TITLE_CLASS}>
           Confirm Detector Result
         </div>
-        <div className="text-gray-300">
+        <div className={PANEL_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
-            <span className="font-bold text-white">{forced.guessValue}</span>.
+            <span className="font-bold text-slate-100">{forced.guessValue}</span>.
             {selectableIndices.length > 0
               ? " Choose which wire receives the info token."
               : ""}
@@ -76,10 +84,10 @@ export function DetectorTileChoicePanel({
                   key={tileIdx}
                   onClick={() => setSelectedIndex(tileIdx)}
                   data-testid={`detector-choice-tile-${tileIdx}`}
-                  className={`px-4 py-1.5 rounded font-bold transition-colors ${
+                  className={`${
                     effectiveSelection === tileIdx
-                      ? "bg-blue-500 ring-2 ring-blue-300"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? BUTTON_OPTION_SELECTED_CLASS
+                      : BUTTON_OPTION_CLASS
                   }`}
                 >
                   Wire {label} ({String(valueDisplay)})
@@ -96,7 +104,7 @@ export function DetectorTileChoicePanel({
                 });
               }}
               data-testid="detector-tile-choice-confirm"
-              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm
             </button>
@@ -112,7 +120,7 @@ export function DetectorTileChoicePanel({
                 });
               }}
               data-testid="detector-tile-choice-confirm"
-              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors"
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm
             </button>
@@ -136,17 +144,17 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
+        className={PANEL_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className="font-bold text-blue-300 uppercase tracking-wide">
+        <div className={PANEL_TITLE_CLASS}>
           Confirm Detector Result
         </div>
-        <div className="text-gray-300">
+        <div className={PANEL_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
-            <span className="font-bold text-white">{forced.guessValue}</span>.
+            <span className="font-bold text-slate-100">{forced.guessValue}</span>.
             {selectableIndices.length > 0
               ? " Choose which wire receives the fallback cut."
               : ""}
@@ -163,10 +171,10 @@ export function DetectorTileChoicePanel({
                   key={tileIdx}
                   onClick={() => setSelectedIndex(tileIdx)}
                   data-testid={`detector-choice-tile-${tileIdx}`}
-                  className={`px-4 py-1.5 rounded font-bold transition-colors ${
+                  className={`${
                     effectiveSelection === tileIdx
-                      ? "bg-blue-500 ring-2 ring-blue-300"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? BUTTON_OPTION_SELECTED_CLASS
+                      : BUTTON_OPTION_CLASS
                   }`}
                 >
                   Wire {label} ({String(valueDisplay)})
@@ -183,7 +191,7 @@ export function DetectorTileChoicePanel({
                 });
               }}
               data-testid="detector-tile-choice-confirm"
-              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm
             </button>
@@ -199,7 +207,7 @@ export function DetectorTileChoicePanel({
                 });
               }}
               data-testid="detector-tile-choice-confirm"
-              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors"
+              className={BUTTON_PRIMARY_CLASS}
             >
               Confirm
             </button>
@@ -218,17 +226,17 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
+        className={PANEL_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className="font-bold text-blue-300 uppercase tracking-wide">
+        <div className={PANEL_TITLE_CLASS}>
           Confirm Wire Cut
         </div>
-        <div className="text-gray-300">
+        <div className={PANEL_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
-            <span className="font-bold text-white">{forced.guessValue}</span>.
+            <span className="font-bold text-slate-100">{forced.guessValue}</span>.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -246,7 +254,7 @@ export function DetectorTileChoicePanel({
               send({ type: "detectorTileChoice", tileIndex: tileIdx });
             }}
             data-testid="detector-tile-choice-confirm"
-            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+            className={BUTTON_PRIMARY_CLASS}
           >
             Confirm
           </button>
@@ -262,17 +270,17 @@ export function DetectorTileChoicePanel({
 
   return (
     <div
-      className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
+      className={PANEL_CLASS}
       data-testid="detector-tile-choice-panel"
     >
-      <div className="font-bold text-blue-300 uppercase tracking-wide">
+      <div className={PANEL_TITLE_CLASS}>
         Choose Which Wire to Cut
       </div>
-      <div className="text-gray-300">
+      <div className={PANEL_TEXT_CLASS}>
         <p>
           {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
           and guessed{" "}
-          <span className="font-bold text-white">{forced.guessValue}</span>.
+          <span className="font-bold text-slate-100">{forced.guessValue}</span>.
         </p>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -285,10 +293,10 @@ export function DetectorTileChoicePanel({
               key={tileIdx}
               onClick={() => setSelectedIndex(tileIdx)}
               data-testid={`detector-choice-tile-${tileIdx}`}
-              className={`px-4 py-1.5 rounded font-bold transition-colors ${
+              className={`${
                 selectedIndex === tileIdx
-                  ? "bg-blue-500 ring-2 ring-blue-300"
-                  : "bg-blue-600 hover:bg-blue-700"
+                  ? BUTTON_OPTION_SELECTED_CLASS
+                  : BUTTON_OPTION_CLASS
               }`}
             >
               Wire {label} ({String(valueDisplay)})
@@ -304,7 +312,7 @@ export function DetectorTileChoicePanel({
             }
           }}
           data-testid="detector-tile-choice-confirm"
-          className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm
         </button>

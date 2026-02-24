@@ -1,5 +1,11 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
+import {
+  BUTTON_PRIMARY_CLASS,
+  PANEL_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 export function TalkiesWalkiesChoicePanel({
   gameState,
@@ -37,16 +43,16 @@ export function TalkiesWalkiesChoicePanel({
 
   return (
     <div
-      className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+      className={PANEL_CLASS}
       data-testid="talkies-walkies-choice-panel"
     >
-      <div className="text-sm font-bold text-yellow-400">
+      <div className={PANEL_TITLE_CLASS}>
         Choose Your Wire to Swap
       </div>
-      <div className="text-sm text-gray-300">
+      <div className={PANEL_TEXT_CLASS}>
         <p>
           {actorName} used <span className="text-indigo-400">Talkies-Walkies</span>{" "}
-          and selected wire <span className="font-bold text-white">{wireLabel(forced.actorTileIndex)}</span>.
+          and selected wire <span className="font-bold text-slate-100">{wireLabel(forced.actorTileIndex)}</span>.
           Click one of your uncut wires on your stand below.
         </p>
       </div>
@@ -60,7 +66,7 @@ export function TalkiesWalkiesChoicePanel({
             }
           }}
           data-testid="talkies-choice-confirm"
-          className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+          className={BUTTON_PRIMARY_CLASS}
         >
           Confirm
         </button>

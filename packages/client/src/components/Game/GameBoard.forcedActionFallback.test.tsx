@@ -70,6 +70,6 @@ describe("GameBoard forced-action fallback", () => {
     const html = renderBoard(state, "p2");
 
     expect(html).toContain("data-testid=\"waiting-forced-action\"");
-    expect(html).toContain("for <span class=\"text-yellow-400 font-bold\">Captain</span>");
+    expect(html).toContain("for <span class=\"text-slate-200 font-bold\">Captain</span>");
   });
 });

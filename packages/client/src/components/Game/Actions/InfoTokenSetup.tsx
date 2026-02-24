@@ -1,4 +1,11 @@
 import type { ClientMessage, ClientPlayer } from "@bomb-busters/shared";
+import {
+  BUTTON_PRIMARY_CLASS,
+  PANEL_CLASS,
+  PANEL_SUBTEXT_CLASS,
+  PANEL_TEXT_CLASS,
+  PANEL_TITLE_CLASS,
+} from "./panelStyles.js";
 
 function getFalseTokenValueOptions(
   tile: ClientPlayer["hand"][number] | undefined,
@@ -50,11 +57,11 @@ export function InfoTokenSetup({
 
   if (!requiresToken) {
     return (
-      <div className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs">
-        <div className="font-bold text-blue-300 uppercase tracking-wide">
+      <div className={PANEL_CLASS}>
+        <div className={PANEL_TITLE_CLASS}>
           Info Token Setup
         </div>
-        <div className="text-gray-400">
+        <div className={PANEL_SUBTEXT_CLASS}>
           Mission rule: you do not place an info token.
         </div>
       </div>
@@ -82,11 +89,11 @@ export function InfoTokenSetup({
   };
 
   return (
-    <div className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2">
-      <div className="font-bold text-blue-300 uppercase tracking-wide">
+    <div className={PANEL_CLASS}>
+      <div className={PANEL_TITLE_CLASS}>
         Place Info Token{totalTokens > 1 ? ` (${player.infoTokens.length + 1}/${totalTokens})` : ""}
       </div>
-      <div className="text-gray-400">
+      <div className={PANEL_TEXT_CLASS}>
         {useFalseTokenMode
           ? "Select an allowed wire tile on your stand to place a false info token."
           : "Select a blue wire tile on your stand to place an info token."}
@@ -95,7 +102,7 @@ export function InfoTokenSetup({
         <div className="flex items-center gap-2">
           {useFalseTokenMode && (
             <>
-              <span className="text-gray-400">False value:</span>
+              <span className={PANEL_SUBTEXT_CLASS}>False value:</span>
               <select
                 value={effectiveFalseTokenValue ?? ""}
                 onChange={(event) =>
@@ -113,7 +120,7 @@ export function InfoTokenSetup({
           )}
           <button
             onClick={handlePlace}
-            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+            className={BUTTON_PRIMARY_CLASS}
           >
             {useFalseTokenMode
               ? `Place (${effectiveFalseTokenValue ?? "?"})`

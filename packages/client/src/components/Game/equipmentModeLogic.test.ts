@@ -83,7 +83,7 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
   });
 
-  it("talkies_walkies: does not allow opponent tile selection", () => {
+  it("talkies_walkies: allows uncut opponent tile selection", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
       teammateId: null,
@@ -91,7 +91,7 @@ describe("getOpponentTileSelectableFilter", () => {
       myTileIndex: null,
     };
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ cut: true }), 1)).toBe(false);
   });
 
@@ -487,14 +487,14 @@ describe("highlight functions", () => {
       expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
     });
 
-    it("talkies_walkies: returns undefined for teammate (player-level targeting)", () => {
+    it("talkies_walkies: returns selected teammate tile for teammate", () => {
       const mode: EquipmentMode = {
         kind: "talkies_walkies",
         teammateId: "opp1",
         teammateTileIndex: 3,
         myTileIndex: null,
       };
-      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
+      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBe(3);
     });
 
     it("talkies_walkies: returns undefined for non-teammate", () => {
@@ -759,7 +759,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp2", 3) as Extract<EquipmentMode, { kind: "talkies_walkies" }>;
     expect(result.teammateId).toBe("opp2");
-    expect(result.teammateTileIndex).toBeNull();
+    expect(result.teammateTileIndex).toBe(3);
     expect(result.myTileIndex).toBe(2); // preserved
   });
 
@@ -1479,7 +1479,7 @@ describe("opponent tile toggle-deselect", () => {
       teammateTileIndex: 2,
       myTileIndex: null,
     };
-    const result = handleOpponentTileClick(mode, "opp1", 0);
+    const result = handleOpponentTileClick(mode, "opp1", 2);
     expect(result).toEqual({
       kind: "talkies_walkies",
       teammateId: null,
