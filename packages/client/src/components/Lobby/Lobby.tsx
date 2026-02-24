@@ -174,9 +174,6 @@ export function Lobby({
               {previewAllowed && (
                 <p className="text-xs text-gray-400">
                   Players: {previewAllowed.join(", ")}
-                  {previewInvalid && (
-                    <span className="text-red-400 ml-1">(need {previewAllowed.join(" or ")}, have {playerCount})</span>
-                  )}
                 </p>
               )}
 
@@ -188,11 +185,6 @@ export function Lobby({
                 className="w-full rounded-lg"
               />
 
-              {previewInvalid && isHost && (
-                <div className="bg-red-900/40 border border-red-700 rounded-lg px-3 py-2 text-xs text-red-300 text-center">
-                  Unavailable for {playerCount} players
-                </div>
-              )}
             </div>
 
             {/* Actions */}
