@@ -520,6 +520,15 @@ describe("executeSimultaneousFourCut", () => {
     expect(allDealt).toHaveLength(5);
     expect(allDealt.every((card) => card.faceUp === false)).toBe(true);
     expect(state.campaign?.numberCards?.visible[0]?.value).toBe(5);
+
+    // Mission 39 post-success tokens:
+    // - p1 gets value 3 and still has an uncut 3, so receives one off-stand token.
+    // - p2 and p3 do not receive tokens because none of their dealt values remain in-hand.
+    expect(state.players[0].infoTokens).toEqual([
+      { value: 3, position: -1, isYellow: false },
+    ]);
+    expect(state.players[1].infoTokens).toEqual([]);
+    expect(state.players[2].infoTokens).toEqual([]);
   });
 
   it("mission 46 success: cuts sevens without mission-23 equipment unlock side effects", () => {
