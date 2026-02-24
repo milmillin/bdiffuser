@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import type { ClientGameState, ClientMessage, ChatMessage, CharacterId, VisibleTile } from "@bomb-busters/shared";
-import { DOUBLE_DETECTOR_CHARACTERS, EQUIPMENT_DEFS, requiresSetupInfoTokenForMission } from "@bomb-busters/shared";
+import type {
+  ClientGameState,
+  ClientMessage,
+  ChatMessage,
+  CharacterId,
+  VisibleTile,
+} from "@bomb-busters/shared";
+import {
+  DOUBLE_DETECTOR_CHARACTERS,
+  EQUIPMENT_DEFS,
+  requiresSetupInfoTokenForMission,
+} from "@bomb-busters/shared";
 import { BoardArea } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
@@ -39,8 +49,11 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_DESIGNATE_CUTTER,
 ]);
 
-function getUnknownForcedAction(gameState: ClientGameState): UnknownForcedAction | null {
-  const raw = (gameState as { pendingForcedAction?: unknown }).pendingForcedAction;
+function getUnknownForcedAction(
+  gameState: ClientGameState,
+): UnknownForcedAction | null {
+  const raw = (gameState as { pendingForcedAction?: unknown })
+    .pendingForcedAction;
   if (!raw || typeof raw !== "object") return null;
 
   const candidate = raw as { kind?: unknown; captainId?: unknown };
@@ -67,7 +80,9 @@ function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
   return mission === 52 || (mission === 17 && isCaptain);
 }
 
-function getDefaultFalseSetupTokenValue(tile: VisibleTile | undefined): number | null {
+function getDefaultFalseSetupTokenValue(
+  tile: VisibleTile | undefined,
+): number | null {
   if (
     tile?.color === "blue" &&
     typeof tile.gameValue === "number" &&
@@ -109,9 +124,7 @@ export function GameBoard({
       equipmentTiming.get(equipment.id) === "anytime",
   );
   const showActionPanel =
-    gameState.phase === "playing" &&
-    !gameState.pendingForcedAction &&
-    !!me;
+    gameState.phase === "playing" && !gameState.pendingForcedAction && !!me;
 
   // Dual cut target selection state
   const [selectedTarget, setSelectedTarget] = useState<{
@@ -120,14 +133,18 @@ export function GameBoard({
   } | null>(null);
 
   // Dual cut guess wire selection (on my stand)
-  const [selectedGuessTile, setSelectedGuessTile] = useState<number | null>(null);
+  const [selectedGuessTile, setSelectedGuessTile] = useState<number | null>(
+    null,
+  );
 
   // Whether the "Dual Cut" action has been activated from the ActionPanel
   const [dualCutActive, setDualCutActive] = useState(false);
 
   // Info token setup tile selection state
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
-  const [selectedInfoTokenValue, setSelectedInfoTokenValue] = useState<number | null>(null);
+  const [selectedInfoTokenValue, setSelectedInfoTokenValue] = useState<
+    number | null
+  >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<"mission" | "equipment" | "log" | null>(null);
 
@@ -138,23 +155,28 @@ export function GameBoard({
   } | null>(null);
 
   // Unified equipment mode state
-  const [equipmentMode, setEquipmentMode] = useState<EquipmentMode | null>(null);
+  const [equipmentMode, setEquipmentMode] = useState<EquipmentMode | null>(
+    null,
+  );
   const cancelEquipmentMode = useCallback(() => setEquipmentMode(null), []);
 
   const isSetup = gameState.phase === "setup_info_tokens";
-  const requiresSetupToken = !isSetup || !me
-    ? true
-    : requiresSetupInfoTokenForMission(
-      gameState.mission,
-      gameState.players.length,
-      me.isCaptain,
-    );
+  const requiresSetupToken =
+    !isSetup || !me
+      ? true
+      : requiresSetupInfoTokenForMission(
+          gameState.mission,
+          gameState.players.length,
+          me.isCaptain,
+        );
   const useFalseSetupTokenMode =
     !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
-  const dynamicTurnActive = gameState.mission === 10 && gameState.phase === "playing";
+  const dynamicTurnActive =
+    gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName = (() => {
     const fa = gameState.pendingForcedAction;
-    if (fa?.kind !== FORCED_ACTION_CHOOSE_NEXT_PLAYER || !fa.lastPlayerId) return undefined;
+    if (fa?.kind !== FORCED_ACTION_CHOOSE_NEXT_PLAYER || !fa.lastPlayerId)
+      return undefined;
     return gameState.players.find((p) => p.id === fa.lastPlayerId)?.name;
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
@@ -169,27 +191,31 @@ export function GameBoard({
       : pendingForcedAction?.kind === "designateCutter"
         ? pendingForcedAction.designatorId
         : undefined);
-  const forcedActionCaptainName =
-    forcedActionCaptainId
-      ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
-      : undefined;
+  const forcedActionCaptainName = forcedActionCaptainId
+    ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
+    : undefined;
   const activeGlobalConstraints =
-    gameState.campaign?.constraints?.global?.filter((constraint) => constraint.active) ?? [];
-  const activeTurnPlayerConstraints =
-    currentPlayer
-      ? (gameState.campaign?.constraints?.perPlayer?.[currentPlayer.id] ?? []).filter(
-        (constraint) => constraint.active,
-      )
-      : [];
+    gameState.campaign?.constraints?.global?.filter(
+      (constraint) => constraint.active,
+    ) ?? [];
+  const activeTurnPlayerConstraints = currentPlayer
+    ? (
+        gameState.campaign?.constraints?.perPlayer?.[currentPlayer.id] ?? []
+      ).filter((constraint) => constraint.active)
+    : [];
   const showTurnConstraintReminder =
     gameState.phase === "playing" &&
-    (activeGlobalConstraints.length > 0 || activeTurnPlayerConstraints.length > 0);
+    (activeGlobalConstraints.length > 0 ||
+      activeTurnPlayerConstraints.length > 0);
   const turnConstraintPlayerLabel =
-    currentPlayer?.id === playerId ? "You" : (currentPlayer?.name ?? "Current player");
+    currentPlayer?.id === playerId
+      ? "You"
+      : (currentPlayer?.name ?? "Current player");
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (gameState.timerDeadline == null || gameState.phase === "finished") return;
+    if (gameState.timerDeadline == null || gameState.phase === "finished")
+      return;
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [gameState.timerDeadline, gameState.phase]);
@@ -255,7 +281,12 @@ export function GameBoard({
   };
 
   const handleOwnTileClickEquipment = (tileIndex: number) => {
-    const result = _handleOwnTileClickEquipment(equipmentMode, tileIndex, me, gameState);
+    const result = _handleOwnTileClickEquipment(
+      equipmentMode,
+      tileIndex,
+      me,
+      gameState,
+    );
     if (result.sendPayload) send(result.sendPayload);
     if (result.newMode !== equipmentMode) setEquipmentMode(result.newMode);
   };
@@ -274,14 +305,17 @@ export function GameBoard({
     const fromEquipment = _getOpponentSelectedTileIndex(equipmentMode, oppId);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
-    return selectedTarget?.playerId === oppId ? selectedTarget.tileIndex : undefined;
+    return selectedTarget?.playerId === oppId
+      ? selectedTarget.tileIndex
+      : undefined;
   };
 
   const getOpponentSelectedTileIndices = (oppId: string) =>
     _getOpponentSelectedTileIndices(equipmentMode, oppId);
 
   const getOwnSelectedTileIndex = (): number | undefined => {
-    if (isSetup) return requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined;
+    if (isSetup)
+      return requiresSetupToken ? (selectedInfoTile ?? undefined) : undefined;
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
@@ -296,19 +330,29 @@ export function GameBoard({
 
   return (
     <>
-      <div className="min-h-screen flex flex-col pb-14 md:pb-0" style={{ perspective: "1200px" }} data-testid="game-board" data-phase={gameState.phase}>
-        <Header
-          gameState={gameState}
-          playerId={playerId}
-          timerDisplay={timerDisplay}
-        />
-        <BoardArea
-          board={gameState.board}
-          missionId={gameState.mission}
-          playerCount={gameState.players.length}
-        />
+      <div
+        className="grid h-dvh w-dvw overflow-hidden"
+        style={{ gridTemplateRows: "auto 1fr" }}
+        data-testid="game-board"
+        data-phase={gameState.phase}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <Header
+            gameState={gameState}
+            playerId={playerId}
+            timerDisplay={timerDisplay}
+          />
+          <BoardArea
+            board={gameState.board}
+            missionId={gameState.mission}
+            playerCount={gameState.players.length}
+          />
+        </div>
 
-        <div className="flex-1 flex gap-2 pr-2 py-2 overflow-hidden">
+        <div
+          className="grid gap-2 pr-2 py-2 overflow-hidden min-w-0 min-h-0"
+          style={{ gridTemplateColumns: "auto 1fr auto" }}
+        >
           {/* Left dock: mission & equipment cards */}
           <div className="hidden md:block">
             <LeftDock
@@ -322,271 +366,358 @@ export function GameBoard({
           </div>
 
           {/* Game area */}
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
-            {/* Opponents area */}
-            <div className="flex gap-2 justify-center flex-shrink-0 flex-wrap">
-              {opponentsWithOrder.map(({ player: opp, turnOrder }) => (
-                <PlayerStand
-                  key={opp.id}
-                  player={opp}
-                  isOpponent={true}
-                  isCurrentTurn={opp.id === currentPlayer?.id}
-                  turnOrder={turnOrder}
-                  onCharacterClick={
-                    opp.character
-                      ? () => setViewingCharacter({ playerId: opp.id, characterId: opp.character! })
-                      : undefined
-                  }
-                  onTileClick={
-                    equipmentMode && MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) && gameState.phase === "playing"
-                      ? (tileIndex) => handleOpponentTileClick(opp.id, tileIndex)
-                      : dualCutActive && selectedGuessTile != null && !isSetup && isMyTurn && gameState.phase === "playing" && !gameState.pendingForcedAction && !equipmentMode
-                        ? (tileIndex) => {
-                            if (selectedTarget?.playerId === opp.id && selectedTarget.tileIndex === tileIndex) {
-                              setSelectedTarget(null);
-                            } else {
-                              setSelectedTarget({ playerId: opp.id, tileIndex });
-                            }
-                          }
-                        : undefined
-                  }
-                  selectedTileIndex={getOpponentSelectedTileIndex(opp.id)}
-                  selectedTileIndices={getOpponentSelectedTileIndices(opp.id)}
-                  tileSelectableFilter={
-                    equipmentMode && gameState.phase === "playing"
-                      ? getOpponentTileSelectableFilter(opp.id)
-                      : dualCutActive && selectedGuessTile != null && isMyTurn && gameState.phase === "playing"
-                        ? (tile: VisibleTile) => !tile.cut
-                        : undefined
-                  }
-                />
-              ))}
-            </div>
-
-            {/* My area */}
-            <div className="flex-1 flex flex-col gap-2 min-h-0">
-              {/* Setup phase: info token placement */}
-              {isSetup && isMyTurn && me && (
-                <InfoTokenSetup
-                  player={me}
-                  selectedTileIndex={selectedInfoTile}
-                  selectedTokenValue={selectedInfoTokenValue}
-                  requiresToken={requiresSetupToken}
-                  useFalseTokenMode={useFalseSetupTokenMode}
-                  send={send}
-                  onPlaced={() => {
-                    setSelectedInfoTile(null);
-                    setSelectedInfoTokenValue(null);
-                  }}
-                  onSelectedTokenValueChange={setSelectedInfoTokenValue}
-                />
-              )}
-
-              {isSetup && !isMyTurn && (
-                <div className="text-center py-2 text-gray-400">
-                  Waiting for <span className="text-white font-bold">{currentPlayer?.name}</span> to place their info token...
+          <div
+            className="grid gap-2 min-w-0 min-h-0"
+            style={{ gridTemplateRows: "1fr auto" }}
+          >
+            {/* Scrollable top area */}
+            <div className="overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
+              <div className="w-full min-w-0 flex flex-col gap-2 overflow-x-hidden">
+                {/* Opponents area */}
+                <div className="flex gap-2 justify-center overflox-x-hidden flex-wrap min-w-0 w-full">
+                  {opponentsWithOrder.map(({ player: opp, turnOrder }) => (
+                    <PlayerStand
+                      key={opp.id}
+                      player={opp}
+                      isOpponent={true}
+                      isCurrentTurn={opp.id === currentPlayer?.id}
+                      turnOrder={turnOrder}
+                      onCharacterClick={
+                        opp.character
+                          ? () =>
+                              setViewingCharacter({
+                                playerId: opp.id,
+                                characterId: opp.character!,
+                              })
+                          : undefined
+                      }
+                      onTileClick={
+                        equipmentMode &&
+                        MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) &&
+                        gameState.phase === "playing"
+                          ? (tileIndex) =>
+                              handleOpponentTileClick(opp.id, tileIndex)
+                          : dualCutActive &&
+                              selectedGuessTile != null &&
+                              !isSetup &&
+                              isMyTurn &&
+                              gameState.phase === "playing" &&
+                              !gameState.pendingForcedAction &&
+                              !equipmentMode
+                            ? (tileIndex) => {
+                                if (
+                                  selectedTarget?.playerId === opp.id &&
+                                  selectedTarget.tileIndex === tileIndex
+                                ) {
+                                  setSelectedTarget(null);
+                                } else {
+                                  setSelectedTarget({
+                                    playerId: opp.id,
+                                    tileIndex,
+                                  });
+                                }
+                              }
+                            : undefined
+                      }
+                      selectedTileIndex={getOpponentSelectedTileIndex(opp.id)}
+                      selectedTileIndices={getOpponentSelectedTileIndices(
+                        opp.id,
+                      )}
+                      tileSelectableFilter={
+                        equipmentMode && gameState.phase === "playing"
+                          ? getOpponentTileSelectableFilter(opp.id)
+                          : dualCutActive &&
+                              selectedGuessTile != null &&
+                              isMyTurn &&
+                              gameState.phase === "playing"
+                            ? (tile: VisibleTile) => !tile.cut
+                            : undefined
+                      }
+                    />
+                  ))}
                 </div>
-              )}
 
-              {dynamicTurnActive && (
-                <div className="rounded-lg border border-sky-600/50 bg-sky-900/25 px-3 py-2 text-xs text-sky-100">
-                  <div className="font-bold uppercase tracking-wide text-sky-200">
-                    Dynamic Turn Order
+                {/* Setup phase: info token placement */}
+                {isSetup && isMyTurn && me && (
+                  <InfoTokenSetup
+                    player={me}
+                    selectedTileIndex={selectedInfoTile}
+                    selectedTokenValue={selectedInfoTokenValue}
+                    requiresToken={requiresSetupToken}
+                    useFalseTokenMode={useFalseSetupTokenMode}
+                    send={send}
+                    onPlaced={() => {
+                      setSelectedInfoTile(null);
+                      setSelectedInfoTokenValue(null);
+                    }}
+                    onSelectedTokenValueChange={setSelectedInfoTokenValue}
+                  />
+                )}
+
+                {isSetup && !isMyTurn && (
+                  <div className="text-center py-2 text-gray-400">
+                    Waiting for{" "}
+                    <span className="text-white font-bold">
+                      {currentPlayer?.name}
+                    </span>{" "}
+                    to place their info token...
                   </div>
-                  {gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER ? (
-                    <div className="text-sky-100/90">
-                      {forcedActionCaptainName
-                        ? <>Captain <span className="font-semibold">{forcedActionCaptainName}</span> is choosing the next active player</>
-                        : <>Captain is choosing the next active player</>}
-                      {previousPlayerName ? (
-                        <> (previous: <span className="font-semibold">{previousPlayerName}</span>)</>
+                )}
+
+                {dynamicTurnActive && (
+                  <div className="rounded-lg border border-sky-600/50 bg-sky-900/25 px-3 py-2 text-xs text-sky-100">
+                    <div className="font-bold uppercase tracking-wide text-sky-200">
+                      Dynamic Turn Order
+                    </div>
+                    {gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_CHOOSE_NEXT_PLAYER ? (
+                      <div className="text-sky-100/90">
+                        {forcedActionCaptainName ? (
+                          <>
+                            Captain{" "}
+                            <span className="font-semibold">
+                              {forcedActionCaptainName}
+                            </span>{" "}
+                            is choosing the next active player
+                          </>
+                        ) : (
+                          <>Captain is choosing the next active player</>
+                        )}
+                        {previousPlayerName ? (
+                          <>
+                            {" "}
+                            (previous:{" "}
+                            <span className="font-semibold">
+                              {previousPlayerName}
+                            </span>
+                            )
+                          </>
+                        ) : null}
+                        .
+                      </div>
+                    ) : (
+                      <div className="text-sky-100/90">
+                        Turn order is captain-selected, not clockwise.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {showTurnConstraintReminder && (
+                  <div
+                    className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-100"
+                    data-testid="turn-constraint-reminder"
+                  >
+                    <div className="font-bold uppercase tracking-wide text-amber-200">
+                      Mission Constraints
+                    </div>
+                    {activeGlobalConstraints.length > 0 && (
+                      <div className="text-amber-100/90">
+                        Global:{" "}
+                        {activeGlobalConstraints
+                          .map((constraint) => constraint.name || constraint.id)
+                          .join(", ")}
+                      </div>
+                    )}
+                    {activeTurnPlayerConstraints.length > 0 && (
+                      <div className="text-amber-100/90">
+                        {turnConstraintPlayerLabel}:{" "}
+                        {activeTurnPlayerConstraints
+                          .map((constraint) => constraint.name || constraint.id)
+                          .join(", ")}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {gameState.phase !== "finished" && (
+                  <MissionRuleHints gameState={gameState} />
+                )}
+
+                {/* Playing phase: forced action (captain chooses next player) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
+                  gameState.pendingForcedAction.captainId === playerId &&
+                  me && (
+                    <ChooseNextPlayerPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {/* Playing phase: waiting for captain to choose (non-captain view) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
+                  gameState.pendingForcedAction.captainId !== playerId && (
+                    <div
+                      className="text-center py-2 text-gray-400"
+                      data-testid="waiting-captain"
+                    >
+                      Waiting for{" "}
+                      <span className="text-yellow-400 font-bold">
+                        {forcedActionCaptainName ?? "the Captain"}
+                      </span>{" "}
+                      to choose the next player...
+                    </div>
+                  )}
+
+                {/* Playing phase: forced action (designate cutter - mission 18) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DESIGNATE_CUTTER &&
+                  gameState.pendingForcedAction.designatorId === playerId &&
+                  me && (
+                    <DesignateCutterPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {/* Playing phase: waiting for designator (non-designator view - mission 18) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DESIGNATE_CUTTER &&
+                  gameState.pendingForcedAction.designatorId !== playerId && (
+                    <div
+                      className="text-center py-2 text-gray-400"
+                      data-testid="waiting-designator"
+                    >
+                      Waiting for{" "}
+                      <span className="text-yellow-400 font-bold">
+                        {forcedActionCaptainName ?? "the active player"}
+                      </span>{" "}
+                      to designate who cuts...
+                      {gameState.pendingForcedAction.value && (
+                        <span className="block text-xs text-gray-500 mt-1">
+                          Number card:{" "}
+                          <span className="text-white font-bold">
+                            {gameState.pendingForcedAction.value}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
+                {gameState.phase === "playing" &&
+                  unknownForcedAction &&
+                  (isUnknownForcedActionCaptain ? (
+                    <div
+                      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-center text-amber-200 space-y-2"
+                      data-testid="forced-action-fallback-captain"
+                    >
+                      <p>
+                        You must resolve a mission-required action before normal
+                        turns continue.
+                      </p>
+                      <p className="text-xs text-amber-300/90">
+                        This client version does not support this forced action
+                        yet.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs font-bold transition-colors"
+                      >
+                        Reload Client
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="text-center py-2 text-gray-400"
+                      data-testid="waiting-forced-action"
+                    >
+                      Mission-required action is pending
+                      {forcedActionCaptainName ? (
+                        <>
+                          {" "}
+                          for{" "}
+                          <span className="text-yellow-400 font-bold">
+                            {forcedActionCaptainName}
+                          </span>
+                        </>
                       ) : null}
                       .
                     </div>
-                  ) : (
-                    <div className="text-sky-100/90">
-                      Turn order is captain-selected, not clockwise.
-                    </div>
-                  )}
-                </div>
-              )}
+                  ))}
+              </div>
+            </div>
+            {/* Player stand + actions — always at the bottom */}
+            {me && (
+              <div className="flex flex-col gap-2 min-w-0">
+                {/* Equipment mode panel (unified for all equipment types) */}
+                {equipmentMode && (
+                  <EquipmentModePanel
+                    mode={equipmentMode}
+                    gameState={gameState}
+                    playerId={playerId}
+                    send={send}
+                    onCancel={cancelEquipmentMode}
+                    onUpdateMode={setEquipmentMode}
+                  />
+                )}
 
-              {showTurnConstraintReminder && (
-                <div
-                  className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-100"
-                  data-testid="turn-constraint-reminder"
-                >
-                  <div className="font-bold uppercase tracking-wide text-amber-200">
-                    Mission Constraints
-                  </div>
-                  {activeGlobalConstraints.length > 0 && (
-                    <div className="text-amber-100/90">
-                      Global: {activeGlobalConstraints.map((constraint) => constraint.name || constraint.id).join(", ")}
-                    </div>
-                  )}
-                  {activeTurnPlayerConstraints.length > 0 && (
-                    <div className="text-amber-100/90">
-                      {turnConstraintPlayerLabel}: {activeTurnPlayerConstraints.map((constraint) => constraint.name || constraint.id).join(", ")}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {gameState.phase !== "finished" && (
-                <MissionRuleHints gameState={gameState} />
-              )}
-
-              {/* Playing phase: forced action (captain chooses next player) */}
-              {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
-                gameState.pendingForcedAction.captainId === playerId &&
-                me && (
-                <ChooseNextPlayerPanel
-                  gameState={gameState}
-                  send={send}
-                  playerId={playerId}
-                />
-              )}
-
-              {/* Playing phase: waiting for captain to choose (non-captain view) */}
-              {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
-                gameState.pendingForcedAction.captainId !== playerId && (
-                <div className="text-center py-2 text-gray-400" data-testid="waiting-captain">
-                  Waiting for{" "}
-                  <span className="text-yellow-400 font-bold">
-                    {forcedActionCaptainName ?? "the Captain"}
-                  </span>{" "}
-                  to choose the next player...
-                </div>
-              )}
-
-              {/* Playing phase: forced action (designate cutter - mission 18) */}
-              {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === FORCED_ACTION_DESIGNATE_CUTTER &&
-                gameState.pendingForcedAction.designatorId === playerId &&
-                me && (
-                <DesignateCutterPanel
-                  gameState={gameState}
-                  send={send}
-                  playerId={playerId}
-                />
-              )}
-
-              {/* Playing phase: waiting for designator (non-designator view - mission 18) */}
-              {gameState.phase === "playing" &&
-                gameState.pendingForcedAction?.kind === FORCED_ACTION_DESIGNATE_CUTTER &&
-                gameState.pendingForcedAction.designatorId !== playerId && (
-                <div className="text-center py-2 text-gray-400" data-testid="waiting-designator">
-                  Waiting for{" "}
-                  <span className="text-yellow-400 font-bold">
-                    {forcedActionCaptainName ?? "the active player"}
-                  </span>{" "}
-                  to designate who cuts...
-                  {gameState.pendingForcedAction.value && (
-                    <span className="block text-xs text-gray-500 mt-1">
-                      Number card: <span className="text-white font-bold">{gameState.pendingForcedAction.value}</span>
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
-              {gameState.phase === "playing" &&
-                unknownForcedAction && (
-                isUnknownForcedActionCaptain ? (
-                  <div
-                    className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-center text-amber-200 space-y-2"
-                    data-testid="forced-action-fallback-captain"
-                  >
-                    <p>
-                      You must resolve a mission-required action before normal turns continue.
-                    </p>
-                    <p className="text-xs text-amber-300/90">
-                      This client version does not support this forced action yet.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-black text-xs font-bold transition-colors"
-                    >
-                      Reload Client
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center py-2 text-gray-400" data-testid="waiting-forced-action">
-                    Mission-required action is pending
-                    {forcedActionCaptainName ? (
-                      <> for <span className="text-yellow-400 font-bold">{forcedActionCaptainName}</span></>
-                    ) : null}
-                    .
-                  </div>
-                )
-              )}
-
-              {/* Player stand + actions — always at the bottom */}
-              {me && (
-                <div className="mt-auto flex flex-col gap-2">
-              {/* Equipment mode panel (unified for all equipment types) */}
-              {equipmentMode && (
-                <EquipmentModePanel
-                  mode={equipmentMode}
-                  gameState={gameState}
-                  playerId={playerId}
-                  send={send}
-                  onCancel={cancelEquipmentMode}
-                  onUpdateMode={setEquipmentMode}
-                />
-              )}
-
-              {/* Playing phase: actions (including anytime equipment off-turn) */}
-              {showActionPanel && !equipmentMode && (
-                <ActionPanel
-                  gameState={gameState}
-                  send={send}
-                  playerId={playerId}
-                  isMyTurn={isMyTurn}
-                  selectedTarget={selectedTarget}
-                  selectedGuessTile={selectedGuessTile}
-                  dualCutActive={dualCutActive}
-                  onToggleDualCut={() => {
-                    if (dualCutActive) {
+                {/* Playing phase: actions (including anytime equipment off-turn) */}
+                {showActionPanel && !equipmentMode && (
+                  <ActionPanel
+                    gameState={gameState}
+                    send={send}
+                    playerId={playerId}
+                    isMyTurn={isMyTurn}
+                    selectedTarget={selectedTarget}
+                    selectedGuessTile={selectedGuessTile}
+                    dualCutActive={dualCutActive}
+                    onToggleDualCut={() => {
+                      if (dualCutActive) {
+                        setDualCutActive(false);
+                        setSelectedTarget(null);
+                        setSelectedGuessTile(null);
+                      } else {
+                        setDualCutActive(true);
+                      }
+                    }}
+                    onClearTarget={() => {
                       setDualCutActive(false);
                       setSelectedTarget(null);
                       setSelectedGuessTile(null);
-                    } else {
-                      setDualCutActive(true);
+                    }}
+                    onCutConfirmed={() => {
+                      setDualCutActive(false);
+                      setSelectedTarget(null);
+                      setSelectedGuessTile(null);
+                    }}
+                    onEnterEquipmentMode={(mode) => {
+                      setEquipmentMode(mode);
+                      setDualCutActive(false);
+                      setSelectedTarget(null);
+                      setSelectedGuessTile(null);
+                    }}
+                    currentPlayerName={currentPlayer?.name}
+                    isCurrentPlayerBot={currentPlayer?.isBot ?? false}
+                    character={me.character}
+                    characterUsed={me.characterUsed}
+                    onUseCharacterAbility={
+                      me.character &&
+                      DOUBLE_DETECTOR_CHARACTERS.has(me.character)
+                        ? () => {
+                            setEquipmentMode({
+                              kind: "double_detector",
+                              targetPlayerId: null,
+                              selectedTiles: [],
+                              guessTileIndex: null,
+                            });
+                            setDualCutActive(false);
+                            setSelectedTarget(null);
+                            setSelectedGuessTile(null);
+                          }
+                        : undefined
                     }
-                  }}
-                  onClearTarget={() => { setDualCutActive(false); setSelectedTarget(null); setSelectedGuessTile(null); }}
-                  onCutConfirmed={() => { setDualCutActive(false); setSelectedTarget(null); setSelectedGuessTile(null); }}
-                  onEnterEquipmentMode={(mode) => {
-                    setEquipmentMode(mode);
-                    setDualCutActive(false);
-                    setSelectedTarget(null);
-                    setSelectedGuessTile(null);
-                  }}
-                  currentPlayerName={currentPlayer?.name}
-                  isCurrentPlayerBot={currentPlayer?.isBot ?? false}
-                  character={me.character}
-                  characterUsed={me.characterUsed}
-                  onUseCharacterAbility={
-                    me.character && DOUBLE_DETECTOR_CHARACTERS.has(me.character)
-                      ? () => {
-                          setEquipmentMode({
-                            kind: "double_detector",
-                            targetPlayerId: null,
-                            selectedTiles: [],
-                            guessTileIndex: null,
-                          });
-                          setDualCutActive(false);
-                          setSelectedTarget(null);
-                          setSelectedGuessTile(null);
-                        }
-                      : undefined
-                  }
-                />
-              )}
+                  />
+                )}
 
                 <PlayerStand
                   player={me}
@@ -595,12 +726,16 @@ export function GameBoard({
                   turnOrder={myOrder}
                   onCharacterClick={
                     me.character
-                      ? () => setViewingCharacter({ playerId: me.id, characterId: me.character! })
+                      ? () =>
+                          setViewingCharacter({
+                            playerId: me.id,
+                            characterId: me.character!,
+                          })
                       : undefined
                   }
                   onTileClick={
                     isSetup && isMyTurn
-                      ? (requiresSetupToken
+                      ? requiresSetupToken
                         ? (tileIndex) => {
                             if (selectedInfoTile === tileIndex) {
                               setSelectedInfoTile(null);
@@ -611,19 +746,25 @@ export function GameBoard({
                             setSelectedInfoTile(tileIndex);
                             if (useFalseSetupTokenMode) {
                               setSelectedInfoTokenValue(
-                                getDefaultFalseSetupTokenValue(me?.hand[tileIndex]),
+                                getDefaultFalseSetupTokenValue(
+                                  me?.hand[tileIndex],
+                                ),
                               );
                             } else {
                               setSelectedInfoTokenValue(null);
                             }
                           }
-                        : undefined)
+                        : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
-                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
+                        : dualCutActive &&
+                            isMyTurn &&
+                            !selectedTarget &&
+                            gameState.phase === "playing"
                           ? (tileIndex) => {
                               const tile = me.hand[tileIndex];
-                              if (!tile || tile.cut || tile.color === "red") return;
+                              if (!tile || tile.cut || tile.color === "red")
+                                return;
                               if (selectedGuessTile === tileIndex) {
                                 setSelectedGuessTile(null);
                               } else {
@@ -636,12 +777,14 @@ export function GameBoard({
                   selectedTileIndices={getOwnSelectedTileIndices()}
                   tileSelectableFilter={
                     isSetup && isMyTurn
-                      ? (requiresSetupToken
+                      ? requiresSetupToken
                         ? (tile: VisibleTile) => {
                             if (tile.cut) return false;
                             if (useFalseSetupTokenMode) {
                               if (gameState.mission === 52) {
-                                return tile.color === "blue" || tile.color === "red";
+                                return (
+                                  tile.color === "blue" || tile.color === "red"
+                                );
                               }
                               // Mission 17: captain false tokens can target any non-red wire.
                               return tile.color !== "red";
@@ -652,26 +795,37 @@ export function GameBoard({
                               tile.gameValue !== "YELLOW"
                             );
                           }
-                        : undefined)
+                        : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
-                        : dualCutActive && isMyTurn && !selectedTarget && gameState.phase === "playing"
-                          ? (tile: VisibleTile) => !tile.cut && tile.color !== "red"
+                        : dualCutActive &&
+                            isMyTurn &&
+                            !selectedTarget &&
+                            gameState.phase === "playing"
+                          ? (tile: VisibleTile) =>
+                              !tile.cut && tile.color !== "red"
                           : undefined
                   }
                 />
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar: action log + chat */}
-          <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
+          <div className="flex w-72 flex-shrink-0 flex-col gap-2 overflow-hidden">
             <div className="flex-1 min-h-0 flex flex-col">
-              <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
+              <ActionLog
+                log={gameState.log}
+                players={gameState.players}
+                result={gameState.result}
+              />
             </div>
             <div className="flex-1 min-h-0 flex flex-col">
-              <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
+              <ChatPanel
+                messages={chatMessages}
+                send={send}
+                playerId={playerId}
+              />
             </div>
           </div>
         </div>
@@ -777,7 +931,10 @@ function Header({
   const me = gameState.players.find((p) => p.id === playerId);
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0" data-testid="game-header">
+    <div
+      className="flex items-center justify-between px-4 py-2 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0"
+      data-testid="game-header"
+    >
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-black">
           BOMB<span className="text-red-500">BUSTERS</span>
@@ -786,11 +943,17 @@ function Header({
         <span className="text-sm text-gray-400" data-testid="mission-label">
           Mission #{gameState.mission}
         </span>
-        <code className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono tracking-wider" data-testid="room-code">
+        <code
+          className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono tracking-wider"
+          data-testid="room-code"
+        >
           {gameState.roomId}
         </code>
         {gameState.isSpectator && (
-          <span className="text-xs font-bold bg-purple-600/80 text-white px-2 py-0.5 rounded" data-testid="spectator-badge">
+          <span
+            className="text-xs font-bold bg-purple-600/80 text-white px-2 py-0.5 rounded"
+            data-testid="spectator-badge"
+          >
             SPECTATOR
           </span>
         )}
@@ -810,7 +973,8 @@ function Header({
           </div>
         )}
         <div data-testid="turn-number">
-          Turn <span className="font-bold text-white">{gameState.turnNumber}</span>
+          Turn{" "}
+          <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
         <div className="flex items-center gap-1.5" data-testid="player-list">
           {gameState.players.map((p) => {
@@ -820,12 +984,16 @@ function Header({
               <div
                 key={p.id}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  isCurrentTurn ? "ring-2 ring-yellow-500 bg-gray-700 text-white" : "bg-gray-800 text-gray-400"
+                  isCurrentTurn
+                    ? "ring-2 ring-yellow-500 bg-gray-700 text-white"
+                    : "bg-gray-800 text-gray-400"
                 }`}
               >
                 {p.name}
                 {isMe && (
-                  <span className="bg-blue-600 text-white text-[10px] rounded px-1 font-bold leading-tight">YOU</span>
+                  <span className="bg-blue-600 text-white text-[10px] rounded px-1 font-bold leading-tight">
+                    YOU
+                  </span>
                 )}
               </div>
             );

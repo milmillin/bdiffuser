@@ -27,7 +27,7 @@ export function PlayerStand({
   return (
     <div
       data-testid={`player-stand-${player.id}`}
-      className={`rounded-xl p-3 ${
+      className={`rounded-xl p-3 min-w-0 ${
         isCurrentTurn
           ? "bg-yellow-900/20 border-2 border-yellow-600"
           : "bg-[var(--color-bomb-surface)]"
