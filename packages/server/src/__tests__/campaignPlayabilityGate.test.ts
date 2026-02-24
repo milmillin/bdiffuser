@@ -8,7 +8,12 @@ import type {
 } from "@bomb-busters/shared";
 import { MISSION_SCHEMAS } from "@bomb-busters/shared";
 import { makePlayer, withSeededRandom } from "@bomb-busters/shared/testing";
-import { executeDualCut, executeRevealReds, executeSoloCut } from "../gameLogic";
+import {
+  executeDualCut,
+  executeRevealReds,
+  executeSimultaneousRedCut,
+  executeSoloCut,
+} from "../gameLogic";
 import { applyMissionInfoTokenVariant } from "../infoTokenRules";
 import { dispatchHooks } from "../missionHooks";
 import { setupGame } from "../setup";
@@ -46,6 +51,11 @@ type ChosenAction =
   | {
       kind: "revealReds";
       actorId: string;
+    }
+  | {
+      kind: "simultaneousRedCut";
+      actorId: string;
+      targets: Array<{ playerId: string; tileIndex: number }>;
     };
 
 function createPlayers(count: PlayerCount): Player[] {
@@ -116,6 +126,22 @@ function summarizeUncutByPlayer(state: Readonly<GameState>): string {
     .join(" ");
 }
 
+function buildSimultaneousRedCutTargets(
+  state: Readonly<GameState>,
+): Array<{ playerId: string; tileIndex: number }> | null {
+  const targets: Array<{ playerId: string; tileIndex: number }> = [];
+
+  for (const player of state.players) {
+    for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex++) {
+      const tile = player.hand[tileIndex];
+      if (!tile || tile.cut || tile.color !== "red") continue;
+      targets.push({ playerId: player.id, tileIndex });
+    }
+  }
+
+  return targets.length >= 3 ? targets.slice(0, 3) : null;
+}
+
 function pickAction(state: GameState, actor: Player): ChosenAction | null {
   const actorValueToTileIndex = new Map<number | "YELLOW", number>();
   for (let i = 0; i < actor.hand.length; i++) {
@@ -182,6 +208,22 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
   });
   if (!revealError) {
     return { kind: "revealReds", actorId: actor.id };
+  }
+
+  const simultaneousRedTargets = buildSimultaneousRedCutTargets(state);
+  if (simultaneousRedTargets) {
+    const simultaneousRedError = validateActionWithHooks(state, {
+      type: "simultaneousRedCut",
+      actorId: actor.id,
+      targets: simultaneousRedTargets,
+    });
+    if (!simultaneousRedError) {
+      return {
+        kind: "simultaneousRedCut",
+        actorId: actor.id,
+        targets: simultaneousRedTargets,
+      };
+    }
   }
 
   return null;
@@ -386,6 +428,8 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
         );
       } else if (action.kind === "soloCut") {
         executeSoloCut(state, action.actorId, action.value);
+      } else if (action.kind === "simultaneousRedCut") {
+        executeSimultaneousRedCut(state, action.actorId, action.targets);
       } else {
         executeRevealReds(state, action.actorId);
       }
