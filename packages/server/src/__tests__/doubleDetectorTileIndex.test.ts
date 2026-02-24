@@ -6,6 +6,7 @@ import {
   makeRedTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCutDoubleDetector, resolveDetectorTileChoice } from "../gameLogic";
+import { dispatchHooks } from "../missionHooks";
 
 describe("executeDualCutDoubleDetector actorTileIndex", () => {
   it("consumes Double Detector outside mission 58", () => {
@@ -370,6 +371,49 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
       players: [actor, target],
       currentPlayerIndex: 0,
     });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: target confirms
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBeUndefined();
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(target.infoTokens).toHaveLength(0);
+    expect(state.phase).not.toBe("finished");
+  });
+
+  it("mission 50: no-markers mode does not place info token when neither designated wire matches", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 50,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    dispatchHooks(50, { point: "setup", state });
     const detBefore = state.board.detonatorPosition;
 
     const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);

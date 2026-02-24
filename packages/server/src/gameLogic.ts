@@ -139,6 +139,13 @@ function checkDetonatorLoss(state: GameState): boolean {
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 
+function isFailureInfoTokenSuppressed(state: Readonly<GameState>): boolean {
+  const campaignState = state.campaign as
+    | (Record<string, unknown> & { noMarkersMemoryMode?: unknown })
+    | undefined;
+  return state.mission === 58 || campaignState?.noMarkersMemoryMode === true;
+}
+
 /** Update marker confirmed status based on cut tiles */
 function updateMarkerConfirmations(state: GameState): void {
   for (const marker of state.board.markers) {
@@ -411,8 +418,7 @@ export function executeDualCut(
       state.board.detonatorPosition++;
     }
 
-    // Mission 58 disables all info-token placement.
-    const suppressInfoTokens = state.mission === 58;
+    const suppressInfoTokens = isFailureInfoTokenSuppressed(state);
     if (!suppressInfoTokens) {
       const usesAnnouncedFalseToken =
         (state.mission === 17 && target.isCaptain) || state.mission === 52;
@@ -1074,7 +1080,7 @@ function resolveDoubleDetectorNoMatch(
     infoTokenTile = tile1;
   }
 
-  const suppressInfoTokens = state.mission === 58;
+  const suppressInfoTokens = isFailureInfoTokenSuppressed(state);
   if (!suppressInfoTokens) {
     const usesAnnouncedFalseToken =
       (state.mission === 17 && target.isCaptain) || state.mission === 52;
