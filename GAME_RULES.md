@@ -1658,6 +1658,10 @@ Baseline assumption used in this section:
 
 - You cannot cut the far-right wire (highest number) on teammates' tile stands.
 
+### Constraint J
+
+- You cannot cut the far-left wire (lowest number) on teammates' tile stands.
+
 ## Challenge Cards
 
 ### Challenge 1
