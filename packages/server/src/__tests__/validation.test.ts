@@ -330,6 +330,33 @@ describe("mission 11 reveal validation", () => {
 
 });
 
+describe("mission 13 reveal validation", () => {
+  it("rejects revealReds when player has only red wires remaining", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeRedTile({ id: "r1" })],
+    });
+    const teammateA = makePlayer({
+      id: "teammate-a",
+      hand: [makeRedTile({ id: "r2" })],
+    });
+    const teammateB = makePlayer({
+      id: "teammate-b",
+      hand: [makeRedTile({ id: "r3" })],
+    });
+    const state = makeGameState({
+      mission: 13,
+      players: [actor, teammateA, teammateB],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateRevealRedsLegality(state, "actor");
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous red cut");
+  });
+});
+
 describe("mission 9 sequence-priority validation", () => {
   it("rejects blocked sequence value in mission 9", () => {
     const actor = makePlayer({

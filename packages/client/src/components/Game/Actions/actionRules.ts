@@ -158,5 +158,11 @@ export function canRevealReds(
   if (!me) return false;
   const uncutTiles = me.hand.filter((t) => !t.cut);
   if (uncutTiles.length === 0) return false;
-  return uncutTiles.every((t) => t.color === "red");
+  const allRed = uncutTiles.every((t) => t.color === "red");
+  if (!allRed) return false;
+
+  // Mission 13 requires the dedicated simultaneous-red special action.
+  if (state.mission === 13) return false;
+
+  return true;
 }

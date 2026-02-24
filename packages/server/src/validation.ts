@@ -529,6 +529,16 @@ export function validateRevealRedsLegality(
     return null;
   }
 
+  if (state.mission === 13) {
+    const allRed = uncutTiles.every((t) => t.color === "red");
+    if (allRed) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Mission 13 requires the simultaneous red cut action instead of Reveal Reds",
+      );
+    }
+  }
+
   const allRed = uncutTiles.every((t) => t.color === "red");
   if (!allRed) {
     return legalityError(

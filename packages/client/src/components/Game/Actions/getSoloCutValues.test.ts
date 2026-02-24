@@ -3,10 +3,11 @@ import type { ClientGameState } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
+  makeRedTile,
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { getSoloCutValues } from "./actionRules.js";
+import { canRevealReds, getSoloCutValues } from "./actionRules.js";
 
 // Mission 2 with 2 players has yellow: exact(2) in its schema.
 
@@ -107,5 +108,35 @@ describe("getSoloCutValues yellow logic", () => {
 
     const values = getSoloCutValues(state, "me");
     expect(values).not.toContain("YELLOW");
+  });
+});
+
+describe("canRevealReds mission rules", () => {
+  it("returns false in mission 13 even when all remaining wires are red", () => {
+    const state = makeGameState({
+      mission: 13,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(canRevealReds(state, "me")).toBe(false);
+  });
+
+  it("returns true outside mission 13 when all remaining wires are red", () => {
+    const state = makeGameState({
+      mission: 3,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(canRevealReds(state, "me")).toBe(true);
   });
 });
