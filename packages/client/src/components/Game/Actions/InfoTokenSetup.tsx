@@ -4,7 +4,6 @@ import {
   PANEL_CLASS,
   PANEL_SUBTEXT_CLASS,
   PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
 } from "./panelStyles.js";
 
 function getFalseTokenValueOptions(
@@ -57,8 +56,8 @@ export function InfoTokenSetup({
 
   if (!requiresToken) {
     return (
-      <div className={PANEL_CLASS}>
-        <div className={PANEL_TITLE_CLASS}>
+      <div className={`${PANEL_CLASS} border-l-2 border-l-yellow-500/40`}>
+        <div className="font-bold uppercase tracking-wide text-yellow-200">
           Info Token Setup
         </div>
         <div className={PANEL_SUBTEXT_CLASS}>
@@ -89,8 +88,8 @@ export function InfoTokenSetup({
   };
 
   return (
-    <div className={PANEL_CLASS}>
-      <div className={PANEL_TITLE_CLASS}>
+    <div className={`${PANEL_CLASS} border-l-2 border-l-yellow-500/40`}>
+      <div className="font-bold uppercase tracking-wide text-yellow-200">
         Place Info Token{totalTokens > 1 ? ` (${player.infoTokens.length + 1}/${totalTokens})` : ""}
       </div>
       <div className={PANEL_TEXT_CLASS}>
