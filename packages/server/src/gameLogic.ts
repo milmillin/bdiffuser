@@ -18,6 +18,7 @@ import {
   dispatchHooks,
   emitMissionFailureTelemetry,
   getBlueAsRedValue,
+  hasActiveConstraint,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
@@ -141,7 +142,11 @@ function checkDetonatorLoss(state: GameState): boolean {
 
 type FailureInfoTokenMode = "wire" | "stand" | "none";
 
-function getFailureInfoTokenMode(state: Readonly<GameState>): FailureInfoTokenMode {
+function getFailureInfoTokenMode(
+  state: Readonly<GameState>,
+  actorId?: string,
+  targetPlayerId?: string,
+): FailureInfoTokenMode {
   const campaignState = state.campaign as
     | (Record<string, unknown> & { noMarkersMemoryMode?: unknown })
     | undefined;
@@ -152,6 +157,15 @@ function getFailureInfoTokenMode(state: Readonly<GameState>): FailureInfoTokenMo
 
   if (campaignState?.noMarkersMemoryMode === true) {
     return "stand";
+  }
+
+  if (
+    actorId != null &&
+    targetPlayerId != null &&
+    (hasActiveConstraint(state, actorId, "H")
+      || hasActiveConstraint(state, targetPlayerId, "H"))
+  ) {
+    return "none";
   }
 
   return "wire";
@@ -434,7 +448,7 @@ export function executeDualCut(
       state.board.detonatorPosition++;
     }
 
-    const failureInfoTokenMode = getFailureInfoTokenMode(state);
+    const failureInfoTokenMode = getFailureInfoTokenMode(state, actorId, targetPlayerId);
     const suppressInfoTokens = failureInfoTokenMode === "none";
     if (!suppressInfoTokens) {
       const usesAnnouncedFalseToken =
@@ -1182,7 +1196,7 @@ function resolveDoubleDetectorNoMatch(
     infoTokenTile = tile1;
   }
 
-  const failureInfoTokenMode = getFailureInfoTokenMode(state);
+  const failureInfoTokenMode = getFailureInfoTokenMode(state, actorId, targetPlayerId);
   const suppressInfoTokens = failureInfoTokenMode === "none";
   if (!suppressInfoTokens) {
     const usesAnnouncedFalseToken =

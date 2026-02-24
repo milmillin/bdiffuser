@@ -8,6 +8,11 @@ import {
   makeTile,
 } from "@bomb-busters/shared/testing";
 import { dispatchHooks } from "../missionHooks";
+import {
+  executeDualCut,
+  executeDualCutDoubleDetector,
+  resolveDetectorTileChoice,
+} from "../gameLogic";
 
 const GLOBAL_CONSTRAINT_MISSION_ID = 32;
 const PER_PLAYER_CONSTRAINT_MISSION_ID = 31;
@@ -206,6 +211,58 @@ describe("constraint enforcement validation", () => {
     expect(result.validationError).toBe(
       "Constraint H: You cannot cut a wire indicated by an Info token",
     );
+  });
+
+  it("Constraint H suppresses info token placement when the actor's dual cut fails", () => {
+    const state = stateWithConstraint("H", {
+      scope: "perPlayer",
+      actorHandValues: [5, 6],
+      targetHandValues: [3, 8],
+    });
+
+    const action = executeDualCut(state, "player-1", "player-2", 0, 9);
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(state.players[1].infoTokens).toHaveLength(0);
+  });
+
+  it("Constraint H suppresses info token placement when a double-detector cut fails in the constrained target hand", () => {
+    const state = stateWithConstraint("A", {
+      scope: "perPlayer",
+      actorHandValues: [5, 6],
+      targetHandValues: [3, 8],
+    });
+    const targetConstraintH = makeConstraintCard({
+      id: "H",
+      name: "Constraint H",
+      active: true,
+    });
+    state.campaign!.constraints = {
+      global: [],
+      perPlayer: {
+        "player-2": [targetConstraintH],
+      },
+    };
+
+    const pending = executeDualCutDoubleDetector(
+      state,
+      "player-1",
+      "player-2",
+      0,
+      1,
+      11,
+    );
+    expect(pending.type).toBe("dualCutDoubleDetectorResult");
+    if (pending.type !== "dualCutDoubleDetectorResult") return;
+    expect(pending.outcome).toBe("pending");
+
+    const resolved = resolveDetectorTileChoice(state);
+    expect(resolved.type).toBe("dualCutDoubleDetectorResult");
+    if (resolved.type !== "dualCutDoubleDetectorResult") return;
+    expect(resolved.outcome).toBe("no_match");
+    expect(state.players[1].infoTokens).toHaveLength(0);
+    expect("infoTokenPlacedIndex" in resolved).toBe(false);
   });
 
   it("Constraint I rejects cutting the far-right uncut target tile", () => {
