@@ -49,13 +49,13 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
         data-testid="detector-tile-choice-panel"
       >
-        <div className="text-sm font-bold text-yellow-400">
+        <div className="font-bold text-blue-300 uppercase tracking-wide">
           Confirm Detector Result
         </div>
-        <div className="text-sm text-gray-300">
+        <div className="text-gray-300">
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
@@ -65,7 +65,7 @@ export function DetectorTileChoicePanel({
               : ""}
           </p>
         </div>
-        {selectableIndices.length > 1 && (
+        {selectableIndices.length > 1 ? (
           <div className="flex items-center gap-2 flex-wrap">
             {selectableIndices.map((tileIdx) => {
               const tile = me.hand[tileIdx];
@@ -76,7 +76,7 @@ export function DetectorTileChoicePanel({
                   key={tileIdx}
                   onClick={() => setSelectedIndex(tileIdx)}
                   data-testid={`detector-choice-tile-${tileIdx}`}
-                  className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+                  className={`px-4 py-1.5 rounded font-bold transition-colors ${
                     effectiveSelection === tileIdx
                       ? "bg-blue-500 ring-2 ring-blue-300"
                       : "bg-blue-600 hover:bg-blue-700"
@@ -86,56 +86,125 @@ export function DetectorTileChoicePanel({
                 </button>
               );
             })}
+            <button
+              type="button"
+              disabled={effectiveSelection == null}
+              onClick={() => {
+                send({
+                  type: "detectorTileChoice",
+                  infoTokenTileIndex: effectiveSelection ?? undefined,
+                });
+              }}
+              data-testid="detector-tile-choice-confirm"
+              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                send({
+                  type: "detectorTileChoice",
+                  infoTokenTileIndex: effectiveSelection ?? undefined,
+                });
+              }}
+              data-testid="detector-tile-choice-confirm"
+              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors"
+            >
+              Confirm
+            </button>
           </div>
         )}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              send({
-                type: "detectorTileChoice",
-                infoTokenTileIndex: effectiveSelection ?? undefined,
-              });
-            }}
-            data-testid="detector-tile-choice-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-colors"
-          >
-            Confirm
-          </button>
-        </div>
       </div>
     );
   }
 
-  // ── 0 matches + triple/super detector: just confirm ──
+  // ── 0 matches + triple/super detector: choose fallback wire ──
   if (matchCount === 0) {
+    const tileIndices = forced.originalTargetTileIndices ?? [];
+    // Filter to non-red, uncut tiles
+    const selectableIndices = tileIndices.filter((idx) => {
+      const tile = me.hand[idx];
+      return tile && tile.color !== "red" && !tile.cut;
+    });
+
+    const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
+    const effectiveSelection = selectedIndex ?? autoSelected;
+
     return (
       <div
-        className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
         data-testid="detector-tile-choice-panel"
       >
-        <div className="text-sm font-bold text-yellow-400">
+        <div className="font-bold text-blue-300 uppercase tracking-wide">
           Confirm Detector Result
         </div>
-        <div className="text-sm text-gray-300">
+        <div className="text-gray-300">
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
             <span className="font-bold text-white">{forced.guessValue}</span>.
+            {selectableIndices.length > 0
+              ? " Choose which wire receives the fallback cut."
+              : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              send({ type: "detectorTileChoice" });
-            }}
-            data-testid="detector-tile-choice-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-colors"
-          >
-            Confirm
-          </button>
-        </div>
+        {selectableIndices.length > 1 ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectableIndices.map((tileIdx) => {
+              const tile = me.hand[tileIdx];
+              const label = wireLabel(tileIdx);
+              const valueDisplay = tile?.gameValue ?? "?";
+              return (
+                <button
+                  key={tileIdx}
+                  onClick={() => setSelectedIndex(tileIdx)}
+                  data-testid={`detector-choice-tile-${tileIdx}`}
+                  className={`px-4 py-1.5 rounded font-bold transition-colors ${
+                    effectiveSelection === tileIdx
+                      ? "bg-blue-500 ring-2 ring-blue-300"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  Wire {label} ({String(valueDisplay)})
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              disabled={effectiveSelection == null}
+              onClick={() => {
+                send({
+                  type: "detectorTileChoice",
+                  tileIndex: effectiveSelection ?? undefined,
+                });
+              }}
+              data-testid="detector-tile-choice-confirm"
+              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                send({
+                  type: "detectorTileChoice",
+                  tileIndex: effectiveSelection ?? undefined,
+                });
+              }}
+              data-testid="detector-tile-choice-confirm"
+              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors"
+            >
+              Confirm
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -149,13 +218,13 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+        className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
         data-testid="detector-tile-choice-panel"
       >
-        <div className="text-sm font-bold text-yellow-400">
+        <div className="font-bold text-blue-300 uppercase tracking-wide">
           Confirm Wire Cut
         </div>
-        <div className="text-sm text-gray-300">
+        <div className="text-gray-300">
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
@@ -164,7 +233,7 @@ export function DetectorTileChoicePanel({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div
-            className="px-4 py-1.5 rounded font-bold text-sm bg-blue-500 ring-2 ring-blue-300"
+            className="px-4 py-1.5 rounded font-bold bg-blue-500 ring-2 ring-blue-300"
             data-testid={`detector-choice-tile-${tileIdx}`}
           >
             Wire {label} ({String(valueDisplay)})
@@ -177,7 +246,7 @@ export function DetectorTileChoicePanel({
               send({ type: "detectorTileChoice", tileIndex: tileIdx });
             }}
             data-testid="detector-tile-choice-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-colors"
+            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
           >
             Confirm
           </button>
@@ -193,13 +262,13 @@ export function DetectorTileChoicePanel({
 
   return (
     <div
-      className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+      className="rounded-lg border border-blue-500/50 bg-blue-950/20 px-3 py-2 text-xs space-y-2"
       data-testid="detector-tile-choice-panel"
     >
-      <div className="text-sm font-bold text-yellow-400">
+      <div className="font-bold text-blue-300 uppercase tracking-wide">
         Choose Which Wire to Cut
       </div>
-      <div className="text-sm text-gray-300">
+      <div className="text-gray-300">
         <p>
           {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
           and guessed{" "}
@@ -216,7 +285,7 @@ export function DetectorTileChoicePanel({
               key={tileIdx}
               onClick={() => setSelectedIndex(tileIdx)}
               data-testid={`detector-choice-tile-${tileIdx}`}
-              className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+              className={`px-4 py-1.5 rounded font-bold transition-colors ${
                 selectedIndex === tileIdx
                   ? "bg-blue-500 ring-2 ring-blue-300"
                   : "bg-blue-600 hover:bg-blue-700"
@@ -226,31 +295,20 @@ export function DetectorTileChoicePanel({
             </button>
           );
         })}
+        <button
+          type="button"
+          disabled={!canConfirm}
+          onClick={() => {
+            if (canConfirm) {
+              send({ type: "detectorTileChoice", tileIndex: selectedIndex });
+            }
+          }}
+          data-testid="detector-tile-choice-confirm"
+          className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors"
+        >
+          Confirm
+        </button>
       </div>
-      {selectedIndex != null && (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedIndex(null)}
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold text-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!canConfirm}
-            onClick={() => {
-              if (canConfirm) {
-                send({ type: "detectorTileChoice", tileIndex: selectedIndex });
-              }
-            }}
-            data-testid="detector-tile-choice-confirm"
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
-          >
-            Confirm
-          </button>
-        </div>
-      )}
     </div>
   );
 }

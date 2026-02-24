@@ -810,12 +810,17 @@ export function resolveDetectorTileChoice(
     if (source === "doubleDetector") {
       return resolveDoubleDetectorNoMatch(state, forced, actor, target, infoTokenTileIndexOverride);
     }
-    // Triple/Super detector 0-match: pick fallback tile, then executeDualCut handles failure
+    // Triple/Super detector 0-match: use client's choice if valid, else pick fallback tile
     const origIndices = forced.originalTargetTileIndices ?? [];
-    const fallbackTile = origIndices.find((idx) => {
-      const t = getTileByFlatIndex(target, idx);
-      return t && !t.cut && t.color !== "red";
-    }) ?? origIndices[0] ?? 0;
+    const fallbackTile =
+      (chosenTileIndex != null &&
+        origIndices.includes(chosenTileIndex) &&
+        (() => { const t = getTileByFlatIndex(target, chosenTileIndex); return t && !t.cut && t.color !== "red"; })())
+        ? chosenTileIndex
+        : origIndices.find((idx) => {
+            const t = getTileByFlatIndex(target, idx);
+            return t && !t.cut && t.color !== "red";
+          }) ?? origIndices[0] ?? 0;
     addLog(state, actorId, "useEquipment", `${target.name} confirmed detector result`);
     return executeDualCut(state, actorId, targetPlayerId, fallbackTile, guessValue);
   }
