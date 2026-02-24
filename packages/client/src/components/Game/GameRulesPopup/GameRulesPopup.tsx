@@ -68,6 +68,7 @@ export function GameRulesPopup({
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState("");
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
 
   // Derive filter inputs
   const equipmentIds = useMemo(
@@ -111,6 +112,26 @@ export function GameRulesPopup({
     return () => observer.disconnect();
   }, [isOpen, filteredSections]);
 
+  // #8 — Self-contained Escape key handler
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // #9 — Body scroll lock
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
+
   const handleNavigate = useCallback((id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -118,11 +139,19 @@ export function GameRulesPopup({
     }
   }, []);
 
+  const handleMobileNavigate = useCallback(
+    (id: string) => {
+      setMobileTocOpen(false);
+      handleNavigate(id);
+    },
+    [handleNavigate],
+  );
+
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/75 p-3 sm:p-6"
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/75 p-3 sm:p-6"
       data-testid="rules-popup"
       onClick={onClose}
       role="dialog"
@@ -130,11 +159,11 @@ export function GameRulesPopup({
       aria-label="Game rules"
     >
       <div
-        className="mx-auto flex h-full max-h-[95vh] max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] shadow-2xl"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-gray-700 bg-[var(--color-bomb-surface)] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-4 py-3">
           <div className="min-w-0">
             <h2 className="text-sm font-black uppercase tracking-wide text-gray-100">
               Game Rules
@@ -143,14 +172,37 @@ export function GameRulesPopup({
               Mission {gameState.mission} — showing relevant rules only
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            data-testid="close-rules-popup"
-            className="rounded border border-gray-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200 transition-colors hover:bg-gray-800"
-          >
-            Close
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Mobile TOC toggle — visible below md breakpoint */}
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileTocOpen((v) => !v)}
+                className="rounded border border-gray-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200 transition-colors hover:bg-gray-800"
+              >
+                Jump to…
+              </button>
+              {mobileTocOpen && (
+                <div className="absolute right-0 top-full z-10 mt-1 max-h-[60vh] w-64 overflow-y-auto overscroll-none rounded-lg border border-gray-600 bg-[var(--color-bomb-surface)] p-2 shadow-xl">
+                  <TableOfContents
+                    sections={filteredSections}
+                    activeId={activeId}
+                    onNavigate={handleMobileNavigate}
+                  />
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              data-testid="close-rules-popup"
+              className="rounded border border-gray-600 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200 transition-colors hover:bg-gray-800"
+            >
+              Close
+            </button>
+          </div>
         </div>
 
         {/* Two-column layout: content + TOC */}
@@ -167,8 +219,8 @@ export function GameRulesPopup({
             </div>
           </div>
 
-          {/* TOC sidebar — hidden on small screens */}
-          <div className="hidden w-56 shrink-0 overflow-y-auto overscroll-none border-l border-gray-700 px-2 py-3 lg:block">
+          {/* TOC sidebar — visible from md breakpoint */}
+          <div className="hidden w-48 shrink-0 overflow-y-auto overscroll-none border-l border-gray-700 px-2 py-3 md:block lg:w-56">
             <TableOfContents
               sections={filteredSections}
               activeId={activeId}
