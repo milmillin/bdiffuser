@@ -6,6 +6,12 @@ const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-point
 const btnFull = `${btnBase} px-7 py-3.5 text-base`;
 const btnSmall = `${btnBase} px-4 py-2 text-sm`;
 const btnDisabled = "disabled:bg-gray-800 disabled:border-gray-900 disabled:text-gray-500 disabled:shadow-none disabled:active:border-b-4 disabled:active:translate-y-0";
+const COLOR_CARD_LOCK_MAX_MISSION = 6;
+
+function isYellowOrRedMissionLocked(id: MissionId): boolean {
+  const difficulty = MISSION_SCHEMAS[id].difficulty;
+  return id > COLOR_CARD_LOCK_MAX_MISSION && (difficulty === "intermediate" || difficulty === "expert");
+}
 
 export function Lobby({
   lobby,
@@ -23,7 +29,9 @@ export function Lobby({
   const isHost = playerId === lobby.hostId;
   const playerCount = lobby.players.length;
   const allowed = MISSION_SCHEMAS[lobby.mission].allowedPlayerCounts;
-  const missionInvalid = allowed != null && !allowed.includes(playerCount as PlayerCount);
+  const missionLockedByColorRule = isYellowOrRedMissionLocked(lobby.mission);
+  const missionInvalidForPlayerCount = allowed != null && !allowed.includes(playerCount as PlayerCount);
+  const missionInvalid = missionLockedByColorRule || missionInvalidForPlayerCount;
   const canStart = playerCount >= 2 && isHost && !missionInvalid;
   const [copied, setCopied] = useState(false);
   // Preview mission: defaults to lobby selection, but host can browse others
@@ -45,17 +53,17 @@ export function Lobby({
 
   const handleSelectMission = useCallback((id: MissionId) => {
     setPreviewMission(id);
+    const lockedByColorRule = isYellowOrRedMissionLocked(id);
     // Only send to server if the mission is valid for current player count
     const a = MISSION_SCHEMAS[id].allowedPlayerCounts;
     const valid = a == null || a.includes(playerCount as PlayerCount);
-    if (valid) {
+    if (valid && !lockedByColorRule) {
       send({ type: "selectMission", mission: id });
     }
   }, [playerCount, send]);
 
   const mission = MISSIONS[previewMission];
   const previewAllowed = MISSION_SCHEMAS[previewMission].allowedPlayerCounts;
-  const previewInvalid = previewAllowed != null && !previewAllowed.includes(playerCount as PlayerCount);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" data-testid="lobby-screen">
@@ -206,7 +214,9 @@ export function Lobby({
                 data-testid="mission-invalid-banner"
                 className="bg-red-900/40 border border-red-700 rounded-lg px-4 py-2 text-sm text-red-300 text-center"
               >
-                Mission {lobby.mission} requires {allowed!.join(" or ")} players — currently {playerCount}.
+                {missionLockedByColorRule
+                  ? `Mission ${lobby.mission} is locked: yellow and red missions are disabled after mission ${COLOR_CARD_LOCK_MAX_MISSION}.`
+                  : `Mission ${lobby.mission} requires ${allowed!.join(" or ")} players — currently ${playerCount}.`}
               </div>
             )}
 
@@ -219,7 +229,9 @@ export function Lobby({
               >
                 {playerCount < 2
                   ? "Need 2+ players"
-                  : missionInvalid
+                  : missionLockedByColorRule
+                    ? `Mission locked after ${COLOR_CARD_LOCK_MAX_MISSION}`
+                    : missionInvalid
                     ? `Mission unavailable for ${playerCount} players`
                     : "Start Game"}
               </button>
@@ -319,9 +331,20 @@ function MissionSelector({
 }) {
   const [textInput, setTextInput] = useState("");
 
-  const isMissionDisabled = (id: MissionId) => {
+  const missionDisabledReason = (id: MissionId): string => {
+    const reasons: string[] = [];
+    if (isYellowOrRedMissionLocked(id)) {
+      reasons.push(`yellow/red locked after mission ${COLOR_CARD_LOCK_MAX_MISSION}`);
+    }
     const allowed = MISSION_SCHEMAS[id].allowedPlayerCounts;
-    return allowed != null && !allowed.includes(playerCount as PlayerCount);
+    if (allowed != null && !allowed.includes(playerCount as PlayerCount)) {
+      reasons.push(playerConstraintLabel(id));
+    }
+    return reasons.join("; ");
+  };
+
+  const isMissionDisabled = (id: MissionId) => {
+    return missionDisabledReason(id).length > 0;
   };
 
   const handleTextSubmit = () => {
@@ -376,10 +399,11 @@ function MissionSelector({
           {grouped.map((group) => (
             <optgroup key={group.label} label={group.label}>
               {group.missions.map((id) => {
+                const reason = missionDisabledReason(id);
                 const disabled = isMissionDisabled(id);
                 return (
                   <option key={id} value={id}>
-                    #{id} — {MISSIONS[id].name}{disabled ? ` (${playerConstraintLabel(id)})` : ""}
+                    #{id} — {MISSIONS[id].name}{disabled ? ` (${reason})` : ""}
                   </option>
                 );
               })}
@@ -391,26 +415,28 @@ function MissionSelector({
       {/* Numbered button grid */}
       <div className="grid grid-cols-11 gap-1">
         {ALL_MISSION_IDS.map((id) => {
+          const disabledReason = missionDisabledReason(id);
           const disabled = isMissionDisabled(id);
           const isSelected = selectedMission === id;
           const isPreviewing = previewMission === id && !isSelected;
           return (
             <button
               key={id}
-              onClick={() => onSelect(id)}
+              onClick={() => !disabled && onSelect(id)}
+              disabled={disabled}
               data-testid={`mission-select-${id}`}
               title={
                 disabled
-                  ? `${MISSIONS[id].name} — ${playerConstraintLabel(id)}`
+                  ? `${MISSIONS[id].name} — ${disabledReason}`
                   : MISSIONS[id].name
               }
               className={`w-full aspect-square rounded-lg text-xs font-extrabold uppercase tracking-wider cursor-pointer transition-all duration-200 border-b-2 active:border-b-0 active:translate-y-0.5 ${
-                isSelected
-                  ? "bg-red-500 border-red-800 text-white ring-2 ring-red-300 scale-110"
-                  : isPreviewing
-                    ? "bg-yellow-600/50 border-yellow-800 text-white ring-1 ring-yellow-400"
-                    : disabled
-                      ? "bg-gray-800 border-gray-900 text-gray-600 hover:bg-gray-700 hover:text-gray-400"
+                disabled
+                  ? "bg-gray-800 border-gray-900 text-gray-600 cursor-not-allowed"
+                  : isSelected
+                    ? "bg-red-500 border-red-800 text-white ring-2 ring-red-300 scale-110"
+                    : isPreviewing
+                      ? "bg-yellow-600/50 border-yellow-800 text-white ring-1 ring-yellow-400"
                       : "bg-[var(--color-bomb-dark)] border-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
               }`}
             >
