@@ -32,7 +32,7 @@ export function getOpponentTileSelectableFilter(
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut;
     case "talkies_walkies":
-      return (tile) => !tile.cut;
+      return () => false;
     case "triple_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut;
@@ -107,8 +107,6 @@ export function getOpponentSelectedTileIndex(
   switch (mode.kind) {
     case "x_or_y_ray":
       return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
-    case "talkies_walkies":
-      return mode.teammateId === oppId ? (mode.teammateTileIndex ?? undefined) : undefined;
     case "grappling_hook":
       return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
     default:

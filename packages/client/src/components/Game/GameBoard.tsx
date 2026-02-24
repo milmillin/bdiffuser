@@ -94,7 +94,6 @@ function getUnknownForcedAction(
 
 const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "double_detector",
-  "talkies_walkies",
   "triple_detector",
   "super_detector",
   "x_or_y_ray",
@@ -691,7 +690,9 @@ export function GameBoard({
                         opp.id,
                       )}
                       tileSelectableFilter={
-                        equipmentMode && gameState.phase === "playing"
+                        equipmentMode &&
+                        gameState.phase === "playing" &&
+                        MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind)
                           ? getOpponentTileSelectableFilter(opp.id)
                           : pendingAction?.kind === "dual_cut"
                             ? (tile: VisibleTile) => !tile.cut

@@ -412,19 +412,77 @@ export function EquipmentModePanel({
     }
 
     case "talkies_walkies": {
+      const selectableTeammates = opponents.filter((opponent) =>
+        opponent.hand.some((tile) => !tile.cut),
+      );
+      const selectedTeammateName = opponents.find(
+        (opponent) => opponent.id === mode.teammateId,
+      )?.name;
       const twAllComplete =
         mode.teammateId != null &&
         mode.myTileIndex != null;
+      const parts: string[] = [];
+      if (mode.teammateId != null) {
+        parts.push(`target ${selectedTeammateName ?? "teammate"}`);
+      }
+      if (mode.myTileIndex != null) {
+        parts.push(`your wire ${wireLabel(mode.myTileIndex)}`);
+      }
+      const needs: string[] = [];
+      if (mode.teammateId == null) needs.push("a target player");
+      if (mode.myTileIndex == null) needs.push("your uncut wire");
+
+      content = (
+        <div className="space-y-2">
+          <div>Select a teammate to swap with:</div>
+          <div className="flex gap-2 flex-wrap">
+            {selectableTeammates.map((opponent) => {
+              const isSelected = mode.teammateId === opponent.id;
+              return (
+                <button
+                  key={opponent.id}
+                  type="button"
+                  data-testid={`tw-target-${opponent.id}`}
+                  onClick={() =>
+                    onUpdateMode({
+                      ...mode,
+                      teammateId: isSelected ? null : opponent.id,
+                      teammateTileIndex: null,
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
+                    isSelected
+                      ? "bg-indigo-500 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  }`}
+                >
+                  {opponent.name}
+                </button>
+              );
+            })}
+            {selectableTeammates.length === 0 && (
+              <div className="text-gray-400">
+                No eligible teammate has an uncut wire.
+              </div>
+            )}
+          </div>
+          <div>
+            {twAllComplete ? (
+              <>
+                Ask {selectedTeammateName ?? "your teammate"} to choose one
+                uncut wire to swap with your wire{" "}
+                {wireLabel(mode.myTileIndex!)}.
+              </>
+            ) : (
+              <>
+                {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+                Still need: {needs.join(", ")}.
+              </>
+            )}
+          </div>
+        </div>
+      );
       if (twAllComplete) {
-        const teammateName = opponents.find(
-          (o) => o.id === mode.teammateId,
-        )?.name;
-        content = (
-          <>
-            Ask {teammateName} to choose one uncut wire to swap with your wire{" "}
-            {wireLabel(mode.myTileIndex!)}.
-          </>
-        );
         confirmButton = (
           <button
             type="button"
@@ -444,26 +502,6 @@ export function EquipmentModePanel({
           >
             Confirm Talkies-Walkies
           </button>
-        );
-      } else {
-        const parts: string[] = [];
-        if (mode.teammateId != null) {
-          const teammateName = opponents.find(
-            (o) => o.id === mode.teammateId,
-          )?.name;
-          parts.push(`target ${teammateName}`);
-        }
-        if (mode.myTileIndex != null) {
-          parts.push(`your wire ${wireLabel(mode.myTileIndex)}`);
-        }
-        const needs: string[] = [];
-        if (mode.teammateId == null) needs.push("a target player");
-        if (mode.myTileIndex == null) needs.push("your uncut wire");
-        content = (
-          <>
-            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
-            Still need: {needs.join(", ")}.
-          </>
         );
       }
       break;

@@ -83,7 +83,7 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
   });
 
-  it("talkies_walkies: returns true for uncut tiles on any opponent", () => {
+  it("talkies_walkies: does not allow opponent tile selection", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
       teammateId: null,
@@ -91,7 +91,7 @@ describe("getOpponentTileSelectableFilter", () => {
       myTileIndex: null,
     };
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
-    expect(filter(tile(), 0)).toBe(true);
+    expect(filter(tile(), 0)).toBe(false);
     expect(filter(tile({ cut: true }), 1)).toBe(false);
   });
 
@@ -474,14 +474,14 @@ describe("highlight functions", () => {
       expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
     });
 
-    it("talkies_walkies: returns teammate tile index for teammate", () => {
+    it("talkies_walkies: returns undefined for teammate (player-level targeting)", () => {
       const mode: EquipmentMode = {
         kind: "talkies_walkies",
         teammateId: "opp1",
         teammateTileIndex: 3,
         myTileIndex: null,
       };
-      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBe(3);
+      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
     });
 
     it("talkies_walkies: returns undefined for non-teammate", () => {

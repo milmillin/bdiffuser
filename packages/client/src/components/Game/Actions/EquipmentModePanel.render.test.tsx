@@ -236,13 +236,16 @@ describe("EquipmentModePanel — label_neq", () => {
 // ── talkies_walkies ──────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — talkies_walkies", () => {
-  it("initial state shows still-need text", () => {
+  it("initial state shows teammate selector and still-need text", () => {
     const html = renderMode({
       kind: "talkies_walkies",
       teammateId: null,
       teammateTileIndex: null,
       myTileIndex: null,
     });
+    expect(html).toContain("Select a teammate to swap with");
+    expect(html).toContain("data-testid=\"tw-target-opp1\"");
+    expect(html).toContain("data-testid=\"tw-target-opp2\"");
     expect(html).toContain("Still need:");
     expect(html).toContain("target player");
     expect(html).toContain("uncut wire");
