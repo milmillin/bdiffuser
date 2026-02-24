@@ -1666,6 +1666,10 @@ Baseline assumption used in this section:
 
 - You cannot do a Solo Cut action.
 
+### Constraint L
+
+- If the cut fails, the detonator dial advances 2 spaces (instead of 1).
+
 ## Challenge Cards
 
 ### Challenge 1

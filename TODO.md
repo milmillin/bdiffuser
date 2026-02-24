@@ -450,7 +450,7 @@ Use Codex to read source card images directly and update `GAME_RULES.md` only. D
 - [x] `constraint_i`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front OCR reads "You CANNOT cut the far-right wire (highest number) on teammates' tile stands".`).
 - [x] `constraint_j`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front image OCR reads "You CANNOT cut the far-left wire (lowest number) on teammates' tile stands."`).
 - [x] `constraint_k`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `front image OCR reads \`You CANNOT do a Solo Cut action.\``).
-- [ ] `constraint_l`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `TBD`).
+- [x] `constraint_l`: verify corresponding text and update `GAME_RULES.md` using Codex-read source images (diff: `Card text confirmed as: If the cut fails, the detonator dial advances 2 spaces (instead of 1).`).
 ## Definition of Done (Campaign Rules Parity)
 
 - [x] All missions have schema-accurate setup for all allowed player counts.
