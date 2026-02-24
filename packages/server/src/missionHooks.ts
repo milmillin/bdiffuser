@@ -35,6 +35,7 @@ import type {
   GameState,
   MissionId,
   NumberCardState,
+  WireTile,
 } from "@bomb-busters/shared";
 import {
   EQUIPMENT_DEFS,
@@ -2610,6 +2611,64 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
  * for each player. Teammates can see the value but the owner cannot.
  */
 registerHookHandler<"upside_down_wire">("upside_down_wire", {
+  validate(_rule: UpsideDownWireRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.mission !== 38) return;
+
+    const captain = ctx.state.players.find((player) => player.isCaptain);
+    if (!captain) return;
+
+    const flippedTileIndex = captain.hand.findIndex((tile) =>
+      !tile.cut && (tile as WireTile & { upsideDown?: boolean }).upsideDown === true,
+    );
+    if (flippedTileIndex === -1) return;
+    if (ctx.action.actorId === captain.id) return;
+
+    const targetsCaptainFlippedWire = (() => {
+      if (ctx.action.type === "dualCut") {
+        return (
+          ctx.action.targetPlayerId === captain.id &&
+          ctx.action.targetTileIndex === flippedTileIndex
+        );
+      }
+
+      if (ctx.action.type === "dualCutDoubleDetector") {
+        return (
+          ctx.action.targetPlayerId === captain.id &&
+          (ctx.action.tileIndex1 === flippedTileIndex ||
+            ctx.action.tileIndex2 === flippedTileIndex)
+        );
+      }
+
+      if (ctx.action.type === "simultaneousCut") {
+        const cuts = Array.isArray(ctx.action.cuts) ? ctx.action.cuts : [];
+        return cuts.some((cut) =>
+          (cut as { targetPlayerId?: unknown }).targetPlayerId === captain.id &&
+          (cut as { targetTileIndex?: unknown }).targetTileIndex === flippedTileIndex,
+        );
+      }
+
+      if (
+        ctx.action.type === "simultaneousRedCut" ||
+        ctx.action.type === "simultaneousFourCut"
+      ) {
+        const targets = Array.isArray(ctx.action.targets) ? ctx.action.targets : [];
+        return targets.some((target) =>
+          (target as { playerId?: unknown }).playerId === captain.id &&
+          (target as { tileIndex?: unknown }).tileIndex === flippedTileIndex,
+        );
+      }
+
+      return false;
+    })();
+
+    if (!targetsCaptainFlippedWire) return;
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError: "Mission 38: only the Captain can cut the Captain's flipped wire",
+    };
+  },
+
   setup(rule: UpsideDownWireRuleDef, ctx: SetupHookContext): void {
     const captainOnly = ctx.state.mission === 38;
 

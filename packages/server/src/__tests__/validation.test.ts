@@ -750,6 +750,119 @@ describe("mission 46 sevens-last validation", () => {
   });
 });
 
+describe("mission 38 captain flipped-wire validation", () => {
+  it("rejects non-captain dual cut targeting the captain's flipped wire", () => {
+    const captainFlippedTile = makeTile({ id: "c2", gameValue: 2 });
+    (captainFlippedTile as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", gameValue: 1 }),
+        captainFlippedTile,
+      ],
+    });
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 2 })],
+      character: "character_3",
+    });
+    const state = makeGameState({
+      mission: 38,
+      players: [captain, actor],
+      currentPlayerIndex: 1,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "captain",
+      targetTileIndex: 1,
+      guessValue: 2,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe(
+      "Mission 38: only the Captain can cut the Captain's flipped wire",
+    );
+  });
+
+  it("rejects non-captain Double Detector when one target is the captain's flipped wire", () => {
+    const captainFlippedTile = makeTile({ id: "c2", gameValue: 2 });
+    (captainFlippedTile as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", gameValue: 1 }),
+        captainFlippedTile,
+      ],
+    });
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 2 })],
+      character: "double_detector",
+      characterUsed: false,
+    });
+    const state = makeGameState({
+      mission: 38,
+      players: [captain, actor],
+      currentPlayerIndex: 1,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "captain",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 2,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe(
+      "Mission 38: only the Captain can cut the Captain's flipped wire",
+    );
+  });
+
+  it("allows non-captain cuts on non-flipped captain wires", () => {
+    const captainFlippedTile = makeTile({ id: "c2", gameValue: 2 });
+    (captainFlippedTile as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", gameValue: 1 }),
+        captainFlippedTile,
+      ],
+    });
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 1 })],
+    });
+    const state = makeGameState({
+      mission: 38,
+      players: [captain, actor],
+      currentPlayerIndex: 1,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "captain",
+      targetTileIndex: 0,
+      guessValue: 1,
+    });
+
+    expect(error).toBeNull();
+  });
+});
+
 describe("validateActionWithHooks", () => {
   it("returns null for valid base action when mission has no validate hooks", () => {
     const actor = makePlayer({
