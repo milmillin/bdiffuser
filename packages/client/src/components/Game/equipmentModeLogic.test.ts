@@ -629,8 +629,14 @@ describe("highlight functions", () => {
       expect(getOwnSelectedTileIndex(mode)).toBe(1);
     });
 
-    it("post_it: returns undefined (no own selection highlight)", () => {
+    it("post_it: returns undefined when no selection", () => {
       expect(getOwnSelectedTileIndex({ kind: "post_it" })).toBeUndefined();
+    });
+
+    it("post_it: returns selected tile index when set", () => {
+      expect(
+        getOwnSelectedTileIndex({ kind: "post_it", selectedTileIndex: 2 }),
+      ).toBe(2);
     });
   });
 
@@ -911,18 +917,14 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.newMode).toEqual(mode);
   });
 
-  it("post_it: sends useEquipment for valid blue tile", () => {
+  it("post_it: selects valid blue tile without sending immediately", () => {
     const me = player({ hand: [tile({ color: "blue", gameValue: 3 })] });
     const result = handleOwnTileClickEquipment({ kind: "post_it" }, 0, me);
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "post_it",
-      payload: { kind: "post_it", tileIndex: 0 },
-    });
+    expect(result.newMode).toEqual({ kind: "post_it", selectedTileIndex: 0 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
-  it("mission 40: post_it allows sending from a cut blue tile for captain alternating seat", () => {
+  it("mission 40: post_it allows selecting a cut blue tile for captain alternating seat", () => {
     const captain = player({
       id: "captain",
       isCaptain: true,
@@ -938,15 +940,11 @@ describe("handleOwnTileClickEquipment", () => {
       captain,
       mission40State([captain, partner]),
     );
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "post_it",
-      payload: { kind: "post_it", tileIndex: 0 },
-    });
+    expect(result.newMode).toEqual({ kind: "post_it", selectedTileIndex: 0 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
-  it("mission 24: post_it allows sending from a cut blue tile", () => {
+  it("mission 24: post_it allows selecting a cut blue tile", () => {
     const me = player({
       id: "me",
       hand: [tile({ cut: true, color: "blue", gameValue: 7 })],
@@ -957,12 +955,8 @@ describe("handleOwnTileClickEquipment", () => {
       me,
       { mission: 24 },
     );
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "post_it",
-      payload: { kind: "post_it", tileIndex: 0 },
-    });
+    expect(result.newMode).toEqual({ kind: "post_it", selectedTileIndex: 0 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("mission 40: post_it allows non-captain alternating seat on cut tile", () => {
@@ -981,12 +975,8 @@ describe("handleOwnTileClickEquipment", () => {
       partner,
       mission40State([captain, partner]),
     );
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "post_it",
-      payload: { kind: "post_it", tileIndex: 0 },
-    });
+    expect(result.newMode).toEqual({ kind: "post_it", selectedTileIndex: 0 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("post_it: ignores red tile", () => {
@@ -1001,6 +991,17 @@ describe("handleOwnTileClickEquipment", () => {
       infoTokens: [{ value: 3, position: 0, isYellow: false }],
     });
     const result = handleOwnTileClickEquipment({ kind: "post_it" }, 0, me);
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("post_it: clicking selected tile again clears selection", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 3 })] });
+    const result = handleOwnTileClickEquipment(
+      { kind: "post_it", selectedTileIndex: 0 },
+      0,
+      me,
+    );
+    expect(result.newMode).toEqual({ kind: "post_it", selectedTileIndex: null });
     expect(result.sendPayload).toBeUndefined();
   });
 

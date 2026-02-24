@@ -16,7 +16,7 @@ import {
 } from "./panelStyles.js";
 
 export type EquipmentMode =
-  | { kind: "post_it" }
+  | { kind: "post_it"; selectedTileIndex?: number | null }
   | {
       kind: "double_detector";
       targetPlayerId: string | null;
@@ -173,7 +173,33 @@ export function EquipmentModePanel({
   switch (mode.kind) {
     case "post_it": {
       testId = "post-it-mode-panel";
-      content = "Click one of your blue wires to place the Post-it info token.";
+      const selectedTileIndex = mode.selectedTileIndex ?? null;
+      if (selectedTileIndex == null) {
+        content = "Click one of your blue wires to place the Post-it info token.";
+      } else {
+        content = (
+          <>
+            Selected wire {wireLabel(selectedTileIndex)}. Confirm to place the
+            Post-it info token.
+          </>
+        );
+        confirmButton = (
+          <button
+            type="button"
+            data-testid="post-it-confirm"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "post_it",
+                payload: { kind: "post_it", tileIndex: selectedTileIndex },
+              })
+            }
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            Confirm Post-it
+          </button>
+        );
+      }
       break;
     }
 

@@ -1,26 +1,62 @@
-import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import {
-  BUTTON_OPTION_CLASS,
-  BUTTON_OPTION_SELECTED_CLASS,
   BUTTON_PRIMARY_CLASS,
   PANEL_CLASS,
   PANEL_TEXT_CLASS,
   PANEL_TITLE_CLASS,
 } from "./panelStyles.js";
 
+type DetectorForcedAction = Extract<
+  NonNullable<ClientGameState["pendingForcedAction"]>,
+  { kind: "detectorTileChoice" }
+>;
+
+export function getDetectorChoiceAvailableMatches(
+  forced: DetectorForcedAction,
+  hand: ClientGameState["players"][number]["hand"],
+): number[] {
+  return forced.matchingTileIndices.filter((idx) => {
+    const tile = hand[idx];
+    return !!tile && !tile.cut && tile.gameValue === forced.guessValue;
+  });
+}
+
+export function getDetectorChoiceSelectableIndices(
+  forced: DetectorForcedAction,
+  hand: ClientGameState["players"][number]["hand"],
+): number[] {
+  const availableMatches = getDetectorChoiceAvailableMatches(forced, hand);
+  if (availableMatches.length > 0) return availableMatches;
+
+  if (forced.source === "doubleDetector") {
+    const tileIndices = [forced.originalTileIndex1, forced.originalTileIndex2].filter(
+      (idx): idx is number => idx != null,
+    );
+    return tileIndices.filter((idx) => {
+      const tile = hand[idx];
+      return !!tile && tile.color !== "red";
+    });
+  }
+
+  const tileIndices = forced.originalTargetTileIndices ?? [];
+  return tileIndices.filter((idx) => {
+    const tile = hand[idx];
+    return !!tile && tile.color !== "red" && !tile.cut;
+  });
+}
+
 export function DetectorTileChoicePanel({
   gameState,
   send,
   playerId,
+  selectedIndex,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
+  selectedIndex: number | null;
 }) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
   const forced = gameState.pendingForcedAction;
   if (!forced || forced.kind !== "detectorTileChoice") return null;
 
@@ -36,24 +72,27 @@ export function DetectorTileChoicePanel({
     forced.source === "doubleDetector"
       ? "Double Detector"
       : forced.source === "tripleDetector"
-        ? "Triple Detector"
-        : "Super Detector";
+      ? "Triple Detector"
+      : "Super Detector";
 
-  const matchCount = forced.matchingTileIndices.length;
+  const availableMatches = getDetectorChoiceAvailableMatches(forced, me.hand);
+  const matchCount = availableMatches.length;
+  const selectableIndices = getDetectorChoiceSelectableIndices(forced, me.hand);
+  const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
+  const effectiveSelection = selectedIndex ?? autoSelected;
 
   // ── 0 matches + double detector: choose info token tile ──
   if (matchCount === 0 && forced.source === "doubleDetector") {
-    const tileIndices = [forced.originalTileIndex1, forced.originalTileIndex2].filter(
-      (i): i is number => i != null,
-    );
-    // Filter to non-red tiles (target can see their own tile colors)
-    const selectableIndices = tileIndices.filter((idx) => {
-      const tile = me.hand[idx];
-      return tile && tile.color !== "red";
-    });
+    const canConfirm =
+      selectableIndices.length <= 1 ||
+      (effectiveSelection != null && selectableIndices.includes(effectiveSelection));
 
-    const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
-    const effectiveSelection = selectedIndex ?? autoSelected;
+    const selectionHint =
+      selectableIndices.length > 1
+        ? "Click one of your designated wires on your stand below."
+        : selectableIndices.length === 1
+          ? `Info token target: wire ${wireLabel(selectableIndices[0])}.`
+          : "No selectable non-red wire. Confirm to resolve.";
 
     return (
       <div
@@ -68,79 +107,46 @@ export function DetectorTileChoicePanel({
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
             <span className="font-bold text-slate-100">{forced.guessValue}</span>.
-            {selectableIndices.length > 0
-              ? " Choose which wire receives the info token."
-              : ""}
+            {" "}
+            {selectionHint}
+            {effectiveSelection != null && (
+              <> Selected wire {wireLabel(effectiveSelection)}.</>
+            )}
           </p>
         </div>
-        {selectableIndices.length > 1 ? (
-          <div className="flex items-center gap-2 flex-wrap">
-            {selectableIndices.map((tileIdx) => {
-              const tile = me.hand[tileIdx];
-              const label = wireLabel(tileIdx);
-              const valueDisplay = tile?.gameValue ?? "?";
-              return (
-                <button
-                  key={tileIdx}
-                  onClick={() => setSelectedIndex(tileIdx)}
-                  data-testid={`detector-choice-tile-${tileIdx}`}
-                  className={`${
-                    effectiveSelection === tileIdx
-                      ? BUTTON_OPTION_SELECTED_CLASS
-                      : BUTTON_OPTION_CLASS
-                  }`}
-                >
-                  Wire {label} ({String(valueDisplay)})
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              disabled={effectiveSelection == null}
-              onClick={() => {
-                send({
-                  type: "detectorTileChoice",
-                  infoTokenTileIndex: effectiveSelection ?? undefined,
-                });
-              }}
-              data-testid="detector-tile-choice-confirm"
-              className={BUTTON_PRIMARY_CLASS}
-            >
-              Confirm
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                send({
-                  type: "detectorTileChoice",
-                  infoTokenTileIndex: effectiveSelection ?? undefined,
-                });
-              }}
-              data-testid="detector-tile-choice-confirm"
-              className={BUTTON_PRIMARY_CLASS}
-            >
-              Confirm
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={!canConfirm}
+            onClick={() => {
+              if (!canConfirm) return;
+              send({
+                type: "detectorTileChoice",
+                infoTokenTileIndex: effectiveSelection ?? undefined,
+              });
+            }}
+            data-testid="detector-tile-choice-confirm"
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     );
   }
 
   // ── 0 matches + triple/super detector: choose fallback wire ──
   if (matchCount === 0) {
-    const tileIndices = forced.originalTargetTileIndices ?? [];
-    // Filter to non-red, uncut tiles
-    const selectableIndices = tileIndices.filter((idx) => {
-      const tile = me.hand[idx];
-      return tile && tile.color !== "red" && !tile.cut;
-    });
+    const canConfirm =
+      selectableIndices.length <= 1 ||
+      (effectiveSelection != null && selectableIndices.includes(effectiveSelection));
 
-    const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
-    const effectiveSelection = selectedIndex ?? autoSelected;
+    const selectionHint =
+      selectableIndices.length > 1
+        ? "Click one of your targeted wires on your stand below."
+        : selectableIndices.length === 1
+          ? `Fallback wire: ${wireLabel(selectableIndices[0])}.`
+          : "No non-red fallback wire available. Confirm to resolve.";
 
     return (
       <div
@@ -155,71 +161,37 @@ export function DetectorTileChoicePanel({
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
             <span className="font-bold text-slate-100">{forced.guessValue}</span>.
-            {selectableIndices.length > 0
-              ? " Choose which wire receives the fallback cut."
-              : ""}
+            {" "}
+            {selectionHint}
+            {effectiveSelection != null && (
+              <> Selected wire {wireLabel(effectiveSelection)}.</>
+            )}
           </p>
         </div>
-        {selectableIndices.length > 1 ? (
-          <div className="flex items-center gap-2 flex-wrap">
-            {selectableIndices.map((tileIdx) => {
-              const tile = me.hand[tileIdx];
-              const label = wireLabel(tileIdx);
-              const valueDisplay = tile?.gameValue ?? "?";
-              return (
-                <button
-                  key={tileIdx}
-                  onClick={() => setSelectedIndex(tileIdx)}
-                  data-testid={`detector-choice-tile-${tileIdx}`}
-                  className={`${
-                    effectiveSelection === tileIdx
-                      ? BUTTON_OPTION_SELECTED_CLASS
-                      : BUTTON_OPTION_CLASS
-                  }`}
-                >
-                  Wire {label} ({String(valueDisplay)})
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              disabled={effectiveSelection == null}
-              onClick={() => {
-                send({
-                  type: "detectorTileChoice",
-                  tileIndex: effectiveSelection ?? undefined,
-                });
-              }}
-              data-testid="detector-tile-choice-confirm"
-              className={BUTTON_PRIMARY_CLASS}
-            >
-              Confirm
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                send({
-                  type: "detectorTileChoice",
-                  tileIndex: effectiveSelection ?? undefined,
-                });
-              }}
-              data-testid="detector-tile-choice-confirm"
-              className={BUTTON_PRIMARY_CLASS}
-            >
-              Confirm
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={!canConfirm}
+            onClick={() => {
+              if (!canConfirm) return;
+              send({
+                type: "detectorTileChoice",
+                tileIndex: effectiveSelection ?? undefined,
+              });
+            }}
+            data-testid="detector-tile-choice-confirm"
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            Confirm
+          </button>
+        </div>
       </div>
     );
   }
 
   // ── 1 match: auto-selected, just confirm ──
   if (matchCount === 1) {
-    const tileIdx = forced.matchingTileIndices[0];
+    const tileIdx = availableMatches[0];
     const tile = me.hand[tileIdx];
     const label = wireLabel(tileIdx);
     const valueDisplay = tile?.gameValue ?? "?";
@@ -265,8 +237,8 @@ export function DetectorTileChoicePanel({
 
   // ── 2+ matches: choose which tile to cut ──
   const canConfirm =
-    selectedIndex != null &&
-    forced.matchingTileIndices.includes(selectedIndex);
+    effectiveSelection != null &&
+    availableMatches.includes(effectiveSelection);
 
   return (
     <div
@@ -281,34 +253,20 @@ export function DetectorTileChoicePanel({
           {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
           and guessed{" "}
           <span className="font-bold text-slate-100">{forced.guessValue}</span>.
+          {" "}
+          Click one of your matching wires on your stand below.
+          {effectiveSelection != null && (
+            <> Selected wire {wireLabel(effectiveSelection)}.</>
+          )}
         </p>
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {forced.matchingTileIndices.map((tileIdx) => {
-          const tile = me.hand[tileIdx];
-          const label = wireLabel(tileIdx);
-          const valueDisplay = tile?.gameValue ?? "?";
-          return (
-            <button
-              key={tileIdx}
-              onClick={() => setSelectedIndex(tileIdx)}
-              data-testid={`detector-choice-tile-${tileIdx}`}
-              className={`${
-                selectedIndex === tileIdx
-                  ? BUTTON_OPTION_SELECTED_CLASS
-                  : BUTTON_OPTION_CLASS
-              }`}
-            >
-              Wire {label} ({String(valueDisplay)})
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           disabled={!canConfirm}
           onClick={() => {
             if (canConfirm) {
-              send({ type: "detectorTileChoice", tileIndex: selectedIndex });
+              send({ type: "detectorTileChoice", tileIndex: effectiveSelection ?? undefined });
             }
           }}
           data-testid="detector-tile-choice-confirm"

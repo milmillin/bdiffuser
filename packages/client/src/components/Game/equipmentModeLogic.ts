@@ -131,6 +131,8 @@ export function getOwnSelectedTileIndex(
 ): number | undefined {
   if (!mode) return undefined;
   switch (mode.kind) {
+    case "post_it":
+      return mode.selectedTileIndex ?? undefined;
     case "double_detector":
       return mode.guessTileIndex ?? undefined;
     case "label_eq":
@@ -264,13 +266,12 @@ export function handleOwnTileClickEquipment(
     case "post_it": {
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
       if (me.infoTokens.some((t) => t.position === tileIndex)) return { newMode: mode };
+      const selectedTileIndex = mode.selectedTileIndex ?? null;
+      if (selectedTileIndex === tileIndex) {
+        return { newMode: { ...mode, selectedTileIndex: null } };
+      }
       return {
-        newMode: null,
-        sendPayload: {
-          type: "useEquipment",
-          equipmentId: "post_it",
-          payload: { kind: "post_it", tileIndex },
-        },
+        newMode: { ...mode, selectedTileIndex: tileIndex },
       };
     }
     case "double_detector": {

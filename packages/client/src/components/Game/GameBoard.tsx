@@ -21,7 +21,10 @@ import { PlayerStand } from "./Players/PlayerStand.js";
 import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
-import { DetectorTileChoicePanel } from "./Actions/DetectorTileChoicePanel.js";
+import {
+  DetectorTileChoicePanel,
+  getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
+} from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
@@ -228,6 +231,9 @@ export function GameBoard({
   }, []);
 
   // Talkies-Walkies forced-action: teammate picks their own wire on the stand
+  const [detectorTileChoiceSelection, setDetectorTileChoiceSelection] = useState<
+    number | null
+  >(null);
   const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
     number | null
   >(null);
@@ -236,6 +242,17 @@ export function GameBoard({
     MultiCutTarget[]
   >([]);
   const [missionSpecialMode, setMissionSpecialMode] = useState(false);
+
+  useEffect(() => {
+    const fa = gameState.pendingForcedAction;
+    if (
+      !fa ||
+      fa.kind !== FORCED_ACTION_DETECTOR_TILE_CHOICE ||
+      fa.targetPlayerId !== playerId
+    ) {
+      setDetectorTileChoiceSelection(null);
+    }
+  }, [gameState.pendingForcedAction, playerId]);
 
   useEffect(() => {
     const fa = gameState.pendingForcedAction;
@@ -271,6 +288,11 @@ export function GameBoard({
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
   const unknownForcedAction = getUnknownForcedAction(gameState);
+  const detectorForcedForMe =
+    pendingForcedAction?.kind === FORCED_ACTION_DETECTOR_TILE_CHOICE &&
+    pendingForcedAction.targetPlayerId === playerId
+      ? pendingForcedAction
+      : null;
   const mission46ForcedForMe =
     gameState.phase === "playing" &&
     isMyTurn &&
@@ -295,6 +317,16 @@ export function GameBoard({
   const forcedActionCaptainName = forcedActionCaptainId
     ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
     : undefined;
+  const detectorSelectableIndices =
+    detectorForcedForMe && me
+      ? _getDetectorChoiceSelectableIndices(detectorForcedForMe, me.hand)
+      : [];
+  const detectorAutoSelection =
+    detectorSelectableIndices.length === 1
+      ? detectorSelectableIndices[0]
+      : null;
+  const detectorEffectiveSelection =
+    detectorTileChoiceSelection ?? detectorAutoSelection;
 
   useEffect(() => {
     if (!mission46ForcedForMe) {
@@ -579,6 +611,7 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
+    if (detectorForcedForMe) return detectorEffectiveSelection ?? undefined;
     if (mission46ForcedForMe) return undefined;
     if (talkiesWalkiesSelection != null) return talkiesWalkiesSelection;
     if (pendingAction?.kind === "dual_cut") return pendingAction.actorTileIndex;
@@ -1255,6 +1288,7 @@ export function GameBoard({
                       gameState={gameState}
                       send={send}
                       playerId={playerId}
+                      selectedIndex={detectorEffectiveSelection}
                     />
                   )}
 
@@ -1323,6 +1357,14 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
+                        : detectorForcedForMe && me
+                          ? (tileIndex) => {
+                              if (!detectorSelectableIndices.includes(tileIndex))
+                                return;
+                              setDetectorTileChoiceSelection((current) =>
+                                current === tileIndex ? null : tileIndex,
+                              );
+                            }
                         : gameState.pendingForcedAction?.kind ===
                               FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
                             gameState.pendingForcedAction.targetPlayerId ===
@@ -1450,6 +1492,9 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
+                        : detectorForcedForMe && me
+                          ? (_tile: VisibleTile, idx: number) =>
+                              detectorSelectableIndices.includes(idx)
                         : gameState.pendingForcedAction?.kind ===
                               FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
                             gameState.pendingForcedAction.targetPlayerId ===
@@ -1909,6 +1954,9 @@ function PendingActionStrip({
   }
 
   let summary = "";
+  const hideCancelForRewinder =
+    pendingAction.kind === "equipment" &&
+    pendingAction.equipmentId === "rewinder";
   switch (pendingAction.kind) {
     case "dual_cut": {
       const targetName =
@@ -1940,13 +1988,15 @@ function PendingActionStrip({
       </div>
       <div className={PANEL_TEXT_CLASS}>{summary}</div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className={BUTTON_SECONDARY_CLASS}
-        >
-          Cancel
-        </button>
+        {!hideCancelForRewinder && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className={BUTTON_SECONDARY_CLASS}
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="button"
           onClick={onConfirm}

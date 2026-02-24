@@ -148,6 +148,14 @@ describe("EquipmentModePanel — post_it", () => {
     const html = renderMode({ kind: "post_it" });
     expect(html).toContain("Click one of your blue wires");
     expect(html).toContain("data-testid=\"post-it-mode-panel\"");
+    expect(html).not.toContain("Confirm Post-it");
+  });
+
+  it("shows confirm button after selecting a wire", () => {
+    const html = renderMode({ kind: "post_it", selectedTileIndex: 1 });
+    expect(html).toContain("Selected wire B");
+    expect(html).toContain("data-testid=\"post-it-confirm\"");
+    expect(html).toContain("Confirm Post-it");
   });
 });
 

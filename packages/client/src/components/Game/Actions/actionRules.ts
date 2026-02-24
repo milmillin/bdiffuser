@@ -50,7 +50,7 @@ export function getInitialEquipmentMode(
 ): EquipmentMode | null {
   switch (equipmentId) {
     case "post_it":
-      return { kind: "post_it" };
+      return { kind: "post_it", selectedTileIndex: null };
     case "general_radar":
       return { kind: "general_radar", selectedValue: null };
     case "label_eq":
