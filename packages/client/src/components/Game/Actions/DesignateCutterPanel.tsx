@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 
 export function DesignateCutterPanel({
@@ -9,12 +10,18 @@ export function DesignateCutterPanel({
   send: (msg: ClientMessage) => void;
   playerId: string;
 }) {
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
   const forced = gameState.pendingForcedAction;
   if (!forced || forced.kind !== "designateCutter") return null;
 
   const playersWithTiles = gameState.players.filter(
     (p) => p.hand.some((t) => !t.cut),
   );
+
+  const canConfirm =
+    selectedPlayerId != null &&
+    playersWithTiles.some((p) => p.id === selectedPlayerId);
 
   return (
     <div
@@ -58,12 +65,16 @@ export function DesignateCutterPanel({
         {playersWithTiles.map((p) => (
           <button
             key={p.id}
-            onClick={() => send({ type: "designateCutter", targetPlayerId: p.id })}
+            onClick={() => setSelectedPlayerId(p.id)}
             data-testid={`designate-player-${p.id}`}
             className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
               forced.radarResults[p.id]
-                ? "bg-green-700 hover:bg-green-600"
-                : "bg-blue-600 hover:bg-blue-700"
+                ? selectedPlayerId === p.id
+                  ? "bg-green-600 ring-2 ring-blue-300"
+                  : "bg-green-700 hover:bg-green-600"
+                : selectedPlayerId === p.id
+                  ? "bg-blue-500 ring-2 ring-blue-300"
+                  : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {p.id === playerId ? "Myself" : p.name}
@@ -76,6 +87,30 @@ export function DesignateCutterPanel({
           <span className="text-sm text-gray-500">No eligible players</span>
         )}
       </div>
+      {selectedPlayerId != null && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedPlayerId(null)}
+            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold text-sm transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!canConfirm}
+            onClick={() => {
+              if (canConfirm) {
+                send({ type: "designateCutter", targetPlayerId: selectedPlayerId });
+              }
+            }}
+            data-testid="designate-cutter-confirm"
+            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+          >
+            Confirm
+          </button>
+        </div>
+      )}
     </div>
   );
 }

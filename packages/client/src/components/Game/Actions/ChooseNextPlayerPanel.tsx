@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 
 export function ChooseNextPlayerPanel({
@@ -9,6 +10,8 @@ export function ChooseNextPlayerPanel({
   send: (msg: ClientMessage) => void;
   playerId: string;
 }) {
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
   const playersWithTiles = gameState.players.filter(
     (p) => p.hand.some((t) => !t.cut),
   );
@@ -27,6 +30,10 @@ export function ChooseNextPlayerPanel({
   const eligiblePlayers = hasAlternative
     ? playersWithTiles.filter((p) => p.id !== restrictedRepeatPlayerId)
     : playersWithTiles;
+
+  const canConfirm =
+    selectedPlayerId != null &&
+    eligiblePlayers.some((p) => p.id === selectedPlayerId);
 
   return (
     <div
@@ -53,9 +60,13 @@ export function ChooseNextPlayerPanel({
         {eligiblePlayers.map((p) => (
           <button
             key={p.id}
-            onClick={() => send({ type: "chooseNextPlayer", targetPlayerId: p.id })}
+            onClick={() => setSelectedPlayerId(p.id)}
             data-testid={`choose-player-${p.id}`}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded font-bold text-sm transition-colors"
+            className={`px-4 py-1.5 rounded font-bold text-sm transition-colors ${
+              selectedPlayerId === p.id
+                ? "bg-blue-500 ring-2 ring-blue-300"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {p.name}
           </button>
@@ -64,6 +75,30 @@ export function ChooseNextPlayerPanel({
           <span className="text-sm text-gray-500">No eligible players</span>
         )}
       </div>
+      {selectedPlayerId != null && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedPlayerId(null)}
+            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold text-sm transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!canConfirm}
+            onClick={() => {
+              if (canConfirm) {
+                send({ type: "chooseNextPlayer", targetPlayerId: selectedPlayerId });
+              }
+            }}
+            data-testid="choose-player-confirm"
+            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-sm transition-colors"
+          >
+            Confirm
+          </button>
+        </div>
+      )}
     </div>
   );
 }

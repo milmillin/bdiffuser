@@ -259,21 +259,12 @@ export function EquipmentModePanel({
 
     case "double_detector": {
       testId = "dd-mode-panel";
-      if (mode.selectedTiles.length < 2) {
-        const targetName = mode.targetPlayerId
-          ? opponents.find((o) => o.id === mode.targetPlayerId)?.name
-          : null;
-        content = (
-          <>
-            Select 2 tiles on one opponent's stand (
-            {mode.selectedTiles.length}/2 selected
-            {targetName ? ` on ${targetName}` : ""}).
-          </>
-        );
-      } else if (mode.guessTileIndex == null) {
-        content = "Now select one of your blue tiles as the guess value.";
-      } else {
-        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+      const ddAllComplete =
+        mode.selectedTiles.length === 2 &&
+        mode.targetPlayerId != null &&
+        mode.guessTileIndex != null;
+      if (ddAllComplete) {
+        const guessValue = me.hand[mode.guessTileIndex!]?.gameValue;
         const targetName = opponents.find(
           (o) => o.id === mode.targetPlayerId,
         )?.name;
@@ -284,7 +275,7 @@ export function EquipmentModePanel({
             {String(guessValue)}.
           </>
         );
-        if (typeof guessValue === "number" && mode.targetPlayerId) {
+        if (typeof guessValue === "number") {
           confirmButton = (
             <button
               type="button"
@@ -305,6 +296,28 @@ export function EquipmentModePanel({
             </button>
           );
         }
+      } else {
+        const parts: string[] = [];
+        if (mode.selectedTiles.length > 0) {
+          const targetName = opponents.find(
+            (o) => o.id === mode.targetPlayerId,
+          )?.name;
+          parts.push(
+            `${targetName}'s wires ${mode.selectedTiles.map((i) => wireLabel(i)).join(" & ")} (${mode.selectedTiles.length}/2)`,
+          );
+        }
+        if (mode.guessTileIndex != null) {
+          parts.push(`guess ${String(me.hand[mode.guessTileIndex]?.gameValue)}`);
+        }
+        const needs: string[] = [];
+        if (mode.selectedTiles.length < 2) needs.push(`${2 - mode.selectedTiles.length} opponent tile(s)`);
+        if (mode.guessTileIndex == null) needs.push("your blue guess tile");
+        content = (
+          <>
+            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+            Still need: {needs.join(", ")}.
+          </>
+        );
       }
       break;
     }
@@ -357,17 +370,60 @@ export function EquipmentModePanel({
     }
 
     case "talkies_walkies": {
-      if (mode.teammateId === null) {
-        content = "Click an uncut wire on an opponent's stand to select it.";
-      } else {
+      const twAllComplete =
+        mode.teammateId != null &&
+        mode.teammateTileIndex != null &&
+        mode.myTileIndex != null;
+      if (twAllComplete) {
         const teammateName = opponents.find(
           (o) => o.id === mode.teammateId,
         )?.name;
         content = (
           <>
-            Selected {teammateName}&apos;s wire{" "}
-            {wireLabel(mode.teammateTileIndex!)}. Now click one of your uncut
-            wires to swap.
+            Swap {teammateName}&apos;s wire{" "}
+            {wireLabel(mode.teammateTileIndex!)} with your wire{" "}
+            {wireLabel(mode.myTileIndex!)}.
+          </>
+        );
+        confirmButton = (
+          <button
+            type="button"
+            data-testid="tw-confirm"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "talkies_walkies",
+                payload: {
+                  kind: "talkies_walkies",
+                  teammateId: mode.teammateId!,
+                  myTileIndex: mode.myTileIndex!,
+                  teammateTileIndex: mode.teammateTileIndex!,
+                },
+              })
+            }
+            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          >
+            Confirm Talkies-Walkies
+          </button>
+        );
+      } else {
+        const parts: string[] = [];
+        if (mode.teammateId != null && mode.teammateTileIndex != null) {
+          const teammateName = opponents.find(
+            (o) => o.id === mode.teammateId,
+          )?.name;
+          parts.push(`${teammateName}'s wire ${wireLabel(mode.teammateTileIndex)}`);
+        }
+        if (mode.myTileIndex != null) {
+          parts.push(`your wire ${wireLabel(mode.myTileIndex)}`);
+        }
+        const needs: string[] = [];
+        if (mode.teammateId == null) needs.push("an opponent's wire");
+        if (mode.myTileIndex == null) needs.push("your uncut wire");
+        content = (
+          <>
+            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+            Still need: {needs.join(", ")}.
           </>
         );
       }
@@ -482,21 +538,12 @@ export function EquipmentModePanel({
     }
 
     case "triple_detector": {
-      if (mode.targetTileIndices.length < 3) {
-        const targetName = mode.targetPlayerId
-          ? opponents.find((o) => o.id === mode.targetPlayerId)?.name
-          : null;
-        content = (
-          <>
-            Select 3 uncut tiles on one opponent's stand (
-            {mode.targetTileIndices.length}/3 selected
-            {targetName ? ` on ${targetName}` : ""}).
-          </>
-        );
-      } else if (mode.guessTileIndex == null) {
-        content = "Now click one of your blue tiles as the guess value.";
-      } else {
-        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+      const tdAllComplete =
+        mode.targetTileIndices.length === 3 &&
+        mode.targetPlayerId != null &&
+        mode.guessTileIndex != null;
+      if (tdAllComplete) {
+        const guessValue = me.hand[mode.guessTileIndex!]?.gameValue;
         const targetName = opponents.find(
           (o) => o.id === mode.targetPlayerId,
         )?.name;
@@ -507,7 +554,7 @@ export function EquipmentModePanel({
             {String(guessValue)}.
           </>
         );
-        if (typeof guessValue === "number" && mode.targetPlayerId) {
+        if (typeof guessValue === "number") {
           confirmButton = (
             <button
               type="button"
@@ -529,26 +576,37 @@ export function EquipmentModePanel({
             </button>
           );
         }
+      } else {
+        const parts: string[] = [];
+        if (mode.targetTileIndices.length > 0) {
+          const targetName = opponents.find(
+            (o) => o.id === mode.targetPlayerId,
+          )?.name;
+          parts.push(
+            `${targetName}'s wires ${mode.targetTileIndices.map((i) => wireLabel(i)).join(", ")} (${mode.targetTileIndices.length}/3)`,
+          );
+        }
+        if (mode.guessTileIndex != null) {
+          parts.push(`guess ${String(me.hand[mode.guessTileIndex]?.gameValue)}`);
+        }
+        const needs: string[] = [];
+        if (mode.targetTileIndices.length < 3) needs.push(`${3 - mode.targetTileIndices.length} opponent tile(s)`);
+        if (mode.guessTileIndex == null) needs.push("your blue guess tile");
+        content = (
+          <>
+            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+            Still need: {needs.join(", ")}.
+          </>
+        );
       }
       break;
     }
 
     case "super_detector": {
-      if (mode.targetPlayerId == null) {
-        content =
-          "Click any uncut tile on an opponent's stand to target their entire stand.";
-      } else if (mode.guessTileIndex == null) {
-        const targetName = opponents.find(
-          (o) => o.id === mode.targetPlayerId,
-        )?.name;
-        content = (
-          <>
-            Targeting {targetName}&apos;s entire stand. Now click one of your
-            blue tiles as the guess value.
-          </>
-        );
-      } else {
-        const guessValue = me.hand[mode.guessTileIndex]?.gameValue;
+      const sdAllComplete =
+        mode.targetPlayerId != null && mode.guessTileIndex != null;
+      if (sdAllComplete) {
+        const guessValue = me.hand[mode.guessTileIndex!]?.gameValue;
         const targetName = opponents.find(
           (o) => o.id === mode.targetPlayerId,
         )?.name;
@@ -579,38 +637,42 @@ export function EquipmentModePanel({
             </button>
           );
         }
+      } else {
+        const parts: string[] = [];
+        if (mode.targetPlayerId != null) {
+          const targetName = opponents.find(
+            (o) => o.id === mode.targetPlayerId,
+          )?.name;
+          parts.push(`${targetName}'s stand`);
+        }
+        if (mode.guessTileIndex != null) {
+          parts.push(`guess ${String(me.hand[mode.guessTileIndex]?.gameValue)}`);
+        }
+        const needs: string[] = [];
+        if (mode.targetPlayerId == null) needs.push("an opponent's stand");
+        if (mode.guessTileIndex == null) needs.push("your blue guess tile");
+        content = (
+          <>
+            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+            Still need: {needs.join(", ")}.
+          </>
+        );
       }
       break;
     }
 
     case "x_or_y_ray": {
-      if (mode.targetPlayerId == null || mode.targetTileIndex == null) {
-        content = "Click an uncut tile on an opponent's stand.";
-      } else if (mode.guessATileIndex == null) {
+      const xrAllComplete =
+        mode.targetPlayerId != null &&
+        mode.targetTileIndex != null &&
+        mode.guessATileIndex != null &&
+        mode.guessBTileIndex != null;
+      if (xrAllComplete) {
         const targetName = opponents.find(
           (o) => o.id === mode.targetPlayerId,
         )?.name;
-        content = (
-          <>
-            Targeting {targetName}&apos;s wire{" "}
-            {wireLabel(mode.targetTileIndex)}. Click one of your blue or yellow
-            tiles as the first announced value.
-          </>
-        );
-      } else if (mode.guessBTileIndex == null) {
-        const valueA = me.hand[mode.guessATileIndex]?.gameValue;
-        content = (
-          <>
-            First value: {String(valueA)}. Click another tile with a different
-            value as the second announced value.
-          </>
-        );
-      } else {
-        const targetName = opponents.find(
-          (o) => o.id === mode.targetPlayerId,
-        )?.name;
-        const valueA = me.hand[mode.guessATileIndex]?.gameValue;
-        const valueB = me.hand[mode.guessBTileIndex]?.gameValue;
+        const valueA = me.hand[mode.guessATileIndex!]?.gameValue;
+        const valueB = me.hand[mode.guessBTileIndex!]?.gameValue;
         content = (
           <>
             Target: {targetName}&apos;s wire{" "}
@@ -641,6 +703,31 @@ export function EquipmentModePanel({
             </button>
           );
         }
+      } else {
+        const parts: string[] = [];
+        if (mode.targetPlayerId != null && mode.targetTileIndex != null) {
+          const targetName = opponents.find(
+            (o) => o.id === mode.targetPlayerId,
+          )?.name;
+          parts.push(`${targetName}'s wire ${wireLabel(mode.targetTileIndex)}`);
+        }
+        if (mode.guessATileIndex != null) {
+          parts.push(`value A: ${String(me.hand[mode.guessATileIndex]?.gameValue)}`);
+        }
+        if (mode.guessBTileIndex != null) {
+          parts.push(`value B: ${String(me.hand[mode.guessBTileIndex]?.gameValue)}`);
+        }
+        const needs: string[] = [];
+        if (mode.targetPlayerId == null || mode.targetTileIndex == null) needs.push("an opponent's wire");
+        if (mode.guessATileIndex == null) needs.push("first blue/yellow guess tile");
+        if (mode.guessBTileIndex == null && mode.guessATileIndex != null) needs.push("second guess tile (different value)");
+        else if (mode.guessBTileIndex == null) needs.push("two blue/yellow guess tiles");
+        content = (
+          <>
+            {parts.length > 0 && <>Selected: {parts.join(", ")}. </>}
+            Still need: {needs.join(", ")}.
+          </>
+        );
       }
       break;
     }

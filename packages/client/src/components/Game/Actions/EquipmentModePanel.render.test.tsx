@@ -151,25 +151,27 @@ describe("EquipmentModePanel — post_it", () => {
 // ── double_detector ──────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — double_detector", () => {
-  it("initial state shows 0/2 selected", () => {
+  it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "double_detector",
       targetPlayerId: null,
       selectedTiles: [],
       guessTileIndex: null,
     });
-    expect(html).toContain("0/2 selected");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("opponent tile(s)");
     expect(html).toContain("data-testid=\"dd-mode-panel\"");
   });
 
-  it("with 2 tiles selected shows guess step text", () => {
+  it("with 2 tiles selected but no guess shows still-need guess", () => {
     const html = renderMode({
       kind: "double_detector",
       targetPlayerId: "opp1",
       selectedTiles: [0, 1],
       guessTileIndex: null,
     });
-    expect(html).toContain("one of your blue tiles as the guess value");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("guess tile");
   });
 
   it("with guess set shows confirm button", () => {
@@ -227,17 +229,19 @@ describe("EquipmentModePanel — label_neq", () => {
 // ── talkies_walkies ──────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — talkies_walkies", () => {
-  it("initial state shows click an uncut wire on an opponent", () => {
+  it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "talkies_walkies",
       teammateId: null,
       teammateTileIndex: null,
       myTileIndex: null,
     });
-    expect(html).toContain("Click an uncut wire on an opponent");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("opponent");
+    expect(html).toContain("uncut wire");
   });
 
-  it("with teammate selected shows Selected name and your uncut wires instruction", () => {
+  it("with teammate selected shows Selected name and still need your wire", () => {
     const html = renderMode({
       kind: "talkies_walkies",
       teammateId: "opp1",
@@ -246,7 +250,19 @@ describe("EquipmentModePanel — talkies_walkies", () => {
     });
     expect(html).toContain("Selected");
     expect(html).toContain("Opp1");
-    expect(html).toContain("your uncut wires");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("your uncut wire");
+  });
+
+  it("with all selections shows confirm button", () => {
+    const html = renderMode({
+      kind: "talkies_walkies",
+      teammateId: "opp1",
+      teammateTileIndex: 0,
+      myTileIndex: 1,
+    });
+    expect(html).toContain("Confirm Talkies-Walkies");
+    expect(html).toContain("data-testid=\"tw-confirm\"");
   });
 });
 
@@ -346,24 +362,26 @@ describe("EquipmentModePanel — coffee_mug", () => {
 // ── triple_detector ──────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — triple_detector", () => {
-  it("initial state shows 0/3 selected", () => {
+  it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "triple_detector",
       targetPlayerId: null,
       targetTileIndices: [],
       guessTileIndex: null,
     });
-    expect(html).toContain("0/3 selected");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("opponent tile(s)");
   });
 
-  it("with 3 tiles selected shows guess step text", () => {
+  it("with 3 tiles selected but no guess shows still-need guess", () => {
     const html = renderMode({
       kind: "triple_detector",
       targetPlayerId: "opp1",
       targetTileIndices: [0, 1, 2],
       guessTileIndex: null,
     });
-    expect(html).toContain("one of your blue tiles as the guess value");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("guess tile");
   });
 
   it("with guess set shows confirm button", () => {
@@ -380,22 +398,23 @@ describe("EquipmentModePanel — triple_detector", () => {
 // ── super_detector ───────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — super_detector", () => {
-  it("initial state shows click any uncut tile instruction", () => {
+  it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "super_detector",
       targetPlayerId: null,
       guessTileIndex: null,
     });
-    expect(html).toContain("Click any uncut tile");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("opponent");
   });
 
-  it("with target player shows Targeting and opponent name", () => {
+  it("with target player shows Selected and opponent name", () => {
     const html = renderMode({
       kind: "super_detector",
       targetPlayerId: "opp1",
       guessTileIndex: null,
     });
-    expect(html).toContain("Targeting");
+    expect(html).toContain("Selected");
     expect(html).toContain("Opp1");
   });
 
@@ -412,7 +431,7 @@ describe("EquipmentModePanel — super_detector", () => {
 // ── x_or_y_ray ───────────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — x_or_y_ray", () => {
-  it("initial state shows click an uncut tile on an opponent", () => {
+  it("initial state shows still-need text", () => {
     const html = renderMode({
       kind: "x_or_y_ray",
       targetPlayerId: null,
@@ -420,10 +439,11 @@ describe("EquipmentModePanel — x_or_y_ray", () => {
       guessATileIndex: null,
       guessBTileIndex: null,
     });
-    expect(html).toContain("Click an uncut tile on an opponent");
+    expect(html).toContain("Still need:");
+    expect(html).toContain("opponent");
   });
 
-  it("targeting step shows Targeting and opponent name", () => {
+  it("targeting step shows Selected and opponent name", () => {
     const html = renderMode({
       kind: "x_or_y_ray",
       targetPlayerId: "opp1",
@@ -431,11 +451,11 @@ describe("EquipmentModePanel — x_or_y_ray", () => {
       guessATileIndex: null,
       guessBTileIndex: null,
     });
-    expect(html).toContain("Targeting");
+    expect(html).toContain("Selected");
     expect(html).toContain("Opp1");
   });
 
-  it("first value step shows First value text", () => {
+  it("first value step shows value A text", () => {
     const html = renderMode({
       kind: "x_or_y_ray",
       targetPlayerId: "opp1",
@@ -443,7 +463,7 @@ describe("EquipmentModePanel — x_or_y_ray", () => {
       guessATileIndex: 0,
       guessBTileIndex: null,
     });
-    expect(html).toContain("First value:");
+    expect(html).toContain("value A:");
     expect(html).toContain("3");
   });
 

@@ -132,12 +132,6 @@ type PendingAction =
       equipmentId: AnyEquipmentId;
       equipmentName: string;
       immediatePayload?: UseEquipmentPayload;
-      modeOnConfirm?: EquipmentMode;
-    }
-  | {
-      kind: "skill_double_detector";
-      characterId: CharacterId;
-      modeOnConfirm: Extract<EquipmentMode, { kind: "double_detector" }>;
     };
 
 export function GameBoard({
@@ -492,26 +486,17 @@ export function GameBoard({
 
     const modeOnConfirm = getInitialEquipmentMode(typedEquipmentId);
     if (!modeOnConfirm) return;
-    setPendingAction({
-      kind: "equipment",
-      equipmentId: typedEquipmentId,
-      equipmentName: equipment.name,
-      modeOnConfirm,
-    });
+    setEquipmentMode(modeOnConfirm);
     setSelectedGuessTile(null);
   };
 
   const stageSkillFromLeftDock = () => {
     if (!me?.character || !canUseSkillFromLeftDock) return;
-    setPendingAction({
-      kind: "skill_double_detector",
-      characterId: me.character,
-      modeOnConfirm: {
-        kind: "double_detector",
-        targetPlayerId: null,
-        selectedTiles: [],
-        guessTileIndex: null,
-      },
+    setEquipmentMode({
+      kind: "double_detector",
+      targetPlayerId: null,
+      selectedTiles: [],
+      guessTileIndex: null,
     });
     setSelectedGuessTile(null);
   };
@@ -549,12 +534,7 @@ export function GameBoard({
             equipmentId: pendingAction.equipmentId,
             payload: pendingAction.immediatePayload,
           });
-        } else if (pendingAction.modeOnConfirm) {
-          setEquipmentMode(pendingAction.modeOnConfirm);
         }
-        break;
-      case "skill_double_detector":
-        setEquipmentMode(pendingAction.modeOnConfirm);
         break;
     }
 
@@ -639,29 +619,39 @@ export function GameBoard({
                         gameState.phase === "playing"
                           ? (tileIndex) =>
                               handleOpponentTileClick(opp.id, tileIndex)
-                          : playingInteractionEnabled &&
-                              isMyTurn &&
-                              selectedGuessTile != null &&
-                              !forceRevealReds &&
-                              !pendingAction
+                          : pendingAction?.kind === "dual_cut"
                             ? (tileIndex) => {
-                                const guessValue = me?.hand[selectedGuessTile]?.gameValue;
-                                if (
-                                  guessValue == null ||
-                                  guessValue === "RED" ||
-                                  typeof guessValue === "undefined"
-                                ) {
-                                  return;
-                                }
+                                const oppTile = opp.hand[tileIndex];
+                                if (!oppTile || oppTile.cut) return;
                                 setPendingAction({
-                                  kind: "dual_cut",
-                                  actorTileIndex: selectedGuessTile,
-                                  guessValue,
+                                  ...pendingAction,
                                   targetPlayerId: opp.id,
                                   targetTileIndex: tileIndex,
                                 });
                               }
-                            : undefined
+                            : playingInteractionEnabled &&
+                                isMyTurn &&
+                                selectedGuessTile != null &&
+                                !forceRevealReds &&
+                                !pendingAction
+                              ? (tileIndex) => {
+                                  const guessValue = me?.hand[selectedGuessTile]?.gameValue;
+                                  if (
+                                    guessValue == null ||
+                                    guessValue === "RED" ||
+                                    typeof guessValue === "undefined"
+                                  ) {
+                                    return;
+                                  }
+                                  setPendingAction({
+                                    kind: "dual_cut",
+                                    actorTileIndex: selectedGuessTile,
+                                    guessValue,
+                                    targetPlayerId: opp.id,
+                                    targetTileIndex: tileIndex,
+                                  });
+                                }
+                              : undefined
                       }
                       selectedTileIndex={getOpponentSelectedTileIndex(opp.id)}
                       selectedTileIndices={getOpponentSelectedTileIndices(
@@ -670,13 +660,15 @@ export function GameBoard({
                       tileSelectableFilter={
                         equipmentMode && gameState.phase === "playing"
                           ? getOpponentTileSelectableFilter(opp.id)
-                          : playingInteractionEnabled &&
-                              isMyTurn &&
-                              selectedGuessTile != null &&
-                              !forceRevealReds &&
-                              !pendingAction
+                          : pendingAction?.kind === "dual_cut"
                             ? (tile: VisibleTile) => !tile.cut
-                            : undefined
+                            : playingInteractionEnabled &&
+                                isMyTurn &&
+                                selectedGuessTile != null &&
+                                !forceRevealReds &&
+                                !pendingAction
+                              ? (tile: VisibleTile) => !tile.cut
+                              : undefined
                       }
                     />
                   ))}
@@ -1342,9 +1334,6 @@ function PendingActionStrip({
       break;
     case "equipment":
       summary = `Use Equipment: ${pendingAction.equipmentName}`;
-      break;
-    case "skill_double_detector":
-      summary = `Use Skill: ${pendingAction.characterId}`;
       break;
   }
 

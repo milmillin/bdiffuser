@@ -61,23 +61,18 @@ export function getOwnTileSelectableFilter(
         !me.infoTokens.some((t) => t.position === idx);
     }
     case "double_detector":
-      if (mode.selectedTiles.length < 2) return () => false;
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "label_eq":
     case "label_neq":
       if (mode.firstTileIndex === null) return (tile) => !tile.cut;
       return (tile, idx) => !tile.cut && Math.abs(idx - mode.firstTileIndex!) === 1;
     case "talkies_walkies":
-      if (!mode.teammateId) return () => false;
       return (tile) => !tile.cut;
     case "triple_detector":
-      if (mode.targetTileIndices.length < 3) return () => false;
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "super_detector":
-      if (!mode.targetPlayerId) return () => false;
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "x_or_y_ray": {
-      if (!mode.targetPlayerId || mode.targetTileIndex === null) return () => false;
       if (mode.guessATileIndex === null) {
         return (tile) => !tile.cut && (tile.color === "blue" || tile.color === "yellow");
       }
@@ -179,7 +174,7 @@ export function handleOpponentTileClick(
         ...mode,
         targetPlayerId: newTiles.length > 0 ? oppId : null,
         selectedTiles: newTiles,
-        guessTileIndex: newTiles.length < 2 ? null : mode.guessTileIndex,
+        guessTileIndex: mode.guessTileIndex,
       };
     }
     case "talkies_walkies": {
@@ -187,7 +182,7 @@ export function handleOpponentTileClick(
         ...mode,
         teammateId: oppId,
         teammateTileIndex: tileIndex,
-        myTileIndex: null,
+        myTileIndex: mode.myTileIndex,
       };
     }
     case "triple_detector": {
@@ -201,24 +196,23 @@ export function handleOpponentTileClick(
         ...mode,
         targetPlayerId: newTiles.length > 0 ? oppId : null,
         targetTileIndices: newTiles,
-        guessTileIndex: newTiles.length < 3 ? null : mode.guessTileIndex,
+        guessTileIndex: mode.guessTileIndex,
       };
     }
     case "super_detector": {
       return {
         ...mode,
         targetPlayerId: oppId,
-        guessTileIndex: mode.targetPlayerId !== oppId ? null : mode.guessTileIndex,
+        guessTileIndex: mode.guessTileIndex,
       };
     }
     case "x_or_y_ray": {
-      const changed = mode.targetPlayerId !== oppId || mode.targetTileIndex !== tileIndex;
       return {
         ...mode,
         targetPlayerId: oppId,
         targetTileIndex: tileIndex,
-        guessATileIndex: changed ? null : mode.guessATileIndex,
-        guessBTileIndex: changed ? null : mode.guessBTileIndex,
+        guessATileIndex: mode.guessATileIndex,
+        guessBTileIndex: mode.guessBTileIndex,
       };
     }
     default:
@@ -257,8 +251,8 @@ export function handleOwnTileClickEquipment(
       };
     }
     case "double_detector": {
-      if (mode.selectedTiles.length !== 2) return { newMode: mode };
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
+      if (mode.guessTileIndex === tileIndex) return { newMode: { ...mode, guessTileIndex: null } };
       return { newMode: { ...mode, guessTileIndex: tileIndex } };
     }
     case "label_eq":
@@ -281,34 +275,27 @@ export function handleOwnTileClickEquipment(
       };
     }
     case "talkies_walkies": {
-      if (!mode.teammateId || mode.teammateTileIndex === null) return { newMode: mode };
-      return {
-        newMode: null,
-        sendPayload: {
-          type: "useEquipment",
-          equipmentId: "talkies_walkies",
-          payload: {
-            kind: "talkies_walkies",
-            teammateId: mode.teammateId,
-            myTileIndex: tileIndex,
-            teammateTileIndex: mode.teammateTileIndex,
-          },
-        },
-      };
+      if (mode.myTileIndex === tileIndex) return { newMode: { ...mode, myTileIndex: null } };
+      return { newMode: { ...mode, myTileIndex: tileIndex } };
     }
     case "triple_detector": {
-      if (mode.targetTileIndices.length !== 3 || !mode.targetPlayerId) return { newMode: mode };
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
+      if (mode.guessTileIndex === tileIndex) return { newMode: { ...mode, guessTileIndex: null } };
       return { newMode: { ...mode, guessTileIndex: tileIndex } };
     }
     case "super_detector": {
-      if (!mode.targetPlayerId) return { newMode: mode };
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
+      if (mode.guessTileIndex === tileIndex) return { newMode: { ...mode, guessTileIndex: null } };
       return { newMode: { ...mode, guessTileIndex: tileIndex } };
     }
     case "x_or_y_ray": {
-      if (!mode.targetPlayerId || mode.targetTileIndex === null) return { newMode: mode };
       if (tile.color !== "blue" && tile.color !== "yellow") return { newMode: mode };
+      if (mode.guessATileIndex === tileIndex) {
+        return { newMode: { ...mode, guessATileIndex: null, guessBTileIndex: null } };
+      }
+      if (mode.guessBTileIndex === tileIndex) {
+        return { newMode: { ...mode, guessBTileIndex: null } };
+      }
       if (mode.guessATileIndex === null) {
         return { newMode: { ...mode, guessATileIndex: tileIndex } };
       }

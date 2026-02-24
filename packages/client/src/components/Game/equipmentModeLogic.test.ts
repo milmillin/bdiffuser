@@ -231,7 +231,7 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(partner.hand[0], 0)).toBe(false);
   });
 
-  it("double_detector: returns false when fewer than 2 opponent tiles selected", () => {
+  it("double_detector: allows blue numeric tiles even before 2 opponent tiles selected", () => {
     const mode: EquipmentMode = {
       kind: "double_detector",
       targetPlayerId: "opp1",
@@ -239,7 +239,8 @@ describe("getOwnTileSelectableFilter", () => {
       guessTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(false);
   });
 
   it("double_detector: allows uncut blue numeric tiles when 2 selected", () => {
@@ -287,7 +288,7 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile(), 3)).toBe(false);
   });
 
-  it("talkies_walkies: returns false when no teammate selected", () => {
+  it("talkies_walkies: allows uncut tiles even when no teammate selected", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
       teammateId: null,
@@ -295,7 +296,8 @@ describe("getOwnTileSelectableFilter", () => {
       myTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile(), 0)).toBe(true);
+    expect(filter(tile({ cut: true }), 0)).toBe(false);
   });
 
   it("talkies_walkies: allows uncut tiles when teammate is set", () => {
@@ -310,7 +312,7 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile({ cut: true }), 0)).toBe(false);
   });
 
-  it("triple_detector: returns false when fewer than 3 targets", () => {
+  it("triple_detector: allows blue numeric tiles even before 3 targets selected", () => {
     const mode: EquipmentMode = {
       kind: "triple_detector",
       targetPlayerId: "opp1",
@@ -318,7 +320,8 @@ describe("getOwnTileSelectableFilter", () => {
       guessTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(false);
   });
 
   it("triple_detector: allows uncut blue numeric tiles when 3 targets", () => {
@@ -333,14 +336,15 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(false);
   });
 
-  it("super_detector: returns false when no target", () => {
+  it("super_detector: allows blue numeric tiles even when no target set", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
       guessTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(false);
   });
 
   it("super_detector: allows uncut blue numeric tiles when target set", () => {
@@ -354,7 +358,7 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
   });
 
-  it("x_or_y_ray: returns false when no target/tile set", () => {
+  it("x_or_y_ray: allows blue/yellow tiles even when no target set", () => {
     const mode: EquipmentMode = {
       kind: "x_or_y_ray",
       targetPlayerId: null,
@@ -363,7 +367,9 @@ describe("getOwnTileSelectableFilter", () => {
       guessBTileIndex: null,
     };
     const filter = getOwnTileSelectableFilter(mode, player())!;
-    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(true);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 2)).toBe(false);
   });
 
   it("x_or_y_ray: allows blue or yellow tiles for first guess", () => {
@@ -673,7 +679,7 @@ describe("handleOpponentTileClick", () => {
     expect(result.selectedTiles).toEqual([2]);
   });
 
-  it("double_detector: deselects an already selected tile", () => {
+  it("double_detector: deselects an already selected tile, preserves guessTileIndex", () => {
     const mode: EquipmentMode = {
       kind: "double_detector",
       targetPlayerId: "opp1",
@@ -682,7 +688,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp1", 2) as Extract<EquipmentMode, { kind: "double_detector" }>;
     expect(result.selectedTiles).toEqual([3]);
-    expect(result.guessTileIndex).toBeNull(); // cleared because < 2 tiles
+    expect(result.guessTileIndex).toBe(0); // preserved
   });
 
   it("double_detector: caps at 2 tiles", () => {
@@ -719,7 +725,7 @@ describe("handleOpponentTileClick", () => {
     expect(result.targetPlayerId).toBeNull();
   });
 
-  it("talkies_walkies: sets teammate and clears myTileIndex", () => {
+  it("talkies_walkies: sets teammate and preserves myTileIndex", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
       teammateId: "opp1",
@@ -729,7 +735,7 @@ describe("handleOpponentTileClick", () => {
     const result = handleOpponentTileClick(mode, "opp2", 3) as Extract<EquipmentMode, { kind: "talkies_walkies" }>;
     expect(result.teammateId).toBe("opp2");
     expect(result.teammateTileIndex).toBe(3);
-    expect(result.myTileIndex).toBeNull();
+    expect(result.myTileIndex).toBe(2); // preserved
   });
 
   it("triple_detector: toggles tile selection", () => {
@@ -773,7 +779,7 @@ describe("handleOpponentTileClick", () => {
     expect(result).toEqual(mode);
   });
 
-  it("triple_detector: clears guessTileIndex when tiles drop below 3", () => {
+  it("triple_detector: preserves guessTileIndex when tiles drop below 3", () => {
     const mode: EquipmentMode = {
       kind: "triple_detector",
       targetPlayerId: "opp1",
@@ -782,7 +788,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp1", 1) as Extract<EquipmentMode, { kind: "triple_detector" }>;
     expect(result.targetTileIndices).toEqual([0, 2]);
-    expect(result.guessTileIndex).toBeNull();
+    expect(result.guessTileIndex).toBe(5); // preserved
   });
 
   it("super_detector: sets targetPlayerId", () => {
@@ -795,7 +801,7 @@ describe("handleOpponentTileClick", () => {
     expect(result.targetPlayerId).toBe("opp1");
   });
 
-  it("super_detector: clears guess on target switch", () => {
+  it("super_detector: preserves guess on target switch", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: "opp1",
@@ -803,7 +809,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp2", 0) as Extract<EquipmentMode, { kind: "super_detector" }>;
     expect(result.targetPlayerId).toBe("opp2");
-    expect(result.guessTileIndex).toBeNull();
+    expect(result.guessTileIndex).toBe(3); // preserved
   });
 
   it("super_detector: preserves guess when clicking same opponent", () => {
@@ -817,7 +823,7 @@ describe("handleOpponentTileClick", () => {
     expect(result.guessTileIndex).toBe(3);
   });
 
-  it("x_or_y_ray: sets target and clears guesses on change", () => {
+  it("x_or_y_ray: sets target and preserves guesses on change", () => {
     const mode: EquipmentMode = {
       kind: "x_or_y_ray",
       targetPlayerId: "opp1",
@@ -828,8 +834,8 @@ describe("handleOpponentTileClick", () => {
     const result = handleOpponentTileClick(mode, "opp2", 3) as Extract<EquipmentMode, { kind: "x_or_y_ray" }>;
     expect(result.targetPlayerId).toBe("opp2");
     expect(result.targetTileIndex).toBe(3);
-    expect(result.guessATileIndex).toBeNull();
-    expect(result.guessBTileIndex).toBeNull();
+    expect(result.guessATileIndex).toBe(1); // preserved
+    expect(result.guessBTileIndex).toBe(2); // preserved
   });
 
   it("x_or_y_ray: preserves guesses when clicking same tile on same opponent", () => {
@@ -991,7 +997,7 @@ describe("handleOwnTileClickEquipment", () => {
     });
   });
 
-  it("talkies_walkies: sends when teammate is selected", () => {
+  it("talkies_walkies: sets myTileIndex when teammate is selected", () => {
     const me = player({ hand: [tile()] });
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
@@ -1000,20 +1006,11 @@ describe("handleOwnTileClickEquipment", () => {
       myTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "talkies_walkies",
-      payload: {
-        kind: "talkies_walkies",
-        teammateId: "opp1",
-        myTileIndex: 0,
-        teammateTileIndex: 2,
-      },
-    });
+    expect(result.newMode).toEqual({ ...mode, myTileIndex: 0 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
-  it("talkies_walkies: ignores when no teammate selected", () => {
+  it("talkies_walkies: sets myTileIndex even when no teammate selected", () => {
     const me = player({ hand: [tile()] });
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
@@ -1022,7 +1019,7 @@ describe("handleOwnTileClickEquipment", () => {
       myTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual(mode);
+    expect(result.newMode).toEqual({ ...mode, myTileIndex: 0 });
     expect(result.sendPayload).toBeUndefined();
   });
 
@@ -1039,8 +1036,8 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.sendPayload).toBeUndefined();
   });
 
-  it("double_detector: ignores when fewer than 2 opponent tiles", () => {
-    const me = player({ hand: [tile()] });
+  it("double_detector: sets guessTileIndex even with fewer than 2 opponent tiles", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 5 })] });
     const mode: EquipmentMode = {
       kind: "double_detector",
       targetPlayerId: "opp1",
@@ -1048,7 +1045,7 @@ describe("handleOwnTileClickEquipment", () => {
       guessTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual(mode);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: 0 });
   });
 
   it("double_detector: ignores red tiles for guess", () => {
@@ -1075,8 +1072,8 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.newMode).toEqual({ ...mode, guessTileIndex: 0 });
   });
 
-  it("triple_detector: ignores when fewer than 3 targets", () => {
-    const me = player({ hand: [tile()] });
+  it("triple_detector: sets guessTileIndex even with fewer than 3 targets", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 7 })] });
     const mode: EquipmentMode = {
       kind: "triple_detector",
       targetPlayerId: "opp1",
@@ -1084,7 +1081,7 @@ describe("handleOwnTileClickEquipment", () => {
       guessTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual(mode);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: 0 });
   });
 
   it("triple_detector: ignores non-blue tiles", () => {
@@ -1110,15 +1107,15 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.newMode).toEqual({ ...mode, guessTileIndex: 0 });
   });
 
-  it("super_detector: ignores when no target set", () => {
-    const me = player({ hand: [tile()] });
+  it("super_detector: sets guessTileIndex even when no target set", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 4 })] });
     const mode: EquipmentMode = {
       kind: "super_detector",
       targetPlayerId: null,
       guessTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual(mode);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: 0 });
   });
 
   it("x_or_y_ray: sets guessATileIndex first", () => {
@@ -1167,8 +1164,8 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.newMode).toEqual(mode); // unchanged
   });
 
-  it("x_or_y_ray: ignores when no target set", () => {
-    const me = player({ hand: [tile()] });
+  it("x_or_y_ray: sets guessATileIndex even when no target set", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 5 })] });
     const mode: EquipmentMode = {
       kind: "x_or_y_ray",
       targetPlayerId: null,
@@ -1177,7 +1174,7 @@ describe("handleOwnTileClickEquipment", () => {
       guessBTileIndex: null,
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual(mode);
+    expect(result.newMode).toEqual({ ...mode, guessATileIndex: 0 });
   });
 
   it("x_or_y_ray: ignores red tiles", () => {
@@ -1191,6 +1188,105 @@ describe("handleOwnTileClickEquipment", () => {
     };
     const result = handleOwnTileClickEquipment(mode, 0, me);
     expect(result.newMode).toEqual(mode);
+  });
+
+  it("double_detector: deselects own guess tile when clicking same tile", () => {
+    const me = player({ hand: [tile({ gameValue: 3 })] });
+    const mode: EquipmentMode = {
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0, 1],
+      guessTileIndex: 0,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("talkies_walkies: deselects own tile when clicking same tile", () => {
+    const me = player({ hand: [tile()] });
+    const mode: EquipmentMode = {
+      kind: "talkies_walkies",
+      teammateId: "opp1",
+      teammateTileIndex: 2,
+      myTileIndex: 0,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, myTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("triple_detector: deselects own guess tile when clicking same tile", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 7 })] });
+    const mode: EquipmentMode = {
+      kind: "triple_detector",
+      targetPlayerId: "opp1",
+      targetTileIndices: [0, 1, 2],
+      guessTileIndex: 0,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("super_detector: deselects own guess tile when clicking same tile", () => {
+    const me = player({ hand: [tile({ color: "blue", gameValue: 4 })] });
+    const mode: EquipmentMode = {
+      kind: "super_detector",
+      targetPlayerId: "opp1",
+      guessTileIndex: 0,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, guessTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("x_or_y_ray: deselects guessA and clears guessB when clicking guessA tile", () => {
+    const me = player({
+      hand: [tile({ color: "blue", gameValue: 5 }), tile({ color: "blue", gameValue: 7 })],
+    });
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 0,
+      guessATileIndex: 0,
+      guessBTileIndex: 1,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, guessATileIndex: null, guessBTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("x_or_y_ray: deselects guessA when guessB is already null", () => {
+    const me = player({
+      hand: [tile({ color: "blue", gameValue: 5 })],
+    });
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 0,
+      guessATileIndex: 0,
+      guessBTileIndex: null,
+    };
+    const result = handleOwnTileClickEquipment(mode, 0, me);
+    expect(result.newMode).toEqual({ ...mode, guessATileIndex: null, guessBTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("x_or_y_ray: deselects only guessB when clicking guessB tile", () => {
+    const me = player({
+      hand: [tile({ color: "blue", gameValue: 5 }), tile({ color: "blue", gameValue: 7 })],
+    });
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 0,
+      guessATileIndex: 0,
+      guessBTileIndex: 1,
+    };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual({ ...mode, guessBTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("x_or_y_ray: returns unchanged when both guesses already set", () => {
