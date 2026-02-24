@@ -94,7 +94,7 @@ export function getInitialEquipmentMode(
     case "false_bottom":
       return { kind: "false_bottom" };
     case "single_wire_label":
-      return { kind: "single_wire_label" };
+      return { kind: "single_wire_label", selectedTileIndex: null };
     case "emergency_drop":
       return { kind: "emergency_drop" };
     case "fast_pass":

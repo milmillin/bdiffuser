@@ -54,7 +54,7 @@ export type EquipmentMode =
       guessBTileIndex: number | null;
     }
   | { kind: "false_bottom" }
-  | { kind: "single_wire_label" }
+  | { kind: "single_wire_label"; selectedTileIndex?: number | null }
   | { kind: "emergency_drop" }
   | { kind: "fast_pass"; selectedValue: number | null }
   | { kind: "disintegrator" }
@@ -805,8 +805,33 @@ export function EquipmentModePanel({
     }
 
     case "single_wire_label": {
-      content =
-        "Click one of your blue wires to apply the Single Wire Label.";
+      const selectedTileIndex = mode.selectedTileIndex ?? null;
+      if (selectedTileIndex == null) {
+        content = "Click one of your blue wires to apply the Single Wire Label.";
+      } else {
+        content = (
+          <>
+            Selected wire {wireLabel(selectedTileIndex)}. Confirm to place the
+            Single Wire Label info token.
+          </>
+        );
+        confirmButton = (
+          <button
+            type="button"
+            data-testid="single-wire-label-confirm"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "single_wire_label",
+                payload: { kind: "single_wire_label", tileIndex: selectedTileIndex },
+              })
+            }
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            Confirm Single Wire Label
+          </button>
+        );
+      }
       break;
     }
 

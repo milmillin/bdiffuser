@@ -55,6 +55,17 @@ export function getOwnTileSelectableFilter(
         typeof tile.gameValue === "number" &&
         !me.infoTokens.some((t) => t.position === idx);
     }
+    case "single_wire_label": {
+      return (tile, idx) => {
+        if (tile.color !== "blue" || typeof tile.gameValue !== "number") return false;
+        if (me.infoTokens.some((t) => t.position === idx && t.singleWire)) return false;
+        // Value must appear exactly once on the stand (cut or uncut)
+        const valueCount = me.hand.filter(
+          (t) => t.color === "blue" && t.gameValue === tile.gameValue,
+        ).length;
+        return valueCount === 1;
+      };
+    }
     case "double_detector":
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "label_eq":
@@ -132,6 +143,8 @@ export function getOwnSelectedTileIndex(
   if (!mode) return undefined;
   switch (mode.kind) {
     case "post_it":
+      return mode.selectedTileIndex ?? undefined;
+    case "single_wire_label":
       return mode.selectedTileIndex ?? undefined;
     case "double_detector":
       return mode.guessTileIndex ?? undefined;
@@ -259,7 +272,8 @@ export function handleOwnTileClickEquipment(
   const tile = me.hand[tileIndex];
   const allowCutTile =
     (mode.kind === "post_it" && canPostItTargetCutWire(gameState))
-    || mode.kind === "label_neq";
+    || mode.kind === "label_neq"
+    || mode.kind === "single_wire_label";
   if (!tile || (tile.cut && !allowCutTile)) return { newMode: mode };
 
   switch (mode.kind) {
@@ -273,6 +287,19 @@ export function handleOwnTileClickEquipment(
       return {
         newMode: { ...mode, selectedTileIndex: tileIndex },
       };
+    }
+    case "single_wire_label": {
+      if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
+      if (me.infoTokens.some((t) => t.position === tileIndex && t.singleWire)) return { newMode: mode };
+      const singleCount = me.hand.filter(
+        (t) => t.color === "blue" && t.gameValue === tile.gameValue,
+      ).length;
+      if (singleCount !== 1) return { newMode: mode };
+      const curSelected = mode.selectedTileIndex ?? null;
+      if (curSelected === tileIndex) {
+        return { newMode: { ...mode, selectedTileIndex: null } };
+      }
+      return { newMode: { ...mode, selectedTileIndex: tileIndex } };
     }
     case "double_detector": {
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") return { newMode: mode };
