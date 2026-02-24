@@ -783,6 +783,31 @@ describe("simultaneous_four_cut hook", () => {
     expect(discardLog).toBeDefined();
   });
 
+  it("endTurn: discards equipment when a non-zero index Captain is about to play", () => {
+    const eq1 = makeEquipmentCard({ id: "eq1", faceDown: true, unlocked: false });
+    const eq2 = makeEquipmentCard({ id: "eq2", faceDown: true, unlocked: false });
+
+    const state = makeGameState({
+      mission: 23,
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "p2", isCaptain: true }),
+      ],
+      currentPlayerIndex: 1,
+      turnNumber: 4,
+      board: makeBoardState({ equipment: [eq1, eq2] }),
+      log: [],
+    });
+
+    dispatchHooks(23, { point: "endTurn", state, previousPlayerId: "p1" });
+
+    expect(state.board.equipment).toHaveLength(1);
+    const discardLog = state.log.find(
+      (e) => e.action === "hookEffect" && renderLogDetail(e.detail).startsWith("m23:equipment_discard:"),
+    );
+    expect(discardLog).toBeDefined();
+  });
+
   it("endTurn: does NOT discard when it is the first turn", () => {
     const eq1 = makeEquipmentCard({ id: "eq1", faceDown: true, unlocked: false });
 

@@ -1932,8 +1932,10 @@ registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
     if (ctx.state.phase === "finished") return;
     if (ctx.state.campaign?.mission23SpecialActionDone) return;
 
-    // Discard happens when Captain (index 0) is about to play and it's not the first round
-    if (ctx.state.currentPlayerIndex !== 0) return;
+    // Discard happens when the Captain is about to play and it's not the first round.
+    const captainIndex = ctx.state.players.findIndex((player) => player.isCaptain);
+    if (captainIndex === -1) return;
+    if (ctx.state.currentPlayerIndex !== captainIndex) return;
     if (ctx.state.turnNumber <= 1) return;
 
     // Find first face-down equipment card and remove it
