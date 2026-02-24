@@ -3774,11 +3774,14 @@ registerHookHandler<"random_setup_info_tokens">("random_setup_info_tokens", {
  * Mission 41: Iberian yellow mode.
  * Special yellow wire handling where a designated wire must be cut when
  * instructed. If the designated yellow wire is RED, the bomb explodes.
+ * Setup also uses random info-token draws.
  */
 registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
   setup(_rule: IberianYellowModeRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
-    (ctx.state.campaign as Record<string, unknown>).iberianYellowMode = true;
+    const campaignState = ctx.state.campaign as Record<string, unknown>;
+    campaignState.iberianYellowMode = true;
+    campaignState.randomSetupInfoTokens = true;
 
     pushGameLog(ctx.state, {
       turn: 0,

@@ -252,6 +252,45 @@ describe("setupTokenRules", () => {
       expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
     });
 
+    it("auto-places random setup tokens for mission 41 after setup hooks", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "c-1", color: "blue", gameValue: 3, sortValue: 3 }),
+          makeYellowTile({ id: "c-y1" }),
+        ],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [
+          makeTile({ id: "p2-1", color: "blue", gameValue: 1, sortValue: 1 }),
+          makeTile({ id: "p2-2", color: "blue", gameValue: 9, sortValue: 9 }),
+        ],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [
+          makeTile({ id: "p3-1", color: "blue", gameValue: 7, sortValue: 7 }),
+          makeRedTile({ id: "p3-r1" }),
+        ],
+      });
+
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 41,
+        players: [captain, p2, p3],
+      });
+      dispatchHooks(41, { point: "setup", state });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toHaveLength(3);
+      expect(captain.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
+      expect(p2.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
+      expect(p3.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
+    });
+
     it("mission 43 (2p): auto-places a random setup token for captain only", () => {
       const captain = makePlayer({
         id: "captain",
