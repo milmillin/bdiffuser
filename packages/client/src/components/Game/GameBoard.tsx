@@ -144,7 +144,7 @@ type PendingAction =
       immediatePayload?: UseEquipmentPayload;
     };
 
-type Mission46CutTarget = {
+type MultiCutTarget = {
   playerId: string;
   tileIndex: number;
 };
@@ -212,9 +212,11 @@ export function GameBoard({
   const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
     number | null
   >(null);
-  const [mission46Targets, setMission46Targets] = useState<Mission46CutTarget[]>(
-    [],
-  );
+  const [mission46Targets, setMission46Targets] = useState<MultiCutTarget[]>([]);
+  const [missionSpecialTargets, setMissionSpecialTargets] = useState<
+    MultiCutTarget[]
+  >([]);
+  const [missionSpecialMode, setMissionSpecialMode] = useState(false);
 
   useEffect(() => {
     const fa = gameState.pendingForcedAction;
@@ -310,6 +312,17 @@ export function GameBoard({
     !!me;
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
   const forceRevealReds = isMyTurn && revealRedsAvailable;
+  const missionSupportsSimultaneousThreeCut =
+    gameState.mission === 13 || gameState.mission === 48;
+  const canStartMissionSpecialCut =
+    missionSupportsSimultaneousThreeCut &&
+    gameState.phase === "playing" &&
+    isMyTurn &&
+    !gameState.pendingForcedAction &&
+    !equipmentMode &&
+    pendingAction == null &&
+    !mission46ForcedForMe &&
+    !forceRevealReds;
   const mission11RevealBlockedHint =
     isMyTurn && gameState.mission === 11 && !revealRedsAvailable;
   const mission11RevealAttemptAvailable =
@@ -323,6 +336,13 @@ export function GameBoard({
     !forceRevealReds &&
     !!me &&
     me.hand.some((tile) => !tile.cut);
+
+  useEffect(() => {
+    if (canStartMissionSpecialCut) return;
+    setMissionSpecialMode(false);
+    setMissionSpecialTargets([]);
+  }, [canStartMissionSpecialCut]);
+
   const soloValues = me ? getSoloCutValues(gameState, playerId) : [];
   const soloValueSet = new Set<number | "YELLOW">(soloValues);
   const mission9Gate = getMission9SequenceGate(gameState);
@@ -429,6 +449,8 @@ export function GameBoard({
     setPendingAction(null);
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
+    setMissionSpecialMode(false);
+    setMissionSpecialTargets([]);
   }, [gameState.turnNumber, gameState.phase]);
 
   useEffect(() => {
@@ -481,6 +503,12 @@ export function GameBoard({
     const fromEquipment = _getOpponentSelectedTileIndices(equipmentMode, oppId);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
+    if (missionSpecialMode) {
+      const indices = missionSpecialTargets
+        .filter((target) => target.playerId === oppId)
+        .map((target) => target.tileIndex);
+      return indices.length > 0 ? indices : undefined;
+    }
     if (!mission46ForcedForMe) return undefined;
     const indices = mission46Targets
       .filter((target) => target.playerId === oppId)
@@ -508,6 +536,12 @@ export function GameBoard({
   const getOwnSelectedTileIndices = (): number[] | undefined => {
     const fromEquipment = _getOwnSelectedTileIndices(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
+    if (!equipmentMode && missionSpecialMode) {
+      const indices = missionSpecialTargets
+        .filter((target) => target.playerId === playerId)
+        .map((target) => target.tileIndex);
+      return indices.length > 0 ? indices : undefined;
+    }
     if (!equipmentMode && mission46ForcedForMe) {
       const indices = mission46Targets
         .filter((target) => target.playerId === playerId)
@@ -549,7 +583,7 @@ export function GameBoard({
     if (!me || gameState.phase !== "playing" || gameState.pendingForcedAction) {
       return false;
     }
-    if (equipmentMode || pendingAction) return false;
+    if (equipmentMode || pendingAction || missionSpecialMode) return false;
 
     const equipment = gameState.board.equipment.find((eq) => eq.id === equipmentId);
     if (!equipment || !equipment.unlocked || equipment.used) return false;
@@ -596,7 +630,7 @@ export function GameBoard({
   };
 
   const stageSkillFromCardStrip = (): boolean => {
-    if (!me?.character || !canUseSkillFromCardStrip) return false;
+    if (!me?.character || !canUseSkillFromCardStrip || missionSpecialMode) return false;
     setEquipmentMode({
       kind: "double_detector",
       targetPlayerId: null,
@@ -648,9 +682,57 @@ export function GameBoard({
     [],
   );
 
+  const toggleMissionSpecialTarget = useCallback(
+    (targetPlayerId: string, tileIndex: number) => {
+      setMissionSpecialTargets((current) => {
+        const existingIndex = current.findIndex(
+          (target) =>
+            target.playerId === targetPlayerId && target.tileIndex === tileIndex,
+        );
+        if (existingIndex >= 0) {
+          return current.filter((_, index) => index !== existingIndex);
+        }
+        if (current.length >= 3) {
+          return current;
+        }
+        return [...current, { playerId: targetPlayerId, tileIndex }];
+      });
+    },
+    [],
+  );
+
   const clearMission46Targets = useCallback(() => {
     setMission46Targets([]);
   }, []);
+
+  const startMissionSpecialCut = useCallback(() => {
+    if (!canStartMissionSpecialCut) return;
+    setMissionSpecialMode(true);
+    setMissionSpecialTargets([]);
+    setSelectedGuessTile(null);
+    setPendingAction(null);
+    setSelectedDockCardId(null);
+    setEquipmentMode(null);
+  }, [canStartMissionSpecialCut]);
+
+  const clearMissionSpecialTargets = useCallback(() => {
+    setMissionSpecialTargets([]);
+  }, []);
+
+  const cancelMissionSpecialCut = useCallback(() => {
+    setMissionSpecialMode(false);
+    setMissionSpecialTargets([]);
+  }, []);
+
+  const confirmMissionSpecialCut = useCallback(() => {
+    if (!missionSpecialMode || missionSpecialTargets.length !== 3) return;
+    send({ type: "simultaneousRedCut", targets: missionSpecialTargets });
+    setMissionSpecialMode(false);
+    setMissionSpecialTargets([]);
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
+  }, [missionSpecialMode, missionSpecialTargets, send]);
 
   const confirmMission46SevensCut = useCallback(() => {
     if (!mission46ForcedForMe || mission46Targets.length !== 4) return;
@@ -763,6 +845,12 @@ export function GameBoard({
                         gameState.phase === "playing"
                           ? (tileIndex) =>
                               handleOpponentTileClick(opp.id, tileIndex)
+                          : missionSpecialMode
+                            ? (tileIndex) => {
+                                const oppTile = opp.hand[tileIndex];
+                                if (!oppTile || oppTile.cut) return;
+                                toggleMissionSpecialTarget(opp.id, tileIndex);
+                              }
                           : mission46ForcedForMe
                             ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
@@ -812,6 +900,8 @@ export function GameBoard({
                         gameState.phase === "playing" &&
                         MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind)
                           ? getOpponentTileSelectableFilter(opp.id)
+                          : missionSpecialMode
+                            ? (tile: VisibleTile) => !tile.cut
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
@@ -836,7 +926,7 @@ export function GameBoard({
                         character={me.character}
                         characterUsed={me.characterUsed}
                         isMyTurn={isMyTurn}
-                        canSelectCards={!isSetup}
+                        canSelectCards={!isSetup && !missionSpecialMode}
                         selectedCardId={selectedDockCardId}
                         onSelectCard={setSelectedDockCardId}
                         onDeselectCard={cancelSelectedDockCard}
@@ -966,6 +1056,41 @@ export function GameBoard({
                     selectedCount={mission46Targets.length}
                     onClear={clearMission46Targets}
                     onConfirm={confirmMission46SevensCut}
+                  />
+                )}
+
+                {gameState.phase === "playing" &&
+                  canStartMissionSpecialCut &&
+                  !missionSpecialMode && (
+                    <div
+                      className="rounded-lg border border-red-500/50 bg-red-950/20 px-3 py-2 text-xs space-y-2"
+                      data-testid="mission-special-three-cut-launch"
+                    >
+                      <div className="font-bold text-red-300 uppercase tracking-wide">
+                        Mission {gameState.mission} Special Action
+                      </div>
+                      <div className="text-red-100">
+                        {gameState.mission === 13
+                          ? "Cut the 3 red wires at the same time."
+                          : "Cut the 3 yellow wires at the same time."}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={startMissionSpecialCut}
+                        className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white font-black transition-colors"
+                      >
+                        Select 3 Wires
+                      </button>
+                    </div>
+                  )}
+
+                {gameState.phase === "playing" && missionSpecialMode && (
+                  <MissionSpecialThreeCutPanel
+                    mission={gameState.mission}
+                    selectedCount={missionSpecialTargets.length}
+                    onClear={clearMissionSpecialTargets}
+                    onCancel={cancelMissionSpecialCut}
+                    onConfirm={confirmMissionSpecialCut}
                   />
                 )}
 
@@ -1144,6 +1269,12 @@ export function GameBoard({
                                   : tileIndex,
                               );
                             }
+                          : missionSpecialMode
+                            ? (tileIndex) => {
+                                const tile = me.hand[tileIndex];
+                                if (!tile || tile.cut) return;
+                                toggleMissionSpecialTarget(playerId, tileIndex);
+                              }
                           : mission46ForcedForMe
                             ? (tileIndex) => {
                                 const tile = me.hand[tileIndex];
@@ -1257,6 +1388,8 @@ export function GameBoard({
                           ? (tile: VisibleTile) =>
                               !tile.cut &&
                               !(hasXWireEquipmentRestriction && tile.isXMarked)
+                          : missionSpecialMode
+                            ? (tile: VisibleTile) => !tile.cut
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : playingInteractionEnabled &&
@@ -1541,6 +1674,66 @@ function Mission46SevensCutPanel({
           }`}
         >
           Confirm 4-Wire Cut
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MissionSpecialThreeCutPanel({
+  mission,
+  selectedCount,
+  onClear,
+  onCancel,
+  onConfirm,
+}: {
+  mission: number;
+  selectedCount: number;
+  onClear: () => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const canConfirm = selectedCount === 3;
+  const label = mission === 48 ? "yellow" : "red";
+
+  return (
+    <div
+      className="rounded-lg border border-red-500/50 bg-red-950/20 px-3 py-2 text-xs space-y-2"
+      data-testid="mission-special-three-cut-panel"
+    >
+      <div className="font-bold text-red-300 uppercase tracking-wide">
+        Mission {mission} Special Action
+      </div>
+      <div className="text-red-100">
+        Select exactly 3 uncut wires to attempt the simultaneous {label} cut.
+      </div>
+      <div className="text-red-200/90">{selectedCount}/3 wires selected</div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onClear}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          className={`px-3 py-1 rounded font-black transition-colors ${
+            canConfirm
+              ? "bg-red-600 hover:bg-red-500 text-white"
+              : "bg-gray-700 text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Confirm 3-Wire Cut
         </button>
       </div>
     </div>
