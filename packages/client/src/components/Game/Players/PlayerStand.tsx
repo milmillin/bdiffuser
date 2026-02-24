@@ -28,7 +28,7 @@ export function PlayerStand({
   statusContent?: ReactNode;
 }) {
   const standSegments = getStandSegments(player);
-  const tokenRowMinHeightPx = getTokenRowMinHeight(player);
+  const tokenRowHeightPx = getTokenRowHeight(player);
 
   return (
     <div
@@ -124,7 +124,7 @@ export function PlayerStand({
                         <div
                           key={`info-${flatIndex}`}
                           className="flex items-end justify-center"
-                          style={tokenRowMinHeightPx > 0 ? { minHeight: `${tokenRowMinHeightPx}px` } : undefined}
+                          style={tokenRowHeightPx > 0 ? { height: `${tokenRowHeightPx}px` } : undefined}
                         >
                           <div className="flex flex-col items-center gap-0.5">
                             {infoTokens.map((token, tokenIndex) => (
@@ -214,7 +214,7 @@ function getValidatedStandSizes(player: ClientPlayer): number[] {
   return maybeStandSizes;
 }
 
-function getTokenRowMinHeight(player: ClientPlayer): number {
+function getTokenRowHeight(player: ClientPlayer): number {
   let maxTokenStack = 0;
   for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex += 1) {
     let count = 0;
@@ -230,6 +230,7 @@ function getTokenRowMinHeight(player: ClientPlayer): number {
 
   if (maxTokenStack <= 0) return 0;
 
+  // Token visuals are rendered at 1.5rem to match tile column width.
   const tokenHeightPx = 24;
   const tokenGapPx = 2;
   return (maxTokenStack * tokenHeightPx) + ((maxTokenStack - 1) * tokenGapPx);
@@ -248,7 +249,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
   if (token.relation === "eq" || token.relation === "neq") {
     return (
       <div
-        className={`px-1 py-0.5 rounded text-[9px] font-black leading-none ${
+        className={`w-6 h-6 rounded text-[9px] font-black leading-none flex items-center justify-center ${
           token.relation === "eq"
             ? "bg-blue-700 text-white"
             : "bg-orange-700 text-white"
@@ -263,7 +264,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
     <img
       src={`/images/${getInfoTokenImage(token)}`}
       alt={`Info: ${token.isYellow ? "YELLOW" : token.countHint != null ? `x${token.countHint}` : token.parity ?? token.value}`}
-      className="w-full h-auto block"
+      className="w-6 h-6 object-contain block"
     />
   );
 }

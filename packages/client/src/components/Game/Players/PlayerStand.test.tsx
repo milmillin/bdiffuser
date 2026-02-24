@@ -94,8 +94,8 @@ describe("PlayerStand", () => {
       />,
     );
 
-    const minHeightStyles = html.match(/min-height:\d+px/g) ?? [];
-    expect(minHeightStyles.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(minHeightStyles).size).toBe(1);
+    const rowHeightStyles = html.match(/height:\d+px/g) ?? [];
+    expect(rowHeightStyles.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(rowHeightStyles).size).toBe(1);
   });
 });
