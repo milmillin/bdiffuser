@@ -101,12 +101,12 @@ export function PlayerStand({
         const colWidth = "1.5rem";
         return (
           <ScrollableRow>
-            <div className="flex items-start mx-auto min-w-0">
+            <div className="flex items-start justify-center mx-auto w-max min-w-full">
               {standSegments.map((segment, segmentIndex) => (
                 <div
                   key={`stand-segment-${segment.standIndex}`}
                   data-testid={`player-stand-segment-${player.id}-${segment.standIndex}`}
-                  className={`min-w-0 ${segmentIndex > 0 ? "ml-2 pl-2 border-l border-gray-700/70" : ""}`}
+                  className={`shrink-0 ${segmentIndex > 0 ? "ml-2 pl-2 border-l border-gray-700/70" : ""}`}
                 >
                   <div
                     className="grid gap-x-1 min-w-0"

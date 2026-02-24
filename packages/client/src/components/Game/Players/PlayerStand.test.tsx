@@ -98,4 +98,31 @@ describe("PlayerStand", () => {
     expect(rowHeightStyles.length).toBeGreaterThanOrEqual(2);
     expect(new Set(rowHeightStyles).size).toBe(1);
   });
+
+  it("keeps two stand segments non-shrinking to avoid overlap on resize", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 8, sortValue: 8 }),
+      ],
+      standSizes: [1, 1],
+      infoTokens: [],
+    }) as ClientPlayer;
+    player.remainingTiles = 2;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("justify-center mx-auto w-max min-w-full");
+    expect(html).toContain("data-testid=\"player-stand-segment-p1-0\" class=\"shrink-0");
+    expect(html).toContain("data-testid=\"player-stand-segment-p1-1\" class=\"shrink-0 ml-2 pl-2 border-l border-gray-700/70");
+  });
 });
