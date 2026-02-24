@@ -22,6 +22,7 @@ export type InlineToken =
 export interface ListItem {
   tokens: InlineToken[];
   children: ListItem[];
+  redacted?: boolean;
 }
 
 export type BodyNode =

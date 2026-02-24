@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { InlineToken, ListItem, BodyNode, MarkdownSection } from "./markdownParser.js";
 
 // ── Inline rendering ───────────────────────────────────────────────
@@ -30,9 +31,51 @@ function InlineTokens({ tokens }: { tokens: InlineToken[] }) {
   );
 }
 
+// ── Redacted list item ─────────────────────────────────────────────
+
+function RedactedListItem({ item }: { item: ListItem }) {
+  const [revealed, setRevealed] = useState(false);
+
+  if (revealed) {
+    return (
+      <li>
+        <InlineTokens tokens={item.tokens} />
+        {item.children.length > 0 && (
+          <ul className="ml-4 mt-1 list-disc space-y-1">
+            {item.children.map((child, i) => (
+              <ListItemNode key={i} item={child} />
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
+
+  return (
+    <li className="list-none">
+      <button
+        type="button"
+        onClick={() => setRevealed(true)}
+        className="w-full rounded border border-dashed border-amber-500/40 bg-gray-900/60 px-2 py-1.5 text-left"
+      >
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500/70">
+          CLASSIFIED
+        </span>
+        <span className="ml-2 text-[10px] text-gray-500">
+          — tap to reveal
+        </span>
+      </button>
+    </li>
+  );
+}
+
 // ── List rendering ─────────────────────────────────────────────────
 
 function ListItemNode({ item }: { item: ListItem }) {
+  if (item.redacted) {
+    return <RedactedListItem item={item} />;
+  }
+
   return (
     <li>
       <InlineTokens tokens={item.tokens} />

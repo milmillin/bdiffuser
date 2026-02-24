@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import type { MarkdownSection } from "./markdownParser.js";
-import { EQUIPMENT_ID_TO_RULES_LABEL } from "./equipmentIdMapping.js";
+import type { MarkdownSection, ListItem } from "./markdownParser.js";
 
 interface FilterInput {
   mission: number;
@@ -8,69 +7,119 @@ interface FilterInput {
 }
 
 /**
- * Matches an equipment list item against a set of rules-document labels.
- *
- * Equipment items in GAME_RULES.md start with patterns like:
- *   - Equipment `1` (`Label !=`)
- *   - Yellow equipment - `False Bottom`
- *
- * We check whether the first inline token text contains "Equipment `{label}`"
- * or "Yellow equipment" depending on the label.
- */
-function equipmentItemMatches(
-  itemText: string,
-  presentLabels: Set<string>,
-): boolean {
-  for (const label of presentLabels) {
-    if (label === "Yellow equipment") {
-      if (itemText.includes("Yellow equipment")) return true;
-    } else {
-      // Match "Equipment `N`" pattern — the backticks are stripped by the
-      // tokenizer, so we check the raw concatenated text.
-      if (itemText.includes(`Equipment`) && itemText.includes(label)) {
-        // More precise: check for "Equipment `{label}`" or "Equipment {label}"
-        const pattern = new RegExp(`Equipment\\s+\`?${escapeRegex(label)}\`?`);
-        if (pattern.test(itemText)) return true;
-      }
-    }
-  }
-  return false;
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
  * Reconstruct raw text from a list item's tokens for matching purposes.
  */
-function listItemRawText(
-  item: { tokens: { value: string }[] },
-): string {
+function listItemRawText(item: { tokens: { value: string }[] }): string {
   return item.tokens.map((t) => t.value).join("");
+}
+
+// ── Campaign redaction rules ────────────────────────────────────────
+
+interface RedactionRule {
+  /** Matches the section heading that contains the items. */
+  sectionMatcher: (heading: { text: string }) => boolean;
+  /** Matches individual list items within the section. */
+  itemMatcher: (rawText: string) => boolean;
+  /** Items are redacted when current mission is below this threshold. */
+  missionThreshold: number;
+}
+
+const REDACTION_RULES: RedactionRule[] = [
+  // False Bottom (Yellow equipment) — unlocked at mission 9
+  {
+    sectionMatcher: (h) => h.text.startsWith("Additional Equipment Card Assets"),
+    itemMatcher: (text) => text.startsWith("Yellow equipment"),
+    missionThreshold: 9,
+  },
+  // Campaign equipment cards (22, 33, 99, 10-10, 11-11) — unlocked at mission 41
+  {
+    sectionMatcher: (h) => h.text.startsWith("Additional Equipment Card Assets"),
+    itemMatcher: (text) => /^Equipment /.test(text),
+    missionThreshold: 41,
+  },
+  // New Characters E1-E4 — unlocked at mission 31
+  {
+    sectionMatcher: (h) => h.text.startsWith("New Characters"),
+    itemMatcher: () => true,
+    missionThreshold: 31,
+  },
+  // Constraints A-E — unlocked at mission 31
+  {
+    sectionMatcher: (h) => h.text === "Constraint Cards",
+    itemMatcher: (text) => /Constraint [A-E]:/.test(text),
+    missionThreshold: 31,
+  },
+  // Constraints F-L — unlocked at mission 32
+  {
+    sectionMatcher: (h) => h.text === "Constraint Cards",
+    itemMatcher: (text) => /Constraint [F-L]:/.test(text),
+    missionThreshold: 32,
+  },
+  // All challenge cards — unlocked at mission 55
+  {
+    sectionMatcher: (h) => h.text === "Challenge Cards",
+    itemMatcher: () => true,
+    missionThreshold: 55,
+  },
+];
+
+/**
+ * Walks the section tree and marks list items as `redacted` based on
+ * campaign progression (mission number).
+ */
+function applyRedactions(
+  sections: MarkdownSection[],
+  mission: number,
+): MarkdownSection[] {
+  return sections.map((section) => {
+    // Check if any redaction rules apply to this section's heading
+    const activeRules = REDACTION_RULES.filter(
+      (rule) =>
+        rule.sectionMatcher(section.heading) &&
+        mission < rule.missionThreshold,
+    );
+
+    let body = section.body;
+    if (activeRules.length > 0) {
+      body = body.map((node) => {
+        if (node.kind !== "unordered-list" && node.kind !== "ordered-list")
+          return node;
+
+        return {
+          ...node,
+          items: node.items.map((item): ListItem => {
+            const raw = listItemRawText(item);
+            const shouldRedact = activeRules.some((rule) =>
+              rule.itemMatcher(raw),
+            );
+            return shouldRedact ? { ...item, redacted: true } : item;
+          }),
+        };
+      });
+    }
+
+    // Recurse into subsections
+    const subsections =
+      section.subsections.length > 0
+        ? applyRedactions(section.subsections, mission)
+        : section.subsections;
+
+    if (body === section.body && subsections === section.subsections)
+      return section;
+    return { ...section, body, subsections };
+  });
 }
 
 /**
  * Filters parsed GAME_RULES.md sections to show only what's relevant
- * for the current mission and present equipment.
+ * for the current mission, and marks campaign-locked items as redacted.
  */
 export function useFilteredRules(
   sections: MarkdownSection[],
   filter: FilterInput,
 ): MarkdownSection[] {
   return useMemo(() => {
-    const { mission, equipmentIds } = filter;
-
-    // Build the set of rules-doc labels for present equipment
-    const presentLabels = new Set<string>();
-    for (const id of equipmentIds) {
-      const label = EQUIPMENT_ID_TO_RULES_LABEL[id];
-      if (label) presentLabels.add(label);
-    }
-
-    const hasEquipment = presentLabels.size > 0;
-
-    return sections.flatMap((section): MarkdownSection[] => {
+    const filtered = sections.flatMap((section): MarkdownSection[] => {
       const h2 = section.heading.text;
 
       // Always hide "Source" section
@@ -79,50 +128,10 @@ export function useFilteredRules(
       // Hide inline TOC — we have sidebar/dropdown TOC components instead
       if (h2 === "Table of Contents") return [];
 
-      // Equipment section (13): filter subsections
-      if (h2.startsWith("13.")) {
-        const filteredSubs = section.subsections.flatMap(
-          (sub): MarkdownSection[] => {
-            const subText = sub.heading.text;
-
-            // Always hide "Equipment Back Art"
-            if (subText.includes("13.6")) return [];
-
-            // Filter 13.4 and 13.5 by present equipment
-            if (subText.includes("13.4") || subText.includes("13.5")) {
-              if (!hasEquipment) return [];
-
-              // Filter the list items within the body
-              const filteredBody = sub.body.map((node) => {
-                if (
-                  node.kind !== "unordered-list" &&
-                  node.kind !== "ordered-list"
-                )
-                  return node;
-
-                const filteredItems = node.items.filter((item) => {
-                  const raw = listItemRawText(item);
-                  return equipmentItemMatches(raw, presentLabels);
-                });
-
-                if (filteredItems.length === 0) return null;
-                return { ...node, items: filteredItems };
-              }).filter((n): n is NonNullable<typeof n> => n !== null);
-
-              if (filteredBody.length === 0) return [];
-              return [{ ...sub, body: filteredBody }];
-            }
-
-            // Keep other 13.x subsections as-is (13.1, 13.2, 13.3)
-            return [sub];
-          },
-        );
-
-        return [{ ...section, subsections: filteredSubs }];
-      }
-
       // All other sections: keep as-is
       return [section];
     });
+
+    return applyRedactions(filtered, filter.mission);
   }, [sections, filter.mission, filter.equipmentIds]);
 }
