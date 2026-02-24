@@ -281,6 +281,7 @@ export function GameBoard({
             if (tile.cut) return false;
             if (tile.gameValue === "RED" || tile.gameValue == null) return false;
             return (
+              tile.gameValue === selectedGuessValue &&
               soloValueSet.has(tile.gameValue) &&
               !isMission9BlockedValue(tile.gameValue)
             );
@@ -986,6 +987,7 @@ export function GameBoard({
                               const canStageSolo =
                                 tileValue != null &&
                                 tileValue !== "RED" &&
+                                tileValue === selectedGuessValue &&
                                 soloValueSet.has(tileValue) &&
                                 !isMission9BlockedValue(tileValue);
 
