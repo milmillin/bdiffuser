@@ -32,8 +32,8 @@ function createSetupPlayers(count: 2 | 3 | 4 | 5) {
   );
 }
 
-function getStandSlices(player: { hand: Array<{ isXMarked?: boolean }>; standSizes: number[] }) {
-  const slices: Array<Array<{ isXMarked?: boolean }>> = [];
+function getStandSlices<T>(player: { hand: T[]; standSizes: number[] }): T[][] {
+  const slices: T[][] = [];
   let offset = 0;
   for (const size of player.standSizes) {
     slices.push(player.hand.slice(offset, offset + size));
@@ -86,6 +86,33 @@ describe("mission complexity tier representative coverage", () => {
         expect(stand[stand.length - 1].isXMarked).toBe(true);
       }
     }
+  });
+
+  it("special setup tier (mission 48): yellow wires are pre-dealt clockwise from captain", () => {
+    const players = createSetupPlayers(4);
+    const { players: dealtPlayers } = setupGame(players, 48);
+
+    const yellowCounts = dealtPlayers.map((player) =>
+      player.hand.filter((tile) => tile.color === "yellow").length
+    );
+    expect(yellowCounts).toEqual([1, 1, 1, 0]);
+  });
+
+  it("special setup tier (mission 48, 2p): captain splits yellow wires across both stands", () => {
+    const players = createSetupPlayers(2);
+    const { players: dealtPlayers } = setupGame(players, 48);
+    const captain = dealtPlayers.find((player) => player.isCaptain)!;
+    const teammate = dealtPlayers.find((player) => !player.isCaptain)!;
+
+    const captainYellowCount = captain.hand.filter((tile) => tile.color === "yellow").length;
+    const teammateYellowCount = teammate.hand.filter((tile) => tile.color === "yellow").length;
+    expect(captainYellowCount).toBe(2);
+    expect(teammateYellowCount).toBe(1);
+
+    const captainStands = getStandSlices(captain);
+    expect(captainStands).toHaveLength(2);
+    expect(captainStands[0].some((tile) => tile.color === "yellow")).toBe(true);
+    expect(captainStands[1].some((tile) => tile.color === "yellow")).toBe(true);
   });
 
   it("mission 64: two-stand flipped wires follow FAQ edge placement", () => {

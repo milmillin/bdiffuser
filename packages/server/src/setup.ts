@@ -243,6 +243,12 @@ interface StandSeat {
   lastDealtTileId?: string;
 }
 
+interface PredealtTileAssignment {
+  playerId: string;
+  standIndex: number;
+  tile: WireTile;
+}
+
 function standCountForPlayer(
   player: Player,
   playerCount: number,
@@ -253,7 +259,49 @@ function standCountForPlayer(
   return 1;
 }
 
-function distributeTilesAcrossStands(tiles: WireTile[], players: Player[]): StandSeat[] {
+function buildMission48YellowPredeals(
+  players: Player[],
+  yellowTiles: WireTile[],
+): PredealtTileAssignment[] {
+  if (players.length === 0 || yellowTiles.length === 0) return [];
+
+  const captainIndex = players.findIndex((player) => player.isCaptain);
+  const startIndex = captainIndex >= 0 ? captainIndex : 0;
+  const captain = players[startIndex];
+  const captainId = captain?.id;
+  const assignments: PredealtTileAssignment[] = [];
+  let captainStandCursor = 0;
+
+  for (let i = 0; i < yellowTiles.length; i++) {
+    const recipient = players[(startIndex + i) % players.length];
+    const recipientStandCount = standCountForPlayer(recipient, players.length, captainId);
+    let standIndex = 0;
+
+    // Mission 48 rulebook exception: with 2 players, the captain places one yellow on each stand.
+    if (
+      players.length === 2 &&
+      recipient.id === captainId &&
+      recipientStandCount > 1
+    ) {
+      standIndex = captainStandCursor % recipientStandCount;
+      captainStandCursor += 1;
+    }
+
+    assignments.push({
+      playerId: recipient.id,
+      standIndex,
+      tile: yellowTiles[i],
+    });
+  }
+
+  return assignments;
+}
+
+function distributeTilesAcrossStands(
+  tiles: WireTile[],
+  players: Player[],
+  predealtTiles: readonly PredealtTileAssignment[] = [],
+): StandSeat[] {
   shuffle(tiles);
   const captainId = players.find((player) => player.isCaptain)?.id ?? players[0]?.id;
   const standSeats: StandSeat[] = [];
@@ -270,6 +318,22 @@ function distributeTilesAcrossStands(tiles: WireTile[], players: Player[]): Stan
   }
 
   if (standSeats.length === 0) return standSeats;
+
+  if (predealtTiles.length > 0) {
+    const standSeatByKey = new Map<string, StandSeat>();
+    for (const standSeat of standSeats) {
+      standSeatByKey.set(`${standSeat.playerId}:${standSeat.standIndex}`, standSeat);
+    }
+
+    for (const assignment of predealtTiles) {
+      const standSeat = standSeatByKey.get(
+        `${assignment.playerId}:${assignment.standIndex}`,
+      );
+      if (!standSeat) continue;
+      standSeat.tiles.push(assignment.tile);
+      standSeat.lastDealtTileId = assignment.tile.id;
+    }
+  }
 
   for (let i = 0; i < tiles.length; i++) {
     const standSeat = standSeats[i % standSeats.length];
@@ -360,8 +424,13 @@ export function setupGame(
   const yellow = createYellowTiles(setup.yellow);
   const allMarkers = [...red.markers, ...yellow.markers].sort(compareMarkerOrder);
 
-  const allTiles = [...blueTiles, ...red.tiles, ...yellow.tiles];
-  const standSeats = distributeTilesAcrossStands(allTiles, players);
+  const mission48YellowPredeals = mission === 48
+    ? buildMission48YellowPredeals(players, yellow.tiles)
+    : [];
+  const allTiles = mission === 48
+    ? [...blueTiles, ...red.tiles]
+    : [...blueTiles, ...red.tiles, ...yellow.tiles];
+  const standSeats = distributeTilesAcrossStands(allTiles, players, mission48YellowPredeals);
 
   // Mission 20: the last dealt wire on each stand is moved unsorted to that
   // stand's far right and marked with X.
