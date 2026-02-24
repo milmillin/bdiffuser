@@ -282,12 +282,16 @@ function ValidationTrack({
     );
   };
 
+  const allValues = Array.from({ length: 12 }, (_, i) => i + 1);
   const row1 = Array.from({ length: 6 }, (_, i) => i + 1);
   const row2 = Array.from({ length: 6 }, (_, i) => i + 7);
 
   return (
     <div className="flex-1 min-w-0">
-      <div className="flex flex-col items-center gap-0.5">
+      <div className="hidden md:flex items-end gap-px justify-center">
+        {allValues.map(renderValueItem)}
+      </div>
+      <div className="flex md:hidden flex-col items-center gap-0.5">
         <div className="flex items-end gap-px sm:gap-0.5 justify-center">
           {row1.map(renderValueItem)}
         </div>
