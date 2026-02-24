@@ -3,6 +3,7 @@ import { logText, renderLogDetail } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
+  makeTile,
   makeBoardState,
   makeEquipmentCard,
   makeCampaignState,
@@ -180,6 +181,44 @@ describe("filterStateForPlayer – campaign state", () => {
       isXMarked: true,
     });
     expect(filtered.players[1].hand[0].gameValue).toBeUndefined();
+  });
+
+  it("hides upside-down wire values from owner and reveals them to teammates", () => {
+    const ownFlipped = makeTile({ id: "v-flip", gameValue: 2, cut: false });
+    const teammateFlipped = makeTile({ id: "o-flip", gameValue: 7, cut: false });
+    const teammateHidden = makeTile({ id: "o-hidden", gameValue: 9, cut: false });
+    (ownFlipped as typeof ownFlipped & { upsideDown?: boolean }).upsideDown = true;
+    (teammateFlipped as typeof teammateFlipped & { upsideDown?: boolean }).upsideDown = true;
+
+    const state = makeGameState({
+      players: [
+        makePlayer({
+          id: "viewer",
+          hand: [ownFlipped],
+        }),
+        makePlayer({
+          id: "teammate",
+          hand: [teammateFlipped, teammateHidden],
+        }),
+      ],
+    });
+
+    const filtered = filterStateForPlayer(state, "viewer");
+
+    // Owner should not see the value/color of their own upside-down wire.
+    expect(filtered.players[0].hand[0]).toMatchObject({ id: "v-flip", cut: false });
+    expect(filtered.players[0].hand[0].gameValue).toBeUndefined();
+    expect(filtered.players[0].hand[0].color).toBeUndefined();
+
+    // Teammates should see upside-down values, but still not see other hidden wires.
+    expect(filtered.players[1].hand[0]).toMatchObject({
+      id: "o-flip",
+      cut: false,
+      color: "blue",
+      gameValue: 7,
+    });
+    expect(filtered.players[1].hand[1]).toMatchObject({ id: "o-hidden", cut: false });
+    expect(filtered.players[1].hand[1].gameValue).toBeUndefined();
   });
 
   it("redacts mission-11 hidden blue-as-red setup log from client view", () => {

@@ -237,8 +237,10 @@ function getNormalizedStandSizes(player: Player): number[] {
 }
 
 function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
-  // Show full info if tile belongs to viewer or has been cut
-  if (isOwn || tile.cut) {
+  const upsideDown = (tile as WireTile & { upsideDown?: boolean }).upsideDown === true;
+
+  // Cut wires are public.
+  if (tile.cut) {
     return {
       id: tile.id,
       cut: tile.cut,
@@ -250,7 +252,41 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
     };
   }
 
-  // Hidden tile — only show ID and cut status
+  // Missions 38/56/64: upside-down wires are hidden from the owner and
+  // visible to teammates.
+  if (upsideDown) {
+    if (isOwn) {
+      return {
+        id: tile.id,
+        cut: false,
+        ...(tile.isXMarked ? { isXMarked: true } : {}),
+      };
+    }
+
+    return {
+      id: tile.id,
+      cut: false,
+      ...(tile.isXMarked ? { isXMarked: true } : {}),
+      color: tile.color,
+      gameValue: tile.gameValue,
+      sortValue: tile.sortValue,
+      image: tile.image,
+    };
+  }
+
+  // Standard visibility: own tiles are visible; opponents are hidden.
+  if (isOwn) {
+    return {
+      id: tile.id,
+      cut: tile.cut,
+      ...(tile.isXMarked ? { isXMarked: true } : {}),
+      color: tile.color,
+      gameValue: tile.gameValue,
+      sortValue: tile.sortValue,
+      image: tile.image,
+    };
+  }
+
   return {
     id: tile.id,
     cut: false,
