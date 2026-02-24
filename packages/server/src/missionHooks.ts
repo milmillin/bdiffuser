@@ -2852,7 +2852,7 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
       playerHands[player.id] = hand.map((value, idx) => ({
         id: `m65-${player.id}-${idx}-${value}`,
         value,
-        faceUp: false,
+        faceUp: true,
       }));
     }
 

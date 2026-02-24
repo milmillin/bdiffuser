@@ -390,6 +390,11 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.playerHands["p4"]).toHaveLength(3);
       expect(numberCards!.playerHands["p5"]).toHaveLength(2);
       expect(numberCards!.deck).toHaveLength(0);
+      expect(
+        Object.values(numberCards!.playerHands)
+          .flat()
+          .every((card) => card.faceUp),
+      ).toBe(true);
 
       const dealtCardCount = Object.values(numberCards!.playerHands).reduce(
         (sum, hand) => sum + hand.length,
