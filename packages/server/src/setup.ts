@@ -211,12 +211,24 @@ export function resolveEquipmentPoolIds(spec: MissionEquipmentSpec): string[] {
   return resolveEquipmentPool(spec).map((def) => def.id);
 }
 
+function defToCard(def: (typeof EQUIPMENT_DEFS)[number]): EquipmentCard {
+  return {
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    unlockValue: def.unlockValue,
+    unlocked: false,
+    used: false,
+    image: def.image,
+  };
+}
+
 function createEquipmentCards(
   count: number,
   spec: MissionEquipmentSpec,
-): EquipmentCard[] {
+): { dealt: EquipmentCard[]; reserve: EquipmentCard[] } {
   if (spec.mode === "none") {
-    return [];
+    return { dealt: [], reserve: [] };
   }
 
   const candidateDefs = resolveEquipmentPool(spec);
@@ -225,15 +237,10 @@ function createEquipmentCards(
     shuffle(candidateDefs);
   }
 
-  return candidateDefs.slice(0, count).map((def) => ({
-    id: def.id,
-    name: def.name,
-    description: def.description,
-    unlockValue: def.unlockValue,
-    unlocked: false,
-    used: false,
-    image: def.image,
-  }));
+  return {
+    dealt: candidateDefs.slice(0, count).map(defToCard),
+    reserve: candidateDefs.slice(count).map(defToCard),
+  };
 }
 
 interface StandSeat {
@@ -396,7 +403,7 @@ function flattenStandSeatsToPlayers(players: Player[], standSeats: StandSeat[]):
 export function setupGame(
   players: Player[],
   mission: MissionId,
-): { board: BoardState; players: Player[] } {
+): { board: BoardState; players: Player[]; equipmentReserve: EquipmentCard[] } {
   tileIdCounter = 0;
   const playerCount = players.length;
   const config = PLAYER_COUNT_CONFIG[playerCount];
@@ -495,7 +502,7 @@ export function setupGame(
     validationTrack[i] = 0;
   }
 
-  const equipment = createEquipmentCards(config.equipmentCount, setup.equipment);
+  const { dealt: equipment, reserve: equipmentReserve } = createEquipmentCards(config.equipmentCount, setup.equipment);
 
   // Rule Sticker A (missions 9+): Add False Bottom to equipment pool for
   // missions with yellow wires, unless already present.
@@ -541,6 +548,10 @@ export function setupGame(
     }
   }
 
+  // Filter force-added card IDs out of the reserve to prevent duplicates.
+  const activeIds = new Set(equipment.map((eq) => eq.id));
+  const filteredReserve = equipmentReserve.filter((eq) => !activeIds.has(eq.id));
+
   const board: BoardState = {
     detonatorPosition: config.detonatorStart,
     detonatorMax: config.detonatorMax,
@@ -549,5 +560,5 @@ export function setupGame(
     equipment,
   };
 
-  return { board, players };
+  return { board, players, equipmentReserve: filteredReserve };
 }

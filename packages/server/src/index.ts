@@ -537,8 +537,9 @@ export class BombBustersServer extends Server<Env> {
     // Setup the game
     let board: import("@bomb-busters/shared").BoardState;
     let players: Player[];
+    let equipmentReserve: import("@bomb-busters/shared").EquipmentCard[];
     try {
-      ({ board, players } = setupGame(this.room.players, this.room.mission));
+      ({ board, players, equipmentReserve } = setupGame(this.room.players, this.room.mission));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to setup mission";
       this.sendMsg(conn, { type: "error", message });
@@ -556,6 +557,7 @@ export class BombBustersServer extends Server<Env> {
       result: null,
       log: [],
       chat: [],
+      ...(equipmentReserve.length > 0 ? { campaign: { equipmentReserve } } : {}),
     };
 
     // Dispatch mission setup hooks (timer config, hidden reds, etc.)

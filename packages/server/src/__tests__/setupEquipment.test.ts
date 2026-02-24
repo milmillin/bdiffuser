@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { resolveMissionSetup } from "@bomb-busters/shared";
-import { resolveEquipmentPoolIds } from "../setup";
+import { EQUIPMENT_DEFS, PLAYER_COUNT_CONFIG, resolveMissionSetup } from "@bomb-busters/shared";
+import { resolveEquipmentPoolIds, setupGame } from "../setup";
 
 describe("equipment pool resolution", () => {
   it("uses base pool by default", () => {
@@ -45,5 +45,58 @@ describe("equipment pool resolution", () => {
     });
 
     expect(ids).toEqual(["stabilizer", "talkies_walkies", "general_radar"]);
+  });
+});
+
+describe("setupGame equipmentReserve", () => {
+  it("returns non-empty equipmentReserve when candidates exceed dealt count", () => {
+    const playerCount = 4;
+    const mission = 10; // mission 9+ with yellow wires → has base pool equipment
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+
+    const { board, equipmentReserve } = setupGame(players as any, mission);
+
+    const basePoolSize = EQUIPMENT_DEFS.filter((def) => def.pool === "base").length;
+    const equipmentCount = PLAYER_COUNT_CONFIG[playerCount]!.equipmentCount;
+
+    // The dealt equipment plus the reserve should account for all base candidates
+    // (minus any that were force-added by Rule Sticker A/C and filtered out of reserve).
+    expect(board.equipment.length).toBeGreaterThanOrEqual(equipmentCount);
+    expect(equipmentReserve.length).toBeGreaterThan(0);
+
+    // No card should appear in both dealt and reserve
+    const dealtIds = new Set(board.equipment.map((eq) => eq.id));
+    for (const card of equipmentReserve) {
+      expect(dealtIds.has(card.id)).toBe(false);
+    }
+
+    // Together they should cover most of the base pool
+    const allIds = new Set([...dealtIds, ...equipmentReserve.map((eq: { id: string }) => eq.id)]);
+    expect(allIds.size).toBeLessThanOrEqual(basePoolSize + 6); // +6 for potential campaign cards
+  });
+
+  it("returns empty equipmentReserve for fixed_pool missions", () => {
+    const playerCount = 4;
+    const mission = 18; // fixed_pool with only general_radar
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+
+    const { equipmentReserve } = setupGame(players as any, mission);
+    expect(equipmentReserve).toHaveLength(0);
   });
 });
