@@ -451,6 +451,137 @@ describe("mission 13 reveal validation", () => {
   });
 });
 
+describe("mission 18 designated cut value enforcement", () => {
+  it("rejects dual cut guesses that do not match the active Number card value", () => {
+    const cutter = makePlayer({
+      id: "cutter",
+      hand: [
+        makeTile({ id: "c1", gameValue: 5 }),
+        makeTile({ id: "c2", gameValue: 7 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const designator = makePlayer({
+      id: "designator",
+      isCaptain: true,
+      hand: [makeTile({ id: "d1", gameValue: 9 })],
+    });
+    const state = makeGameState({
+      mission: 18,
+      players: [cutter, target, designator],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission18DesignatorIndex: 2,
+        numberCards: {
+          visible: [{ id: "m18-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "cutter",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("value 7");
+  });
+
+  it("rejects solo cut values that do not match the active Number card value", () => {
+    const cutter = makePlayer({
+      id: "cutter",
+      hand: [
+        makeTile({ id: "c1", gameValue: 5 }),
+        makeTile({ id: "c2", gameValue: 5 }),
+        makeTile({ id: "c3", gameValue: 7 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 2 })],
+    });
+    const designator = makePlayer({
+      id: "designator",
+      isCaptain: true,
+      hand: [makeTile({ id: "d1", gameValue: 9 })],
+    });
+    const state = makeGameState({
+      mission: 18,
+      players: [cutter, teammate, designator],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission18DesignatorIndex: 2,
+        numberCards: {
+          visible: [{ id: "m18-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "soloCut",
+      actorId: "cutter",
+      value: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("value 7");
+  });
+
+  it("allows cut actions when the announced value matches the active Number card", () => {
+    const cutter = makePlayer({
+      id: "cutter",
+      hand: [makeTile({ id: "c1", gameValue: 7 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const designator = makePlayer({
+      id: "designator",
+      isCaptain: true,
+      hand: [makeTile({ id: "d1", gameValue: 9 })],
+    });
+    const state = makeGameState({
+      mission: 18,
+      players: [cutter, target, designator],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission18DesignatorIndex: 2,
+        numberCards: {
+          visible: [{ id: "m18-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "cutter",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).toBeNull();
+  });
+});
+
 describe("mission 9 sequence-priority validation", () => {
   it("rejects blocked sequence value in mission 9", () => {
     const actor = makePlayer({

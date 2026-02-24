@@ -1785,14 +1785,34 @@ registerHookHandler<"forced_general_radar_flow">("forced_general_radar_flow", {
   validate(_rule: ForcedGeneralRadarFlowRuleDef, ctx: ValidateHookContext): HookResult | void {
     const { state, action } = ctx;
 
-    // Block manual use of general_radar equipment during mission 18
-    if (action.type === "dualCut" || action.type === "soloCut") {
-      // During cutter sub-turn (mission18DesignatorIndex is set):
-      // block revealReds (handled below) but allow cuts — no action needed here
-    }
-
-    // When in cutter sub-turn, block useEquipment and revealReds
+    // During cutter sub-turn, the designated player must cut wires matching
+    // the currently revealed Number card value.
     if (state.campaign?.mission18DesignatorIndex != null) {
+      const requiredValue = state.campaign.numberCards?.visible?.[0]?.value;
+
+      if (typeof requiredValue !== "number") {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: "Mission 18: missing active Number card value for designated cut",
+        };
+      }
+
+      if (
+        action.type === "dualCut"
+        || action.type === "soloCut"
+        || action.type === "dualCutDoubleDetector"
+      ) {
+        const attemptedValue =
+          action.type === "soloCut" ? action.value : action.guessValue;
+        if (attemptedValue !== requiredValue) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: `Mission 18: designated cut must target value ${requiredValue}`,
+          };
+        }
+        return;
+      }
+
       if (action.type === "revealReds") {
         return {
           validationCode: "MISSION_RULE_VIOLATION",
