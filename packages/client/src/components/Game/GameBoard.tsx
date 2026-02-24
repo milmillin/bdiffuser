@@ -193,7 +193,13 @@ export function GameBoard({
   const [equipmentMode, setEquipmentMode] = useState<EquipmentMode | null>(
     null,
   );
-  const cancelEquipmentMode = useCallback(() => setEquipmentMode(null), []);
+  const [selectedDockCardId, setSelectedDockCardId] = useState<string | null>(
+    null,
+  );
+  const cancelEquipmentMode = useCallback(() => {
+    setEquipmentMode(null);
+    setSelectedDockCardId(null);
+  }, []);
 
   // Talkies-Walkies forced-action: teammate picks their own wire on the stand
   const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
@@ -381,6 +387,7 @@ export function GameBoard({
     setEquipmentMode(null);
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
   }, [gameState.turnNumber, gameState.phase]);
 
   useEffect(() => {
@@ -482,18 +489,18 @@ export function GameBoard({
     !forceRevealReds &&
     DOUBLE_DETECTOR_CHARACTERS.has(me.character);
 
-  const stageEquipmentActionFromLeftDock = (equipmentId: string) => {
+  const stageEquipmentActionFromLeftDock = (equipmentId: string): boolean => {
     if (!me || gameState.phase !== "playing" || gameState.pendingForcedAction) {
-      return;
+      return false;
     }
-    if (equipmentMode || pendingAction) return;
+    if (equipmentMode || pendingAction) return false;
 
     const equipment = gameState.board.equipment.find((eq) => eq.id === equipmentId);
-    if (!equipment || !equipment.unlocked || equipment.used) return;
+    if (!equipment || !equipment.unlocked || equipment.used) return false;
 
     const def = EQUIPMENT_DEFS.find((entry) => entry.id === equipment.id);
-    if (!def) return;
-    if (!isBaseEquipmentId(equipment.id) && def.pool !== "campaign") return;
+    if (!def) return false;
+    if (!isBaseEquipmentId(equipment.id) && def.pool !== "campaign") return false;
 
     const timingAllowsUse =
       def.useTiming === "anytime" ||
@@ -509,7 +516,8 @@ export function GameBoard({
     const secondaryLocked =
       secondaryValue !== undefined && secondaryProgress < secondaryRequired;
     const blockedByForcedReveal = forceRevealReds && isMyTurn;
-    if (!timingAllowsUse || secondaryLocked || blockedByForcedReveal) return;
+    if (!timingAllowsUse || secondaryLocked || blockedByForcedReveal)
+      return false;
 
     const typedEquipmentId = equipment.id as AnyEquipmentId;
     const immediatePayload = getImmediateEquipmentPayload(typedEquipmentId);
@@ -521,17 +529,18 @@ export function GameBoard({
         immediatePayload,
       });
       setSelectedGuessTile(null);
-      return;
+      return true;
     }
 
     const modeOnConfirm = getInitialEquipmentMode(typedEquipmentId);
-    if (!modeOnConfirm) return;
+    if (!modeOnConfirm) return false;
     setEquipmentMode(modeOnConfirm);
     setSelectedGuessTile(null);
+    return true;
   };
 
-  const stageSkillFromLeftDock = () => {
-    if (!me?.character || !canUseSkillFromLeftDock) return;
+  const stageSkillFromLeftDock = (): boolean => {
+    if (!me?.character || !canUseSkillFromLeftDock) return false;
     setEquipmentMode({
       kind: "double_detector",
       targetPlayerId: null,
@@ -539,12 +548,21 @@ export function GameBoard({
       guessTileIndex: null,
     });
     setSelectedGuessTile(null);
+    return true;
   };
 
   const cancelPendingAction = () => {
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
   };
+
+  const cancelSelectedDockCard = useCallback(() => {
+    setSelectedDockCardId(null);
+    setEquipmentMode(null);
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+  }, []);
 
   const confirmPendingAction = () => {
     if (!pendingAction) return;
@@ -580,6 +598,7 @@ export function GameBoard({
 
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
   };
 
   return (
@@ -595,6 +614,7 @@ export function GameBoard({
             gameState={gameState}
             playerId={playerId}
             timerDisplay={timerDisplay}
+            onOpenRules={() => setIsRulesPopupOpen(true)}
           />
           <BoardArea
             board={gameState.board}
@@ -605,20 +625,8 @@ export function GameBoard({
 
         <div
           className="grid gap-2 pr-2 py-2 overflow-hidden min-w-0 min-h-0"
-          style={{ gridTemplateColumns: "auto 1fr auto" }}
+          style={{ gridTemplateColumns: "1fr auto" }}
         >
-          {/* Left dock: mission & equipment cards */}
-          <div className="overflow-y-auto overscroll-none min-h-0 h-full">
-            <LeftDock
-              equipment={gameState.board.equipment}
-              character={me?.character}
-              characterUsed={me?.characterUsed}
-              onOpenRules={() => setIsRulesPopupOpen(true)}
-              onSelectEquipmentAction={stageEquipmentActionFromLeftDock}
-              onSelectPersonalSkill={stageSkillFromLeftDock}
-            />
-          </div>
-
           {/* Game area */}
           <div
             className="grid gap-2 min-w-0 min-h-0"
@@ -707,6 +715,25 @@ export function GameBoard({
                     />
                   ))}
                 </div>
+
+                {me && (
+                  <div className="w-full flex justify-center">
+                    <div className="w-full max-w-6xl">
+                      <LeftDock
+                        equipment={gameState.board.equipment}
+                        character={me.character}
+                        characterUsed={me.characterUsed}
+                        isMyTurn={isMyTurn}
+                        canSelectCards={!isSetup}
+                        selectedCardId={selectedDockCardId}
+                        onSelectCard={setSelectedDockCardId}
+                        onDeselectCard={cancelSelectedDockCard}
+                        onSelectEquipmentAction={stageEquipmentActionFromLeftDock}
+                        onSelectPersonalSkill={stageSkillFromLeftDock}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {dynamicTurnActive && (
                   <div className="rounded-lg border border-sky-600/50 bg-sky-900/25 px-3 py-2 text-xs text-sky-100">
@@ -1501,10 +1528,12 @@ function Header({
   gameState,
   playerId,
   timerDisplay,
+  onOpenRules,
 }: {
   gameState: ClientGameState;
   playerId: string;
   timerDisplay: { text: string; isCritical: boolean } | null;
+  onOpenRules: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const me = gameState.players.find((p) => p.id === playerId);
@@ -1559,6 +1588,13 @@ function Header({
           Turn{" "}
           <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
+        <button
+          type="button"
+          onClick={onOpenRules}
+          className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+        >
+          Rules
+        </button>
         <div className="flex items-center gap-1.5" data-testid="player-list">
           {gameState.players.map((p) => {
             const isCurrentTurn = p.id === currentPlayer?.id;
