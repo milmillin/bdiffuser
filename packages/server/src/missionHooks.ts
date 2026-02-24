@@ -2973,6 +2973,35 @@ registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
       timestamp: Date.now(),
     });
   },
+
+  endTurn(_rule: SimultaneousMultiCutRuleDef, ctx: EndTurnHookContext): void {
+    // Mission 39 only: before each Captain turn (until special action succeeds),
+    // discard the top card of the Number deck.
+    if (ctx.state.mission !== 39) return;
+    if (ctx.state.phase === "finished") return;
+    if (ctx.state.campaign?.mission23SpecialActionDone) return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    if (!numberCards || numberCards.deck.length === 0) return;
+
+    const captainIndex = ctx.state.players.findIndex((player) => player.isCaptain);
+    if (captainIndex === -1) return;
+    if (ctx.state.currentPlayerIndex !== captainIndex) return;
+
+    const discarded = numberCards.deck.shift()!;
+    numberCards.discard.push({
+      ...discarded,
+      faceUp: true,
+    });
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail: `m39:number_deck_discard:${discarded.value}|remaining=${numberCards.deck.length}`,
+      timestamp: Date.now(),
+    });
+  },
 });
 
 /**

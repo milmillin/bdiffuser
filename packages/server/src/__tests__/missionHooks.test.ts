@@ -806,6 +806,74 @@ describe("missionHooks dispatcher", () => {
       expect(result.nextPlayerIndex).toBeUndefined();
     });
 
+    it("mission 39: discards top Number-deck card before captain turn until special action succeeds", () => {
+      const p1 = makePlayer({ id: "p1", isCaptain: false });
+      const captain = makePlayer({ id: "captain", isCaptain: true });
+      const p3 = makePlayer({ id: "p3", isCaptain: false });
+      const state = makeGameState({
+        mission: 39,
+        players: [p1, captain, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 4,
+        campaign: {
+          numberCards: {
+            visible: [{ id: "m39-visible-5", value: 5, faceUp: true }],
+            deck: [
+              { id: "m39-deck-0-7", value: 7, faceUp: false },
+              { id: "m39-deck-1-8", value: 8, faceUp: false },
+            ],
+            discard: [],
+            playerHands: {},
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(39, { point: "endTurn", state });
+
+      expect(state.campaign?.numberCards?.deck).toHaveLength(1);
+      expect(state.campaign?.numberCards?.deck[0]?.value).toBe(8);
+      expect(state.campaign?.numberCards?.discard).toHaveLength(1);
+      expect(state.campaign?.numberCards?.discard[0]?.value).toBe(7);
+      expect(state.campaign?.numberCards?.discard[0]?.faceUp).toBe(true);
+      const discardLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "m39:number_deck_discard:7|remaining=1",
+      );
+      expect(discardLog).toBeDefined();
+    });
+
+    it("mission 39: does not discard Number-deck cards after special action completion", () => {
+      const p1 = makePlayer({ id: "p1", isCaptain: false });
+      const captain = makePlayer({ id: "captain", isCaptain: true });
+      const p3 = makePlayer({ id: "p3", isCaptain: false });
+      const state = makeGameState({
+        mission: 39,
+        players: [p1, captain, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 4,
+        campaign: {
+          mission23SpecialActionDone: true,
+          numberCards: {
+            visible: [{ id: "m39-visible-5", value: 5, faceUp: true }],
+            deck: [
+              { id: "m39-deck-0-7", value: 7, faceUp: false },
+              { id: "m39-deck-1-8", value: 8, faceUp: false },
+            ],
+            discard: [],
+            playerHands: {},
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(39, { point: "endTurn", state });
+
+      expect(state.campaign?.numberCards?.deck.map((card) => card.value)).toEqual([7, 8]);
+      expect(state.campaign?.numberCards?.discard).toHaveLength(0);
+    });
+
     it("mission 9: explodes when current player has only blocked wires and no dualCut targets", () => {
       // Cards [2, 5, 8], pointer=0 → blocked: 5, 8
       // Current player (index 0) only has value-5 wires (blocked)
