@@ -151,6 +151,49 @@ describe("normalizeRoomState", () => {
     expect(normalized.gameState!.board.equipment[0].image).toBe("equipment_6.png");
   });
 
+  it("migrates false_bottom unlock value to YELLOW during restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [
+            {
+              id: "false_bottom",
+              name: "False Bottom",
+              description: "Draw 2 Equipment cards",
+              unlockValue: 6,
+              unlocked: false,
+              used: false,
+            },
+          ],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        mission: 9,
+        result: null,
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-false-bottom-upgrade");
+    expect(normalized.gameState).not.toBeNull();
+    const card = normalized.gameState!.board.equipment[0];
+    expect(card.unlockValue).toBe("YELLOW");
+    expect(card.image).toBe("equipment_yellow.png");
+  });
+
   it("preserves mission-specific secondary equipment lock fields", () => {
     const legacy = {
       gameState: {

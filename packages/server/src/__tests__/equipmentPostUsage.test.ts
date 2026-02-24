@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GameState } from "@bomb-busters/shared";
+import type { EquipmentUnlockValue, GameState } from "@bomb-busters/shared";
 import {
   makeEquipmentCard,
   makeGameState,
@@ -11,7 +11,7 @@ import {
 import { executeDualCut, resolveDetectorTileChoice } from "../gameLogic";
 import { executeUseEquipment, validateUseEquipment } from "../equipment";
 
-function unlockedEquipment(id: string, name: string, unlockValue: number) {
+function unlockedEquipment(id: string, name: string, unlockValue: EquipmentUnlockValue) {
   return makeEquipmentCard({ id, name, unlockValue, unlocked: true, used: false });
 }
 

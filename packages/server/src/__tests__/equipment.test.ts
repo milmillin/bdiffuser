@@ -5,6 +5,7 @@ import {
   renderLogDetail,
   type ActionLegalityCode,
   type BaseEquipmentId,
+  type EquipmentUnlockValue,
   type GameState,
   type UseEquipmentPayload,
 } from "@bomb-busters/shared";
@@ -51,7 +52,7 @@ function getBaseEquipmentDef(equipmentId: BaseEquipmentId) {
 function unlockedEquipmentCard(
   id: string,
   name: string,
-  unlockValue: number,
+  unlockValue: EquipmentUnlockValue,
 ) {
   return makeEquipmentCard({
     id,

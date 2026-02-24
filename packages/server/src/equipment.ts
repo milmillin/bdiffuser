@@ -5,6 +5,7 @@ import type {
   BaseEquipmentId,
   CharacterId,
   EquipmentGuessValue,
+  EquipmentUnlockValue,
   GameAction,
   GameLogDetail,
   GameState,
@@ -834,16 +835,19 @@ function updateValidationTrack(state: GameState, value: number): void {
   state.board.validationTrack[value] = cutCount;
 }
 
-/** Check if equipment should unlock (threshold wires of matching value cut). */
-function checkEquipUnlock(state: GameState, value: number, threshold = 2): void {
-  if (typeof value !== "number") return;
+function countCutTilesByValue(state: GameState, value: EquipmentUnlockValue): number {
   let cutCount = 0;
   for (const player of state.players) {
     for (const tile of getAllTiles(player)) {
       if (tile.gameValue === value && tile.cut) cutCount++;
     }
   }
-  if (cutCount >= threshold) {
+  return cutCount;
+}
+
+/** Check if equipment should unlock (threshold wires of matching value cut). */
+function checkEquipUnlock(state: GameState, value: EquipmentUnlockValue, threshold = 2): void {
+  if (countCutTilesByValue(state, value) >= threshold) {
     for (const eq of state.board.equipment) {
       if (eq.unlockValue === value && !eq.unlocked) eq.unlocked = true;
     }
@@ -1356,14 +1360,7 @@ export function executeUseEquipment(
       const reserve = state.campaign?.equipmentReserve ?? [];
       const drawn = reserve.splice(0, 2);
       for (const card of drawn) {
-        // Check if the card should already be unlocked
-        let cutCount = 0;
-        for (const player of state.players) {
-          for (const tile of getAllTiles(player)) {
-            if (tile.gameValue === card.unlockValue && tile.cut) cutCount++;
-          }
-        }
-        if (cutCount >= 2) card.unlocked = true;
+        if (countCutTilesByValue(state, card.unlockValue) >= 2) card.unlocked = true;
         state.board.equipment.push(card);
       }
       addLog(

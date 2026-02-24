@@ -6,6 +6,7 @@ import {
   type GameResult,
   type MissionId,
   type Player,
+  type EquipmentUnlockValue,
   type CharacterId,
   type CampaignState,
   type EquipmentCard,
@@ -75,6 +76,15 @@ function toCharacterId(value: unknown): CharacterId | null {
 
 function toFiniteNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toEquipmentUnlockValue(
+  value: unknown,
+  fallback: EquipmentUnlockValue,
+): EquipmentUnlockValue {
+  if (value === "YELLOW") return "YELLOW";
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return fallback;
 }
 
 function toBool(value: unknown, fallback: boolean): boolean {
@@ -250,10 +260,9 @@ function normalizeEquipment(raw: unknown): EquipmentCard[] {
       if (!id) return null;
 
       const def = defsById.get(id);
-      const unlockValue = toFiniteNumber(
-        entry.unlockValue,
-        def?.unlockValue ?? 0,
-      );
+      const unlockValue = def
+        ? def.unlockValue
+        : toEquipmentUnlockValue(entry.unlockValue, 0);
       const name =
         typeof entry.name === "string" && entry.name
           ? entry.name

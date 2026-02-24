@@ -84,20 +84,23 @@ function checkValidation(state: GameState, value: number): boolean {
   return cutCount >= 4;
 }
 
-/** Check if equipment should unlock (threshold wires of matching value cut) */
-function checkEquipmentUnlock(state: GameState, value: number, threshold = 2): void {
-  if (typeof value !== "number") return;
-
-  let cutCount = 0;
+function countCutTilesByValue(state: GameState, value: number | "YELLOW"): number {
+  let count = 0;
   for (const player of state.players) {
     for (const tile of getAllTiles(player)) {
-      if (tile.gameValue === value && tile.cut) {
-        cutCount++;
-      }
+      if (tile.cut && tile.gameValue === value) count++;
     }
   }
+  return count;
+}
 
-  if (cutCount >= threshold) {
+/** Check if equipment should unlock based on mission cut progression. */
+function checkEquipmentUnlock(
+  state: GameState,
+  value: number | "YELLOW",
+  threshold = 2,
+): void {
+  if (countCutTilesByValue(state, value) >= threshold) {
     for (const eq of state.board.equipment) {
       if (eq.unlockValue === value && !eq.unlocked) {
         eq.unlocked = true;
@@ -286,11 +289,11 @@ export function executeDualCut(
     // Check validation and equipment unlock
     if (typeof guessValue === "number") {
       checkValidation(state, guessValue);
-      if (!resolveResult.overrideEquipmentUnlock) {
-        checkEquipmentUnlock(state, guessValue);
-      } else {
-        checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
-      }
+    }
+    if (!resolveResult.overrideEquipmentUnlock) {
+      checkEquipmentUnlock(state, guessValue);
+    } else {
+      checkEquipmentUnlock(state, guessValue, resolveResult.equipmentUnlockThreshold ?? 2);
     }
     clearSatisfiedSecondaryEquipmentLocks(state);
     updateMarkerConfirmations(state);
@@ -621,11 +624,11 @@ export function executeSoloCut(
 
   if (typeof value === "number") {
     checkValidation(state, value);
-    if (!resolveResult.overrideEquipmentUnlock) {
-      checkEquipmentUnlock(state, value);
-    } else {
-      checkEquipmentUnlock(state, value, resolveResult.equipmentUnlockThreshold ?? 2);
-    }
+  }
+  if (!resolveResult.overrideEquipmentUnlock) {
+    checkEquipmentUnlock(state, value);
+  } else {
+    checkEquipmentUnlock(state, value, resolveResult.equipmentUnlockThreshold ?? 2);
   }
   clearSatisfiedSecondaryEquipmentLocks(state);
   updateMarkerConfirmations(state);

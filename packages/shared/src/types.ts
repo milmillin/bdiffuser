@@ -83,12 +83,14 @@ export type CharacterId =
 
 // ── Equipment ───────────────────────────────────────────────
 
+export type EquipmentUnlockValue = number | "YELLOW";
+
 export interface EquipmentCard {
   id: string;
   name: string;
   description: string;
   /** Wire value that unlocks this equipment (when 2 of this value are cut) */
-  unlockValue: number;
+  unlockValue: EquipmentUnlockValue;
   /** Whether this card is still hidden face-down to players. */
   faceDown?: boolean;
   /** Optional secondary mission lock value (e.g. mission 12 number-card lock). */
@@ -124,7 +126,7 @@ export type CampaignEquipmentId =
 
 export type AnyEquipmentId = BaseEquipmentId | CampaignEquipmentId;
 
-export type EquipmentGuessValue = number | "YELLOW";
+export type EquipmentGuessValue = EquipmentUnlockValue;
 
 export type UseEquipmentPayload =
   | { kind: "label_neq"; tileIndexA: number; tileIndexB: number }

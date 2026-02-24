@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EquipmentUnlockValue } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeEquipmentCard,
@@ -8,7 +9,7 @@ import {
 } from "@bomb-busters/shared/testing";
 import { executeUseEquipment, validateUseEquipment } from "../equipment";
 
-function unlockedCard(id: string, unlockValue = 1) {
+function unlockedCard(id: string, unlockValue: EquipmentUnlockValue = 1) {
   return makeEquipmentCard({
     id,
     name: id,

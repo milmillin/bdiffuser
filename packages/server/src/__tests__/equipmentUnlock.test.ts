@@ -5,6 +5,7 @@ import {
   makeGameState,
   makePlayer,
   makeTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCut, executeSoloCut } from "../gameLogic";
 import { validateUseEquipment } from "../equipment";
@@ -323,6 +324,88 @@ describe("equipment unlock lifecycle", () => {
     }
     // Target tile should NOT be cut (wrong guess on a blue tile)
     expect(state.players[1].hand[0].cut).toBe(false);
+    expect(state.board.equipment[0].unlocked).toBe(false);
+  });
+
+  it("False Bottom unlocks after two yellow wires are cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      name: "Actor",
+      hand: [
+        makeYellowTile({ id: "a-yellow" }),
+        makeTile({ id: "a-blue", gameValue: 4 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      name: "Target",
+      hand: [
+        makeYellowTile({ id: "t-yellow" }),
+        makeTile({ id: "t-blue", gameValue: 8 }),
+      ],
+    });
+
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "false_bottom",
+            name: "False Bottom",
+            unlockValue: "YELLOW",
+            unlocked: false,
+          }),
+        ],
+      },
+    });
+
+    executeDualCut(state, "actor", "target", 0, "YELLOW");
+
+    expect(state.players[0].hand[0].cut).toBe(true);
+    expect(state.players[1].hand[0].cut).toBe(true);
+    expect(state.board.equipment[0].unlocked).toBe(true);
+  });
+
+  it("False Bottom does not unlock from a numeric pair cut", () => {
+    const actor = makePlayer({
+      id: "actor",
+      name: "Actor",
+      hand: [
+        makeTile({ id: "a6", gameValue: 6 }),
+        makeTile({ id: "a2", gameValue: 2 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      name: "Target",
+      hand: [
+        makeTile({ id: "t6", gameValue: 6 }),
+        makeTile({ id: "t3", gameValue: 3 }),
+      ],
+    });
+
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "false_bottom",
+            name: "False Bottom",
+            unlockValue: "YELLOW",
+            unlocked: false,
+          }),
+        ],
+      },
+    });
+
+    executeDualCut(state, "actor", "target", 0, 6);
+
+    expect(state.players[0].hand[0].cut).toBe(true);
+    expect(state.players[1].hand[0].cut).toBe(true);
     expect(state.board.equipment[0].unlocked).toBe(false);
   });
 

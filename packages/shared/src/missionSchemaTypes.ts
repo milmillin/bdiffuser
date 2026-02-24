@@ -1,4 +1,4 @@
-import type { MissionId } from "./types.js";
+import type { EquipmentUnlockValue, MissionId } from "./types.js";
 
 export type MissionDifficulty = "novice" | "intermediate" | "expert" | "campaign";
 export type PlayerCount = 2 | 3 | 4 | 5;
@@ -38,7 +38,7 @@ export interface MissionEquipmentSpec {
   mode: "none" | "default" | "fixed_pool";
   /** Include campaign-only equipment cards (22/33/99/10-10/11-11/yellow) in the draw pool. */
   includeCampaignEquipment?: boolean;
-  excludedUnlockValues?: readonly number[];
+  excludedUnlockValues?: readonly EquipmentUnlockValue[];
   /** Exclude specific equipment cards by ID (used when unlock values are not unique). */
   excludedEquipmentIds?: readonly string[];
   fixedEquipmentIds?: readonly string[];

@@ -3,6 +3,7 @@
  *
  * Uses individual asset images from /images/ directory.
  */
+import type { EquipmentUnlockValue } from "./types.js";
 
 // ── Blue Wire Images (values 1-12) ─────────────────────────
 
@@ -77,7 +78,7 @@ export interface EquipmentDef {
   id: string;
   name: string;
   description: string;
-  unlockValue: number;
+  unlockValue: EquipmentUnlockValue;
   image: string;
   useTiming: "anytime" | "in_turn" | "start_of_turn" | "immediate";
   pool: "base" | "campaign";
@@ -196,7 +197,7 @@ export const EQUIPMENT_DEFS: EquipmentDef[] = [
     id: "false_bottom",
     name: "False Bottom",
     description: "Draw 2 Equipment cards and put them into play with the others.",
-    unlockValue: 6,
+    unlockValue: "YELLOW",
     image: "equipment_yellow.png",
     useTiming: "immediate",
     pool: "campaign",
