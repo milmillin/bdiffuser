@@ -213,6 +213,42 @@ describe("Character E1-E4 abilities", () => {
       expect(error).toBeNull();
     });
 
+    it("rejects X-marked targets in mission 35", () => {
+      const state = makeGameState({
+        mission: 35,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e3",
+            characterUsed: false,
+            hand: [makeTile({ id: "a1", gameValue: 4 })],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [
+              makeTile({ id: "b1", gameValue: 4, isXMarked: true }),
+              makeTile({ id: "b2", gameValue: 5 }),
+              makeTile({ id: "b3", gameValue: 6 }),
+            ],
+          }),
+        ],
+        currentPlayerIndex: 0,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "triple_detector",
+        targetPlayerId: "p2",
+        targetTileIndices: [0, 1, 2],
+        guessValue: 4,
+      });
+
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe(
+        "X-marked wires are ignored by equipment in this mission",
+      );
+    });
+
     it("executes a dual cut path and marks character as used", () => {
       const state = makeGameState({
         players: [
@@ -289,6 +325,42 @@ describe("Character E1-E4 abilities", () => {
       });
 
       expect(error).toBeNull();
+    });
+
+    it("rejects X-marked targets in mission 35", () => {
+      const state = makeGameState({
+        mission: 35,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e4",
+            characterUsed: false,
+            hand: [
+              makeTile({ id: "a1", gameValue: 3 }),
+              makeTile({ id: "a2", gameValue: 7 }),
+            ],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeTile({ id: "b1", gameValue: 3, isXMarked: true })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "x_or_y_ray",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+        guessValueA: 3,
+        guessValueB: 7,
+      });
+
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe(
+        "X-marked wires are ignored by equipment in this mission",
+      );
     });
 
     it("executes a dual cut path and marks character as used", () => {

@@ -1656,6 +1656,18 @@ export function validateCharacterAbility(
         const tile = getTileByFlatIndex(target, index);
         if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
         if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+        if (isMission13NonBlueTarget(state, tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "Detectors can only target blue wires in mission 13",
+          );
+        }
+        if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "X-marked wires are ignored by equipment in this mission",
+          );
+        }
       }
       if (!indices.every((index) => areFlatIndicesOnSameStand(target, indices[0], index))) {
         return legalityError(
@@ -1674,6 +1686,18 @@ export function validateCharacterAbility(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+      if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in this mission",
+        );
+      }
+      if (isMission13NonBlueTarget(state, tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Detectors can only target blue wires in mission 13",
+        );
+      }
       const { guessValueA, guessValueB } = payload;
       if (guessValueA === guessValueB) {
         return legalityError("EQUIPMENT_INVALID_PAYLOAD", "X or Y Ray requires two different announced values");
