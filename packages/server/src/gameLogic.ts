@@ -560,7 +560,7 @@ export function executeSoloCut(
   const resolveResult = dispatchHooks(state.mission, {
     point: "resolve",
     state,
-    action: { type: "soloCut", actorId, value },
+    action: { type: "soloCut", actorId, value, tilesCut: matchingTiles.length },
     cutValue: value,
     cutSuccess: true,
   });

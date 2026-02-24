@@ -3,9 +3,11 @@ import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeGameState,
+  makeTile,
   makePlayer,
 } from "@bomb-busters/shared/testing";
 import { dispatchHooks } from "../missionHooks";
+import { executeSoloCut } from "../gameLogic";
 
 // Side-effect import registers built-in handlers.
 import "../missionHooks";
@@ -141,5 +143,36 @@ describe("mission progression hooks", () => {
     expect(
       state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
     ).toBe(1);
+  });
+
+  it("mission 66: solo cut of 4 wires advances bunker flow as two cuts", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-5a", gameValue: 5, sortValue: 5 }),
+            makeTile({ id: "p1-5b", gameValue: 5, sortValue: 5 }),
+            makeTile({ id: "p1-5c", gameValue: 5, sortValue: 5 }),
+            makeTile({ id: "p1-5d", gameValue: 5, sortValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-2a", gameValue: 2, sortValue: 2 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+    executeSoloCut(state, "p1", 5);
+
+    expect(state.campaign?.bunkerTracker?.position).toBe(2);
+    expect(
+      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+    ).toBe(2);
   });
 });

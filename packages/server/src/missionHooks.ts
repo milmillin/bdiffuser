@@ -1475,8 +1475,16 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     const advanceBy = Math.max(0, Math.floor(rule.advanceBy));
     if (advanceBy === 0) return;
 
+    const tilesCut =
+      ctx.action.type === "soloCut" && typeof ctx.action.tilesCut === "number"
+        ? Math.floor(ctx.action.tilesCut)
+        : null;
+    // Mission 66 rulebook: solo cutting 4 identical wires counts as two cuts.
+    const cutStepMultiplier = tilesCut === 4 ? 2 : 1;
+    const effectiveAdvanceBy = advanceBy * cutStepMultiplier;
+
     const before = tracker.position;
-    tracker.position = clampProgress(before + advanceBy, tracker.max);
+    tracker.position = clampProgress(before + effectiveAdvanceBy, tracker.max);
 
     const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     setActionPointer(ctx.state, tracker.position % cycle);
@@ -1485,7 +1493,7 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
-      detail: `bunker_flow:${before}->${tracker.position}|cycle=${cycle}`,
+      detail: `bunker_flow:${before}->${tracker.position}|cycle=${cycle}|steps=${cutStepMultiplier}`,
       timestamp: Date.now(),
     });
   },
