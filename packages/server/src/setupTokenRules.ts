@@ -98,6 +98,10 @@ function randomSetupTokenValue(rng: () => number): number {
   return Math.floor(rng() * 12) + 1;
 }
 
+function isMission43TwoPlayerCaptainRandomSetup(state: Readonly<GameState>): boolean {
+  return state.mission === 43 && state.players.length === 2;
+}
+
 function randomSetupMatchingBlueIndices(player: Readonly<Player>, value: number): number[] {
   const indices: number[] = [];
   for (let i = 0; i < player.hand.length; i++) {
@@ -113,6 +117,8 @@ function randomSetupMatchingBlueIndices(player: Readonly<Player>, value: number)
 /**
  * Missions with random setup info tokens: each required player receives a
  * random valid info token and it is automatically placed on a matching blue wire.
+ *
+ * Mission 43 (2-player override): only the Captain's setup token is random.
  */
 export function autoPlaceMission13RandomSetupInfoTokens(
   state: GameState,
@@ -121,13 +127,21 @@ export function autoPlaceMission13RandomSetupInfoTokens(
   const randomSetupEnabled =
     state.campaign != null
     && (state.campaign as Record<string, unknown>).randomSetupInfoTokens === true;
+  const mission43CaptainRandomOnly = isMission43TwoPlayerCaptainRandomSetup(state);
 
-  if (state.phase !== "setup_info_tokens" || !randomSetupEnabled) {
+  if (
+    state.phase !== "setup_info_tokens"
+    || (!randomSetupEnabled && !mission43CaptainRandomOnly)
+  ) {
     return [];
   }
 
   const placements: AutoSetupInfoTokenPlacement[] = [];
   for (const player of state.players) {
+    if (mission43CaptainRandomOnly && !player.isCaptain) {
+      continue;
+    }
+
     const required = requiredSetupInfoTokenCount(state, player);
     while (player.infoTokens.length < required) {
       const value = randomSetupTokenValue(rng);

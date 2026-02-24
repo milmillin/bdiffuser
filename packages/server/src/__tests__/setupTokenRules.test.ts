@@ -251,6 +251,62 @@ describe("setupTokenRules", () => {
       expect(p2.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
       expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
     });
+
+    it("mission 43 (2p): auto-places a random setup token for captain only", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [makeTile({ id: "c-1", color: "blue", gameValue: 1, sortValue: 1 })],
+      });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [makeTile({ id: "p-1", color: "blue", gameValue: 1, sortValue: 1 })],
+      });
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 43,
+        players: [captain, partner],
+      });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toEqual([
+        {
+          playerId: "captain",
+          token: { value: 1, position: 0, isYellow: false },
+        },
+      ]);
+      expect(captain.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
+      expect(partner.infoTokens).toEqual([]);
+    });
+
+    it("mission 43 (3p): does not auto-place random setup tokens", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [makeTile({ id: "c-1", color: "blue", gameValue: 1, sortValue: 1 })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 2, sortValue: 2 })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [makeTile({ id: "p3-1", color: "blue", gameValue: 3, sortValue: 3 })],
+      });
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 43,
+        players: [captain, p2, p3],
+      });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toEqual([]);
+      expect(captain.infoTokens).toEqual([]);
+      expect(p2.infoTokens).toEqual([]);
+      expect(p3.infoTokens).toEqual([]);
+    });
   });
 
   describe("validateSetupInfoTokenPlacement", () => {
