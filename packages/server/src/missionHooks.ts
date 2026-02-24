@@ -2006,6 +2006,14 @@ function getActiveConstraints(
   return active;
 }
 
+export function hasActiveConstraint(
+  state: Readonly<GameState>,
+  playerId: string,
+  constraintId: string,
+): boolean {
+  return getActiveConstraints(state, playerId).includes(constraintId);
+}
+
 /**
  * Extract the cut value from a validate action context.
  */

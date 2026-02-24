@@ -601,6 +601,20 @@ describe("equipment validation matrix across shared game states", () => {
     },
   );
 
+  it("rejects equipment use when Constraint G is active for the actor", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 32;
+    state.campaign = {
+      constraints: {
+        global: [{ id: "G", name: "Constraint G", description: "", active: true }],
+        perPlayer: {},
+        deck: [],
+      },
+    };
+
+    expectLegalityCode(state, "actor", "rewinder", "MISSION_RULE_VIOLATION");
+  });
+
   it("rejects equipment in mission 11 when actor has only hidden red-like wires", () => {
     const state = buildStateForEquipmentMatrix("rewinder");
     state.mission = 11;

@@ -32,7 +32,7 @@ import {
   validateDualCutWithHooks,
 } from "./validation.js";
 import { executeDualCut, advanceTurn } from "./gameLogic.js";
-import { dispatchHooks } from "./missionHooks.js";
+import { dispatchHooks, hasActiveConstraint } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, isMission40CountHintPlayer } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 
@@ -289,6 +289,13 @@ export function validateUseEquipment(
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
+    );
+  }
+
+  if (hasActiveConstraint(state, actorId, "G")) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Constraint G: You cannot use Equipment cards or your own personal equipment",
     );
   }
 
@@ -1520,6 +1527,13 @@ export function validateCharacterAbility(
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
+    );
+  }
+
+  if (hasActiveConstraint(state, actorId, "G")) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Constraint G: You cannot use Equipment cards or your own personal equipment",
     );
   }
 

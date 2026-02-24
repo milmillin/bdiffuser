@@ -910,6 +910,25 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("blocks Double Detector when Constraint G is active", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.mission = 32;
+    state.campaign = {
+      constraints: {
+        global: [{ id: "G", name: "Constraint G", description: "", active: true }],
+        perPlayer: {},
+        deck: [],
+      },
+    };
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe(
+      "Constraint G: You cannot use Equipment cards or your own personal equipment",
+    );
+  });
+
   it("rejects Double Detector tiles that cross stand boundaries", () => {
     const { state } = baseDDSetup("double_detector");
     const target = withStandSizes(makePlayer({

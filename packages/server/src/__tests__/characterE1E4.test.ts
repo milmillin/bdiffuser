@@ -374,6 +374,46 @@ describe("Character E1-E4 abilities", () => {
     });
   });
 
+  describe("Constraint G enforcement", () => {
+    it("rejects personal character abilities while active", () => {
+      const state = makeGameState({
+        mission: 32,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e1",
+            characterUsed: false,
+            hand: [makeTile({ id: "a1", gameValue: 5 })],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeTile({ id: "t2", gameValue: 5 })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+        campaign: {
+          constraints: {
+            global: [{ id: "G", name: "Constraint G", description: "", active: true }],
+            perPlayer: {},
+            deck: [],
+          },
+        },
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "general_radar",
+        value: 5,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe(
+        "Constraint G: You cannot use Equipment cards or your own personal equipment",
+      );
+    });
+  });
+
   describe("wrong character rejection", () => {
     it("rejects ability use with base character", () => {
       const state = makeGameState({

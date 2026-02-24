@@ -6,7 +6,11 @@ import type {
   WireTile,
 } from "@bomb-busters/shared";
 import { DOUBLE_DETECTOR_CHARACTERS } from "@bomb-busters/shared";
-import { dispatchHooks, getBlueAsRedValue } from "./missionHooks.js";
+import {
+  dispatchHooks,
+  getBlueAsRedValue,
+  hasActiveConstraint,
+} from "./missionHooks.js";
 
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
@@ -321,6 +325,13 @@ export function validateDualCutDoubleDetectorLegality(
 
   const actor = state.players.find((p) => p.id === actorId);
   if (!actor) return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+
+  if (hasActiveConstraint(state, actorId, "G")) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Constraint G: You cannot use Equipment cards or your own personal equipment",
+    );
+  }
 
   // Mission 17: Sergio/captain has no personal equipment.
   if (state.mission === 17 && actor.isCaptain) {
