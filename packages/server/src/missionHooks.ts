@@ -2926,6 +2926,46 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
     };
   },
 
+  resolve(_rule: UpsideDownWireRuleDef, ctx: ResolveHookContext): void {
+    if (ctx.action.type !== "dualCut" || !ctx.cutSuccess) return;
+    if (ctx.state.mission !== 56 && ctx.state.mission !== 64) return;
+
+    const actorId =
+      typeof ctx.action.actorId === "string" ? ctx.action.actorId : null;
+    const targetPlayerId =
+      typeof ctx.action.targetPlayerId === "string"
+        ? ctx.action.targetPlayerId
+        : null;
+    const targetTileIndex =
+      typeof ctx.action.targetTileIndex === "number"
+        ? ctx.action.targetTileIndex
+        : null;
+
+    if (actorId == null || targetPlayerId == null || targetTileIndex == null) return;
+    if (targetPlayerId === actorId) return;
+
+    const targetPlayer = ctx.state.players.find((player) => player.id === targetPlayerId);
+    if (!targetPlayer) return;
+
+    const targetTile = targetPlayer.hand[targetTileIndex] as
+      | (WireTile & { upsideDown?: boolean })
+      | undefined;
+    if (!targetTile || targetTile.upsideDown !== true) return;
+
+    ctx.state.board.detonatorPosition += 1;
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `upside_down_wire:teammate_flipped_dual_cut` +
+        `|target=${targetPlayerId}` +
+        `|tile=${targetTileIndex}` +
+        `|detonator=${ctx.state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+  },
+
   endTurn(_rule: UpsideDownWireRuleDef, ctx: EndTurnHookContext): void {
     if (ctx.state.phase === "finished") return;
 

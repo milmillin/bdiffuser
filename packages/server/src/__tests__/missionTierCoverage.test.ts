@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BaseEquipmentId } from "@bomb-busters/shared";
-import { logText, requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
+import { logText, renderLogDetail, requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeEquipmentCard,
@@ -184,6 +184,46 @@ describe("mission complexity tier representative coverage", () => {
     expect(flipped).toHaveLength(2);
     expect(flipped[0]).toMatchObject({ index: 0, sortValue: 2 });
     expect(flipped[1]).toMatchObject({ index: 5, sortValue: 10 });
+  });
+
+  it("mission 56: teammate flipped-wire dual cut advances detonator by 1 on success", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "a9", color: "blue", gameValue: 9, sortValue: 9 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [
+        makeTile({ id: "t4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "t8", color: "blue", gameValue: 8, sortValue: 8 }),
+      ],
+    });
+    (teammate.hand[0] as unknown as { upsideDown?: boolean }).upsideDown = true;
+
+    const state = makeGameState({
+      mission: 56,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 6 }),
+      log: [],
+    });
+
+    const result = executeDualCut(state, "actor", "teammate", 0, 4);
+
+    expect(result.type).toBe("dualCutResult");
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(actor.hand[0]?.cut).toBe(true);
+    expect(teammate.hand[0]?.cut).toBe(true);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect" &&
+          renderLogDetail(entry.detail).startsWith("upside_down_wire:teammate_flipped_dual_cut"),
+      ),
+    ).toBe(true);
   });
 
   it("x-marker tier (mission 20): Post-it cannot target an X-marked wire", () => {
