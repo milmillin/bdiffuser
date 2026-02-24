@@ -335,6 +335,21 @@ describe("constraint enforcement validation", () => {
     ).toBe(true);
   });
 
+  it("Constraint L advances detonator by 2 on failed dual-cut execution", () => {
+    const state = stateWithConstraint("L");
+
+    const action = executeDualCut(state, "player-1", "player-2", 0, 5);
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(state.board.detonatorPosition).toBe(2);
+    expect(
+      state.log.some(
+        (entry) => renderLogDetail(entry.detail) === "constraint_L:double_detonator:+1_extra",
+      ),
+    ).toBe(true);
+  });
+
   it("auto-flips constraint when all remaining actor tiles violate it", () => {
     const state = stateWithConstraint("A", {
       scope: "perPlayer",
