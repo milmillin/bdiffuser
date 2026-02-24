@@ -129,6 +129,7 @@ export function GameBoard({
   const [selectedInfoTile, setSelectedInfoTile] = useState<number | null>(null);
   const [selectedInfoTokenValue, setSelectedInfoTokenValue] = useState<number | null>(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"mission" | "equipment" | "log" | null>(null);
 
   // Character card overlay state
   const [viewingCharacter, setViewingCharacter] = useState<{
@@ -295,7 +296,7 @@ export function GameBoard({
 
   return (
     <>
-      <div className="min-h-screen flex flex-col" style={{ perspective: "1200px" }} data-testid="game-board" data-phase={gameState.phase}>
+      <div className="min-h-screen flex flex-col pb-14 md:pb-0" style={{ perspective: "1200px" }} data-testid="game-board" data-phase={gameState.phase}>
         <Header
           gameState={gameState}
           playerId={playerId}
@@ -309,14 +310,16 @@ export function GameBoard({
 
         <div className="flex-1 flex gap-2 pr-2 py-2 overflow-hidden">
           {/* Left dock: mission & equipment cards */}
-          <LeftDock
-            equipment={gameState.board.equipment}
-            character={me?.character}
-            characterUsed={me?.characterUsed}
-            missionId={gameState.mission}
-            playerCount={gameState.players.length}
-            onOpenRules={() => setIsRulesPopupOpen(true)}
-          />
+          <div className="hidden md:block">
+            <LeftDock
+              equipment={gameState.board.equipment}
+              character={me?.character}
+              characterUsed={me?.characterUsed}
+              missionId={gameState.mission}
+              playerCount={gameState.players.length}
+              onOpenRules={() => setIsRulesPopupOpen(true)}
+            />
+          </div>
 
           {/* Game area */}
           <div className="flex-1 flex flex-col gap-2 min-w-0">
@@ -672,6 +675,54 @@ export function GameBoard({
             </div>
           </div>
         </div>
+
+        {/* Mobile bottom drawer */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+          {/* Tab buttons */}
+          <div className="flex bg-[var(--color-bomb-surface)] border-t border-gray-700">
+            {(["mission", "equipment", "log"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setMobileTab(mobileTab === tab ? null : tab)}
+                className={`flex-1 py-3 text-xs font-bold uppercase tracking-wide transition-colors ${
+                  mobileTab === tab
+                    ? "text-yellow-400 bg-gray-800"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {tab === "mission" ? "Mission" : tab === "equipment" ? "Equipment" : "Log"}
+              </button>
+            ))}
+          </div>
+
+          {/* Drawer content */}
+          {mobileTab && (
+            <div className="bg-[var(--color-bomb-dark)] border-t border-gray-700 max-h-[50vh] overflow-y-auto p-3">
+              {mobileTab === "mission" && (
+                <MissionRuleHints gameState={gameState} />
+              )}
+              {mobileTab === "equipment" && (
+                <div className="space-y-2">
+                  {gameState.board.equipment.map((eq) => (
+                    <div key={eq.id} className={`rounded-lg px-3 py-2 text-xs ${eq.used ? "bg-gray-800 text-gray-500 line-through" : eq.unlocked ? "bg-emerald-900/30 text-emerald-200" : "bg-gray-800 text-gray-400"}`}>
+                      <div className="font-bold">{eq.name}</div>
+                      <div className="text-[10px] opacity-70">{eq.description}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {mobileTab === "log" && (
+                <div className="space-y-2">
+                  <ActionLog log={gameState.log} players={gameState.players} result={gameState.result} />
+                  <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile bottom padding to prevent content being hidden behind tab bar */}
+        <div className="md:hidden h-12" />
       </div>
 
       <GameRulesPopup

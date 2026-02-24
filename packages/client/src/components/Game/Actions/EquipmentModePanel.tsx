@@ -42,6 +42,16 @@ export type EquipmentMode =
       targetTileIndex: number | null;
       guessATileIndex: number | null;
       guessBTileIndex: number | null;
+    }
+  | { kind: "false_bottom" }
+  | { kind: "single_wire_label" }
+  | { kind: "emergency_drop" }
+  | { kind: "fast_pass"; selectedValue: number | null }
+  | { kind: "disintegrator" }
+  | {
+      kind: "grappling_hook";
+      targetPlayerId: string | null;
+      targetTileIndex: number | null;
     };
 
 const MODE_COLORS: Record<
@@ -114,6 +124,42 @@ const MODE_COLORS: Record<
     title: "text-violet-400",
     confirm: "bg-violet-600 hover:bg-violet-500 text-white",
   },
+  false_bottom: {
+    border: "border-teal-600/60",
+    bg: "bg-teal-900/20",
+    title: "text-teal-400",
+    confirm: "bg-teal-600 hover:bg-teal-500 text-white",
+  },
+  single_wire_label: {
+    border: "border-sky-600/60",
+    bg: "bg-sky-900/20",
+    title: "text-sky-400",
+    confirm: "bg-sky-600 hover:bg-sky-500 text-white",
+  },
+  emergency_drop: {
+    border: "border-rose-600/60",
+    bg: "bg-rose-900/20",
+    title: "text-rose-400",
+    confirm: "bg-rose-600 hover:bg-rose-500 text-white",
+  },
+  fast_pass: {
+    border: "border-fuchsia-600/60",
+    bg: "bg-fuchsia-900/20",
+    title: "text-fuchsia-400",
+    confirm: "bg-fuchsia-600 hover:bg-fuchsia-500 text-white",
+  },
+  disintegrator: {
+    border: "border-red-600/60",
+    bg: "bg-red-900/20",
+    title: "text-red-400",
+    confirm: "bg-red-600 hover:bg-red-500 text-white",
+  },
+  grappling_hook: {
+    border: "border-stone-600/60",
+    bg: "bg-stone-900/20",
+    title: "text-stone-300",
+    confirm: "bg-stone-600 hover:bg-stone-500 text-white",
+  },
 };
 
 const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
@@ -128,6 +174,12 @@ const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   triple_detector: "Triple Detector",
   super_detector: "Super Detector",
   x_or_y_ray: "X or Y Ray",
+  false_bottom: "False Bottom",
+  single_wire_label: "Single Wire Label",
+  emergency_drop: "Emergency Drop",
+  fast_pass: "Fast Pass",
+  disintegrator: "Disintegrator",
+  grappling_hook: "Grappling Hook",
 };
 
 function ModeWrapper({
@@ -589,6 +641,159 @@ export function EquipmentModePanel({
             </button>
           );
         }
+      }
+      break;
+    }
+
+    case "false_bottom": {
+      content = "Reveal a random equipment card from the reserve.";
+      confirmButton = (
+        <button
+          type="button"
+          onClick={() =>
+            sendAndCancel({
+              type: "useEquipment",
+              equipmentId: "false_bottom",
+              payload: { kind: "false_bottom" },
+            })
+          }
+          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+        >
+          Confirm False Bottom
+        </button>
+      );
+      break;
+    }
+
+    case "single_wire_label": {
+      content =
+        "Click one of your blue wires to apply the Single Wire Label.";
+      break;
+    }
+
+    case "emergency_drop": {
+      content = "Restore all used equipment cards.";
+      confirmButton = (
+        <button
+          type="button"
+          onClick={() =>
+            sendAndCancel({
+              type: "useEquipment",
+              equipmentId: "emergency_drop",
+              payload: { kind: "emergency_drop" },
+            })
+          }
+          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+        >
+          Confirm Emergency Drop
+        </button>
+      );
+      break;
+    }
+
+    case "fast_pass": {
+      content = (
+        <div className="space-y-2">
+          <div>Choose a value to reveal (1–12):</div>
+          <div className="grid grid-cols-4 gap-1">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => {
+              const isSelected = mode.selectedValue === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() =>
+                    onUpdateMode({
+                      ...mode,
+                      selectedValue: value,
+                    })
+                  }
+                  className={`px-2 py-1.5 rounded text-sm font-bold transition-colors ${
+                    isSelected
+                      ? "bg-fuchsia-500 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  }`}
+                >
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+      if (typeof mode.selectedValue === "number") {
+        const selectedValue = mode.selectedValue;
+        confirmButton = (
+          <button
+            type="button"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "fast_pass",
+                payload: { kind: "fast_pass", value: selectedValue },
+              })
+            }
+            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          >
+            Confirm Fast Pass
+          </button>
+        );
+      }
+      break;
+    }
+
+    case "disintegrator": {
+      content = "Draw a random value and cut all matching blue wires.";
+      confirmButton = (
+        <button
+          type="button"
+          onClick={() =>
+            sendAndCancel({
+              type: "useEquipment",
+              equipmentId: "disintegrator",
+              payload: { kind: "disintegrator" },
+            })
+          }
+          className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+        >
+          Confirm Disintegrator
+        </button>
+      );
+      break;
+    }
+
+    case "grappling_hook": {
+      if (mode.targetPlayerId == null || mode.targetTileIndex == null) {
+        content = "Click an uncut wire on an opponent's stand.";
+      } else {
+        const targetName = opponents.find(
+          (o) => o.id === mode.targetPlayerId,
+        )?.name;
+        content = (
+          <>
+            Targeting {targetName}&apos;s wire{" "}
+            {wireLabel(mode.targetTileIndex)}.
+          </>
+        );
+        confirmButton = (
+          <button
+            type="button"
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: "grappling_hook",
+                payload: {
+                  kind: "grappling_hook",
+                  targetPlayerId: mode.targetPlayerId!,
+                  targetTileIndex: mode.targetTileIndex!,
+                },
+              })
+            }
+            className={`px-3 py-1 rounded ${colors.confirm} text-xs font-bold transition-colors`}
+          >
+            Confirm Grappling Hook
+          </button>
+        );
       }
       break;
     }

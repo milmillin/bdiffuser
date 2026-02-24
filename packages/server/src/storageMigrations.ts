@@ -299,6 +299,7 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     campaign.constraints = {
       global: normalizeConstraintCardArray(constraints.global),
       perPlayer: normalizeConstraintPerPlayer(constraints.perPlayer),
+      deck: normalizeConstraintCardArray(constraints.deck),
     };
   }
 
@@ -337,6 +338,10 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
 
   if (hasOwn(raw, "specialMarkers")) {
     campaign.specialMarkers = normalizeSpecialMarkers(raw.specialMarkers);
+  }
+
+  if (hasOwn(raw, "equipmentReserve")) {
+    campaign.equipmentReserve = normalizeEquipment(raw.equipmentReserve);
   }
 
   if (hasOwn(raw, "mission18DesignatorIndex") && typeof raw.mission18DesignatorIndex === "number") {
@@ -385,7 +390,7 @@ function normalizeGameState(
 
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
-  // Forced-action migration: supports chooseNextPlayer and designateCutter.
+  // Forced-action migration: supports chooseNextPlayer, designateCutter, and mission22TokenPass.
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
     if (
@@ -413,6 +418,25 @@ function normalizeGameState(
         designatorId: obj.pendingForcedAction.designatorId,
         value: obj.pendingForcedAction.value,
         radarResults: obj.pendingForcedAction.radarResults as Record<string, boolean>,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission22TokenPass"
+      && typeof obj.pendingForcedAction.currentChooserIndex === "number"
+      && Number.isFinite(obj.pendingForcedAction.currentChooserIndex)
+      && typeof obj.pendingForcedAction.currentChooserId === "string"
+      && obj.pendingForcedAction.currentChooserId
+      && Array.isArray(obj.pendingForcedAction.passingOrder)
+      && typeof obj.pendingForcedAction.completedCount === "number"
+      && Number.isFinite(obj.pendingForcedAction.completedCount)
+    ) {
+      pendingForcedAction = {
+        kind: "mission22TokenPass" as const,
+        currentChooserIndex: obj.pendingForcedAction.currentChooserIndex,
+        currentChooserId: obj.pendingForcedAction.currentChooserId,
+        passingOrder: obj.pendingForcedAction.passingOrder.filter(
+          (value): value is number => typeof value === "number" && Number.isFinite(value),
+        ),
+        completedCount: obj.pendingForcedAction.completedCount,
       };
     }
   }

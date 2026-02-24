@@ -1,5 +1,5 @@
-import type { ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
-import { ALL_MISSION_IDS, MISSIONS, MISSION_SCHEMAS } from "@bomb-busters/shared";
+import type { CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
+import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS } from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
 export function Lobby({
@@ -137,6 +137,14 @@ export function Lobby({
               </div>
             </div>
 
+            {/* Character Selection (missions 31+) */}
+            <CharacterSelector
+              mission={lobby.mission}
+              send={send}
+              playerId={playerId}
+              players={lobby.players}
+            />
+
             {/* Mission Selection (host only) */}
             {isHost && (
               <MissionSelector
@@ -217,6 +225,63 @@ export function Lobby({
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CharacterSelector({
+  mission,
+  send,
+  playerId,
+  players,
+}: {
+  mission: number;
+  send: (msg: ClientMessage) => void;
+  playerId: string;
+  players: LobbyState["players"];
+}) {
+  if (mission < 31) return null;
+
+  const me = players.find((p) => p.id === playerId);
+  const allCharacters = Object.entries(CHARACTER_CARD_TEXT) as Array<
+    [CharacterId, (typeof CHARACTER_CARD_TEXT)[CharacterId]]
+  >;
+
+  return (
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 space-y-3">
+      <h2 className="text-sm font-bold text-gray-400 uppercase">
+        Character Selection <span className="text-purple-400">(Rule Sticker B)</span>
+      </h2>
+      <p className="text-xs text-gray-500">Mission 31+ allows expert characters. Select your character:</p>
+      <div className="grid grid-cols-3 gap-2">
+        {allCharacters.map(([id, text]) => {
+          const isSelected = me?.character === id;
+          const isExpert = id.startsWith("character_e");
+          return (
+            <button
+              key={id}
+              onClick={() => send({ type: "selectCharacter", characterId: id })}
+              className={`rounded-lg p-2 text-left text-xs transition-all border ${
+                isSelected
+                  ? "border-yellow-400 bg-yellow-900/30 ring-1 ring-yellow-400"
+                  : "border-gray-700 bg-[var(--color-bomb-dark)] hover:border-gray-500"
+              }`}
+            >
+              <div className="font-bold text-white">{text.name}</div>
+              <div className={`text-[10px] ${isExpert ? "text-purple-400" : "text-gray-500"}`}>
+                {text.abilityName}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {players.filter((p) => p.character).map((p) => (
+          <span key={p.id} className="text-xs bg-gray-800 rounded px-2 py-0.5 text-gray-300">
+            {p.name}: <span className="text-yellow-400">{CHARACTER_CARD_TEXT[p.character!]?.name ?? p.character}</span>
+          </span>
+        ))}
       </div>
     </div>
   );

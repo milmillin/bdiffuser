@@ -179,7 +179,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleJoin(connection, msg.name);
         break;
       case "selectCharacter":
-        this.handleSelectCharacter(connection, msg.character);
+        this.handleSelectCharacter(connection, msg.characterId);
         break;
       case "selectMission":
         this.handleSelectMission(connection, msg.mission);
@@ -353,31 +353,29 @@ export class BombBustersServer extends Server<Env> {
     this.broadcastLobby();
   }
 
-  handleSelectCharacter(conn: Connection, character: CharacterId) {
-    // Rule Sticker B (missions 31+): non-captain players may replace their
-    // character with an E1-E4 character during setup.
-    const gs = this.room.gameState;
-    if (!gs || gs.phase !== "setup_info_tokens") return;
+  handleSelectCharacter(conn: Connection, characterId: CharacterId) {
+    if (this.room.gameState) return;
     if (this.room.mission < 31) return;
 
-    const player = gs.players.find((p) => p.id === conn.id);
-    if (!player || player.isCaptain) return;
-
-    // Only E1-E4 characters are selectable replacements.
-    const expertChars: CharacterId[] = [
+    const validCharacterIds: CharacterId[] = [
+      "double_detector",
+      "character_2",
+      "character_3",
+      "character_4",
+      "character_5",
       "character_e1",
       "character_e2",
       "character_e3",
       "character_e4",
     ];
-    if (!expertChars.includes(character)) return;
+    if (!validCharacterIds.includes(characterId)) return;
 
-    // Ensure the chosen character isn't already taken by another player.
-    if (gs.players.some((p) => p.character === character)) return;
+    const player = this.room.players.find((p) => p.id === conn.id);
+    if (!player) return;
 
-    player.character = character;
-    player.characterUsed = false;
-    this.broadcastGameState();
+    player.character = characterId;
+    this.saveState();
+    this.broadcastLobby();
   }
 
   handleSelectMission(conn: Connection, mission: MissionId) {
@@ -1360,6 +1358,29 @@ export class BombBustersServer extends Server<Env> {
         );
         break;
       }
+      case "dualCutDoubleDetector": {
+        const error = validateDualCutDoubleDetectorWithHooks(
+          state,
+          botId,
+          botAction.targetPlayerId,
+          botAction.tileIndex1,
+          botAction.tileIndex2,
+          botAction.guessValue,
+        );
+        if (error) {
+          console.log(`Bot ${botId} dualCutDoubleDetector validation failed [${error.code}]: ${error.message}`);
+          return;
+        }
+        action = executeDualCutDoubleDetector(
+          state,
+          botId,
+          botAction.targetPlayerId,
+          botAction.tileIndex1,
+          botAction.tileIndex2,
+          botAction.guessValue,
+        );
+        break;
+      }
       case "soloCut": {
         const error = validateSoloCutWithHooks(state, botId, botAction.value);
         if (error) {
@@ -1386,6 +1407,52 @@ export class BombBustersServer extends Server<Env> {
         }
         action = executeSimultaneousRedCut(state, botId);
         break;
+      }
+      case "simultaneousFourCut": {
+        const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
+        if (typeof targetValue !== "number") {
+          console.log(`Bot ${botId} simultaneousFourCut rejected: no number card in play`);
+          return;
+        }
+
+        const targets: Array<{ playerId: string; tileIndex: number }> = [];
+        for (const player of state.players) {
+          for (let i = 0; i < player.hand.length; i++) {
+            const tile = player.hand[i];
+            if (tile.cut || tile.gameValue !== targetValue) continue;
+            targets.push({ playerId: player.id, tileIndex: i });
+          }
+        }
+
+        if (targets.length !== 4) {
+          console.log(`Bot ${botId} simultaneousFourCut rejected: expected 4 targets for value ${targetValue}, found ${targets.length}`);
+          return;
+        }
+
+        const error = validateSimultaneousFourCutWithHooks(state, botId, targets);
+        if (error) {
+          console.log(`Bot ${botId} simultaneousFourCut validation failed [${error.code}]: ${error.message}`);
+          return;
+        }
+
+        action = executeSimultaneousFourCut(state, botId, targets);
+        break;
+      }
+      case "useEquipment": {
+        const equipmentId = botAction.equipmentId as AnyEquipmentId;
+        const payload = botAction.payload as UseEquipmentPayload;
+        const error = validateUseEquipment(state, botId, equipmentId, payload);
+        if (error) {
+          console.log(`Bot ${botId} useEquipment validation failed [${error.code}]: ${error.message}`);
+          return;
+        }
+
+        action = executeUseEquipment(state, botId, equipmentId, payload);
+        break;
+      }
+      default: {
+        console.log(`Bot ${botId} unknown action type: ${(botAction as { action: string }).action}`);
+        return;
       }
     }
 

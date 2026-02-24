@@ -15,7 +15,7 @@ import type {
 
 export type ClientMessage =
   | { type: "join"; name: string }
-  | { type: "selectCharacter"; character: CharacterId }
+  | { type: "selectCharacter"; characterId: CharacterId }
   | { type: "selectMission"; mission: MissionId }
   | { type: "startGame" }
   | { type: "placeInfoToken"; value: number; tileIndex: number }

@@ -7,6 +7,7 @@ import {
   validateSoloCutWithHooks,
   validateRevealRedsWithHooks,
   validateSimultaneousRedCutWithHooks,
+  validateSimultaneousFourCutWithHooks,
   getUncutTiles,
 } from "./validation.js";
 import { isRepeatNextPlayerSelectionDisallowed } from "./turnOrderRules.js";
@@ -184,6 +185,19 @@ export type BotAction =
   | { action: "soloCut"; value: number | "YELLOW" }
   | { action: "revealReds" }
   | { action: "simultaneousRedCut" }
+  | { action: "simultaneousFourCut" }
+  | {
+      action: "useEquipment";
+      equipmentId: string;
+      payload: Record<string, unknown>;
+    }
+  | {
+      action: "dualCutDoubleDetector";
+      targetPlayerId: string;
+      tileIndex1: number;
+      tileIndex2: number;
+      guessValue: number;
+    }
   | { action: "chooseNextPlayer"; targetPlayerId: string }
   | { action: "designateCutter"; targetPlayerId: string };
 
@@ -305,6 +319,38 @@ function parseLLMAction(
     return { action: "simultaneousRedCut" };
   }
 
+  if (action === "simultaneousFourCut") {
+    return { action: "simultaneousFourCut" };
+  }
+
+  if (action === "useEquipment") {
+    const equipmentId = result.equipmentId as string;
+    if (!equipmentId) return null;
+    const rawPayload = result.payload;
+    const payload =
+      rawPayload && typeof rawPayload === "object" && !Array.isArray(rawPayload)
+        ? (rawPayload as Record<string, unknown>)
+        : {};
+    return { action: "useEquipment", equipmentId, payload };
+  }
+
+  if (action === "dualCutDoubleDetector") {
+    const targetPlayerId = result.targetPlayerId as string;
+    const tileIndex1 = Number(result.tileIndex1);
+    const tileIndex2 = Number(result.tileIndex2);
+    const guessValue = Number(result.guessValue);
+    if (!targetPlayerId) return null;
+    if (!Number.isFinite(tileIndex1) || !Number.isFinite(tileIndex2)) return null;
+    if (!Number.isFinite(guessValue)) return null;
+    return {
+      action: "dualCutDoubleDetector",
+      targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+    };
+  }
+
   if (action === "chooseNextPlayer") {
     const targetPlayerId = result.targetPlayerId as string;
     if (!targetPlayerId) return null;
@@ -342,6 +388,12 @@ function validateBotAction(
       return validateRevealRedsWithHooks(state, botId)?.message ?? null;
     case "simultaneousRedCut":
       return validateSimultaneousRedCutWithHooks(state, botId)?.message ?? null;
+    case "simultaneousFourCut":
+      return validateSimultaneousFourCutForBot(state, botId);
+    case "useEquipment":
+      return null;
+    case "dualCutDoubleDetector":
+      return null;
     case "chooseNextPlayer": {
       const forced = state.pendingForcedAction;
       if (!forced || forced.kind !== "chooseNextPlayer") {
@@ -476,6 +528,36 @@ function pickGuessValueFromParity(
   return null;
 }
 
+function buildSimultaneousFourCutValidationTargets(
+  state: GameState,
+): Array<{ playerId: string; tileIndex: number }> | null {
+  const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
+  if (typeof targetValue !== "number") return null;
+
+  const targets: Array<{ playerId: string; tileIndex: number }> = [];
+
+  for (const player of state.players) {
+    for (let i = 0; i < player.hand.length; i++) {
+      const tile = player.hand[i];
+      if (tile.cut || tile.gameValue !== targetValue) continue;
+      targets.push({ playerId: player.id, tileIndex: i });
+    }
+  }
+
+  return targets.length === 4 ? targets : null;
+}
+
+function validateSimultaneousFourCutForBot(
+  state: GameState,
+  botId: string,
+): string | null {
+  const targets = buildSimultaneousFourCutValidationTargets(state);
+  if (!targets) {
+    return "Not enough uncut tiles for simultaneousFourCut";
+  }
+  return validateSimultaneousFourCutWithHooks(state, botId, targets)?.message ?? null;
+}
+
 function getFallbackAction(state: GameState, botId: string): BotAction {
   const forcedDesignateCutterAction = getForcedDesignateCutterAction(state, botId);
   if (forcedDesignateCutterAction) {
@@ -499,6 +581,11 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   // 1b. simultaneousRedCut when legal (mission 13 only).
   if (!validateSimultaneousRedCutWithHooks(state, botId)) {
     return { action: "simultaneousRedCut" };
+  }
+
+  // 1c. simultaneousFourCut when legal.
+  if (!validateSimultaneousFourCutForBot(state, botId)) {
+    return { action: "simultaneousFourCut" };
   }
 
   // 2. soloCut for any legal value the bot holds.

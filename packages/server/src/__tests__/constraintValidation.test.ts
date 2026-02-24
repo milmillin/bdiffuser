@@ -1,0 +1,256 @@
+import { describe, expect, it } from "vitest";
+import {
+  makeCampaignState,
+  makeConstraintCard,
+  makeGameState,
+  makePlayer,
+  makeTile,
+} from "@bomb-busters/shared/testing";
+import { dispatchHooks } from "../missionHooks";
+
+const GLOBAL_CONSTRAINT_MISSION_ID = 32;
+const PER_PLAYER_CONSTRAINT_MISSION_ID = 31;
+
+type Scope = "global" | "perPlayer";
+
+interface StateWithConstraintOptions {
+  scope?: Scope;
+  actorHandValues?: number[];
+  targetHandValues?: number[];
+}
+
+// Mission 32 has the full A-L constraint_enforcement hook rule (global scope).
+// Mission 31 also has constraint_enforcement (per-player scope).
+function stateWithConstraint(
+  constraintId: string,
+  opts?: StateWithConstraintOptions,
+) {
+  const scope = opts?.scope ?? "global";
+  const actorHandValues = opts?.actorHandValues ?? [5, 6];
+  const targetHandValues = opts?.targetHandValues ?? [3, 8];
+
+  const player1 = makePlayer({
+    id: "player-1",
+    hand: actorHandValues.map((value, i) =>
+      makeTile({ id: `p1-${i}`, gameValue: value }),
+    ),
+  });
+  const player2 = makePlayer({
+    id: "player-2",
+    name: "Bob",
+    hand: targetHandValues.map((value, i) =>
+      makeTile({ id: `p2-${i}`, gameValue: value }),
+    ),
+  });
+
+  const constraint = makeConstraintCard({
+    id: constraintId,
+    name: `Constraint ${constraintId}`,
+    active: true,
+  });
+
+  return makeGameState({
+    mission:
+      scope === "global"
+        ? GLOBAL_CONSTRAINT_MISSION_ID
+        : PER_PLAYER_CONSTRAINT_MISSION_ID,
+    players: [player1, player2],
+    currentPlayerIndex: 0,
+    campaign: makeCampaignState({
+      constraints:
+        scope === "global"
+          ? { global: [constraint], perPlayer: {} }
+          : { global: [], perPlayer: { "player-1": [constraint] } },
+    }),
+  });
+}
+
+function validateDualCut(
+  state: ReturnType<typeof stateWithConstraint>,
+  guessValue: number,
+  targetTileIndex = 0,
+) {
+  return dispatchHooks(state.mission, {
+    point: "validate",
+    state,
+    action: {
+      type: "dualCut",
+      actorId: "player-1",
+      targetPlayerId: "player-2",
+      targetTileIndex,
+      guessValue,
+    },
+  });
+}
+
+function validateSoloCut(
+  state: ReturnType<typeof stateWithConstraint>,
+  value: number,
+) {
+  return dispatchHooks(state.mission, {
+    point: "validate",
+    state,
+    action: {
+      type: "soloCut",
+      actorId: "player-1",
+      value,
+    },
+  });
+}
+
+describe("constraint enforcement validation", () => {
+  it.each([
+    {
+      id: "A",
+      actorHandValues: [5, 6],
+      blockedValue: 5,
+      allowedValue: 6,
+      expectedError: "Constraint A: You must cut only even wires",
+    },
+    {
+      id: "B",
+      actorHandValues: [5, 6],
+      blockedValue: 6,
+      allowedValue: 5,
+      expectedError: "Constraint B: You must cut only odd wires",
+    },
+    {
+      id: "C",
+      actorHandValues: [3, 8],
+      blockedValue: 8,
+      allowedValue: 3,
+      expectedError: "Constraint C: You must cut only wires 1 to 6",
+    },
+    {
+      id: "D",
+      actorHandValues: [3, 8],
+      blockedValue: 3,
+      allowedValue: 8,
+      expectedError: "Constraint D: You must cut only wires 7 to 12",
+    },
+    {
+      id: "E",
+      actorHandValues: [2, 5],
+      blockedValue: 2,
+      allowedValue: 5,
+      expectedError: "Constraint E: You must cut only wires 4 to 9",
+    },
+    {
+      id: "F",
+      actorHandValues: [2, 5],
+      blockedValue: 5,
+      allowedValue: 2,
+      expectedError: "Constraint F: You cannot cut wires 4 to 9",
+    },
+  ])(
+    "Constraint $id rejects blocked values and allows legal values",
+    ({ id, actorHandValues, blockedValue, allowedValue, expectedError }) => {
+      const blockedState = stateWithConstraint(id, { actorHandValues });
+      const blocked = validateDualCut(blockedState, blockedValue);
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toBe(expectedError);
+
+      const allowedState = stateWithConstraint(id, { actorHandValues });
+      const allowed = validateDualCut(allowedState, allowedValue);
+      expect(allowed.validationError).toBeUndefined();
+    },
+  );
+
+  it("Constraint G does not reject at validate hook (enforced in equipment validation)", () => {
+    const state = stateWithConstraint("G");
+    const result = validateDualCut(state, 5);
+    expect(result.validationError).toBeUndefined();
+  });
+
+  it("Constraint H does not reject at validate hook (enforced in resolve path)", () => {
+    const state = stateWithConstraint("H");
+    const result = validateDualCut(state, 5);
+    expect(result.validationError).toBeUndefined();
+  });
+
+  it("Constraint I rejects cutting the far-right uncut target tile", () => {
+    const state = stateWithConstraint("I", { targetHandValues: [3, 8, 11] });
+
+    const blocked = validateDualCut(state, 8, 2);
+    expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(blocked.validationError).toBe(
+      "Constraint I: You cannot cut the far-right wire",
+    );
+
+    const allowed = validateDualCut(state, 8, 1);
+    expect(allowed.validationError).toBeUndefined();
+  });
+
+  it("Constraint J rejects cutting the far-left uncut target tile", () => {
+    const state = stateWithConstraint("J", { targetHandValues: [3, 8, 11] });
+
+    const blocked = validateDualCut(state, 3, 0);
+    expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(blocked.validationError).toBe(
+      "Constraint J: You cannot cut the far-left wire",
+    );
+
+    const allowed = validateDualCut(state, 8, 1);
+    expect(allowed.validationError).toBeUndefined();
+  });
+
+  it("Constraint K rejects solo cuts", () => {
+    const state = stateWithConstraint("K", {
+      actorHandValues: [6, 7],
+      targetHandValues: [2, 6],
+    });
+
+    const blocked = validateSoloCut(state, 6);
+    expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(blocked.validationError).toBe(
+      "Constraint K: You cannot do a Solo Cut action",
+    );
+
+    const allowed = validateDualCut(state, 6, 1);
+    expect(allowed.validationError).toBeUndefined();
+  });
+
+  it("Constraint L does not reject at validate hook and adds an extra detonator step on failed dual cut", () => {
+    const state = stateWithConstraint("L");
+    const validateResult = validateDualCut(state, 5);
+    expect(validateResult.validationError).toBeUndefined();
+
+    const before = state.board.detonatorPosition;
+    dispatchHooks(state.mission, {
+      point: "resolve",
+      state,
+      action: {
+        type: "dualCut",
+        actorId: "player-1",
+        targetPlayerId: "player-2",
+        targetTileIndex: 0,
+        guessValue: 5,
+      },
+      cutValue: 5,
+      cutSuccess: false,
+    });
+
+    expect(state.board.detonatorPosition).toBe(before + 1);
+    expect(
+      state.log.some(
+        (entry) => entry.detail === "constraint_L:double_detonator:+1_extra",
+      ),
+    ).toBe(true);
+  });
+
+  it("auto-flips constraint when all remaining actor tiles violate it", () => {
+    const state = stateWithConstraint("A", {
+      scope: "perPlayer",
+      actorHandValues: [5, 7],
+    });
+
+    const result = validateDualCut(state, 5);
+    expect(result.validationError).toBeUndefined();
+    expect(state.campaign?.constraints?.perPlayer["player-1"]?.[0]?.active).toBe(
+      false,
+    );
+    expect(
+      state.log.some((entry) => entry.detail === "constraint_auto_flip:A:stuck"),
+    ).toBe(true);
+  });
+});

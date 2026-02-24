@@ -290,6 +290,109 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("normalizes campaign equipment reserve cards when present", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 3,
+        mission: 24,
+        result: null,
+        campaign: {
+          equipmentReserve: [
+            {
+              id: "rewinder",
+              unlocked: false,
+              used: false,
+            },
+            { id: "" },
+          ],
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-equip-reserve");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign?.equipmentReserve).toHaveLength(1);
+    expect(normalized.gameState!.campaign?.equipmentReserve?.[0].id).toBe("rewinder");
+    expect(normalized.gameState!.campaign?.equipmentReserve?.[0].image).toBe("equipment_6.png");
+  });
+
+  it("preserves mission22 token-pass forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p3",
+            name: "Caro",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 6,
+        mission: 22,
+        result: null,
+        pendingForcedAction: {
+          kind: "mission22TokenPass",
+          currentChooserIndex: 1,
+          currentChooserId: "p2",
+          passingOrder: [0, 1, "bad", 2],
+          completedCount: 1,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f2");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission22TokenPass",
+      currentChooserIndex: 1,
+      currentChooserId: "p2",
+      passingOrder: [0, 1, 2],
+      completedCount: 1,
+    });
+  });
+
   it("preserves campaign mission objects and timer state across restore", () => {
     const legacy = {
       gameState: {
@@ -366,7 +469,13 @@ describe("normalizeRoomState", () => {
     const normalized = normalizeRoomState(legacy, "room-g");
     expect(normalized.gameState).not.toBeNull();
     expect(normalized.gameState!.timerDeadline).toBe(1735689600000);
-    expect(normalized.gameState!.campaign).toEqual(legacy.gameState.campaign);
+    expect(normalized.gameState!.campaign).toEqual({
+      ...legacy.gameState.campaign,
+      constraints: {
+        ...legacy.gameState.campaign.constraints,
+        deck: [],
+      },
+    });
   });
 
   it("normalizes malformed campaign object shapes to safe defaults", () => {
@@ -436,6 +545,7 @@ describe("normalizeRoomState", () => {
       constraints: {
         global: [],
         perPlayer: {},
+        deck: [],
       },
       challenges: {
         deck: [],
@@ -553,6 +663,7 @@ describe("normalizeRoomState", () => {
           p1: [{ id: "ok-pc", name: "No solo", description: "rule", active: true }],
           p2: [],
         },
+        deck: [],
       },
       challenges: {
         deck: [{ id: "ok-ch", name: "Deck", description: "desc", completed: false }],
@@ -648,6 +759,7 @@ describe("normalizeRoomState", () => {
       constraints: {
         global: [],
         perPlayer: {},
+        deck: [],
       },
       challenges: {
         deck: [],

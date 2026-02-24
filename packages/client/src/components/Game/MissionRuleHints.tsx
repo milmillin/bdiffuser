@@ -206,18 +206,41 @@ function CampaignObjectsHint({
       </div>
 
       {hasNumberCardContent && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1">
+        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
           <div className="text-[10px] uppercase text-gray-400">Number Cards</div>
           {visibleCards.length > 0 && (
-            <div className="text-xs text-gray-200">
-              Visible: {visibleCards.map((card) => card.value).join(" - ")}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {visibleCards.map((card) => (
+                <div
+                  key={card.id}
+                  className={`flex items-center justify-center w-8 h-10 rounded-md border-2 ${
+                    card.faceUp
+                      ? "border-blue-400 bg-blue-950/50 text-blue-200"
+                      : "border-gray-600 bg-gray-800/50 text-gray-400"
+                  }`}
+                >
+                  <span className="text-sm font-black">{card.faceUp ? card.value : "?"}</span>
+                </div>
+              ))}
             </div>
           )}
-          {(deckCount > 0 || discardCount > 0) && (
-            <div className="text-xs text-gray-300">
-              Deck {deckCount} | Discard {discardCount}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {deckCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="relative w-6 h-7">
+                  <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
+                  <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
+                </div>
+                <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
+              </div>
+            )}
+            {discardCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
+                <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

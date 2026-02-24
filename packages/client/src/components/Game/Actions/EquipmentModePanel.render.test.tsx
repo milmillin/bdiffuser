@@ -84,6 +84,16 @@ const ALL_MODES: EquipmentMode[] = [
     guessATileIndex: null,
     guessBTileIndex: null,
   },
+  { kind: "false_bottom" },
+  { kind: "single_wire_label" },
+  { kind: "emergency_drop" },
+  { kind: "fast_pass", selectedValue: null },
+  { kind: "disintegrator" },
+  {
+    kind: "grappling_hook",
+    targetPlayerId: null,
+    targetTileIndex: null,
+  },
 ];
 
 const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
@@ -98,6 +108,12 @@ const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   triple_detector: "Triple Detector",
   super_detector: "Super Detector",
   x_or_y_ray: "X or Y Ray",
+  false_bottom: "False Bottom",
+  single_wire_label: "Single Wire Label",
+  emergency_drop: "Emergency Drop",
+  fast_pass: "Fast Pass",
+  disintegrator: "Disintegrator",
+  grappling_hook: "Grappling Hook",
 };
 
 // ── General tests ────────────────────────────────────────────────────────────
@@ -440,5 +456,85 @@ describe("EquipmentModePanel — x_or_y_ray", () => {
       guessBTileIndex: 1,
     });
     expect(html).toContain("Confirm X or Y Ray");
+  });
+});
+
+// ── false_bottom ─────────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — false_bottom", () => {
+  it("shows description and confirm button", () => {
+    const html = renderMode({ kind: "false_bottom" });
+    expect(html).toContain("Reveal a random equipment card from the reserve");
+    expect(html).toContain("Confirm False Bottom");
+  });
+});
+
+// ── single_wire_label ────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — single_wire_label", () => {
+  it("shows instruction text", () => {
+    const html = renderMode({ kind: "single_wire_label" });
+    expect(html).toContain("Click one of your blue wires to apply the Single Wire Label");
+  });
+});
+
+// ── emergency_drop ───────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — emergency_drop", () => {
+  it("shows description and confirm button", () => {
+    const html = renderMode({ kind: "emergency_drop" });
+    expect(html).toContain("Restore all used equipment cards");
+    expect(html).toContain("Confirm Emergency Drop");
+  });
+});
+
+// ── fast_pass ────────────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — fast_pass", () => {
+  it("renders value buttons and no confirm button before selection", () => {
+    const html = renderMode({ kind: "fast_pass", selectedValue: null });
+    for (let i = 1; i <= 12; i++) {
+      expect(html).toContain(`>${i}</button>`);
+    }
+    expect(html).not.toContain("Confirm Fast Pass");
+  });
+
+  it("shows confirm button after a value is selected", () => {
+    const html = renderMode({ kind: "fast_pass", selectedValue: 7 });
+    expect(html).toContain("Confirm Fast Pass");
+  });
+});
+
+// ── disintegrator ────────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — disintegrator", () => {
+  it("shows description and confirm button", () => {
+    const html = renderMode({ kind: "disintegrator" });
+    expect(html).toContain("Draw a random value and cut all matching blue wires");
+    expect(html).toContain("Confirm Disintegrator");
+  });
+});
+
+// ── grappling_hook ───────────────────────────────────────────────────────────
+
+describe("EquipmentModePanel — grappling_hook", () => {
+  it("initial state shows opponent-click instruction", () => {
+    const html = renderMode({
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    });
+    expect(html).toContain("Click an uncut wire on an opponent");
+  });
+
+  it("with target selected shows targeting text and confirm button", () => {
+    const html = renderMode({
+      kind: "grappling_hook",
+      targetPlayerId: "opp1",
+      targetTileIndex: 0,
+    });
+    expect(html).toContain("Targeting");
+    expect(html).toContain("Opp1");
+    expect(html).toContain("Confirm Grappling Hook");
   });
 });

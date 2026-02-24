@@ -23,6 +23,9 @@ export function buildSystemPrompt(): string {
 2. **soloCut** — Cut ALL your own tiles of a specific value. Only valid if you hold ALL remaining uncut copies of that value in the entire game (e.g., all 4 blue-3s, or the remaining 2 if 2 were already cut).
 3. **revealReds** — If ALL your remaining uncut tiles are red, reveal them all (removes them safely). Free and safe — always do it when eligible.
 4. **chooseNextPlayer** — Only when a forced action is pending for the captain: choose which player takes the next turn.
+5. **simultaneousFourCut** — Cut all 4 copies of a specific value simultaneously across all stands. Only available when mission rules enable it.
+6. **useEquipment** — Use an unlocked equipment card. Specify equipmentId and payload.
+7. **dualCutDoubleDetector** — Pick 2 tiles on one opponent stand and guess one value. If either matches, success.
 
 ## Info Tokens
 - Info tokens are placed in front of tiles to indicate their value.
@@ -74,6 +77,15 @@ For revealReds:
 
 For chooseNextPlayer:
 {"reasoning": "brief explanation", "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
+
+For simultaneousFourCut:
+{"reasoning": "brief explanation", "action": "simultaneousFourCut"}
+
+For useEquipment:
+{"reasoning": "brief explanation", "action": "useEquipment", "equipmentId": "rewinder", "payload": {}}
+
+For dualCutDoubleDetector:
+{"reasoning": "brief explanation", "action": "dualCutDoubleDetector", "targetPlayerId": "player-id", "tileIndex1": 0, "tileIndex2": 1, "guessValue": 5}
 
 guessValue can be a number (1-12) or "YELLOW" for yellow wires.
 soloCut value can be a number (1-12) or "YELLOW".`;
