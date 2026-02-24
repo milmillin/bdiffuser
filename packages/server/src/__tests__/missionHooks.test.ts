@@ -360,6 +360,7 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.deck).toHaveLength(8);
       expect(numberCards!.deck.every((card) => card.faceUp === false)).toBe(true);
       expect(numberCards!.discard).toHaveLength(0);
+      expect((state.campaign as Record<string, unknown>).randomSetupInfoTokens).toBe(true);
 
       const allValues = [
         numberCards!.visible[0].value,

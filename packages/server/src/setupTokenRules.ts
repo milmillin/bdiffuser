@@ -93,7 +93,7 @@ export interface AutoSetupInfoTokenPlacement {
   };
 }
 
-function mission13AvailableBlueValues(player: Readonly<Player>): number[] {
+function randomSetupAvailableBlueValues(player: Readonly<Player>): number[] {
   const values = new Set<number>();
   for (const tile of player.hand) {
     if (tile.cut) continue;
@@ -104,7 +104,7 @@ function mission13AvailableBlueValues(player: Readonly<Player>): number[] {
   return [...values];
 }
 
-function mission13MatchingBlueIndices(player: Readonly<Player>, value: number): number[] {
+function randomSetupMatchingBlueIndices(player: Readonly<Player>, value: number): number[] {
   const indices: number[] = [];
   for (let i = 0; i < player.hand.length; i++) {
     const tile = player.hand[i];
@@ -117,14 +117,18 @@ function mission13MatchingBlueIndices(player: Readonly<Player>, value: number): 
 }
 
 /**
- * Mission 13 setup: each required player receives a random valid info token
- * and it is automatically placed on a matching blue wire.
+ * Missions with random setup info tokens: each required player receives a
+ * random valid info token and it is automatically placed on a matching blue wire.
  */
 export function autoPlaceMission13RandomSetupInfoTokens(
   state: GameState,
   rng: () => number = Math.random,
 ): AutoSetupInfoTokenPlacement[] {
-  if (state.phase !== "setup_info_tokens" || state.mission !== 13) {
+  const randomSetupEnabled =
+    state.campaign != null
+    && (state.campaign as Record<string, unknown>).randomSetupInfoTokens === true;
+
+  if (state.phase !== "setup_info_tokens" || !randomSetupEnabled) {
     return [];
   }
 
@@ -132,11 +136,11 @@ export function autoPlaceMission13RandomSetupInfoTokens(
   for (const player of state.players) {
     const required = requiredSetupInfoTokenCount(state, player);
     while (player.infoTokens.length < required) {
-      const values = mission13AvailableBlueValues(player);
+      const values = randomSetupAvailableBlueValues(player);
       if (values.length === 0) break;
 
       const value = values[Math.floor(rng() * values.length)];
-      const indices = mission13MatchingBlueIndices(player, value);
+      const indices = randomSetupMatchingBlueIndices(player, value);
       if (indices.length === 0) break;
 
       const position = indices[Math.floor(rng() * indices.length)];

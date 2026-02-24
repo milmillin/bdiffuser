@@ -14,6 +14,7 @@ import {
   autoPlaceMission13RandomSetupInfoTokens,
   validateSetupInfoTokenPlacement,
 } from "../setupTokenRules";
+import { dispatchHooks } from "../missionHooks";
 
 describe("setupTokenRules", () => {
   it("mission 11 (2p): captain requires 0 setup info tokens", () => {
@@ -176,6 +177,7 @@ describe("setupTokenRules", () => {
         mission: 13,
         players: [captain, p2, p3],
       });
+      dispatchHooks(13, { point: "setup", state });
 
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 
@@ -200,12 +202,54 @@ describe("setupTokenRules", () => {
         mission: 13,
         players: [captain, partner],
       });
+      dispatchHooks(13, { point: "setup", state });
 
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 
       expect(placements).toHaveLength(1);
       expect(captain.infoTokens).toHaveLength(0);
       expect(partner.infoTokens).toEqual([{ value: 7, position: 0, isYellow: false }]);
+    });
+
+    it("auto-places random setup tokens for mission 39 after setup hooks", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "c-1", color: "blue", gameValue: 3, sortValue: 3 }),
+          makeTile({ id: "c-2", color: "blue", gameValue: 8, sortValue: 8 }),
+          makeYellowTile({ id: "c-y1" }),
+        ],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [
+          makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4 }),
+          makeTile({ id: "p2-2", color: "blue", gameValue: 9, sortValue: 9 }),
+          makeRedTile({ id: "p2-r1" }),
+        ],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [
+          makeTile({ id: "p3-1", color: "blue", gameValue: 1, sortValue: 1 }),
+          makeTile({ id: "p3-2", color: "blue", gameValue: 11, sortValue: 11 }),
+        ],
+      });
+
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 39,
+        players: [captain, p2, p3],
+      });
+      dispatchHooks(39, { point: "setup", state });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toHaveLength(3);
+      expect(captain.infoTokens).toEqual([{ value: 3, position: 0, isYellow: false }]);
+      expect(p2.infoTokens).toEqual([{ value: 4, position: 0, isYellow: false }]);
+      expect(p3.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
     });
   });
 

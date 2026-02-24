@@ -84,7 +84,10 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       2: { red: exact(3), yellow: exact(4) },
     },
     behaviorHooks: ["mission_39_no_equipment_simultaneous_four"],
-    hookRules: [{ kind: "simultaneous_multi_cut", color: "yellow", count: 4 }],
+    hookRules: [
+      { kind: "simultaneous_multi_cut", color: "yellow", count: 4 },
+      { kind: "random_setup_info_tokens" },
+    ],
     notes: ["FAQ: If dealt a Number card for a value not in hand or no longer in the game, ignore it."],
   });
 
