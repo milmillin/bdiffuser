@@ -88,9 +88,41 @@ describe("mission complexity tier representative coverage", () => {
     }
   });
 
-  it.todo(
-    "mission 64 two-stand flipped-wire FAQ placement is hook-owned in missionHooks setup (lowest far-left stand1, highest far-right stand2)",
-  );
+  it("mission 64: two-stand flipped wires follow FAQ edge placement", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 1, sortValue: 1, cut: true }),
+        makeTile({ id: "c2", color: "blue", gameValue: 10, sortValue: 10, cut: false }),
+        makeTile({ id: "c3", color: "blue", gameValue: 5, sortValue: 5, cut: true }),
+        makeTile({ id: "c4", color: "blue", gameValue: 3, sortValue: 3, cut: true }),
+        makeTile({ id: "c5", color: "blue", gameValue: 2, sortValue: 2, cut: false }),
+        makeTile({ id: "c6", color: "blue", gameValue: 8, sortValue: 8, cut: true }),
+      ],
+    });
+    captain.standSizes = [3, 3];
+
+    const state = makeGameState({
+      mission: 64,
+      players: [captain],
+      log: [],
+    });
+
+    dispatchHooks(64, { point: "setup", state });
+
+    const flipped = captain.hand
+      .map((tile, index) => ({
+        index,
+        sortValue: tile.sortValue,
+        upsideDown: Boolean((tile as unknown as { upsideDown?: boolean }).upsideDown),
+      }))
+      .filter((entry) => entry.upsideDown);
+
+    expect(flipped).toHaveLength(2);
+    expect(flipped[0]).toMatchObject({ index: 0, sortValue: 2 });
+    expect(flipped[1]).toMatchObject({ index: 5, sortValue: 10 });
+  });
 
   it("x-marker tier (mission 20): Post-it cannot target an X-marked wire", () => {
     const actor = makePlayer({

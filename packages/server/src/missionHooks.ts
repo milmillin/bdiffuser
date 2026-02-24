@@ -2461,6 +2461,69 @@ registerHookHandler<"false_tokens">("false_tokens", {
 
 // ── Wire-based hooks (missions 20/35/38/56/64) ──────────────────
 
+function moveArrayItem<T>(arr: T[], fromIndex: number, toIndex: number): void {
+  if (fromIndex < 0 || fromIndex >= arr.length) return;
+  if (arr.length === 0) return;
+
+  const clampedTarget = Math.max(0, Math.min(toIndex, arr.length - 1));
+  if (fromIndex === clampedTarget) return;
+
+  const [item] = arr.splice(fromIndex, 1);
+  arr.splice(clampedTarget, 0, item);
+}
+
+/**
+ * Mission 64 setup: once two flipped wires are selected, reposition them so:
+ * - lower value goes to far-left of stand 1
+ * - higher value goes to far-right of stand 2 (if present), otherwise stand 1
+ */
+function applyMission64FlippedWirePlacement(
+  player: import("@bomb-busters/shared").Player,
+  selectedTileIds: readonly string[],
+): void {
+  if (selectedTileIds.length !== 2) return;
+
+  const hand = [...player.hand];
+  if (hand.length === 0) return;
+
+  const firstIdx = hand.findIndex((tile) => tile.id === selectedTileIds[0]);
+  const secondIdx = hand.findIndex((tile) => tile.id === selectedTileIds[1]);
+  if (firstIdx < 0 || secondIdx < 0 || firstIdx === secondIdx) return;
+
+  const firstTile = hand[firstIdx];
+  const secondTile = hand[secondIdx];
+
+  const firstIsLower =
+    firstTile.sortValue < secondTile.sortValue
+      || (firstTile.sortValue === secondTile.sortValue && firstIdx <= secondIdx);
+
+  const lowerTileId = firstIsLower ? firstTile.id : secondTile.id;
+  const higherTileId = firstIsLower ? secondTile.id : firstTile.id;
+
+  const firstStandRange = resolveHookStandRange(player, 0);
+  const secondStandRange = resolveHookStandRange(player, 1);
+
+  const lowerTargetIndex =
+    firstStandRange && firstStandRange.endExclusive > firstStandRange.start
+      ? firstStandRange.start
+      : 0;
+
+  const higherTargetIndex =
+    secondStandRange && secondStandRange.endExclusive > secondStandRange.start
+      ? secondStandRange.endExclusive - 1
+      : firstStandRange && firstStandRange.endExclusive > firstStandRange.start
+        ? firstStandRange.endExclusive - 1
+        : hand.length - 1;
+
+  const lowerCurrentIndex = hand.findIndex((tile) => tile.id === lowerTileId);
+  moveArrayItem(hand, lowerCurrentIndex, lowerTargetIndex);
+
+  const higherCurrentIndex = hand.findIndex((tile) => tile.id === higherTileId);
+  moveArrayItem(hand, higherCurrentIndex, higherTargetIndex);
+
+  player.hand = hand;
+}
+
 /**
  * Missions 20, 35: X-marked wire.
  * The last dealt wire on each stand is moved unsorted to the far right
@@ -2532,8 +2595,6 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
  */
 registerHookHandler<"upside_down_wire">("upside_down_wire", {
   setup(rule: UpsideDownWireRuleDef, ctx: SetupHookContext): void {
-    const flippedPerPlayer: Record<string, number[]> = {};
-
     for (const player of ctx.state.players) {
       const uncutIndices = player.hand
         .map((_, i) => i)
@@ -2542,10 +2603,22 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
 
       const toFlip = Math.min(rule.count, uncutIndices.length);
       const selected = shuffle([...uncutIndices]).slice(0, toFlip);
-      flippedPerPlayer[player.id] = selected;
+      const selectedTileIds = selected
+        .map((idx) => player.hand[idx]?.id)
+        .filter((id): id is string => typeof id === "string");
 
-      for (const idx of selected) {
-        (player.hand[idx] as unknown as Record<string, unknown>).upsideDown = true;
+      if (ctx.state.mission === 64) {
+        applyMission64FlippedWirePlacement(player, selectedTileIds);
+      }
+
+      const selectedIdSet = new Set(selectedTileIds);
+      for (const tile of player.hand) {
+        const mutable = tile as unknown as Record<string, unknown>;
+        if (selectedIdSet.has(tile.id)) {
+          mutable.upsideDown = true;
+        } else {
+          delete mutable.upsideDown;
+        }
       }
     }
 
