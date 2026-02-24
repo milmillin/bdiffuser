@@ -742,7 +742,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp2", 3) as Extract<EquipmentMode, { kind: "talkies_walkies" }>;
     expect(result.teammateId).toBe("opp2");
-    expect(result.teammateTileIndex).toBe(3);
+    expect(result.teammateTileIndex).toBeNull();
     expect(result.myTileIndex).toBe(2); // preserved
   });
 
@@ -1423,14 +1423,14 @@ describe("grappling_hook opponent interactions", () => {
 // Opponent tile toggle-deselect for single-select equipment
 // ---------------------------------------------------------------------------
 describe("opponent tile toggle-deselect", () => {
-  it("talkies_walkies: deselects on same tile click", () => {
+  it("talkies_walkies: deselects on same opponent click", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
       teammateId: "opp1",
       teammateTileIndex: 2,
       myTileIndex: null,
     };
-    const result = handleOpponentTileClick(mode, "opp1", 2);
+    const result = handleOpponentTileClick(mode, "opp1", 0);
     expect(result).toEqual({
       kind: "talkies_walkies",
       teammateId: null,

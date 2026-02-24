@@ -37,6 +37,7 @@ export type ClientMessage =
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "mission22TokenPassChoice"; value: number }
   | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
+  | { type: "talkiesWalkiesChoice"; tileIndex: number }
   | {
       type: "missionAudioControl";
       command: "play" | "pause";

@@ -189,13 +189,13 @@ export function handleOpponentTileClick(
       };
     }
     case "talkies_walkies": {
-      if (mode.teammateId === oppId && mode.teammateTileIndex === tileIndex) {
+      if (mode.teammateId === oppId) {
         return { ...mode, teammateId: null, teammateTileIndex: null };
       }
       return {
         ...mode,
         teammateId: oppId,
-        teammateTileIndex: tileIndex,
+        teammateTileIndex: null,
         myTileIndex: mode.myTileIndex,
       };
     }

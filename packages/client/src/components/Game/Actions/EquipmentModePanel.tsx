@@ -398,7 +398,6 @@ export function EquipmentModePanel({
     case "talkies_walkies": {
       const twAllComplete =
         mode.teammateId != null &&
-        mode.teammateTileIndex != null &&
         mode.myTileIndex != null;
       if (twAllComplete) {
         const teammateName = opponents.find(
@@ -406,8 +405,7 @@ export function EquipmentModePanel({
         )?.name;
         content = (
           <>
-            Swap {teammateName}&apos;s wire{" "}
-            {wireLabel(mode.teammateTileIndex!)} with your wire{" "}
+            Ask {teammateName} to choose one uncut wire to swap with your wire{" "}
             {wireLabel(mode.myTileIndex!)}.
           </>
         );
@@ -423,7 +421,6 @@ export function EquipmentModePanel({
                   kind: "talkies_walkies",
                   teammateId: mode.teammateId!,
                   myTileIndex: mode.myTileIndex!,
-                  teammateTileIndex: mode.teammateTileIndex!,
                 },
               })
             }
@@ -434,17 +431,17 @@ export function EquipmentModePanel({
         );
       } else {
         const parts: string[] = [];
-        if (mode.teammateId != null && mode.teammateTileIndex != null) {
+        if (mode.teammateId != null) {
           const teammateName = opponents.find(
             (o) => o.id === mode.teammateId,
           )?.name;
-          parts.push(`${teammateName}'s wire ${wireLabel(mode.teammateTileIndex)}`);
+          parts.push(`target ${teammateName}`);
         }
         if (mode.myTileIndex != null) {
           parts.push(`your wire ${wireLabel(mode.myTileIndex)}`);
         }
         const needs: string[] = [];
-        if (mode.teammateId == null) needs.push("an opponent's wire");
+        if (mode.teammateId == null) needs.push("a target player");
         if (mode.myTileIndex == null) needs.push("your uncut wire");
         content = (
           <>

@@ -429,7 +429,8 @@ function normalizeGameState(
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
   const missionAudio = normalizeMissionAudio(obj.missionAudio);
-  // Forced-action migration: supports chooseNextPlayer, designateCutter, and mission22TokenPass.
+  // Forced-action migration: supports chooseNextPlayer, designateCutter,
+  // mission22TokenPass, and talkiesWalkiesTileChoice.
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
     if (
@@ -476,6 +477,24 @@ function normalizeGameState(
           (value): value is number => typeof value === "number" && Number.isFinite(value),
         ),
         completedCount: obj.pendingForcedAction.completedCount,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "talkiesWalkiesTileChoice"
+      && typeof obj.pendingForcedAction.actorId === "string"
+      && obj.pendingForcedAction.actorId
+      && typeof obj.pendingForcedAction.targetPlayerId === "string"
+      && obj.pendingForcedAction.targetPlayerId
+      && typeof obj.pendingForcedAction.actorTileIndex === "number"
+      && Number.isFinite(obj.pendingForcedAction.actorTileIndex)
+      && (obj.pendingForcedAction.source === "equipment"
+        || obj.pendingForcedAction.source === "characterAbility")
+    ) {
+      pendingForcedAction = {
+        kind: "talkiesWalkiesTileChoice" as const,
+        actorId: obj.pendingForcedAction.actorId,
+        targetPlayerId: obj.pendingForcedAction.targetPlayerId,
+        actorTileIndex: obj.pendingForcedAction.actorTileIndex,
+        source: obj.pendingForcedAction.source,
       };
     }
   }

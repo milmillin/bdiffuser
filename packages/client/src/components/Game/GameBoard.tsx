@@ -21,6 +21,7 @@ import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import { DetectorTileChoicePanel } from "./Actions/DetectorTileChoicePanel.js";
+import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel } from "./RightPanel.js";
 import { ActionLog } from "./ActionLog.js";
@@ -63,10 +64,12 @@ type UnknownForcedAction = {
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
 const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
+const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
   FORCED_ACTION_DETECTOR_TILE_CHOICE,
+  FORCED_ACTION_TALKIES_WALKIES_CHOICE,
 ]);
 
 function getUnknownForcedAction(
@@ -223,8 +226,10 @@ export function GameBoard({
       ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === "designateCutter"
         ? pendingForcedAction.designatorId
-        : pendingForcedAction?.kind === "detectorTileChoice"
-          ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === "detectorTileChoice"
+        ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
+        ? pendingForcedAction.targetPlayerId
           : undefined);
   const forcedActionCaptainName = forcedActionCaptainId
     ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
@@ -798,6 +803,19 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Playing phase: forced action (walkies target chooses wire) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
+                  gameState.pendingForcedAction.targetPlayerId === playerId &&
+                  me && (
+                    <TalkiesWalkiesChoicePanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
                 {gameState.phase === "playing" &&
                   unknownForcedAction &&
@@ -1243,6 +1261,21 @@ function getStatusContent(
           {forcedActionCaptainName ?? "the target player"}
         </span>{" "}
         to confirm...
+      </span>
+    );
+  }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "talkiesWalkiesTileChoice" &&
+    pendingForcedAction.targetPlayerId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the target player"}
+        </span>{" "}
+        to choose a wire for Walkie-Talkies...
       </span>
     );
   }

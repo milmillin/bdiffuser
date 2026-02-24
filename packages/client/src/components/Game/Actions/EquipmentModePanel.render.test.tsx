@@ -243,7 +243,7 @@ describe("EquipmentModePanel — talkies_walkies", () => {
       myTileIndex: null,
     });
     expect(html).toContain("Still need:");
-    expect(html).toContain("opponent");
+    expect(html).toContain("target player");
     expect(html).toContain("uncut wire");
   });
 

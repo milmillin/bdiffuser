@@ -17,7 +17,11 @@ import {
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCut, executeSoloCut, resolveDetectorTileChoice } from "../gameLogic";
-import { executeUseEquipment, validateUseEquipment } from "../equipment";
+import {
+  executeUseEquipment,
+  resolveTalkiesWalkiesTileChoice,
+  validateUseEquipment,
+} from "../equipment";
 
 const BASE_EQUIPMENT_IDS = [
   "label_neq",
@@ -1169,6 +1173,85 @@ describe("equipment execution", () => {
     expect(state.board.equipment[0].used).toBe(true);
   });
 
+  it("talkies-walkies can start with actor wire only and wait for target choice", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", sortValue: 1, gameValue: 1 }),
+        makeTile({ id: "a6", sortValue: 6, gameValue: 6 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [
+        makeTile({ id: "t2", sortValue: 2, gameValue: 2 }),
+        makeTile({ id: "t7", sortValue: 7, gameValue: 7 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 1,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies_pending");
+    expect(state.pendingForcedAction).toEqual({
+      kind: "talkiesWalkiesTileChoice",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      actorTileIndex: 1,
+      source: "equipment",
+    });
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["a1", "a6"]);
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["t2", "t7"]);
+  });
+
+  it("talkies-walkies resolves pending target choice and swaps wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", sortValue: 1, gameValue: 1 }),
+        makeTile({ id: "a6", sortValue: 6, gameValue: 6 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [
+        makeTile({ id: "t2", sortValue: 2, gameValue: 2 }),
+        makeTile({ id: "t7", sortValue: 7, gameValue: 7 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+    state.pendingForcedAction = {
+      kind: "talkiesWalkiesTileChoice",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      actorTileIndex: 1,
+      source: "equipment",
+    };
+
+    const action = resolveTalkiesWalkiesTileChoice(state, 0);
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies");
+    expect(state.pendingForcedAction).toBeUndefined();
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["a1", "t2"]);
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["a6", "t7"]);
+  });
+
   it("mission 24: talkies-walkies discards x1/x2/x3 count tokens on swapped wires", () => {
     const actor = makePlayer({
       id: "actor",
@@ -1861,6 +1944,53 @@ describe("equipment validation edge cases", () => {
       teammateId: "teammate",
       myTileIndex: 0,
       teammateTileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("allows talkies-walkies initiation without teammate tile index when teammate has uncut tile", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 3 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4 })],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects talkies-walkies initiation without teammate tile when teammate has no swappable tile", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 3 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4, cut: true })],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
     });
 
     expect(error).not.toBeNull();

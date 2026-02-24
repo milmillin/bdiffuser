@@ -34,7 +34,13 @@ import {
   executeSimultaneousFourCut,
   resolveDetectorTileChoice,
 } from "./gameLogic.js";
-import { executeUseEquipment, validateUseEquipment, validateCharacterAbility, executeCharacterAbility } from "./equipment.js";
+import {
+  executeUseEquipment,
+  validateUseEquipment,
+  validateCharacterAbility,
+  executeCharacterAbility,
+  resolveTalkiesWalkiesTileChoice,
+} from "./equipment.js";
 import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
 import {
   createBotPlayer,
@@ -283,6 +289,9 @@ export class BombBustersServer extends Server<Env> {
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
+      case "talkiesWalkiesChoice":
+        this.handleTalkiesWalkiesChoice(connection, msg.tileIndex);
+        break;
       case "missionAudioControl":
         this.handleMissionAudioControl(
           connection,
@@ -344,6 +353,13 @@ export class BombBustersServer extends Server<Env> {
             gs.pendingForcedAction.currentChooserId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "detectorTileChoice") {
+          if (gs.pendingForcedAction.targetPlayerId === oldId) {
+            gs.pendingForcedAction.targetPlayerId = newId;
+          }
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "talkiesWalkiesTileChoice") {
           if (gs.pendingForcedAction.targetPlayerId === oldId) {
             gs.pendingForcedAction.targetPlayerId = newId;
           }
@@ -1103,6 +1119,52 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleTalkiesWalkiesChoice(conn: Connection, tileIndex: number) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "playing") return;
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "talkiesWalkiesTileChoice") {
+      this.sendMsg(conn, { type: "error", message: "No pending Walkie-Talkies choice" });
+      return;
+    }
+
+    if (conn.id !== forced.targetPlayerId) {
+      this.sendMsg(conn, { type: "error", message: "Only the target player can choose the wire to swap" });
+      return;
+    }
+
+    const target = state.players.find((p) => p.id === forced.targetPlayerId);
+    if (!target) {
+      this.sendMsg(conn, { type: "error", message: "Target player not found" });
+      return;
+    }
+
+    const tile = getTileByFlatIndex(target, tileIndex);
+    if (!tile) {
+      this.sendMsg(conn, { type: "error", message: "Invalid tile index" });
+      return;
+    }
+    if (tile.cut) {
+      this.sendMsg(conn, { type: "error", message: "Tile already cut" });
+      return;
+    }
+    if (state.mission === 20 && tile.isXMarked) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "X-marked wires are ignored by equipment in mission 20",
+        code: "MISSION_RULE_VIOLATION",
+      });
+      return;
+    }
+
+    const action = resolveTalkiesWalkiesTileChoice(state, tileIndex);
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   handleMissionAudioControl(
     conn: Connection,
     command: MissionAudioControlCommand,
@@ -1305,15 +1367,39 @@ export class BombBustersServer extends Server<Env> {
 
     // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only)
     if (state.phase === "playing") {
-      const currentPlayer = state.players[state.currentPlayerIndex];
-      if (currentPlayer?.isBot) {
-        nextAlarmMs = Date.now() + 1500;
+      const forced = state.pendingForcedAction;
+
+      // For choose/designate forced actions, currentPlayer remains the decider.
+      if (
+        !forced
+        || forced.kind === "chooseNextPlayer"
+        || forced.kind === "designateCutter"
+      ) {
+        const currentPlayer = state.players[state.currentPlayerIndex];
+        if (currentPlayer?.isBot) {
+          nextAlarmMs = Date.now() + 1500;
+        }
       }
 
       // Mission 22 token pass: schedule alarm if current chooser is a bot
-      const forced = state.pendingForcedAction;
       if (forced?.kind === "mission22TokenPass") {
         const chooser = state.players.find((p) => p.id === forced.currentChooserId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          if (nextAlarmMs === null || botMs < nextAlarmMs) {
+            nextAlarmMs = botMs;
+          }
+        }
+      } else if (forced?.kind === "detectorTileChoice") {
+        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          if (nextAlarmMs === null || botMs < nextAlarmMs) {
+            nextAlarmMs = botMs;
+          }
+        }
+      } else if (forced?.kind === "talkiesWalkiesTileChoice") {
+        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
         if (chooser?.isBot) {
           const botMs = Date.now() + 1500;
           if (nextAlarmMs === null || botMs < nextAlarmMs) {
@@ -1423,6 +1509,29 @@ export class BombBustersServer extends Server<Env> {
         const previousResult = state.result;
         const action = resolveDetectorTileChoice(state, tileIndex, infoTokenTileIndex);
         this.maybeRecordMissionFailure(previousResult, state);
+        this.saveState();
+        this.broadcastAction(action);
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+    }
+
+    const talkiesForced = state.pendingForcedAction;
+    if (talkiesForced?.kind === "talkiesWalkiesTileChoice") {
+      const targetPlayer = state.players.find((p) => p.id === talkiesForced.targetPlayerId);
+      if (targetPlayer?.isBot) {
+        const tileIndex = targetPlayer.hand.findIndex(
+          (tile) => !tile.cut && !(state.mission === 20 && tile.isXMarked),
+        );
+        if (tileIndex === -1) {
+          console.log(
+            `Bot ${targetPlayer.id} talkiesWalkiesChoice rejected: no swappable uncut tile`,
+          );
+          return;
+        }
+
+        const action = resolveTalkiesWalkiesTileChoice(state, tileIndex);
         this.saveState();
         this.broadcastAction(action);
         this.broadcastGameState();

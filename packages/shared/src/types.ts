@@ -130,7 +130,11 @@ export type UseEquipmentPayload =
       kind: "talkies_walkies";
       teammateId: string;
       myTileIndex: number;
-      teammateTileIndex: number;
+      /**
+       * Optional at initiation time: the target player can choose this later
+       * via a forced action.
+       */
+      teammateTileIndex?: number;
     }
   | {
       kind: "triple_detector";
@@ -387,6 +391,17 @@ export type ForcedAction =
       actorTileIndex?: number;
       /** Equipment card ID if triggered via equipment (not character ability). */
       equipmentId?: string;
+    }
+  | {
+      kind: "talkiesWalkiesTileChoice";
+      /** The player who initiated Walkie-Talkies. */
+      actorId: string;
+      /** The player who must choose which of their uncut wires to swap. */
+      targetPlayerId: string;
+      /** The actor's already selected uncut wire index. */
+      actorTileIndex: number;
+      /** Whether this came from equipment card or personal character ability. */
+      source: "equipment" | "characterAbility";
     };
 
 export interface TurnEffects {
