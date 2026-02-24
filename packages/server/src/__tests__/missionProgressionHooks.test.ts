@@ -162,6 +162,84 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.challenges?.active.length).toBe(4);
   });
 
+  it("mission 62 setup reveals one Number card per player", () => {
+    const state = makeGameState({
+      mission: 62,
+      log: [],
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "p2" }),
+        makePlayer({ id: "p3" }),
+        makePlayer({ id: "p4" }),
+      ],
+    });
+
+    dispatchHooks(62, { point: "setup", state });
+
+    const numberCards = state.campaign?.numberCards;
+    expect(numberCards?.visible.length).toBe(4);
+    expect(numberCards?.visible.every((card) => card.faceUp)).toBe(true);
+    expect(numberCards?.deck.length).toBe(8);
+  });
+
+  it("mission 62 completion removes only the matched face-up card without refilling", () => {
+    const state = makeGameState({
+      mission: 62,
+      log: [],
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "p2" }),
+      ],
+      board: makeBoardState({ detonatorPosition: 2, detonatorMax: 6 }),
+    });
+
+    dispatchHooks(62, { point: "setup", state });
+
+    const target = state.campaign?.numberCards?.visible[0]?.value;
+    expect(typeof target).toBe("number");
+
+    state.players[0]!.hand = [
+      makeTile({ id: "p1-target", gameValue: target as number, sortValue: target as number }),
+      makeTile({
+        id: "p1-cut",
+        gameValue: target as number,
+        sortValue: target as number,
+        cut: true,
+      }),
+    ];
+    state.players[1]!.hand = [
+      makeTile({
+        id: "p2-cut-a",
+        gameValue: target as number,
+        sortValue: target as number,
+        cut: true,
+      }),
+      makeTile({
+        id: "p2-cut-b",
+        gameValue: target as number,
+        sortValue: target as number,
+        cut: true,
+      }),
+    ];
+
+    const beforeVisibleLength = state.campaign?.numberCards?.visible.length ?? 0;
+    const beforeDeckLength = state.campaign?.numberCards?.deck.length ?? 0;
+
+    dispatchHooks(62, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: target as number },
+      cutValue: target as number,
+      cutSuccess: true,
+    });
+
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.campaign?.numberCards?.visible.length).toBe(beforeVisibleLength - 1);
+    expect(state.campaign?.numberCards?.deck.length).toBe(beforeDeckLength);
+    expect(state.campaign?.numberCards?.visible.some((card) => card.value === target)).toBe(false);
+    expect(state.campaign?.numberCards?.discard.some((card) => card.value === target)).toBe(true);
+  });
+
   it("mission 66 bunker flow setup + resolve advances bunker tracker and action pointer", () => {
     const state = makeGameState({
       mission: 66,

@@ -3264,11 +3264,16 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
 registerHookHandler<"number_card_completions">("number_card_completions", {
   setup(_rule: NumberCardCompletionsRuleDef, ctx: SetupHookContext): void {
     const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
-    const firstValue = deckValues.shift()!;
+    const visibleCount = Math.max(1, Math.min(ctx.state.players.length, deckValues.length));
+    const visibleValues = deckValues.splice(0, visibleCount);
 
     ctx.state.campaign ??= {};
     ctx.state.campaign.numberCards = {
-      visible: [{ id: `m62-visible-${firstValue}`, value: firstValue, faceUp: true }],
+      visible: visibleValues.map((value, idx) => ({
+        id: `m62-visible-${idx}-${value}`,
+        value,
+        faceUp: true,
+      })),
       deck: deckValues.map((value, idx) => ({
         id: `m62-deck-${idx}-${value}`,
         value,
@@ -3282,7 +3287,9 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `number_card_completions:init:${firstValue}`,
+      detail:
+        `number_card_completions:init:` +
+        `${visibleValues.join(",") || "none"}|players=${ctx.state.players.length}`,
       timestamp: Date.now(),
     });
   },
@@ -3292,11 +3299,13 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
     if (typeof ctx.cutValue !== "number") return;
 
     const numberCards = ctx.state.campaign?.numberCards;
-    const currentCard = numberCards?.visible?.[0];
-    if (!numberCards || !currentCard) return;
-    if (ctx.cutValue !== currentCard.value) return;
+    if (!numberCards) return;
+    const matchingIndex = numberCards.visible.findIndex((card) => card.value === ctx.cutValue);
+    if (matchingIndex < 0) return;
+    const matchingCard = numberCards.visible[matchingIndex];
+    if (!matchingCard) return;
 
-    const projectedCutCount = getProjectedCutCountForResolve(ctx, currentCard.value);
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, matchingCard.value);
     if (projectedCutCount < 4) return;
 
     // Value completed — reduce detonator by 1
@@ -3305,22 +3314,19 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
       ctx.state.board.detonatorPosition - 1,
     );
 
-    // Move to discard and draw next
-    const completed = numberCards.visible.shift()!;
+    // Move the completed face-up card to discard. Mission 62 keeps only the
+    // initial face-up set and does not reveal replacement cards.
+    const completed = numberCards.visible.splice(matchingIndex, 1)[0]!;
     completed.faceUp = true;
     numberCards.discard.push(completed);
-
-    if (numberCards.deck.length > 0) {
-      const next = numberCards.deck.shift()!;
-      next.faceUp = true;
-      numberCards.visible = [next];
-    }
 
     pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
-      detail: `number_card_completions:completed=${currentCard.value}|detonator_reduction=1|next=${numberCards.visible[0]?.value ?? "none"}`,
+      detail:
+        `number_card_completions:completed=${matchingCard.value}` +
+        `|detonator_reduction=1|remaining=${numberCards.visible.map((card) => card.value).join(",") || "none"}`,
       timestamp: Date.now(),
     });
   },
