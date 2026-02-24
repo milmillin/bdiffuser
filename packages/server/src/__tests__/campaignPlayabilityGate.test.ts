@@ -182,6 +182,37 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
     }
   }
 
+  // Fallback path: the rules explicitly allow intentional incorrect
+  // dual-cut declarations, so if no "safe" dual/solo/reveal action exists,
+  // try any server-legal dual cut to keep playability simulations moving.
+  for (const [guessValue, actorTileIndex] of actorValueToTileIndex) {
+    for (const target of state.players) {
+      if (target.id === actor.id) continue;
+      for (let targetTileIndex = 0; targetTileIndex < target.hand.length; targetTileIndex++) {
+        const targetTile = target.hand[targetTileIndex];
+        if (targetTile.cut) continue;
+
+        const error = validateActionWithHooks(state, {
+          type: "dualCut",
+          actorId: actor.id,
+          targetPlayerId: target.id,
+          targetTileIndex,
+          guessValue,
+        });
+        if (!error) {
+          return {
+            kind: "dualCut",
+            actorId: actor.id,
+            targetPlayerId: target.id,
+            targetTileIndex,
+            guessValue,
+            actorTileIndex,
+          };
+        }
+      }
+    }
+  }
+
   const seenSoloValues = new Set<number | "YELLOW">();
   for (const tile of actor.hand) {
     if (tile.cut || tile.gameValue === "RED") continue;
