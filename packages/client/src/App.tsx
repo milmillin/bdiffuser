@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
@@ -135,7 +136,7 @@ export default function App() {
         data-testid="app-version"
         className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none lg:hidden"
       >
-        {`${__APP_COMMIT_ID__} | v${__APP_VERSION__}`}
+        {`${APP_COMMIT_ID} | v${APP_VERSION}`}
       </div>
     </>
   );
