@@ -302,6 +302,11 @@ export function GameBoard({
           playerId={playerId}
           timerDisplay={timerDisplay}
         />
+        <BoardArea
+          board={gameState.board}
+          missionId={gameState.mission}
+          playerCount={gameState.players.length}
+        />
 
         <div className="flex-1 flex gap-2 pr-2 py-2 overflow-hidden">
           {/* Left dock: mission & equipment cards */}
@@ -354,15 +359,6 @@ export function GameBoard({
                   }
                 />
               ))}
-            </div>
-
-            {/* Board area */}
-            <div className="flex-shrink-0">
-              <BoardArea
-                board={gameState.board}
-                missionId={gameState.mission}
-                playerCount={gameState.players.length}
-              />
             </div>
 
             {/* My area */}

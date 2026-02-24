@@ -1,5 +1,6 @@
 import type { ClientPlayer, InfoToken, VisibleTile } from "@bomb-busters/shared";
 import { CHARACTER_IMAGES, WIRE_BACK_IMAGE, wireLabel } from "@bomb-busters/shared";
+import { ScrollableRow } from "../Board/BoardArea";
 
 export function PlayerStand({
   player,
@@ -87,8 +88,8 @@ export function PlayerStand({
       {(() => {
         const colWidth = isOpponent ? "1.5rem" : "2rem";
         return (
-          <div className="overflow-x-auto">
-          <div className={`inline-grid gap-x-1 ${isOpponent ? "mx-auto" : ""}`}
+          <ScrollableRow>
+          <div className={`inline-grid gap-x-1 mx-auto w-fit`}
             style={{ gridTemplateColumns: `repeat(${player.hand.length}, ${colWidth})`, gridTemplateRows: "auto auto auto" }}
           >
             {/* Row 1: info tokens */}
@@ -129,7 +130,7 @@ export function PlayerStand({
               </div>
             ))}
           </div>
-          </div>
+          </ScrollableRow>
         );
       })()}
     </div>
