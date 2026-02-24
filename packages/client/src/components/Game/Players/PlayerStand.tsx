@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ClientPlayer, InfoToken, VisibleTile } from "@bomb-busters/shared";
 import { CHARACTER_IMAGES, WIRE_BACK_IMAGE, wireLabel } from "@bomb-busters/shared";
 import { ScrollableRow } from "../Board/BoardArea";
@@ -12,6 +13,7 @@ export function PlayerStand({
   selectedTileIndices,
   tileSelectableFilter,
   onCharacterClick,
+  statusContent,
 }: {
   player: ClientPlayer;
   isOpponent: boolean;
@@ -23,16 +25,26 @@ export function PlayerStand({
   selectedTileIndices?: number[];
   tileSelectableFilter?: (tile: VisibleTile, index: number) => boolean;
   onCharacterClick?: () => void;
+  statusContent?: ReactNode;
 }) {
   return (
     <div
       data-testid={`player-stand-${player.id}`}
-      className={`rounded-lg p-2 min-w-0 ${
+      className={`rounded-lg p-2 min-w-0 border ${
         isCurrentTurn
-          ? "bg-yellow-900/20 border border-yellow-600"
-          : "bg-[var(--color-bomb-surface)]"
+          ? "bg-yellow-900/20 border-yellow-600"
+          : "bg-[var(--color-bomb-surface)] border-gray-700"
       }`}
     >
+      {/* Unified status bar */}
+      {statusContent != null && (
+        <div
+          className={`text-xs mb-1.5 pb-1 border-b -mx-2 -mt-2 px-2 pt-1 rounded-t-lg h-8 flex items-center ${isCurrentTurn ? "border-yellow-600/60 bg-yellow-500/25" : "border-gray-700"}`}
+          data-testid="unified-status-bar"
+        >
+          {statusContent}
+        </div>
+      )}
       {/* Player header */}
       <div className="flex items-center gap-1.5 mb-1">
         {player.character && CHARACTER_IMAGES[player.character] && (

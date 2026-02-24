@@ -575,12 +575,6 @@ export function GameBoard({
             playerId={playerId}
             timerDisplay={timerDisplay}
           />
-          <TurnStatusBar
-            gameState={gameState}
-            playerId={playerId}
-            currentPlayerName={currentPlayer?.name}
-            isCurrentPlayerBot={currentPlayer?.isBot ?? false}
-          />
           <BoardArea
             board={gameState.board}
             missionId={gameState.mission}
@@ -778,23 +772,6 @@ export function GameBoard({
                     />
                   )}
 
-                {/* Playing phase: waiting for captain to choose (non-captain view) */}
-                {gameState.phase === "playing" &&
-                  gameState.pendingForcedAction?.kind ===
-                    FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
-                  gameState.pendingForcedAction.captainId !== playerId && (
-                    <div
-                      className="text-center py-2 text-gray-400"
-                      data-testid="waiting-captain"
-                    >
-                      Waiting for{" "}
-                      <span className="text-yellow-400 font-bold">
-                        {forcedActionCaptainName ?? "the Captain"}
-                      </span>{" "}
-                      to choose the next player...
-                    </div>
-                  )}
-
                 {/* Playing phase: forced action (designate cutter - mission 18) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -808,31 +785,6 @@ export function GameBoard({
                     />
                   )}
 
-                {/* Playing phase: waiting for designator (non-designator view - mission 18) */}
-                {gameState.phase === "playing" &&
-                  gameState.pendingForcedAction?.kind ===
-                    FORCED_ACTION_DESIGNATE_CUTTER &&
-                  gameState.pendingForcedAction.designatorId !== playerId && (
-                    <div
-                      className="text-center py-2 text-gray-400"
-                      data-testid="waiting-designator"
-                    >
-                      Waiting for{" "}
-                      <span className="text-yellow-400 font-bold">
-                        {forcedActionCaptainName ?? "the active player"}
-                      </span>{" "}
-                      to designate who cuts...
-                      {gameState.pendingForcedAction.value && (
-                        <span className="block text-xs text-gray-500 mt-1">
-                          Number card:{" "}
-                          <span className="text-white font-bold">
-                            {gameState.pendingForcedAction.value}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-
                 {/* Playing phase: forced action (detector tile choice - target player) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -844,23 +796,6 @@ export function GameBoard({
                       send={send}
                       playerId={playerId}
                     />
-                  )}
-
-                {/* Playing phase: waiting for target player to choose tile (other players' view) */}
-                {gameState.phase === "playing" &&
-                  gameState.pendingForcedAction?.kind ===
-                    FORCED_ACTION_DETECTOR_TILE_CHOICE &&
-                  gameState.pendingForcedAction.targetPlayerId !== playerId && (
-                    <div
-                      className="text-center py-2 text-gray-400"
-                      data-testid="waiting-detector-choice"
-                    >
-                      Waiting for{" "}
-                      <span className="text-yellow-400 font-bold">
-                        {forcedActionCaptainName ?? "the target player"}
-                      </span>{" "}
-                      to confirm...
-                    </div>
                   )}
 
                 {/* Playing phase: future-proof fallback for unsupported forced-action kinds */}
@@ -959,20 +894,20 @@ export function GameBoard({
                   />
                 )}
 
-                {isSetup && !isMyTurn && (
-                  <div className="bg-[var(--color-bomb-surface)] rounded-lg p-2 text-xs text-center text-gray-400">
-                    Waiting for{" "}
-                    <span className="text-white font-bold">
-                      {currentPlayer?.name}
-                    </span>{" "}
-                    to place their info token...
-                  </div>
-                )}
                 <PlayerStand
                   player={me}
                   isOpponent={false}
                   isCurrentTurn={me.id === currentPlayer?.id}
                   turnOrder={myOrder}
+                  statusContent={getStatusContent(
+                    gameState,
+                    playerId,
+                    currentPlayer,
+                    isMyTurn,
+                    isSetup,
+                    forcedActionCaptainName,
+                    currentPlayer?.isBot ?? false,
+                  )}
                   onCharacterClick={
                     me.character
                       ? () =>
@@ -1235,90 +1170,133 @@ export function GameBoard({
   );
 }
 
-function TurnStatusBar({
-  gameState,
-  playerId,
-  currentPlayerName,
-  isCurrentPlayerBot,
-}: {
-  gameState: ClientGameState;
-  playerId: string;
-  currentPlayerName?: string;
-  isCurrentPlayerBot: boolean;
-}) {
-  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  const isMyTurn = currentPlayer?.id === playerId && gameState.phase === "playing";
-  const myIndex = gameState.players.findIndex((player) => player.id === playerId);
+function getStatusContent(
+  gameState: ClientGameState,
+  playerId: string,
+  currentPlayer: ClientGameState["players"][number] | undefined,
+  isMyTurn: boolean,
+  isSetup: boolean,
+  forcedActionCaptainName: string | undefined,
+  isCurrentPlayerBot: boolean,
+): React.ReactNode {
+  if (gameState.phase === "finished") return null;
+
+  const pendingForcedAction = gameState.pendingForcedAction;
+
+  // Turn distance for "you're next" / "N more turns" hint
+  const myIndex = gameState.players.findIndex((p) => p.id === playerId);
   const turnDistance =
     myIndex >= 0
       ? (myIndex - gameState.currentPlayerIndex + gameState.players.length) %
         gameState.players.length
       : 0;
-  const validatedCount = Object.values(gameState.board.validationTrack).filter(
-    (count) => count >= BLUE_COPIES_PER_VALUE,
-  ).length;
-  const me = gameState.players.find((player) => player.id === playerId);
-  const myUncutCount = me?.hand.filter((tile) => !tile.cut).length ?? 0;
 
-  if (gameState.phase !== "playing") return null;
-
-  return (
-    <div
-      className="flex items-center justify-between gap-3 px-3 py-1.5 border-b border-gray-700 bg-[var(--color-bomb-surface)] text-xs"
-      data-testid="turn-status-bar"
-    >
-      {isMyTurn ? (
-        <div className="inline-flex items-center gap-2">
-          <span className="bg-yellow-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
-            Your Turn
-          </span>
-          <span className="text-yellow-300 font-bold">Choose an action</span>
-        </div>
-      ) : (
-        <div className="text-gray-300" data-testid="waiting-turn">
-          {isCurrentPlayerBot ? (
-            <span className="inline-flex items-center gap-2">
-              <span className="inline-block w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-purple-300 font-bold">{currentPlayerName}</span>{" "}
-              is thinking...
+  // --- Forced action messages (playing phase only) ---
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "chooseNextPlayer" &&
+    pendingForcedAction.captainId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the Captain"}
+        </span>{" "}
+        to choose the next player...
+      </span>
+    );
+  }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "designateCutter" &&
+    pendingForcedAction.designatorId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the active player"}
+        </span>{" "}
+        to designate who cuts...
+        {pendingForcedAction.value && (
+          <span className="text-gray-500 ml-1">
+            (Number card:{" "}
+            <span className="text-white font-bold">
+              {pendingForcedAction.value}
             </span>
-          ) : (
-            <>
-              Waiting for <span className="font-bold text-white">{currentPlayerName}</span>
-              {turnDistance === 1 ? (
-                <span className="text-yellow-400 font-bold"> (you&apos;re next)</span>
-              ) : turnDistance > 1 ? (
-                <span className="text-gray-500"> ({turnDistance} more turns)</span>
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="inline-flex items-center gap-3 text-gray-300" data-testid="game-summary">
-        <span>
-          Detonator:{" "}
-          <span
-            className={`font-bold ${
-              gameState.board.detonatorPosition >= gameState.board.detonatorMax - 1
-                ? "text-red-400"
-                : "text-gray-100"
-            }`}
-          >
-            {gameState.board.detonatorPosition}/{gameState.board.detonatorMax}
+            )
           </span>
+        )}
+      </span>
+    );
+  }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === "detectorTileChoice" &&
+    pendingForcedAction.targetPlayerId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the target player"}
+        </span>{" "}
+        to confirm...
+      </span>
+    );
+  }
+  // --- Setup phase ---
+  if (isSetup && isMyTurn) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="bg-yellow-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+          Your Turn
         </span>
-        <span className="text-gray-600">|</span>
-        <span>
-          Validated: <span className="font-bold text-gray-100">{validatedCount}/12</span>
+        <span className="text-yellow-300 font-bold">Place Info Token</span>
+      </span>
+    );
+  }
+  if (isSetup && !isMyTurn) {
+    return (
+      <span className="text-gray-400">
+        Waiting for{" "}
+        <span className="text-white font-bold">{currentPlayer?.name}</span> to
+        place their info token...
+      </span>
+    );
+  }
+  // --- Playing phase: normal turn ---
+  if (gameState.phase === "playing" && isMyTurn) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="bg-yellow-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+          Your Turn
         </span>
-        <span className="text-gray-600">|</span>
-        <span>
-          My wires: <span className="font-bold text-gray-100">{myUncutCount}</span>
-        </span>
-      </div>
-    </div>
-  );
+        <span className="text-yellow-300 font-bold">Choose an action</span>
+      </span>
+    );
+  }
+  if (gameState.phase === "playing" && !isMyTurn) {
+    return isCurrentPlayerBot ? (
+      <span className="inline-flex items-center gap-2 text-gray-300">
+        <span className="inline-block w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+        <span className="text-purple-300 font-bold">
+          {currentPlayer?.name}
+        </span>{" "}
+        is thinking...
+      </span>
+    ) : (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="font-bold text-white">{currentPlayer?.name}</span>
+        {turnDistance > 1 ? (
+          <span className="text-gray-500"> ({turnDistance} more turns)</span>
+        ) : null}
+      </span>
+    );
+  }
+  return null;
 }
 
 function PendingActionStrip({
