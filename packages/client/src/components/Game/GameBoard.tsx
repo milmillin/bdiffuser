@@ -584,7 +584,7 @@ export function GameBoard({
   // --- Selectability filters (delegated to pure functions) ---
 
   const getOpponentTileSelectableFilter = (oppId: string) =>
-    _getOpponentTileSelectableFilter(equipmentMode, oppId);
+    _getOpponentTileSelectableFilter(equipmentMode, oppId, gameState.mission);
 
   const getOwnTileSelectableFilter = () =>
     _getOwnTileSelectableFilter(equipmentMode, me, gameState);

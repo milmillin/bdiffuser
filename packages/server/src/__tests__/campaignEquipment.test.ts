@@ -419,6 +419,77 @@ describe("campaign equipment", () => {
       expect(error?.code).toBe("TILE_ALREADY_CUT");
     });
 
+    it("rejects targeting X-marked wire on mission 20", () => {
+      const state = makeGameState({
+        mission: 20,
+        players: [
+          makePlayer({ hand: [makeTile({ gameValue: 3 })] }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeTile({ id: "t2", gameValue: 7, isXMarked: true })],
+          }),
+        ],
+        board: makeBoardState({ equipment: [unlockedCard("grappling_hook")] }),
+      });
+
+      const error = validateUseEquipment(state, "player-1", "grappling_hook", {
+        kind: "grappling_hook",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    });
+
+    it("rejects targeting X-marked wire on mission 35", () => {
+      const state = makeGameState({
+        mission: 35,
+        players: [
+          makePlayer({ hand: [makeTile({ gameValue: 3 })] }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeTile({ id: "t2", gameValue: 7, isXMarked: true })],
+          }),
+        ],
+        board: makeBoardState({ equipment: [unlockedCard("grappling_hook")] }),
+      });
+
+      const error = validateUseEquipment(state, "player-1", "grappling_hook", {
+        kind: "grappling_hook",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    });
+
+    it("allows targeting non-X-marked wire on mission 20", () => {
+      const state = makeGameState({
+        mission: 20,
+        players: [
+          makePlayer({ hand: [makeTile({ gameValue: 3 })] }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeTile({ id: "t2", gameValue: 7 })],
+          }),
+        ],
+        board: makeBoardState({ equipment: [unlockedCard("grappling_hook")] }),
+      });
+
+      const error = validateUseEquipment(state, "player-1", "grappling_hook", {
+        kind: "grappling_hook",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+      });
+
+      expect(error).toBeNull();
+    });
+
     it("executes and moves wire to actor hand in sorted order", () => {
       const state = makeGameState({
         players: [

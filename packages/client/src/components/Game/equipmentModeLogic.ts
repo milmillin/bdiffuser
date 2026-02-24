@@ -18,8 +18,10 @@ function canPostItTargetCutWire(
 export function getOpponentTileSelectableFilter(
   mode: EquipmentMode | null,
   oppId: string,
+  mission?: number,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode) return undefined;
+  const hasXRestriction = mission === 20 || mission === 35;
   switch (mode.kind) {
     case "double_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
@@ -34,7 +36,7 @@ export function getOpponentTileSelectableFilter(
     case "x_or_y_ray":
       return (tile) => !tile.cut;
     case "grappling_hook":
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
     default:
       return () => false;
   }

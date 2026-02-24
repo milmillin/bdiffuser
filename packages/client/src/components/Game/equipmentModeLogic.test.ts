@@ -1416,6 +1416,41 @@ describe("grappling_hook opponent interactions", () => {
     expect(filter!(tile({ cut: true }), 0)).toBe(false);
   });
 
+  it("getOpponentTileSelectableFilter: excludes X-marked wires on mission 20", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 20);
+    expect(filter).toBeDefined();
+    expect(filter!(tile({ cut: false, isXMarked: true }), 0)).toBe(false);
+    expect(filter!(tile({ cut: false }), 0)).toBe(true);
+  });
+
+  it("getOpponentTileSelectableFilter: excludes X-marked wires on mission 35", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 35);
+    expect(filter).toBeDefined();
+    expect(filter!(tile({ cut: false, isXMarked: true }), 0)).toBe(false);
+    expect(filter!(tile({ cut: false }), 0)).toBe(true);
+  });
+
+  it("getOpponentTileSelectableFilter: allows X-marked wires on other missions", () => {
+    const mode: EquipmentMode = {
+      kind: "grappling_hook",
+      targetPlayerId: null,
+      targetTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 10);
+    expect(filter).toBeDefined();
+    expect(filter!(tile({ cut: false, isXMarked: true }), 0)).toBe(true);
+  });
+
   it("getOpponentSelectedTileIndex: returns index for matching opponent", () => {
     const mode: EquipmentMode = {
       kind: "grappling_hook",

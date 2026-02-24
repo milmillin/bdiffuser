@@ -809,6 +809,12 @@ export function validateUseEquipment(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Cannot take a cut wire");
+      if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in this mission",
+        );
+      }
       return null;
     }
   }
@@ -1621,7 +1627,11 @@ export function executeUseEquipment(
 
       // Shift target's info token positions
       target.infoTokens = target.infoTokens
-        .filter((t) => t.position !== payload.targetTileIndex)
+        .filter(
+          (t) =>
+            t.position !== payload.targetTileIndex &&
+            t.positionB !== payload.targetTileIndex,
+        )
         .map((t) => ({
           ...t,
           position: t.position > payload.targetTileIndex ? t.position - 1 : t.position,

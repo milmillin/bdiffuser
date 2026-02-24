@@ -2114,6 +2114,58 @@ describe("equipment execution", () => {
       { value: 5, position: 1, isYellow: false },
     ]);
   });
+
+  it("grappling hook removes target info tokens where positionB matches removed tile index", () => {
+    const actor = withStandSizes(makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 1, sortValue: 1 }),
+      ],
+      infoTokens: [],
+    }), [1]);
+    const target = withStandSizes(makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 2, sortValue: 2 }),
+        makeTile({ id: "t2", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t3", gameValue: 5, sortValue: 5 }),
+      ],
+      infoTokens: [
+        // Spanning token: position=0, positionB=1 (covers t1-t2)
+        { value: 0, position: 0, positionB: 1, relation: "eq" as const, isYellow: false },
+        // Token on position 2 (t3) — should shift down to 1
+        { value: 5, position: 2, isYellow: false },
+      ],
+    }), [3]);
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "grappling_hook",
+            name: "Grappling Hook",
+            unlockValue: 6,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+
+    executeUseEquipment(state, "actor", "grappling_hook", {
+      kind: "grappling_hook",
+      targetPlayerId: "target",
+      targetTileIndex: 1, // remove t2 — positionB of the spanning token
+    });
+
+    // Spanning token should be removed because positionB === 1 was the removed index
+    // Only the shifted position-2 token remains (now at position 1)
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 5, position: 1, isYellow: false },
+    ]);
+  });
 });
 
 describe("equipment validation edge cases", () => {
