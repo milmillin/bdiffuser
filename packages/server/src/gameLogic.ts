@@ -464,10 +464,11 @@ export function executeDualCut(
           : typeof targetTile.gameValue === "number"
             ? targetTile.gameValue
             : 0;
+      const guessedYellow = guessValue === "YELLOW";
       const tokenIsYellow =
         usesAnnouncedFalseToken
-          ? guessValue === "YELLOW"
-          : targetTile.color === "yellow";
+          ? guessedYellow
+          : targetTile.color === "yellow" || guessedYellow;
 
       // Place mission-specific failure info token (actual value by default).
       target.infoTokens.push(applyMissionInfoTokenVariant(state, {

@@ -8,6 +8,36 @@ import {
 import { executeDualCut } from "../gameLogic";
 
 describe("executeDualCut actorTileIndex (yellow wire fix)", () => {
+  it("places a yellow info token when a yellow guess targets a non-yellow wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeYellowTile({ id: "y1" })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCut(state, "actor", "target", 0, "YELLOW");
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.infoTokens).toHaveLength(1);
+    expect(target.infoTokens[0]).toMatchObject({
+      value: 4,
+      position: 0,
+      isYellow: true,
+    });
+  });
+
   it("selects the correct yellow tile when actorTileIndex is provided", () => {
     const actor = makePlayer({
       id: "actor",
