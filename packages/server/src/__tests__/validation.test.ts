@@ -1255,7 +1255,43 @@ describe("forced reveal reds state", () => {
     expect(error).toBeNull();
   });
 
-  it("blocks mission 48 simultaneous yellow action when actor must reveal reds", () => {
+  it("allows mission 48 simultaneous yellow action in 4-player games even when actor must reveal reds", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const teammateA = makePlayer({
+      id: "teammate-a",
+      hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const teammateB = makePlayer({
+      id: "teammate-b",
+      hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const teammateC = makePlayer({
+      id: "teammate-c",
+      hand: [makeTile({ id: "y3", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, teammateA, teammateB, teammateC],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "simultaneousRedCut",
+      actorId: "actor",
+      targets: [
+        { playerId: "teammate-a", tileIndex: 0 },
+        { playerId: "teammate-b", tileIndex: 0 },
+        { playerId: "teammate-c", tileIndex: 0 },
+      ],
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("mission 48 with 3 players still requires actor to hold yellow for simultaneous action", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
@@ -1278,14 +1314,15 @@ describe("forced reveal reds state", () => {
       type: "simultaneousRedCut",
       actorId: "actor",
       targets: [
-        { playerId: "actor", tileIndex: 0 },
+        { playerId: "teammate-a", tileIndex: 0 },
         { playerId: "teammate-a", tileIndex: 0 },
         { playerId: "teammate-b", tileIndex: 0 },
       ],
     });
 
     expect(error).not.toBeNull();
-    expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("uncut yellow wire");
   });
 });
 

@@ -847,7 +847,8 @@ export function validateActionWithHooks(
   }
 
   const allowsSimultaneousInsteadOfReveal =
-    action.type === "simultaneousRedCut" && state.mission === 13;
+    action.type === "simultaneousRedCut" &&
+    (state.mission === 13 || state.mission === 48);
 
   if (
     action.type !== "revealReds" &&

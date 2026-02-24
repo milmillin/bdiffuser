@@ -357,6 +357,12 @@ export function GameBoard({
   const missionSpecialActorEligible =
     missionSpecialRequiredColor != null &&
     (gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
+  const missionSpecialCanBypassForcedReveal =
+    gameState.mission === 48 &&
+    forceRevealReds &&
+    gameState.players.length >= 4 &&
+    missionSpecialAnyTargetColorAvailable &&
+    missionSpecialActorEligible;
   const canStartMissionSpecialCut =
     missionSupportsSimultaneousThreeCut &&
     missionSpecialAnyTargetColorAvailable &&
@@ -367,7 +373,7 @@ export function GameBoard({
     !equipmentMode &&
     pendingAction == null &&
     !mission46ForcedForMe &&
-    !forceRevealReds;
+    (!forceRevealReds || missionSpecialCanBypassForcedReveal);
   const mission11RevealBlockedHint =
     isMyTurn && gameState.mission === 11 && !revealRedsAvailable;
   const mission11RevealAttemptAvailable =
@@ -505,12 +511,12 @@ export function GameBoard({
   }, [gameState.turnNumber, gameState.phase]);
 
   useEffect(() => {
-    if (!forceRevealReds) return;
+    if (!forceRevealReds || missionSpecialCanBypassForcedReveal) return;
     setPendingAction((prev) =>
       prev?.kind === "reveal_reds" ? prev : null,
     );
     setSelectedGuessTile(null);
-  }, [forceRevealReds]);
+  }, [forceRevealReds, missionSpecialCanBypassForcedReveal]);
 
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
 

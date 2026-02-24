@@ -85,6 +85,39 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
     expect(html).toContain("Cut the 3 yellow wires at the same time.");
   });
 
+  it("shows the mission 48 special-action launcher with 4 players even when Reveal Reds is available", () => {
+    const state = makeGameState({
+      mission: 48,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "red", gameValue: "RED", sortValue: 7.5 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: "YELLOW", sortValue: 2.1 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "yellow", gameValue: "YELLOW", sortValue: 3.1 })],
+        }),
+        makePlayer({
+          id: "p4",
+          name: "P4",
+          hand: [makeTile({ id: "p4-1", color: "yellow", gameValue: "YELLOW", sortValue: 4.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
   it("hides the mission 13 launcher with 3 players when actor has no uncut red wire", () => {
     const state = makeGameState({
       mission: 13,
