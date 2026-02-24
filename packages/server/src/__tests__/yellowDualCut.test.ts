@@ -154,4 +154,37 @@ describe("executeDualCut actorTileIndex (yellow wire fix)", () => {
     expect(actor.hand[0].cut).toBe(false);
     expect(actor.hand[1].cut).toBe(true);
   });
+
+  it("mission 35: ignores X-marked actorTileIndex while yellow wires remain", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "x5", color: "blue", gameValue: 5, isXMarked: true }),
+        makeTile({ id: "b5", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t5", color: "blue", gameValue: 5 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeYellowTile({ id: "y1" })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeDualCut(state, "actor", "target", 0, 5, 0);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(true);
+    expect(target.hand[0].cut).toBe(true);
+    // X-marked wire must stay uncut until all yellow wires are cut.
+    expect(actor.hand[0].cut).toBe(false);
+    expect(actor.hand[1].cut).toBe(true);
+  });
 });

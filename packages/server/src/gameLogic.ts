@@ -223,19 +223,32 @@ function addLog(
 }
 
 function resolveActorDualCutTile(
+  state: GameState,
   actor: Player,
   guessValue: number | "YELLOW",
   actorTileIndex?: number,
 ): WireTile | undefined {
+  const actorUncut = getUncutTiles(actor);
+  const matchingActorTiles = actorUncut.filter((tile) => tile.gameValue === guessValue);
+  const mission35XWireCutLocked = state.mission === 35
+    && state.players.some((player) =>
+      player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
+    );
+  const shouldPreferNonXWire = mission35XWireCutLocked
+    && matchingActorTiles.some((tile) => !tile.isXMarked);
+
+  const canUseActorTile = (tile: WireTile): boolean =>
+    tile.gameValue === guessValue
+    && (!shouldPreferNonXWire || !tile.isXMarked);
+
   if (actorTileIndex != null) {
     const candidate = getTileByFlatIndex(actor, actorTileIndex);
-    if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
+    if (candidate && !candidate.cut && canUseActorTile(candidate)) {
       return candidate;
     }
   }
 
-  const actorUncut = getUncutTiles(actor);
-  return actorUncut.find((tile) => tile.gameValue === guessValue);
+  return actorUncut.find(canUseActorTile);
 }
 
 function missionSelfCutFailureExplodes(state: GameState): boolean {
@@ -312,7 +325,7 @@ export function executeDualCut(
       };
     }
 
-    const actorTile = resolveActorDualCutTile(actor, guessValue, actorTileIndex);
+    const actorTile = resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
     if (actorTile) actorTile.cut = true;
 
     // Check validation and equipment unlock
@@ -476,7 +489,7 @@ export function executeDualCut(
     }
 
     if (missionSelfCutFailureExplodes(state)) {
-      const actorTile = resolveActorDualCutTile(actor, guessValue, actorTileIndex);
+      const actorTile = resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
       if (actorTile && (actorTile as WireTile & { upsideDown?: boolean }).upsideDown === true) {
         state.result = "loss_red_wire";
         state.phase = "finished";
