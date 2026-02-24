@@ -76,23 +76,8 @@ export function useFilteredRules(
       // Always hide "Source" section
       if (h2.startsWith("Source")) return [];
 
-      // Mission cards section: keep only the current mission
-      if (h2.startsWith("20.")) {
-        const filtered = section.subsections.filter(
-          (sub) => sub.heading.text === `Mission ${mission}`,
-        );
-        if (filtered.length === 0) return [];
-        return [
-          {
-            ...section,
-            heading: {
-              ...section.heading,
-              text: `20. Mission ${mission}`,
-            },
-            subsections: filtered,
-          },
-        ];
-      }
+      // Hide inline TOC — we have sidebar/dropdown TOC components instead
+      if (h2 === "Table of Contents") return [];
 
       // Equipment section (13): filter subsections
       if (h2.startsWith("13.")) {

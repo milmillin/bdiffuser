@@ -96,13 +96,20 @@ export function SectionView({ section }: { section: MarkdownSection }) {
         >
           {section.heading.text}
         </h2>
-      ) : (
+      ) : section.heading.level === 3 ? (
         <h3
           id={section.heading.id}
           className="scroll-mt-4 text-sm font-bold text-gray-200"
         >
           {section.heading.text}
         </h3>
+      ) : (
+        <h4
+          id={section.heading.id}
+          className="scroll-mt-4 text-xs font-semibold text-gray-300"
+        >
+          {section.heading.text}
+        </h4>
       )}
 
       {section.body.map((node, i) => (

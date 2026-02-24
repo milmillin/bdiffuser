@@ -32,7 +32,7 @@ export type BodyNode =
   | { kind: "hr" };
 
 export interface SectionHeading {
-  level: 2 | 3;
+  level: 2 | 3 | 4;
   text: string;
   id: string;
 }
@@ -74,14 +74,15 @@ function slugify(text: string): string {
 
 // ── Line-level helpers ─────────────────────────────────────────────
 
-function headingLevel(line: string): 2 | 3 | 0 {
+function headingLevel(line: string): 2 | 3 | 4 | 0 {
+  if (line.startsWith("#### ")) return 4;
   if (line.startsWith("### ")) return 3;
   if (line.startsWith("## ")) return 2;
   return 0;
 }
 
 function headingText(line: string): string {
-  return line.replace(/^#{2,3}\s+/, "");
+  return line.replace(/^#{2,4}\s+/, "");
 }
 
 function isHr(line: string): boolean {
@@ -303,10 +304,41 @@ export function parseMarkdown(raw: string): MarkdownSection[] {
           headingLevel(lines[i]) !== 2 &&
           headingLevel(lines[i]) !== 3
         ) {
-          subBody.push(lines[i]);
-          i++;
+          if (headingLevel(lines[i]) === 4) {
+            // Flush pending body lines into sub.body
+            if (subBody.length > 0) {
+              sub.body.push(...parseBody(subBody));
+              subBody.length = 0;
+            }
+
+            const h4Text = headingText(lines[i]);
+            const h4Section: MarkdownSection = {
+              heading: { level: 4, text: h4Text, id: slugify(h4Text) },
+              body: [],
+              subsections: [],
+            };
+            i++;
+
+            const h4Body: string[] = [];
+            while (
+              i < lines.length &&
+              headingLevel(lines[i]) !== 2 &&
+              headingLevel(lines[i]) !== 3 &&
+              headingLevel(lines[i]) !== 4
+            ) {
+              h4Body.push(lines[i]);
+              i++;
+            }
+            h4Section.body = parseBody(h4Body);
+            sub.subsections.push(h4Section);
+          } else {
+            subBody.push(lines[i]);
+            i++;
+          }
         }
-        sub.body = parseBody(subBody);
+        if (subBody.length > 0) {
+          sub.body.push(...parseBody(subBody));
+        }
         section.subsections.push(sub);
       } else {
         bodyLines.push(lines[i]);
