@@ -16,6 +16,9 @@ import {
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+import {
+  buildSimultaneousFourCutTargets,
+} from "./simultaneousFourCutTargets.js";
 
 const BOT_NAMES = ["IRIS", "NOVA", "BOLT", "FUSE", "CHIP"];
 
@@ -528,7 +531,7 @@ function getForcedMission46SevensCutAction(
   if (!forced || forced.kind !== "mission46SevensCut") return null;
   if (forced.playerId !== botId) return null;
 
-  const targets = buildSimultaneousFourCutValidationTargets(state);
+  const targets = buildSimultaneousFourCutTargets(state);
   if (!targets) return null;
 
   return { action: "simultaneousFourCut" };
@@ -567,26 +570,6 @@ function pickGuessValueFromParity(
   return null;
 }
 
-function buildSimultaneousFourCutValidationTargets(
-  state: GameState,
-): Array<{ playerId: string; tileIndex: number }> | null {
-  const targetValue =
-    state.mission === 46 ? 7 : state.campaign?.numberCards?.visible?.[0]?.value;
-  if (typeof targetValue !== "number") return null;
-
-  const targets: Array<{ playerId: string; tileIndex: number }> = [];
-
-  for (const player of state.players) {
-    for (let i = 0; i < player.hand.length; i++) {
-      const tile = player.hand[i];
-      if (tile.cut || tile.gameValue !== targetValue) continue;
-      targets.push({ playerId: player.id, tileIndex: i });
-    }
-  }
-
-  return targets.length === 4 ? targets : null;
-}
-
 function buildSimultaneousRedCutValidationTargets(
   state: GameState,
 ): Array<{ playerId: string; tileIndex: number }> | null {
@@ -607,7 +590,7 @@ function validateSimultaneousFourCutForBot(
   state: GameState,
   botId: string,
 ): string | null {
-  const targets = buildSimultaneousFourCutValidationTargets(state);
+  const targets = buildSimultaneousFourCutTargets(state);
   if (!targets) {
     return "Not enough uncut tiles for simultaneousFourCut";
   }

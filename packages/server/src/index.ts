@@ -69,6 +69,10 @@ import {
 import { applyMission25ChatPenalty } from "./mission25.js";
 import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
+import {
+  buildSimultaneousFourCutTargets,
+  getSimultaneousFourCutTargetValue,
+} from "./simultaneousFourCutTargets.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -1760,23 +1764,23 @@ export class BombBustersServer extends Server<Env> {
         break;
       }
       case "simultaneousFourCut": {
-        const targetValue = state.campaign?.numberCards?.visible?.[0]?.value;
-        if (typeof targetValue !== "number") {
-          console.log(`Bot ${botId} simultaneousFourCut rejected: no number card in play`);
+        const targetValue = getSimultaneousFourCutTargetValue(state);
+        if (targetValue == null) {
+          console.log(`Bot ${botId} simultaneousFourCut rejected: no target value in play`);
           return;
         }
 
-        const targets: Array<{ playerId: string; tileIndex: number }> = [];
-        for (const player of state.players) {
-          for (let i = 0; i < player.hand.length; i++) {
-            const tile = player.hand[i];
-            if (tile.cut || tile.gameValue !== targetValue) continue;
-            targets.push({ playerId: player.id, tileIndex: i });
+        const targets = buildSimultaneousFourCutTargets(state);
+        if (!targets) {
+          let foundCount = 0;
+          for (const player of state.players) {
+            for (const tile of player.hand) {
+              if (!tile.cut && tile.gameValue === targetValue) {
+                foundCount++;
+              }
+            }
           }
-        }
-
-        if (targets.length !== 4) {
-          console.log(`Bot ${botId} simultaneousFourCut rejected: expected 4 targets for value ${targetValue}, found ${targets.length}`);
+          console.log(`Bot ${botId} simultaneousFourCut rejected: expected 4 targets for value ${targetValue}, found ${foundCount}`);
           return;
         }
 
