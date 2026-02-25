@@ -299,6 +299,22 @@ function createEquipmentCards(
     };
   }
 
+  if (mission === 58) {
+    const dealt: typeof pool = [];
+    let cursor = 0;
+    while (dealt.length < count && cursor < pool.length) {
+      const card = pool[cursor];
+      cursor += 1;
+      if (card.id === "post_it" || card.id === "emergency_batteries") continue;
+      dealt.push(card);
+    }
+
+    return {
+      dealt: dealt.map(defToCard),
+      reserve: pool.slice(cursor).map(defToCard),
+    };
+  }
+
   return {
     dealt: pool.slice(0, count).map(defToCard),
     reserve: pool.slice(count).map(defToCard),

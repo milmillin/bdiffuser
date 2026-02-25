@@ -10,7 +10,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: exact(2),
-      equipment: { mode: "default", excludedUnlockValues: [4, 7] },
+      equipment: { mode: "default" },
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_58_no_info_tokens_unlimited_double_detector"],

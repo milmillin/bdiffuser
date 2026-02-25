@@ -148,6 +148,49 @@ describe("setupGame equipmentReserve", () => {
     }
   });
 
+  it("mission 58 setup avoids dealing post-it and emergency batteries to board", () => {
+    const playerCount = 4;
+    const mission = 58;
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+    const setup = resolveMissionSetup(mission, playerCount).setup;
+    const poolIds = resolveEquipmentPoolIds(setup.equipment);
+    const poolSize = poolIds.length;
+    const forbiddenIndices = [
+      poolIds.indexOf("post_it"),
+      poolIds.indexOf("emergency_batteries"),
+    ];
+    for (const index of forbiddenIndices) {
+      expect(index).toBeGreaterThan(0);
+    }
+
+    const originalRandom = Math.random;
+    const randomValues: number[] = [];
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(forbiddenIndices.includes(i) ? 0 : i / (i + 1));
+    }
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(i / (i + 1));
+    }
+    let randomIdx = 0;
+    Math.random = () => (randomValues[randomIdx++] ?? 0.5);
+
+    try {
+      const { board } = setupGame(players as any, mission);
+      expect(board.equipment.some((eq) => eq.id === "post_it")).toBe(false);
+      expect(board.equipment.some((eq) => eq.id === "emergency_batteries")).toBe(false);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
   it("returns empty equipmentReserve for fixed_pool missions", () => {
     const playerCount = 4;
     const mission = 18; // fixed_pool with only general_radar
