@@ -5102,18 +5102,18 @@ function mission46PlayersToCheckForSevensLastValidation(
   }
 
   if (action.type === "simultaneousCut") {
+    const targetPlayerIds = new Set<string>([action.actorId]);
     const cuts = Array.isArray(action.cuts) ? action.cuts : [];
-    const targets: string[] = [];
 
     for (const cut of cuts) {
       const targetPlayerId = (cut as { targetPlayerId?: unknown })
         .targetPlayerId;
       if (typeof targetPlayerId === "string") {
-        targets.push(targetPlayerId);
+        targetPlayerIds.add(targetPlayerId);
       }
     }
 
-    return targets;
+    return [...targetPlayerIds];
   }
 
   return [];

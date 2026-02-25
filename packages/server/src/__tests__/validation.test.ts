@@ -1633,6 +1633,43 @@ describe("mission 46 sevens-last validation", () => {
     expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
   });
 
+  it("rejects simultaneous cut of value 7 while actor still has other cuttable wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 7 }),
+        makeTile({ id: "a2", gameValue: 7 }),
+        makeYellowTile({ id: "a3", sortValue: 4.1 }),
+      ],
+    });
+    const targetA = makePlayer({
+      id: "target-a",
+      hand: [makeYellowTile({ id: "ta1", sortValue: 7.1 })],
+    });
+    const targetB = makePlayer({
+      id: "target-b",
+      hand: [makeYellowTile({ id: "tb1", sortValue: 7.1 })],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, targetA, targetB],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "simultaneousCut",
+      actorId: "actor",
+      cuts: [
+        { targetPlayerId: "target-a", targetTileIndex: 0, guessValue: 7 },
+        { targetPlayerId: "target-b", targetTileIndex: 0, guessValue: 7 },
+      ],
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
+  });
+
   it("allows dual cut on non-seven yellow wires while mission 46 sevens remain", () => {
     const actor = makePlayer({
       id: "actor",
