@@ -83,7 +83,7 @@ function CampaignCardThumbnail({
       <button
         type="button"
         onClick={onClick}
-        className={`relative overflow-hidden rounded-md border-2 ${borderColor} w-14 shrink-0`}
+        className={`relative overflow-hidden rounded-md border-2 ${borderColor} w-[4.25rem] shrink-0`}
         style={{ aspectRatio: "1037/736" }}
       >
         <div
@@ -113,7 +113,7 @@ function CampaignCardThumbnail({
     );
   }
 
-  const width = landscape ? "w-14" : "w-10";
+  const width = landscape ? "w-[4.25rem]" : "w-12";
   const aspectRatio = landscape ? "1037/736" : "739/1040";
 
   return (
@@ -328,8 +328,8 @@ function CampaignObjectsHint({
                 />
               </div>
             )}
-            <div className="flex items-start gap-3">
-              <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            <div className="flex items-start gap-3 ml-2.5">
+              <div className="flex items-center gap-2 flex-wrap flex-1">
                 {visibleCards.map((card, idx) => {
                   const isSequenceCard = sequencePointer != null && idx < 3;
                   let image: string;
@@ -375,20 +375,20 @@ function CampaignObjectsHint({
                   );
                 })}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
                 {deckCount > 0 && (
-                  <div className="flex items-center gap-1">
-                    <div className="relative w-6 h-7">
-                      <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
-                      <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative w-12 shrink-0" style={{ aspectRatio: "739/1040" }}>
+                      <div className="absolute inset-0 rounded-md border border-gray-600 bg-gray-800" />
+                      <div className="absolute -top-0.5 -left-0.5 w-12 rounded-md border border-gray-600 bg-gray-700" style={{ aspectRatio: "739/1040" }} />
                     </div>
-                    <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
+                    <span className="text-xs text-gray-400 font-semibold">{deckCount}</span>
                   </div>
                 )}
                 {discardCount > 0 && (
-                  <div className="flex items-center gap-1">
-                    <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
-                    <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-12 shrink-0 rounded-md border border-gray-700 bg-gray-900/50 opacity-50" style={{ aspectRatio: "739/1040" }} />
+                    <span className="text-xs text-gray-500 font-semibold">{discardCount}</span>
                   </div>
                 )}
               </div>
