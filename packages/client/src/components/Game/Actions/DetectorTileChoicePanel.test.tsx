@@ -1,7 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ClientGameState, GameState } from "@bomb-busters/shared";
-import { makeGameState, makePlayer, makeTile, makeYellowTile } from "@bomb-busters/shared/testing";
+import { logText } from "@bomb-busters/shared";
+import {
+  makeGameState,
+  makePlayer,
+  makeTile,
+  makeYellowTile,
+} from "@bomb-busters/shared/testing";
 import { DetectorTileChoicePanel } from "./DetectorTileChoicePanel.js";
 
 function toClientGameState(state: GameState, playerId: string): ClientGameState {
@@ -107,6 +113,54 @@ describe("DetectorTileChoicePanel stand-selection flow", () => {
     const html = renderPanel(toClientGameState(state, "target"), "target", 1);
     const confirmButton = getConfirmButtonTag(html);
 
+    expect(confirmButton).not.toMatch(/\sdisabled(?:=|>| )/);
+  });
+
+  it("mission 11 excludes hidden red-like wire from double-detector no-match selectable options", () => {
+    const state = makeGameState({
+      mission: 11,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "target",
+          name: "Target",
+          hand: [
+            makeTile({ id: "t0", color: "blue", gameValue: 7, sortValue: 1 }),
+            makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 2 }),
+          ],
+        }),
+        makePlayer({
+          id: "actor",
+          name: "Actor",
+          hand: [makeTile({ id: "a0", color: "blue", gameValue: 5, sortValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 1,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+      pendingForcedAction: {
+        kind: "detectorTileChoice",
+        actorId: "actor",
+        targetPlayerId: "target",
+        matchingTileIndices: [],
+        guessValue: 5,
+        source: "doubleDetector",
+        originalTileIndex1: 0,
+        originalTileIndex2: 1,
+      },
+    });
+
+    const html = renderPanel(toClientGameState(state, "target"), "target", null);
+    const confirmButton = getConfirmButtonTag(html);
+
+    expect(html).toContain("Info token target: wire B.");
     expect(confirmButton).not.toMatch(/\sdisabled(?:=|>| )/);
   });
 

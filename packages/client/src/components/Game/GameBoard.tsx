@@ -27,6 +27,7 @@ import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import {
   DetectorTileChoicePanel,
   getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
+  getMission11BlueAsRedValue as _getMission11BlueAsRedValue,
 } from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
@@ -337,7 +338,11 @@ export function GameBoard({
     : undefined;
   const detectorSelectableIndices =
     detectorForcedForMe && me
-      ? _getDetectorChoiceSelectableIndices(detectorForcedForMe, me.hand)
+      ? _getDetectorChoiceSelectableIndices(
+          detectorForcedForMe,
+          me.hand,
+          _getMission11BlueAsRedValue(gameState),
+        )
       : [];
   const detectorAutoSelection =
     detectorSelectableIndices.length === 1

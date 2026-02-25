@@ -1,5 +1,6 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
+import { isLogTextDetail } from "@bomb-busters/shared";
 import {
   BUTTON_PRIMARY_CLASS,
   PANEL_CLASS,
@@ -22,9 +23,41 @@ export function getDetectorChoiceAvailableMatches(
   });
 }
 
+export function getMission11BlueAsRedValue(
+  state: Pick<ClientGameState, "mission" | "log">,
+): number | null {
+  if (state.mission !== 11) return null;
+
+  for (const entry of state.log) {
+    if (entry.action !== "hookSetup") continue;
+    if (!isLogTextDetail(entry.detail)) continue;
+    const match = /^blue_as_red:(\d+)$/.exec(entry.detail.text.trim());
+    if (!match) continue;
+    const value = Number.parseInt(match[1]!, 10);
+    if (Number.isInteger(value) && value >= 1 && value <= 12) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function isHiddenRedLike(
+  tile: ClientGameState["players"][number]["hand"][number],
+  mission11BlueAsRedValue: number | null,
+) {
+  return (
+    tile.color === "blue" &&
+    mission11BlueAsRedValue != null &&
+    typeof tile.gameValue === "number" &&
+    tile.gameValue === mission11BlueAsRedValue
+  );
+}
+
 export function getDetectorChoiceSelectableIndices(
   forced: DetectorForcedAction,
   hand: ClientGameState["players"][number]["hand"],
+  mission11BlueAsRedValue: number | null = null,
 ): number[] {
   const availableMatches = getDetectorChoiceAvailableMatches(forced, hand);
   if (availableMatches.length > 0) return availableMatches;
@@ -35,7 +68,11 @@ export function getDetectorChoiceSelectableIndices(
     );
     return tileIndices.filter((idx) => {
       const tile = hand[idx];
-      return !!tile && tile.color !== "red";
+      return (
+        !!tile &&
+        tile.color !== "red" &&
+        !isHiddenRedLike(tile, mission11BlueAsRedValue)
+      );
     });
   }
 
@@ -77,7 +114,12 @@ export function DetectorTileChoicePanel({
 
   const availableMatches = getDetectorChoiceAvailableMatches(forced, me.hand);
   const matchCount = availableMatches.length;
-  const selectableIndices = getDetectorChoiceSelectableIndices(forced, me.hand);
+  const mission11BlueAsRedValue = getMission11BlueAsRedValue(gameState);
+  const selectableIndices = getDetectorChoiceSelectableIndices(
+    forced,
+    me.hand,
+    mission11BlueAsRedValue,
+  );
   const autoSelected = selectableIndices.length === 1 ? selectableIndices[0] : null;
   const effectiveSelection = selectedIndex ?? autoSelected;
 
