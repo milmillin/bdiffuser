@@ -1,11 +1,11 @@
-name: Deploy to Cloudflare
+name: Deploy to Cloudflare (miluai)
 
 on:
   push:
     branches: [main]
 
 concurrency:
-  group: deploy
+  group: deploy-miluai
   cancel-in-progress: true
 
 jobs:
