@@ -223,6 +223,27 @@ describe("EquipmentModePanel — double_detector", () => {
     expect(html).toContain("Give oxygen to:");
   });
 
+  it("mission 49 defaults oxygen recipient to the actor's next teammate", () => {
+    const html = renderMode(
+      {
+        kind: "double_detector",
+        targetPlayerId: "p1",
+        selectedTiles: [0, 1],
+        guessTileIndex: 0,
+      },
+      {
+        mission: 49,
+        playerId: "p2",
+        players: [
+          makePlayer({ id: "p1", name: "p1" }),
+          makePlayer({ id: "p2", name: "p2" }),
+          makePlayer({ id: "p3", name: "p3" }),
+        ],
+      },
+    );
+    expect(html).toContain("<option value=\"p3\" selected=\"\">p3</option>");
+  });
+
   it("non-mission 49 does not show oxygen recipient selection", () => {
     const html = renderMode({
       kind: "double_detector",

@@ -178,6 +178,14 @@ export function EquipmentModePanel({
   let content: React.ReactNode;
   let confirmButton: React.ReactNode = null;
   let testId: string | undefined;
+  const mission49DefaultRecipientId =
+    gameState.mission === 49
+      ? (() => {
+          const actorIndex = gameState.players.findIndex((p) => p.id === playerId);
+          if (actorIndex < 0 || gameState.players.length < 2) return undefined;
+          return gameState.players[(actorIndex + 1) % gameState.players.length]?.id;
+        })()
+      : undefined;
 
   switch (mode.kind) {
     case "post_it": {
@@ -219,7 +227,7 @@ export function EquipmentModePanel({
         (player) => player.id === mode.oxygenRecipientPlayerId,
       )
         ? mode.oxygenRecipientPlayerId
-        : mission49Recipients[0]?.id;
+        : mission49DefaultRecipientId ?? mission49Recipients[0]?.id;
       const ddAllComplete =
         mode.selectedTiles.length === 2 &&
         mode.targetPlayerId != null &&

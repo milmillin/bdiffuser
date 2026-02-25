@@ -2215,6 +2215,13 @@ function PendingActionStrip({
   const mission49Recipients = mission === 49
     ? players.filter((player) => player.id !== actorId)
     : [];
+  const mission49DefaultRecipientId = mission === 49 && players.length > 1
+    ? (() => {
+      const actorIndex = players.findIndex((player) => player.id === actorId);
+      if (actorIndex < 0) return undefined;
+      return players[(actorIndex + 1) % players.length]?.id;
+    })()
+    : undefined;
   const selectedMission49RecipientId =
     pendingAction.kind === "solo_cut" &&
     mission49Recipients.some((player) => player.id === pendingAction.targetPlayerId)
@@ -2224,7 +2231,7 @@ function PendingActionStrip({
             player.id === pendingAction.oxygenRecipientPlayerId
           )
         ? pendingAction.oxygenRecipientPlayerId
-      : mission49Recipients[0]?.id;
+      : mission49DefaultRecipientId;
   switch (pendingAction.kind) {
     case "dual_cut": {
       const targetName =
