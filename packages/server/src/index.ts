@@ -74,6 +74,7 @@ import {
   getSimultaneousFourCutTargetValue,
 } from "./simultaneousFourCutTargets.js";
 import { validateMission18DesignatedCutterTarget } from "./mission18.js";
+import { applyMission22TokenPassChoice } from "./mission22TokenPass.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -1122,50 +1123,24 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    this.executeMission22TokenPass(state, forced, value);
-  }
-
-  private executeMission22TokenPass(
-    state: GameState,
-    forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission22TokenPass" }>,
-    value: number,
-  ) {
-    const chooserIndex = forced.currentChooserIndex;
-    const playerCount = state.players.length;
-
-    // Recipient is the player to the chooser's left (clockwise)
-    const recipientIndex = (chooserIndex + 1) % playerCount;
-    const recipient = state.players[recipientIndex];
-
-    // Build the token: auto-place on matching uncut wire, or position -1
-    const isYellow = value === 0;
-    let position = -1;
-    if (isYellow) {
-      const yellowIdx = recipient.hand.findIndex((t) => !t.cut && t.color === "yellow");
-      if (yellowIdx !== -1) position = yellowIdx;
-    } else {
-      const wireIdx = recipient.hand.findIndex(
-        (t) => !t.cut && typeof t.gameValue === "number" && t.gameValue === value,
-      );
-      if (wireIdx !== -1) position = wireIdx;
+    const result = applyMission22TokenPassChoice(state, forced, value);
+    if (!result.ok) {
+      this.sendMsg(conn, { type: "error", message: result.message });
+      return;
     }
 
-    const token = applyMissionInfoTokenVariant(state, {
-      value,
-      position,
-      isYellow,
-    }, recipient);
-    recipient.infoTokens.push(token);
+    const token = result.updatedRecipientToken;
+    const recipient = state.players[result.recipientIndex];
+    if (!recipient) return false;
 
     pushGameLog(state, {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m22:token_pass:value=${value}|to=${recipient.id}|position=${wireLabelOf(recipient, position)}`,
+      detail: `m22:token_pass:value=${token.value}|to=${recipient.id}|position=${wireLabelOf(recipient, token.position)}`,
       timestamp: Date.now(),
     });
 
-    // Advance to next chooser or clear forced action
     const nextCompleted = forced.completedCount + 1;
     if (nextCompleted >= forced.passingOrder.length) {
       // All players have passed tokens
@@ -1186,6 +1161,50 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
+  }
+
+  private executeMission22TokenPass(
+    state: GameState,
+    forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission22TokenPass" }>,
+    value: number,
+  ): boolean {
+    const result = applyMission22TokenPassChoice(state, forced, value);
+    if (!result.ok) {
+      return false;
+    }
+
+    const token = result.updatedRecipientToken;
+    const recipient = state.players[result.recipientIndex];
+    if (!recipient) return false;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: forced.currentChooserId,
+      action: "hookEffect",
+      detail: `m22:token_pass:value=${token.value}|to=${recipient.id}|position=${wireLabelOf(recipient, token.position)}`,
+      timestamp: Date.now(),
+    });
+
+    const nextCompleted = forced.completedCount + 1;
+    if (nextCompleted >= forced.passingOrder.length) {
+      state.pendingForcedAction = undefined;
+    } else {
+      const nextOrderIndex = nextCompleted;
+      const nextChooserIndex = forced.passingOrder[nextOrderIndex];
+      const nextChooser = state.players[nextChooserIndex];
+      state.pendingForcedAction = {
+        kind: "mission22TokenPass",
+        currentChooserIndex: nextChooserIndex,
+        currentChooserId: nextChooser.id,
+        passingOrder: forced.passingOrder,
+        completedCount: nextCompleted,
+      };
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+    return true;
   }
 
   handleDetectorTileChoice(conn: Connection, tileIndex?: number, infoTokenTileIndex?: number) {
@@ -1668,9 +1687,28 @@ export class BombBustersServer extends Server<Env> {
     if (m22Forced?.kind === "mission22TokenPass") {
       const chooser = state.players.find((p) => p.id === m22Forced.currentChooserId);
       if (chooser?.isBot) {
-        // Bot picks a random value 0-12
-        const value = Math.floor(Math.random() * 13);
-        this.executeMission22TokenPass(state, m22Forced, value);
+        // Bot picks a random available board token value
+        const availableValues = new Set<number>();
+        for (const player of state.players) {
+          for (const token of player.infoTokens) {
+            if (token.position !== -1) continue;
+            availableValues.add(token.isYellow ? 0 : token.value);
+          }
+        }
+        if (availableValues.size === 0) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+          return;
+        }
+        const values = Array.from(availableValues);
+        const value = values[Math.floor(Math.random() * values.length)];
+        const success = this.executeMission22TokenPass(state, m22Forced, value);
+        if (!success) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+        }
         return;
       }
     }

@@ -21,6 +21,29 @@ export function Mission22TokenPassPanel({
   const recipient = gameState.players[recipientIndex];
   const recipientName =
     recipient?.id === playerId ? "yourself" : (recipient?.name ?? "the next player");
+  const availableValues = new Set<number>();
+  for (const player of gameState.players) {
+    for (const token of player.infoTokens) {
+      if (token.position !== -1) continue;
+      availableValues.add(token.isYellow ? 0 : token.value);
+    }
+  }
+  const sortedValues = Array.from(availableValues).sort((a, b) => a - b);
+  if (sortedValues.length === 0) {
+    return (
+      <div
+        className="bg-[var(--color-bomb-surface)] rounded-xl p-3 space-y-3"
+        data-testid="mission22-token-pass-panel"
+      >
+        <div className="text-sm font-bold text-yellow-400">
+          Mission 22 — Pass a Token
+        </div>
+        <p className="text-sm text-gray-400">
+          No token is currently available to pass.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -34,7 +57,7 @@ export function Mission22TokenPassPanel({
         Choose a token value to pass to <span className="text-gray-200 font-semibold">{recipientName}</span>.
       </p>
       <div className="flex items-center gap-2 flex-wrap">
-        {Array.from({ length: 13 }, (_, value) => (
+        {sortedValues.map((value) => (
           <button
             key={value}
             type="button"

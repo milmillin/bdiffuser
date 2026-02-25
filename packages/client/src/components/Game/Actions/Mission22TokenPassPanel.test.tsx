@@ -36,11 +36,13 @@ describe("Mission22TokenPassPanel", () => {
           name: "Captain",
           isCaptain: true,
           hand: [makeTile({ id: "c1", gameValue: 2 })],
+          infoTokens: [{ value: 3, position: -1, isYellow: false }],
         }),
         makePlayer({
           id: "p2",
           name: "Bob",
           hand: [makeTile({ id: "b1", gameValue: 6 })],
+          infoTokens: [{ value: 12, position: 0, isYellow: false }],
         }),
       ],
       pendingForcedAction: {
@@ -56,9 +58,9 @@ describe("Mission22TokenPassPanel", () => {
     const html = renderPanel(clientState, "captain");
 
     expect(html).toContain("data-testid=\"mission22-token-pass-panel\"");
-    expect(html).toContain("data-testid=\"mission22-token-0\"");
-    expect(html).toContain("YELLOW");
-    expect(html).toContain("data-testid=\"mission22-token-12\"");
+    expect(html).toContain("data-testid=\"mission22-token-3\"");
+    expect(html).not.toContain("data-testid=\"mission22-token-12\"");
+    expect(html).not.toContain("data-testid=\"mission22-token-1\"");
     expect(html).toContain("Bob");
   });
 
