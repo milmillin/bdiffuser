@@ -1406,13 +1406,13 @@ describe("mission progression hooks", () => {
     ).toBe(false);
   });
 
-  it("mission 57 auto-skips all blocked players and stalls the round", () => {
+  it("mission 57 auto-skips all blocked players and explodes immediately", () => {
     const state = makeGameState({
       mission: 57,
       log: [],
       currentPlayerIndex: 0,
       turnNumber: 1,
-      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 1 }),
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
       players: [
         makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 1 })] }),
         makePlayer({
@@ -1441,7 +1441,7 @@ describe("mission progression hooks", () => {
     });
 
     expect(state.turnNumber).toBe(2);
-    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.board.detonatorPosition).toBe(0);
     expect(state.currentPlayerIndex).toBe(0);
     expect(state.result).toBe("loss_detonator");
     expect(state.phase).toBe("finished");
@@ -1456,7 +1456,7 @@ describe("mission progression hooks", () => {
       state.log.some(
         (entry) =>
           entry.action === "hookEffect"
-          && renderLogDetail(entry.detail) === "mission57:round_stalled|detonator=1",
+          && renderLogDetail(entry.detail) === "mission57:round_stalled|detonator=0",
       ),
     ).toBe(true);
   });

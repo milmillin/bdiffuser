@@ -4079,7 +4079,6 @@ registerHookHandler<"mission_57_constraint_per_validated_value">(
 
       if (skippedPlayers.size >= activePlayerCount) {
         const previousPlayerId = ctx.previousPlayerId;
-        ctx.state.board.detonatorPosition += 1;
         pushGameLog(ctx.state, {
           turn: ctx.state.turnNumber,
           playerId: previousPlayerId ?? "system",
@@ -4087,12 +4086,9 @@ registerHookHandler<"mission_57_constraint_per_validated_value">(
           detail: `mission57:round_stalled|detonator=${ctx.state.board.detonatorPosition}`,
           timestamp: Date.now(),
         });
-
-        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
-          ctx.state.result = "loss_detonator";
-          ctx.state.phase = "finished";
-          emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
-        }
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
       }
     },
   },
