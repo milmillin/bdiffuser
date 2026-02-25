@@ -1,3 +1,4 @@
+import { INFO_TOKEN_VALUES, YELLOW_INFO_TOKENS } from "@bomb-busters/shared";
 import type { ForcedAction, GameState, InfoToken } from "@bomb-busters/shared";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 
@@ -9,22 +10,25 @@ function normalizeMission22NumericToken(value: number): number | null {
 function collectMission22TokenPassBoardFromPlayers(
   state: GameState,
 ): { numericTokens: number[]; yellowTokens: number } {
-  const numericTokens: number[] = [];
-  let yellowTokens = 0;
+  const usedNumericValues = new Set<number>();
+  let usedYellowTokens = 0;
 
   for (const player of state.players) {
     for (const token of player.infoTokens) {
       if (token.position !== -1) continue;
       if (token.isYellow) {
-        yellowTokens += 1;
+        usedYellowTokens += 1;
       } else {
         const normalizedValue = normalizeMission22NumericToken(token.value);
         if (normalizedValue !== null) {
-          numericTokens.push(normalizedValue);
+          usedNumericValues.add(normalizedValue);
         }
       }
     }
   }
+
+  const numericTokens = INFO_TOKEN_VALUES.filter((value) => !usedNumericValues.has(value));
+  const yellowTokens = Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens);
 
   return { numericTokens, yellowTokens };
 }

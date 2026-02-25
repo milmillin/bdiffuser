@@ -110,6 +110,55 @@ describe("Mission 22 token pass helper", () => {
     });
   });
 
+  it("derives mission 22 board state from token pool when board state is missing", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c2", gameValue: 2 })],
+      infoTokens: [{ value: 4, position: -1, isYellow: false }],
+    });
+    const recipient = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b3", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [chooser, recipient],
+      campaign: {},
+      pendingForcedAction: {
+        kind: "mission22TokenPass",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        passingOrder: [0, 1],
+        completedCount: 0,
+      },
+    });
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission22TokenPass") {
+      throw new Error("Expected mission22 forced action to be set");
+    }
+
+    const result = applyMission22TokenPassChoice(state, forced, 4);
+    expect(result).toEqual({ ok: false, message: "Token value is not available on the board" });
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12],
+      yellowTokens: 2,
+    });
+
+    const retry = applyMission22TokenPassChoice(state, forced, 1);
+    expect(retry).toMatchObject({
+      ok: true,
+      recipientIndex: 1,
+      updatedRecipientToken: { value: 1, isYellow: false, position: -2 },
+    });
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [2, 3, 5, 6, 7, 8, 9, 10, 11, 12],
+      yellowTokens: 2,
+    });
+  });
+
   it("prevents a passed token from being reused when it cannot be placed", () => {
     const chooser = makePlayer({
       id: "p1",
