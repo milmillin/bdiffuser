@@ -797,6 +797,16 @@ function getOxygenCostForCut(rule: OxygenProgressionRuleDef, cutValue: number): 
   return Math.max(0, Math.floor(rule.perTurnCost));
 }
 
+function getMission63CaptainOxygen(playerCount: number): number {
+  const captainOxygenByPlayerCount: Record<number, number> = {
+    2: 14,
+    3: 18,
+    4: 24,
+    5: 30,
+  };
+  return Math.max(0, Math.floor(captainOxygenByPlayerCount[playerCount] ?? 0));
+}
+
 function actorCanAffordAnyMission44Cut(
   state: Readonly<GameState>,
   actor: { id: string; hand: ReadonlyArray<WireTile> },
@@ -809,7 +819,9 @@ function actorCanAffordAnyMission44Cut(
   const allRemainingRed = actorUncut.every((tile) => tile.gameValue === "RED");
   if (allRemainingRed) return true;
 
-  const available = getAvailableOxygen(state, actor.id);
+  const available = state.mission === 63
+    ? Math.max(0, Math.floor(state.campaign?.oxygen?.playerOxygen[actor.id] ?? 0))
+    : getAvailableOxygen(state, actor.id);
   if (available <= 0) return false;
 
   const affordableValues = new Set<number>();
@@ -1561,6 +1573,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
   setup(rule: OxygenProgressionRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
 
+    const mission = ctx.state.mission;
     const playerCount = ctx.state.players.length as 2 | 3 | 4 | 5;
     const initialPool = Math.max(
       0,
@@ -1574,11 +1587,23 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     );
     const playerOxygen: Record<string, number> = {};
     for (const player of ctx.state.players) {
-      playerOxygen[player.id] = initialPlayerOxygen;
+      playerOxygen[player.id] = mission === 63 ? 0 : initialPlayerOxygen;
     }
 
+    if (mission === 63) {
+      const captainIndex = Math.max(
+        0,
+        ctx.state.players.findIndex((player) => player.isCaptain),
+      );
+      const captainId = ctx.state.players[captainIndex]?.id;
+      if (captainId) {
+        playerOxygen[captainId] = getMission63CaptainOxygen(playerCount);
+      }
+    }
+
+    const startingPool = mission === 63 ? 0 : initialPool;
     ctx.state.campaign!.oxygen = {
-      pool: initialPool,
+      pool: startingPool,
       playerOxygen,
     };
 
@@ -1599,9 +1624,11 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
 
     const requiredCost = getOxygenCostForCut(rule, cutValue);
     const oxygen = ctx.state.campaign?.oxygen;
-    if (!oxygen || requiredCost <= 0) return;
-
-    const available = getAvailableOxygen(ctx.state, actorId);
+    if (!oxygen) return;
+    if (requiredCost <= 0) return;
+    const available = ctx.state.mission === 63
+      ? Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0))
+      : getAvailableOxygen(ctx.state, actorId);
     if (available < requiredCost) {
       return {
         validationError: `Mission ${ctx.state.mission}: insufficient oxygen to cut ${cutValue} (need ${requiredCost}, available ${available})`,
@@ -1652,6 +1679,100 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
 
     if (ctx.state.phase === "finished") return;
     if (ctx.state.campaign?.oxygen == null) return;
+
+    if (ctx.state.mission === 63) {
+      const oxygen = ctx.state.campaign.oxygen;
+      const players = ctx.state.players;
+      const playerCount = players.length;
+      if (playerCount <= 1) return;
+
+      const previousPlayerIndex = players.findIndex(
+        (player) => player.id === ctx.previousPlayerId,
+      );
+      if (previousPlayerIndex >= 0) {
+        const leftOfPreviousIndex = (previousPlayerIndex + 1) % playerCount;
+        const previousPlayer = players[previousPlayerIndex];
+        const leftPlayer = players[leftOfPreviousIndex];
+        if (previousPlayer && leftPlayer) {
+          const remaining = Math.max(
+            0,
+            Math.floor(oxygen.playerOxygen[previousPlayer.id] ?? 0),
+          );
+          if (remaining > 0) {
+            oxygen.playerOxygen[leftPlayer.id] = Math.max(
+              0,
+              Math.floor(oxygen.playerOxygen[leftPlayer.id] ?? 0),
+            ) + remaining;
+            oxygen.playerOxygen[previousPlayer.id] = 0;
+          }
+        }
+      }
+
+      const captainIndex = players.findIndex((player) => player.isCaptain);
+      const captain = captainIndex >= 0 ? players[captainIndex] : null;
+      if (captain && captainIndex === ctx.state.currentPlayerIndex) {
+        const reserve = Math.max(0, Math.floor(oxygen.pool));
+        if (reserve > 0) {
+          oxygen.playerOxygen[captain.id] = Math.max(
+            0,
+            Math.floor(oxygen.playerOxygen[captain.id] ?? 0),
+          ) + reserve;
+          oxygen.pool = 0;
+
+          pushGameLog(ctx.state, {
+            turn: ctx.state.turnNumber,
+            playerId: captain.id,
+            action: "hookEffect",
+            detail: `oxygen_progression:mission63_reserve_to_captain|amount=${reserve}`,
+            timestamp: Date.now(),
+          });
+        }
+      }
+
+      const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+      for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+        if (ctx.state.result != null) return;
+
+        const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+        if (!actor) return;
+
+        const actorCanAct = actorCanAffordAnyMission44Cut(ctx.state, actor, rule);
+        if (actorCanAct) return;
+
+        const hasUncutTiles = actor.hand.some((tile) => !tile.cut);
+        if (!hasUncutTiles) return;
+
+        ctx.state.board.detonatorPosition += 1;
+        pushGameLog(ctx.state, {
+          turn: ctx.state.turnNumber,
+          playerId: actor.id,
+          action: "hookEffect",
+          detail: `oxygen_progression:auto_skip|player=${actor.id}|detonator=${ctx.state.board.detonatorPosition}`,
+          timestamp: Date.now(),
+        });
+
+        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+          ctx.state.result = "loss_detonator";
+          ctx.state.phase = "finished";
+          emitMissionFailureTelemetry(ctx.state, "loss_detonator", actor.id, null);
+          return;
+        }
+
+        const nextPlayerIndex = advanceToNextPlayerWithUncutTiles(
+          ctx.state,
+          ctx.state.currentPlayerIndex,
+        );
+        if (nextPlayerIndex < 0) {
+          ctx.state.result = "win";
+          ctx.state.phase = "finished";
+          return;
+        }
+
+        ctx.state.currentPlayerIndex = nextPlayerIndex;
+        ctx.state.turnNumber += 1;
+      }
+      return;
+    }
 
     const playerCount = ctx.state.players.length;
     const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
@@ -1710,6 +1831,39 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     if (requiredCost <= 0) return;
     const oxygen = ctx.state.campaign?.oxygen;
     if (!oxygen) return;
+
+    if (ctx.state.mission === 63) {
+      const owned = Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0));
+      const movedToPool = Math.min(owned, requiredCost);
+      oxygen.playerOxygen[actorId] = owned - movedToPool;
+      oxygen.pool += movedToPool;
+
+      const deficit = requiredCost - movedToPool;
+      if (deficit > 0) {
+        ctx.state.board.detonatorPosition += 1;
+        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+          ctx.state.result = "loss_detonator";
+          ctx.state.phase = "finished";
+          emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+        }
+      }
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail: [
+          "oxygen_progression:mode=mission63_cut",
+          `cost=${requiredCost}`,
+          `cut=${ctx.cutValue}`,
+          `moved=${movedToPool}`,
+          `deficit=${deficit}`,
+          `pool=${oxygen.pool}`,
+        ].join("|"),
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     const { paid, deficit } = spendOxygenForTurn(ctx.state, requiredCost, actorId);
     if (deficit > 0) {

@@ -90,10 +90,11 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     hookRules: [
       {
         kind: "oxygen_progression",
-        initialPool: 12,
+        initialPool: 0,
         perTurnCost: 1,
-        initialPlayerOxygen: 1,
-        rotatePlayerOxygen: true,
+        initialPlayerOxygen: 0,
+        consumeOnCut: true,
+        cutCostMode: "value",
       },
     ],
     notes: ["FAQ: Must play if you have enough oxygen. Cannot voluntarily skip."],

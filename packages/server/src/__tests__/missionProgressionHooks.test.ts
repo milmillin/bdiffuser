@@ -375,6 +375,143 @@ describe("mission progression hooks", () => {
     expect(state.board.detonatorPosition).toBe(1);
   });
 
+  it("mission 63 setup gives captain oxygen and starts reserve at zero", () => {
+    const players = [
+      makePlayer({ id: "p1" }),
+      makePlayer({ id: "captain", isCaptain: true }),
+      makePlayer({ id: "p3" }),
+    ];
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players,
+    });
+    dispatchHooks(63, { point: "setup", state });
+
+    expect(state.campaign?.oxygen?.pool).toBe(0);
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(0);
+    expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(0);
+    expect(state.campaign?.oxygen?.playerOxygen.captain).toBe(18);
+  });
+
+  it("mission 63 validate blocks cuts when player oxygen is insufficient even if reserve has oxygen", () => {
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [makePlayer({ id: "captain", isCaptain: true }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.captain = 2;
+    state.campaign.oxygen.pool = 5;
+
+    const result = dispatchHooks(63, {
+      point: "validate",
+      state,
+      action: { type: "soloCut", actorId: "p2", value: 3 },
+    });
+
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toContain("insufficient oxygen");
+  });
+
+  it("mission 63 resolve spends cut oxygen to reserve", () => {
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [makePlayer({ id: "captain", isCaptain: true }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p2 = 5;
+    state.campaign.oxygen.pool = 0;
+
+    dispatchHooks(63, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p2", value: 4 },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(1);
+    expect(state.campaign?.oxygen?.pool).toBe(4);
+  });
+
+  it("mission 63 endTurn passes remaining oxygen to the left player and captain collects reserve", () => {
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "captain", isCaptain: true }),
+        makePlayer({ id: "p3" }),
+      ],
+      currentPlayerIndex: 1,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 4;
+    state.campaign.oxygen.playerOxygen.captain = 6;
+    state.campaign.oxygen.pool = 7;
+
+    dispatchHooks(63, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p1",
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(0);
+    expect(state.campaign?.oxygen?.playerOxygen.captain).toBe(17);
+    expect(state.campaign?.oxygen?.pool).toBe(0);
+  });
+
+  it("mission 63 endTurn auto-skips players who cannot play due insufficient oxygen", () => {
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 1 })] }),
+        makePlayer({
+          id: "captain",
+          isCaptain: true,
+          hand: [makeTile({ id: "c-1", gameValue: 2 })],
+        }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-1", gameValue: 1 })] }),
+      ],
+      currentPlayerIndex: 1,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen = {
+      p1: 0,
+      captain: 0,
+      p3: 2,
+    };
+
+    dispatchHooks(63, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p1",
+    });
+
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.currentPlayerIndex).toBe(2);
+    expect(state.turnNumber).toBe(2);
+  });
+
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
     const state = makeGameState({
       mission: 55,
