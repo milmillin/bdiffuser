@@ -854,7 +854,7 @@ function canPlayerPlayMission59(
   });
   if (canSoloCut) return true;
 
-  if (typeof currentLineValue === "number") return true;
+  if (typeof currentLineValue === "number" && actorValueCounts.has(currentLineValue)) return true;
 
   return actorUncutTiles.some((tile): boolean =>
     typeof tile.gameValue === "number" &&
@@ -4510,7 +4510,66 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
       timestamp: Date.now(),
     });
   },
+
+  endTurn(_rule: XMarkedWireRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished" || ctx.state.mission !== 35) return;
+
+    const playerCount = ctx.state.players.length;
+    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+
+    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+      if (ctx.state.result != null) return;
+
+      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!actor) return;
+
+      if (canCurrentPlayerPlayMission35(ctx.state, actor)) {
+        return;
+      }
+
+      ctx.state.board.detonatorPosition += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actor.id,
+        action: "hookEffect",
+        detail:
+          `x_marked_wire:auto_skip|player=${actor.id}` +
+          `|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.phase = "finished";
+        ctx.state.result = "loss_detonator";
+        return;
+      }
+
+      const nextPlayerIndex = findNextUncutPlayerIndex(ctx.state, ctx.state.currentPlayerIndex);
+      if (nextPlayerIndex == null) return;
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+      ctx.state.turnNumber += 1;
+    }
+  },
 });
+
+function canCurrentPlayerPlayMission35(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+): boolean {
+  const uncutTiles = actor.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const hasUncutYellowWires = state.players.some((player) =>
+    player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
+  );
+  if (!hasUncutYellowWires) return true;
+
+  const hasNonXMarkedUncut = uncutTiles.some((tile) => !tile.isXMarked);
+  if (hasNonXMarkedUncut) return true;
+
+  return false;
+}
 
 function getMission38CaptainFlippedWire(
   state: Readonly<GameState>,
@@ -5062,9 +5121,16 @@ function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: stri
   });
   if (hasValidSoloCut) return true;
 
-  return state.players.some(
-    (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+  const actorNumericValues = new Set(
+    actorUncutValues
+      .filter((t) => typeof t.gameValue === "number")
+      .map((t) => t.gameValue as number),
   );
+  return actorNumericValues.size > 0 &&
+    possibleTargets.some((target) => actorNumericValues.has(target)) &&
+    state.players.some(
+      (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+    );
 }
 
 function canCurrentPlayerSoloCutMission47(

@@ -1956,7 +1956,7 @@ describe("missionHooks dispatcher", () => {
     it("mission 59: does not auto-skip a player who can cut using only Nano's current value", () => {
       const actor = makePlayer({
         id: "p1",
-        hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
+        hand: [makeTile({ id: "p1-7", gameValue: 7, cut: false })],
       });
       const target = makePlayer({
         id: "p2",
@@ -2183,7 +2183,7 @@ describe("missionHooks dispatcher", () => {
     it("mission 47: does not auto-skip when legal Number pairs exist but no hand match", () => {
       const p1 = makePlayer({
         id: "p1",
-        hand: [makeTile({ id: "p1-1", gameValue: 2, cut: false })],
+        hand: [makeTile({ id: "p1-1", gameValue: 1, cut: false })],
       });
       const p2 = makePlayer({
         id: "p2",

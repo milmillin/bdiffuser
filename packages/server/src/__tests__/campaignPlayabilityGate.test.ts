@@ -125,7 +125,7 @@ function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean
   }
 
   const getMissionCutCost = (value: number): number => {
-    if (state.mission === 63) {
+    if (state.mission === 63 || state.mission === 49) {
       return Math.max(0, Math.floor(value));
     }
     if (state.mission === 54) {
@@ -312,6 +312,13 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
   const fallbackGuessValues: Array<number | "YELLOW"> = shouldTryAllNumericGuesses
     ? Array.from({ length: 12 }, (_, i) => i + 1)
     : [...actorValueToTileIndex.keys()].filter((value): value is number => typeof value === "number");
+
+  if (
+    actor.hand.some((t) => !t.cut && t.gameValue === "YELLOW") &&
+    !fallbackGuessValues.includes("YELLOW" as number | "YELLOW")
+  ) {
+    fallbackGuessValues.push("YELLOW");
+  }
 
   if (state.mission === 59 && state.campaign?.mission59Nano) {
     const currentLineValue = state.campaign.numberCards?.visible?.[
