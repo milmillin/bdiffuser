@@ -71,6 +71,7 @@ export function InfoTokenSetup({
   totalTokens,
   useFalseTokenMode,
   requiresTileTarget,
+  isMission50Setup = false,
   mission22BoardValues,
   send,
   onPlaced,
@@ -83,6 +84,7 @@ export function InfoTokenSetup({
   totalTokens: number;
   useFalseTokenMode: boolean;
   requiresTileTarget: boolean;
+  isMission50Setup?: boolean;
   mission22BoardValues?: number[];
   send: (msg: ClientMessage) => void;
   onPlaced: () => void;
@@ -154,7 +156,11 @@ export function InfoTokenSetup({
           ? requiresTileTarget
             ? "Select an allowed wire tile on your stand to place a false info token."
             : "Choose a value that is not in your hand, then place it beside your stand."
-          : "Select a blue wire tile on your stand to place an info token."}
+          : requiresTileTarget
+            ? isMission50Setup
+              ? "Select a blue wire tile on your stand, then place the token beside your stand."
+              : "Select a blue wire tile on your stand to place an info token."
+            : "Select a value and place it beside your stand."}
       </div>
       {(requiresTileTarget ? selectedTileIndex != null : true) && (
         <div className="flex items-center gap-2">

@@ -180,6 +180,32 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).toContain("Select an allowed wire tile on your stand to place a false info token.");
   });
 
+  it("shows mission 50 setup prompt for non-front tokens", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+
+    const state = makeGameState({
+      mission: 50,
+      phase: "setup_info_tokens",
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).toContain(
+      "Select a blue wire tile on your stand, then place the token beside your stand.",
+    );
+  });
+
   it("uses campaign false token mode for false setup UI without mission 52", () => {
     const captain = makePlayer({
       id: "captain",

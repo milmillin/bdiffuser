@@ -1510,6 +1510,7 @@ export function GameBoard({
                     requiresToken={requiresSetupToken}
                     totalTokens={totalSetupTokens}
                     requiresTileTarget={gameState.mission !== 22}
+                    isMission50Setup={gameState.mission === 50}
                     useFalseTokenMode={useFalseSetupTokenMode}
                     mission22BoardValues={mission22SetupBoardValues}
                     send={send}
