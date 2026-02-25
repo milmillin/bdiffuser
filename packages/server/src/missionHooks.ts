@@ -1023,10 +1023,18 @@ registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
   },
 
   endTurn(rule: DynamicTurnOrderRuleDef, ctx: EndTurnHookContext): HookResult | void {
+    console.log(
+      "[dynamic_turn_order.endTurn] entered",
+      "selector=", rule.selector,
+      "previousPlayerId=", ctx.previousPlayerId,
+    );
     if (rule.selector !== "captain") return;
 
     const captainIndex = ctx.state.players.findIndex((p) => p.isCaptain);
-    if (captainIndex === -1) return;
+    if (captainIndex === -1) {
+      console.log("[dynamic_turn_order.endTurn] no captain found, returning");
+      return;
+    }
 
     const captain = ctx.state.players[captainIndex];
     ctx.state.pendingForcedAction = {
@@ -1034,6 +1042,12 @@ registerHookHandler<"dynamic_turn_order">("dynamic_turn_order", {
       captainId: captain.id,
       ...(ctx.previousPlayerId ? { lastPlayerId: ctx.previousPlayerId } : {}),
     };
+
+    console.log(
+      "[dynamic_turn_order.endTurn] set pendingForcedAction",
+      JSON.stringify(ctx.state.pendingForcedAction),
+      "nextPlayerIndex=", captainIndex,
+    );
 
     return { nextPlayerIndex: captainIndex };
   },

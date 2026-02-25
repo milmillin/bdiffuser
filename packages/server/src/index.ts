@@ -1982,6 +1982,16 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state) return;
 
+    if (state.mission === 10) {
+      console.log(
+        "[broadcastGameState] mission=10",
+        "phase=", state.phase,
+        "pendingForcedAction=", JSON.stringify(state.pendingForcedAction),
+        "currentPlayerIndex=", state.currentPlayerIndex,
+        "turnNumber=", state.turnNumber,
+      );
+    }
+
     const playerIds = new Set(this.room.players.map((p) => p.id));
     let spectatorView: ReturnType<typeof filterStateForSpectator> | null = null;
 
