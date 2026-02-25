@@ -1269,7 +1269,7 @@ export function resolveDetectorTileChoice(
 function resolveDoubleDetectorNoMatch(
   state: GameState,
   forced: Extract<ForcedAction, { kind: "detectorTileChoice" }>,
-  _actor: Player,
+  actor: Player,
   target: Player,
   infoTokenTileIndexOverride?: number,
 ): GameAction {
@@ -1280,6 +1280,7 @@ function resolveDoubleDetectorNoMatch(
   const tile2 = getTileByFlatIndex(target, tileIndex2)!;
 
   state.board.detonatorPosition++;
+  const detonatorPositionBeforeFailure = state.board.detonatorPosition - 1;
 
   const hiddenBlueAsRedValue =
     state.mission === 11 ? getBlueAsRedValue(state) : null;
@@ -1314,6 +1315,30 @@ function resolveDoubleDetectorNoMatch(
       guessValue,
       outcome: "no_match" as const,
       detonatorAdvanced: true,
+      explosion: true,
+    };
+  }
+
+  // Mission 14: the rookie (Captain) cannot fail a Dual Cut by any means.
+  if (state.mission === 14 && actor.isCaptain) {
+    state.board.detonatorPosition = detonatorPositionBeforeFailure;
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+    addLog(
+      state,
+      actorId,
+      "dualCutDoubleDetector",
+      `The Intern failed a Dual Cut on ${target.name} using Double Detector. BOOM!`,
+    );
+    return {
+      type: "dualCutDoubleDetectorResult",
+      actorId,
+      targetId: targetPlayerId,
+      tileIndex1,
+      tileIndex2,
+      guessValue,
+      outcome: "no_match" as const,
       explosion: true,
     };
   }
