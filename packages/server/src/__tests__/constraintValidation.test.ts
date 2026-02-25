@@ -434,6 +434,20 @@ describe("constraint enforcement validation", () => {
     ).toBe(true);
   });
 
+  it("does not auto-flip Constraint K when actor can dual-cut with a wrong-number guess", () => {
+    const state = stateWithConstraint("K", {
+      actorHandValues: [11],
+      targetHandValues: [2],
+    });
+
+    const result = validateDualCut(state, 2);
+    expect(result.validationError).toBeUndefined();
+    expect(state.campaign?.constraints?.global?.[0]?.active).toBe(true);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
+    ).toBe(false);
+  });
+
   it("Mission 57 initializes number cards and pairs them with constraint cards", () => {
     const state = stateWithMission57();
 

@@ -2859,28 +2859,32 @@ function valuePassesConstraint(value: number, constraintId: string): boolean {
 }
 
 /**
- * Check if a player has ANY valid dual-cut target across all other stands.
- * A dual cut requires the actor to have a matching value for a target's uncut tile.
+ * Check if a player has ANY legally declared dual-cut target across all other stands.
+ * Dual-cut actions are legal when:
+ * - the actor has an uncut numeric wire (any value can be declared, including
+ *   an intentionally incorrect one), or
+ * - the actor has an uncut yellow wire and a teammate also has yellow.
  */
 function hasAnyDualCutTarget(state: Readonly<GameState>, playerId: string): boolean {
   const actor = state.players.find((p) => p.id === playerId);
   if (!actor) return false;
 
-  const actorValues = new Set(
-    actor.hand
-      .filter((t) => !t.cut && typeof t.gameValue === "number")
-      .map((t) => t.gameValue as number),
+  const actorHasNumericUncut = actor.hand.some(
+    (tile) => !tile.cut && typeof tile.gameValue === "number",
+  );
+  const actorHasYellowUncut = actor.hand.some(
+    (tile) => !tile.cut && tile.gameValue === "YELLOW",
   );
 
-  for (const target of state.players) {
-    if (target.id === playerId) continue;
-    for (const tile of target.hand) {
-      if (!tile.cut && typeof tile.gameValue === "number" && actorValues.has(tile.gameValue)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  const hasNonYellowTarget = state.players.some((player) =>
+    player.id !== actor.id && player.hand.some((tile) => !tile.cut && tile.gameValue !== "YELLOW"),
+  );
+  const hasYellowTarget = actorHasYellowUncut
+    && state.players.some((player) =>
+      player.id !== actor.id && player.hand.some((tile) => !tile.cut && tile.gameValue === "YELLOW"),
+    );
+  if (actorHasNumericUncut) return hasNonYellowTarget;
+  return hasYellowTarget;
 }
 
 /**
