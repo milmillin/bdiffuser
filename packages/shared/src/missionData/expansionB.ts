@@ -20,6 +20,8 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
         initialPool: 0,
         perTurnCost: 1,
         initialPlayerOxygen: 4,
+        consumeOnCut: true,
+        cutCostMode: "value",
         initialPlayerOxygenByPlayerCount: {
           2: 7,
           3: 6,
