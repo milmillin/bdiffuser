@@ -3730,15 +3730,19 @@ function actionAttemptsSevenCut(
     const typedAction = action as unknown as {
       targetPlayerId: string;
       tileIndex1: number;
+      tileIndex2: number;
       guessValue: number | "YELLOW";
     };
-    if (typedAction.guessValue === "YELLOW") {
-      const targetPlayer = state.players.find((player) => player.id === typedAction.targetPlayerId);
-      const targetTile = targetPlayer?.hand[typedAction.tileIndex1];
-      return !!targetTile && isMission46SevenTileForMission(state, targetTile);
-    }
+    if (typedAction.guessValue !== 7 && typedAction.guessValue !== "YELLOW") return false;
 
-    return typedAction.guessValue === 7;
+    const targetPlayer = state.players.find((player) =>
+      player.id === typedAction.targetPlayerId,
+    );
+    const targetTiles = [
+      targetPlayer?.hand[typedAction.tileIndex1],
+      targetPlayer?.hand[typedAction.tileIndex2],
+    ];
+    return targetTiles.some((tile) => tile != null && isMission46SevenTileForMission(state, tile));
   }
 
   if (action.type === "soloCut") {

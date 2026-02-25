@@ -1162,6 +1162,42 @@ describe("mission 46 sevens-last validation", () => {
     expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
   });
 
+  it("rejects double detector attempt on a 7 tile when non-sevens remain in actor hand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "character_2",
+      hand: [
+        makeTile({ id: "a1", gameValue: 7 }),
+        makeTile({ id: "a2", gameValue: 4 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeYellowTile({ id: "t1", sortValue: 4.1 }),
+        makeYellowTile({ id: "t2", sortValue: 7.1 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
+  });
+
   it("allows dual cut on non-seven yellow wires while mission 46 sevens remain", () => {
     const actor = makePlayer({
       id: "actor",
