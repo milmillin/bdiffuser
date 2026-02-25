@@ -2,7 +2,14 @@
  * Pure functions extracted from GameBoard.tsx for equipment mode interactions.
  * These take state + mode → return values, no React hooks.
  */
-import type { ClientGameState, ClientMessage, ClientPlayer, VisibleTile } from "@bomb-busters/shared";
+import type {
+  ClientGameState,
+  ClientMessage,
+  ClientPlayer,
+  MissionId,
+  VisibleTile,
+} from "@bomb-busters/shared";
+import { hasXMarkedWireTalkiesRestriction } from "@bomb-busters/shared";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
 
 type PostItMissionContext = Pick<ClientGameState, "mission">;
@@ -33,10 +40,11 @@ function isMissionRestrictedDetectorTarget(
 export function getOpponentTileSelectableFilter(
   mode: EquipmentMode | null,
   oppId: string,
-  mission?: number,
+  mission?: MissionId,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode) return undefined;
-  const hasXRestriction = mission === 20 || mission === 35;
+  const hasXRestriction = mission != null
+    && hasXMarkedWireTalkiesRestriction(mission);
   switch (mode.kind) {
     case "double_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
@@ -66,7 +74,8 @@ export function getOwnTileSelectableFilter(
   gameState?: PostItMissionContext,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode || !me) return undefined;
-  const hasXRestriction = gameState?.mission === 20 || gameState?.mission === 35;
+  const hasXRestriction = gameState?.mission != null
+    && hasXMarkedWireTalkiesRestriction(gameState.mission);
   switch (mode.kind) {
     case "post_it": {
       const allowCutTile = canPostItTargetCutWire(gameState);

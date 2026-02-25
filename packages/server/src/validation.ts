@@ -5,7 +5,10 @@ import type {
   Player,
   WireTile,
 } from "@bomb-busters/shared";
-import { DOUBLE_DETECTOR_CHARACTERS } from "@bomb-busters/shared";
+import {
+  DOUBLE_DETECTOR_CHARACTERS,
+  hasXMarkedWireTalkiesRestriction,
+} from "@bomb-busters/shared";
 import {
   dispatchHooks,
   getBlueAsRedValue,
@@ -154,7 +157,7 @@ const MISSION_46_PENDING_SEVENS_MESSAGE =
   "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously";
 
 function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
-  return state.mission === 20 || state.mission === 35;
+  return hasXMarkedWireTalkiesRestriction(state.mission);
 }
 
 function mission35HasUncutYellowWires(state: Readonly<GameState>): boolean {

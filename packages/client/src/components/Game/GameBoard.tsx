@@ -16,6 +16,7 @@ import {
   INFO_TOKEN_VALUES,
   EQUIPMENT_DEFS,
   requiredSetupInfoTokenCountForMissionAndHand,
+  hasXMarkedWireTalkiesRestriction,
   TOTAL_INFO_TOKENS,
   YELLOW_INFO_TOKENS,
   wireLabel,
@@ -337,7 +338,7 @@ export function GameBoard({
       useAllFalseSetupTokenMode);
   const allowRedFalseSetupTargets = useAllFalseSetupTokenMode;
   const hasXWireEquipmentRestriction =
-    gameState.mission === 20 || gameState.mission === 35;
+    hasXMarkedWireTalkiesRestriction(gameState.mission);
   const dynamicTurnActive =
     gameState.mission === 10 && gameState.phase === "playing";
   const previousPlayerName = (() => {

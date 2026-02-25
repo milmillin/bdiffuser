@@ -5,7 +5,7 @@ import {
   YELLOW_WIRE_SORT_VALUES,
   PLAYER_COUNT_CONFIG,
   EQUIPMENT_DEFS,
-  MISSION_SCHEMAS,
+  hasXMarkedWireTalkiesRestriction,
   getWireImage,
   resolveMissionSetup,
   isNonCaptainCharacterForbidden,
@@ -261,12 +261,7 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
 } as const;
 
 function shouldExcludeWalkieTalkiesForSetupRedraw(mission: MissionId): boolean {
-  const hookRules = MISSION_SCHEMAS[mission]?.hookRules;
-  return hookRules?.some(
-    (rule) =>
-      rule.kind === "x_marked_wire" &&
-      rule.excludeWalkieTalkies === true,
-  ) ?? false;
+  return hasXMarkedWireTalkiesRestriction(mission);
 }
 
 const STARTUP_BASE_CHARACTERS = [

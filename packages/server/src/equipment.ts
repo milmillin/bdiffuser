@@ -16,6 +16,7 @@ import type {
 import {
   EQUIPMENT_DEFS,
   DOUBLE_DETECTOR_CHARACTERS,
+  hasXMarkedWireTalkiesRestriction,
   logTemplate,
   wireLabel,
   wireLabelOf,
@@ -111,7 +112,7 @@ function isXMarkedWire(tile: WireTile | undefined): boolean {
 }
 
 function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
-  return state.mission === 20 || state.mission === 35;
+  return hasXMarkedWireTalkiesRestriction(state.mission);
 }
 
 function upsideDownNoEquipmentRestriction(state: Readonly<GameState>): boolean {

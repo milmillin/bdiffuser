@@ -15,6 +15,7 @@ import type {
 import {
   MISSION_SCHEMAS,
   isNonCaptainCharacterForbidden,
+  hasXMarkedWireTalkiesRestriction,
   logTemplate,
   wireLabel,
   wireLabelOf,
@@ -1349,7 +1350,10 @@ export class BombBustersServer extends Server<Env> {
       this.sendMsg(conn, { type: "error", message: "Tile already cut" });
       return;
     }
-    if ((state.mission === 20 || state.mission === 35) && tile.isXMarked) {
+    if (
+      hasXMarkedWireTalkiesRestriction(state.mission) &&
+      tile.isXMarked
+    ) {
       this.sendMsg(conn, {
         type: "error",
         message: "X-marked wires are ignored by equipment in this mission",
@@ -1727,7 +1731,12 @@ export class BombBustersServer extends Server<Env> {
       const targetPlayer = state.players.find((p) => p.id === talkiesForced.targetPlayerId);
       if (targetPlayer?.isBot) {
         const tileIndex = targetPlayer.hand.findIndex(
-          (tile) => !tile.cut && !((state.mission === 20 || state.mission === 35) && tile.isXMarked),
+          (tile) =>
+            !tile.cut &&
+            !(
+              hasXMarkedWireTalkiesRestriction(state.mission) &&
+              tile.isXMarked
+            ),
         );
         if (tileIndex === -1) {
           console.log(

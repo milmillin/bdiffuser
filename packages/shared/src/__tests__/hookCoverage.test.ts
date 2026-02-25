@@ -4,8 +4,11 @@
  * exception (sequence_card_reposition is a variant, not a typed hookRule).
  */
 import { describe, it, expect } from "vitest";
-import { ALL_MISSION_IDS } from "../types";
-import { MISSION_SCHEMAS } from "../missionSchema";
+import { ALL_MISSION_IDS, type MissionId } from "../types";
+import {
+  MISSION_SCHEMAS,
+  hasXMarkedWireTalkiesRestriction,
+} from "../missionSchema";
 
 const EXCLUDED_MISSIONS = new Set([36]);
 
@@ -50,12 +53,20 @@ describe("hook coverage", () => {
     ).toEqual([]);
   });
 
-  it("mission 35 marks X-marked wire setup redraw to exclude Talkies-Walkies", () => {
-    const hasFlag = MISSION_SCHEMAS[35]?.hookRules?.some(
-      (rule) =>
-        rule.kind === "x_marked_wire" && rule.excludeWalkieTalkies === true,
-    );
+  it("mission 20 and 35 mark X-marked wire setup redraw to exclude Talkies-Walkies", () => {
+    const hasFlag = (mission: MissionId): boolean => {
+      const rules = MISSION_SCHEMAS[mission]?.hookRules ?? [];
+      return rules.some(
+        (rule) =>
+          rule.kind === "x_marked_wire" &&
+          rule.excludeWalkieTalkies === true,
+      );
+    };
 
-    expect(hasFlag).toBe(true);
+    expect(hasFlag(20)).toBe(true);
+    expect(hasFlag(35)).toBe(true);
+    expect(hasXMarkedWireTalkiesRestriction(20)).toBe(true);
+    expect(hasXMarkedWireTalkiesRestriction(35)).toBe(true);
+    expect(hasXMarkedWireTalkiesRestriction(1)).toBe(false);
   });
 });

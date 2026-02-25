@@ -147,4 +147,12 @@ export function resolveMissionSetup(
   return { mission, setup };
 }
 
+export function hasXMarkedWireTalkiesRestriction(missionId: MissionId): boolean {
+  return MISSION_SCHEMAS[missionId].hookRules?.some(
+    (rule) =>
+      rule.kind === "x_marked_wire" &&
+      rule.excludeWalkieTalkies === true,
+  ) ?? false;
+}
+
 validateMissionSchemas(MISSION_SCHEMAS, mergeEquipment);

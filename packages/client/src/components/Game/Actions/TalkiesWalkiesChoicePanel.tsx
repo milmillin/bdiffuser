@@ -1,5 +1,8 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
-import { wireLabel } from "@bomb-busters/shared";
+import {
+  wireLabel,
+  hasXMarkedWireTalkiesRestriction,
+} from "@bomb-busters/shared";
 import {
   BUTTON_PRIMARY_CLASS,
   PANEL_CLASS,
@@ -28,7 +31,7 @@ export function TalkiesWalkiesChoicePanel({
     forced.actorId === playerId
       ? "You"
       : (gameState.players.find((player) => player.id === forced.actorId)?.name ?? "Someone");
-  const hasXWireEquipmentRestriction = gameState.mission === 20 || gameState.mission === 35;
+  const hasXWireEquipmentRestriction = hasXMarkedWireTalkiesRestriction(gameState.mission);
 
   const selectableIndices = me.hand
     .map((tile, idx) => ({ tile, idx }))
