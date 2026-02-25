@@ -91,16 +91,25 @@ function getMission44DepthCost(value: number): number {
   return 3;
 }
 
-function getMission44AvailableOxygen(state: GameState, playerId: string): number {
+function getMission44AvailableOxygen(
+  state: GameState,
+  mission: MissionId,
+  playerId: string,
+): number {
   const oxygen = state.campaign?.oxygen;
   if (!oxygen) return 0;
   const owned = Math.max(0, Math.floor(oxygen.playerOxygen[playerId] ?? 0));
   const reserve = Math.max(0, Math.floor(oxygen.pool));
+
+  if (mission === 49 || mission === 54 || mission === 63) {
+    return owned;
+  }
+
   return Math.max(0, owned + reserve);
 }
 
 function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean {
-  const availableOxygen = getMission44AvailableOxygen(state, actor.id);
+  const availableOxygen = getMission44AvailableOxygen(state, state.mission, actor.id);
   if (availableOxygen <= 0) return false;
 
   const availableValues = new Set<number>();
@@ -111,14 +120,24 @@ function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean
     }
   }
 
+  const getMissionCutCost = (value: number): number => {
+    if (state.mission === 54 || state.mission === 63) return Math.max(0, Math.floor(value));
+    return getMission44DepthCost(Math.floor(value));
+  };
+
   for (const value of availableValues) {
-    if (getMission44DepthCost(Math.floor(value)) <= availableOxygen) {
+    if (getMissionCutCost(value) <= availableOxygen) {
       return true;
     }
   }
 
   return false;
 }
+
+type Mission57RoundState = {
+  playersSeenInRound: Set<string>;
+  roundHadPlayableAction: boolean;
+};
 
 function advanceSetupTurnAndMaybeStart(state: GameState): void {
   if (state.phase !== "setup_info_tokens") return;
@@ -251,32 +270,39 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
     }
   }
 
-  // Fallback path: the rules explicitly allow intentional incorrect
-  // dual-cut declarations, so if no "safe" dual/solo/reveal action exists,
-  // try any server-legal dual cut to keep playability simulations moving.
-  for (const [guessValue, actorTileIndex] of actorValueToTileIndex) {
-    for (const target of state.players) {
-      if (target.id === actor.id) continue;
-      for (let targetTileIndex = 0; targetTileIndex < target.hand.length; targetTileIndex++) {
-        const targetTile = target.hand[targetTileIndex];
-        if (targetTile.cut) continue;
+  // Fallback path: intentionally incorrect guesses are legal in some dual-cut missions.
+  // In those cases, try all numeric guesses against all actor-owned numeric wires.
+  const actorTileIndexes = [...new Set(actorValueToTileIndex.values())];
+  const shouldTryAllNumericGuesses = [44, 46, 49, 54, 63].includes(state.mission);
+  const fallbackGuessValues: Array<number | "YELLOW"> = shouldTryAllNumericGuesses
+    ? Array.from({ length: 12 }, (_, i) => i + 1)
+    : [...actorValueToTileIndex.keys()].filter((value): value is number => typeof value === "number");
 
-        const error = validateActionWithHooks(state, {
-          type: "dualCut",
-          actorId: actor.id,
-          targetPlayerId: target.id,
-          targetTileIndex,
-          guessValue,
-        });
-        if (!error) {
-          return {
-            kind: "dualCut",
+  for (const guessValue of fallbackGuessValues) {
+    for (const actorTileIndex of actorTileIndexes) {
+      for (const target of state.players) {
+        if (target.id === actor.id) continue;
+        for (let targetTileIndex = 0; targetTileIndex < target.hand.length; targetTileIndex++) {
+          const targetTile = target.hand[targetTileIndex];
+          if (targetTile.cut) continue;
+
+          const error = validateActionWithHooks(state, {
+            type: "dualCut",
             actorId: actor.id,
             targetPlayerId: target.id,
             targetTileIndex,
             guessValue,
-            actorTileIndex,
-          };
+          });
+          if (!error) {
+            return {
+              kind: "dualCut",
+              actorId: actor.id,
+              targetPlayerId: target.id,
+              targetTileIndex,
+              guessValue,
+              actorTileIndex,
+            };
+          }
         }
       }
     }
@@ -419,6 +445,14 @@ function resolveForcedAction(state: GameState): boolean {
       targets,
     });
     if (error) {
+      if (state.mission === 46) {
+        state.phase = "finished";
+        state.result = "loss_red_wire";
+        state.pendingForcedAction = undefined;
+        state.campaign ??= {};
+        state.campaign.mission46PendingSevensPlayerId = undefined;
+        return true;
+      }
       throw new Error(
         `Mission ${state.mission}: mission46SevensCut forced action invalid ` +
         `for ${forced.playerId}: ${error.code} ${error.message}`,
@@ -457,6 +491,12 @@ function resolveForcedAction(state: GameState): boolean {
 
 function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): GameState {
   const seed = missionId * 10_000 + playerCount * 101;
+  const mission57RoundState: Mission57RoundState | null = missionId === 57
+    ? {
+      playersSeenInRound: new Set(),
+      roundHadPlayableAction: false,
+    }
+    : null;
 
   return withSeededRandom(seed, () => {
     const players = createPlayers(playerCount);
@@ -535,6 +575,10 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
         );
       }
 
+      if (mission57RoundState) {
+        mission57RoundState.playersSeenInRound.add(actor.id);
+      }
+
       const action = pickAction(state, actor);
       if (!action) {
         // Mission 16 FAQ: if a player only has sequence-blocked wires left,
@@ -544,7 +588,10 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
           state.result = "loss_detonator";
           break;
         }
-        if (missionId === 44 && !canActorAffordAnyMission44Cut(state, actor)) {
+        if (
+          [44, 49, 54, 63].includes(missionId) &&
+          !canActorAffordAnyMission44Cut(state, actor)
+        ) {
           state.board.detonatorPosition += 1;
           if (state.board.detonatorPosition >= state.board.detonatorMax) {
             state.result = "loss_detonator";
@@ -554,6 +601,25 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
           advanceTurn(state);
           continue;
         }
+
+        if (mission57RoundState) {
+          const allPlayersSeenThisRound =
+            mission57RoundState.playersSeenInRound.size >= state.players.length;
+          if (
+            allPlayersSeenThisRound &&
+            !mission57RoundState.roundHadPlayableAction
+          ) {
+            state.phase = "finished";
+            state.result = "loss_detonator";
+            break;
+          }
+          if (allPlayersSeenThisRound) {
+            mission57RoundState.playersSeenInRound.clear();
+          }
+          advanceTurn(state);
+          continue;
+        }
+
         throw new Error(
           `Mission ${missionId}: no legal action for ${actor.id} at turn ${state.turnNumber}. ` +
           `Uncut=${summarizeUncutByPlayer(state)}`,
@@ -577,6 +643,16 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
         executeSimultaneousRedCut(state, action.actorId, action.targets);
       } else {
         executeRevealReds(state, action.actorId);
+      }
+
+      if (mission57RoundState) {
+        mission57RoundState.roundHadPlayableAction = true;
+        const allPlayersSeenThisRound =
+          mission57RoundState.playersSeenInRound.size >= state.players.length;
+        if (allPlayersSeenThisRound) {
+          mission57RoundState.playersSeenInRound.clear();
+          mission57RoundState.roundHadPlayableAction = false;
+        }
       }
     }
 
