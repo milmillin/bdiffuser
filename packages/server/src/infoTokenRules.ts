@@ -22,10 +22,11 @@ function tokenParity(value: number): "even" | "odd" {
   return value % 2 === 0 ? "even" : "odd";
 }
 
-function toCountHint(count: number): 1 | 2 | 3 {
+function toCountHint(count: number): 1 | 2 | 3 | 4 {
   if (count <= 1) return 1;
   if (count === 2) return 2;
-  return 3;
+  if (count === 3) return 3;
+  return 4;
 }
 
 function countValueCopies(

@@ -92,6 +92,27 @@ describe("PlayerStand", () => {
     expect(html).toContain("/images/info_x3.png");
   });
 
+  it("renders mission-24 count token with x4 image", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [{ value: 0, countHint: 4, position: 0, isYellow: false }],
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("/images/info_x4.png");
+  });
+
   it("renders all info tokens present on a wire", () => {
     const player = makePlayer({
       id: "p1",

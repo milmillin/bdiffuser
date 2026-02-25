@@ -63,7 +63,7 @@ export interface InfoToken {
   /** Optional parity variant used by mission rules (e.g. mission 21). */
   parity?: "even" | "odd";
   /** Optional count-hint variant used by mission rules (e.g. mission 24). */
-  countHint?: 1 | 2 | 3;
+  countHint?: 1 | 2 | 3 | 4;
   /** Optional relation marker for Label cards. */
   relation?: "eq" | "neq";
   /** Secondary index used by relation markers. */

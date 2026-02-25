@@ -1370,6 +1370,25 @@ describe("mission complexity tier representative coverage", () => {
     );
   });
 
+  it("count token missions (24/40): returns x4 when all 4 copies of a value are on the same stand", () => {
+    const player = makePlayer({
+      id: "owner",
+      hand: [
+        makeTile({ id: "t0", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t1", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t2", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t3", gameValue: 3, sortValue: 3 }),
+      ],
+      standSizes: [4],
+    });
+
+    const state = makeGameState({ mission: 24, players: [player] });
+
+    const token = makeInfoToken({ value: 3, position: 0 });
+    const result = applyMissionInfoTokenVariant(state, token, player);
+    expect(result.countHint).toBe(4);
+  });
+
   it("count token missions (24/40): count scopes to the stand where the token is placed", () => {
     // Player with 2 stands: stand 0 has two 3s, stand 1 has one 3
     const player = makePlayer({

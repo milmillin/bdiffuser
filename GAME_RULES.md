@@ -841,15 +841,15 @@ Baseline assumption used in this section:
 - Card title: `Tally Ho!` (`We are counting on you to carefully count the wires. Hurry! The final countdown is coming soon...`)
 - Setup:
   - `x2` red wires.
-  - Replace the info tokens with the x1, x2, and x3 tokens. These tokens will be used for this entire mission (setup and during the game).
-  - These tokens show that the indicated value is present once, twice, or three times on that tile stand (including any already cut wires). The x2 and x3 can be placed on any wire of that value.
+  - Replace the info tokens with the x1, x2, x3, and x4 tokens. These tokens will be used for this entire mission (setup and during the game).
+  - These tokens show that the indicated value is present once, twice, three, or four times on that tile stand (including any already cut wires). The x2, x3, and x4 can be placed on any wire of that value.
   - These tokens cannot be placed in front of red wires.
   - 2-player override: `x3` red.
 - Mission rule (back):
-  - For the whole mission, always use x1, x2, x3 tokens instead of info tokens (1-12). This applies during setup, when an action fails, and with Equipment `4` (Post-it).
+  - For the whole mission, always use x1, x2, x3, x4 tokens instead of info tokens (1-12). This applies during setup, when an action fails, and with Equipment `4` (Post-it).
   - With Equipment `4` (Post-it), a token can be placed in front of a cut wire.
 
-> **FAQ:** If Walkie-Talkies (Equipment `2`) are used on a wire that has an x1/x2/x3 info token, that token is discarded.
+> **FAQ:** If Walkie-Talkies (Equipment `2`) are used on a wire that has an x1/x2/x3/x4 info token, that token is discarded.
 
 ### Mission 25
 
@@ -1095,13 +1095,13 @@ Baseline assumption used in this section:
 - Card title: `Hard to Die (A Christmas Tale)` (`You visited Fox Plaza tower to celebrate with the team for Christmas...but things have gotten out of control. It's hard to communicate when you are stuck in an air duct trying to defuse a hostage taker's bomb. Welcome to the party, pal!`)
 - Setup:
   - `x3` red wires.
-  - Replace the info tokens with the x1, x2, x3 tokens. (Return info tokens to the box.)
-  - During setup, instead of putting an info token in front of the tile stand, put a x1, x2, or x3 token.
-  - These tokens show that the indicated value is present once, twice, or three times on that tile stand (including any already cut wires). The x2 and x3 can be placed on any wire of that value.
+  - Replace the info tokens with the x1, x2, x3, and x4 tokens. (Return info tokens to the box.)
+  - During setup, instead of putting an info token in front of the tile stand, put a x1, x2, x3, or x4 token.
+  - These tokens show that the indicated value is present once, twice, three, or four times on that tile stand (including any already cut wires). The x2, x3, and x4 can be placed on any wire of that value.
   - 2-player override: during setup, the Captain does not put an info token in front of their tile stand.
   - Rule Sticker B applies: non-captain players may replace their character with a new one (see corresponding equipment card).
 - Mission rule (back):
-  - For the whole mission, always use x1, x2, x3 tokens instead of info tokens (1-12). This applies during setup, when an action fails, and with Equipment `4` (Post-it).
+  - For the whole mission, always use x1, x2, x3, x4 tokens instead of info tokens (1-12). This applies during setup, when an action fails, and with Equipment `4` (Post-it).
   - With Equipment `4` (Post-it), a token can be placed in front of a cut wire.
 
 ### Mission 41

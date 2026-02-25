@@ -96,7 +96,7 @@ function formatInfoToken(token: {
   value: number;
   isYellow: boolean;
   parity?: "even" | "odd";
-  countHint?: 1 | 2 | 3;
+  countHint?: 1 | 2 | 3 | 4;
   relation?: "eq" | "neq";
 }): string {
   if (token.relation === "eq") return "=";
