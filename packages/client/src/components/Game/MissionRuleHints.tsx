@@ -66,6 +66,7 @@ function CampaignCardThumbnail({
   landscape,
   dimmed,
   overlayLabel,
+  rotateCcw90,
   onClick,
 }: {
   image: string;
@@ -73,8 +74,45 @@ function CampaignCardThumbnail({
   landscape?: boolean;
   dimmed?: boolean;
   overlayLabel?: string;
+  /** Display a portrait image in a landscape container, rotated -90°. */
+  rotateCcw90?: boolean;
   onClick: () => void;
 }) {
+  if (rotateCcw90) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative overflow-hidden rounded-md border-2 ${borderColor} w-14 shrink-0`}
+        style={{ aspectRatio: "1037/736" }}
+      >
+        <div
+          className="absolute"
+          style={{
+            width: "calc(100% * 736 / 1037)",
+            height: "calc(100% * 1037 / 736)",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%) rotate(-90deg)",
+          }}
+        >
+          <img
+            src={`/images/${image}`}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+        {dimmed && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            {overlayLabel && (
+              <span className="text-[9px] font-bold text-white uppercase">{overlayLabel}</span>
+            )}
+          </div>
+        )}
+      </button>
+    );
+  }
+
   const width = landscape ? "w-14" : "w-10";
   const aspectRatio = landscape ? "1037/736" : "739/1040";
 
@@ -278,10 +316,13 @@ function CampaignObjectsHint({
                 <CampaignCardThumbnail
                   image={cutterImage}
                   borderColor="border-emerald-400"
+                  rotateCcw90
                   onClick={() =>
                     setPreviewCard({
                       name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
                       previewImage: cutterImage,
+                      previewAspectRatio: "1037/736",
+                      previewRotateCcw90: true,
                     })
                   }
                 />
