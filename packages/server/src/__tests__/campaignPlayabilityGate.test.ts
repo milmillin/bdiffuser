@@ -121,7 +121,12 @@ function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean
   }
 
   const getMissionCutCost = (value: number): number => {
-    if (state.mission === 54 || state.mission === 63) return Math.max(0, Math.floor(value));
+    if (state.mission === 63) {
+      return Math.max(0, Math.floor(value));
+    }
+    if (state.mission === 54) {
+      return getMission44DepthCost(Math.floor(value));
+    }
     return getMission44DepthCost(Math.floor(value));
   };
 
@@ -133,6 +138,32 @@ function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean
 
   return false;
 }
+
+describe("mission 54 playability affordance", () => {
+  it("uses depth-based oxygen cost instead of value for cut affordability", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "actor-2", gameValue: 2 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "teammate-1", gameValue: 6 })],
+    });
+    const state = makeGameState({
+      mission: 54,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(54, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 54 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.actor = 1;
+
+    expect(canActorAffordAnyMission44Cut(state, actor)).toBe(true);
+  });
+});
 
 type Mission57RoundState = {
   playersSeenInRound: Set<string>;
