@@ -36,7 +36,7 @@ describe("mission progression hooks", () => {
     ).toBe(true);
   });
 
-  it("mission 43 resolve advances nano and fails when max is reached", () => {
+  it("mission 43 endTurn advances nano and fails when max is reached", () => {
     const state = makeGameState({
       mission: 43,
       log: [],
@@ -49,11 +49,9 @@ describe("mission progression hooks", () => {
     state.campaign!.nanoTracker!.position = 5;
 
     dispatchHooks(43, {
-      point: "resolve",
+      point: "endTurn",
       state,
-      action: { type: "soloCut", actorId: "p1", value: 6 },
-      cutValue: 6,
-      cutSuccess: true,
+      previousPlayerId: "p1",
     });
 
     expect(state.campaign?.nanoTracker?.position).toBe(6);
