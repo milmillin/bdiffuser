@@ -1502,8 +1502,12 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
   }
 
-  handlePlayAgain(_conn: Connection) {
+  handlePlayAgain(conn: Connection) {
     if (!this.room.gameState || this.room.gameState.phase !== "finished") return;
+    if (!this.room.players.some((player) => player.id === conn.id)) {
+      this.sendMsg(conn, { type: "error", message: "Only players can restart after mission complete." });
+      return;
+    }
 
     // Clear game state
     this.room.gameState = null;
