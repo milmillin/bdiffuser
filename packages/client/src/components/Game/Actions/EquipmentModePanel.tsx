@@ -15,7 +15,9 @@ import {
   PANEL_TITLE_CLASS,
 } from "./panelStyles.js";
 
-export type EquipmentMode =
+type EquipmentModeSource = "equipment" | "character";
+
+export type EquipmentMode = (
   | { kind: "post_it"; selectedTileIndex?: number | null }
   | {
       kind: "double_detector";
@@ -63,7 +65,8 @@ export type EquipmentMode =
       kind: "grappling_hook";
       targetPlayerId: string | null;
       targetTileIndex: number | null;
-    };
+    }
+) & { source?: EquipmentModeSource };
 
 const MODE_TITLES: Record<EquipmentMode["kind"], string> = {
   post_it: "Post-it Mode",

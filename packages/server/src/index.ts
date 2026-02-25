@@ -100,6 +100,26 @@ const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
 /** Delay before purging storage for stale rooms with no actions (2 hours). */
 const STALE_ROOM_CLEANUP_DELAY_MS = 2 * 60 * 60 * 1000;
 
+const BASE_CHARACTER_IDS: CharacterId[] = [
+  "double_detector",
+  "character_2",
+  "character_3",
+  "character_4",
+  "character_5",
+];
+
+const EXPERT_CHARACTER_IDS: CharacterId[] = [
+  "character_e1",
+  "character_e2",
+  "character_e3",
+  "character_e4",
+];
+
+const ALL_UNLOCKED_CHARACTER_IDS: CharacterId[] = [
+  ...BASE_CHARACTER_IDS,
+  ...EXPERT_CHARACTER_IDS,
+];
+
 type MissionAudioControlCommand = Extract<
   ClientMessage,
   { type: "missionAudioControl" }
@@ -563,18 +583,7 @@ export class BombBustersServer extends Server<Env> {
     }
     if (this.room.mission < 31) return;
 
-    const validCharacterIds: CharacterId[] = [
-      "double_detector",
-      "character_2",
-      "character_3",
-      "character_4",
-      "character_5",
-      "character_e1",
-      "character_e2",
-      "character_e3",
-      "character_e4",
-    ];
-    if (!validCharacterIds.includes(characterId)) return;
+    if (!ALL_UNLOCKED_CHARACTER_IDS.includes(characterId)) return;
 
     const player = this.room.players.find((p) => p.id === conn.id);
     if (!player) return;
@@ -582,6 +591,17 @@ export class BombBustersServer extends Server<Env> {
       this.sendMsg(conn, {
         type: "error",
         message: `Character selection rejected: forbidden on mission ${this.room.mission}`,
+      });
+      return;
+    }
+
+    const takenByAnotherPlayer = this.room.players.some(
+      (p) => p.id !== conn.id && p.character === characterId,
+    );
+    if (takenByAnotherPlayer) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Character already selected by another player",
       });
       return;
     }

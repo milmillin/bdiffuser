@@ -129,6 +129,74 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "grappling_hook",
 ]);
 
+const CHARACTER_ABILITY_PAYLOAD_KINDS = new Set<UseEquipmentPayload["kind"]>([
+  "general_radar",
+  "talkies_walkies",
+  "triple_detector",
+  "x_or_y_ray",
+]);
+
+function isCharacterAbilityPayload(payload: UseEquipmentPayload): boolean {
+  return CHARACTER_ABILITY_PAYLOAD_KINDS.has(payload.kind);
+}
+
+function getCharacterSkillMode(
+  character: ClientGameState["players"][number]["character"],
+): EquipmentMode | null {
+  if (!character) return null;
+
+  if (DOUBLE_DETECTOR_CHARACTERS.has(character)) {
+    return {
+      kind: "double_detector",
+      targetPlayerId: null,
+      selectedTiles: [],
+      guessTileIndex: null,
+      source: "character",
+    };
+  }
+
+  switch (character) {
+    case "character_e1":
+      return { kind: "general_radar", selectedValue: null, source: "character" };
+    case "character_e2":
+      return {
+        kind: "talkies_walkies",
+        teammateId: null,
+        teammateTileIndex: null,
+        myTileIndex: null,
+        source: "character",
+      };
+    case "character_e3":
+      return {
+        kind: "triple_detector",
+        targetPlayerId: null,
+        targetTileIndices: [],
+        guessTileIndex: null,
+        source: "character",
+      };
+    case "character_e4":
+      return {
+        kind: "x_or_y_ray",
+        targetPlayerId: null,
+        targetTileIndex: null,
+        guessATileIndex: null,
+        guessBTileIndex: null,
+        source: "character",
+      };
+    default:
+      return null;
+  }
+}
+
+function canUseCharacterSkillAnytime(
+  character: ClientGameState["players"][number]["character"],
+): boolean {
+  return character === "character_e1" || character === "character_e2";
+}
+
+function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
+  return mission === 52 || (mission === 17 && isCaptain);
+}
 function getDefaultFalseSetupTokenValue(
   tile: VisibleTile | undefined,
 ): number | null {
@@ -267,7 +335,7 @@ export function GameBoard({
     setEquipmentMode((prev) => {
       if (!prev) return prev;
       const reset = getInitialEquipmentMode(prev.kind as AnyEquipmentId);
-      return reset ?? prev;
+      return reset ? { ...reset, source: prev.source } : prev;
     });
   }, []);
 
@@ -480,7 +548,8 @@ export function GameBoard({
   }, [gameState.mission, isSetup, gameState.players, gameState.campaign?.mission22TokenPassBoard]);
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
   const forceRevealReds = isMyTurn && revealRedsAvailable;
-  const revealRedsForced = isMyTurn && (me != null && isRevealRedsForced(gameState, playerId));
+  const revealRedsForcedForActor = me != null && isRevealRedsForced(gameState, playerId);
+  const revealRedsForced = isMyTurn && revealRedsForcedForActor;
   const missionSupportsSimultaneousThreeCut =
     gameState.mission === 13 || gameState.mission === 48 || gameState.mission === 41;
   const missionSpecialRequiredColor =
@@ -773,6 +842,18 @@ export function GameBoard({
 
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
 
+  const sendEquipmentModeMessage = useCallback((msg: ClientMessage) => {
+    if (
+      equipmentMode?.source === "character" &&
+      msg.type === "useEquipment" &&
+      isCharacterAbilityPayload(msg.payload)
+    ) {
+      send({ type: "useCharacterAbility", payload: msg.payload });
+      return;
+    }
+    send(msg);
+  }, [equipmentMode?.source, send]);
+
   const handleOpponentTileClick = (oppId: string, tileIndex: number) => {
     const newMode = _handleOpponentTileClick(equipmentMode, oppId, tileIndex);
     if (newMode !== equipmentMode) setEquipmentMode(newMode);
@@ -785,7 +866,7 @@ export function GameBoard({
       me,
       gameState,
     );
-    if (result.sendPayload) send(result.sendPayload);
+    if (result.sendPayload) sendEquipmentModeMessage(result.sendPayload);
     if (result.newMode !== equipmentMode) setEquipmentMode(result.newMode);
   };
 
@@ -884,11 +965,10 @@ export function GameBoard({
     !!me &&
     !!me.character &&
     !me.characterUsed &&
-    isMyTurn &&
+    (canUseCharacterSkillAnytime(me.character) || isMyTurn) &&
     gameState.phase === "playing" &&
     !gameState.pendingForcedAction &&
-    !revealRedsForced &&
-    DOUBLE_DETECTOR_CHARACTERS.has(me.character);
+    !revealRedsForcedForActor;
 
   const stageEquipmentActionFromCardStrip = (equipmentId: string): boolean => {
     if (!me || gameState.phase !== "playing" || gameState.pendingForcedAction) {
@@ -937,7 +1017,7 @@ export function GameBoard({
 
     const modeOnConfirm = getInitialEquipmentMode(typedEquipmentId);
     if (!modeOnConfirm) return false;
-    setEquipmentMode(modeOnConfirm);
+    setEquipmentMode({ ...modeOnConfirm, source: "equipment" });
     setSelectedGuessTile(null);
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
@@ -946,12 +1026,9 @@ export function GameBoard({
 
   const stageSkillFromCardStrip = (): boolean => {
     if (!me?.character || !canUseSkillFromCardStrip || missionSpecialMode) return false;
-    setEquipmentMode({
-      kind: "double_detector",
-      targetPlayerId: null,
-      selectedTiles: [],
-      guessTileIndex: null,
-    });
+    const skillMode = getCharacterSkillMode(me.character);
+    if (!skillMode) return false;
+    setEquipmentMode(skillMode);
     setSelectedGuessTile(null);
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
@@ -1544,7 +1621,7 @@ export function GameBoard({
                     mode={equipmentMode}
                     gameState={gameState}
                     playerId={playerId}
-                    send={send}
+                    send={sendEquipmentModeMessage}
                     onCancel={cancelEquipmentMode}
                     onClear={clearEquipmentMode}
                     onUpdateMode={setEquipmentMode}
