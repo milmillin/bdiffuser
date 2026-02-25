@@ -138,12 +138,14 @@ export default function App() {
   return (
     <>
       {content}
-      <div
-        data-testid="app-version"
-        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
-      >
-        {`${APP_COMMIT_ID} | v${APP_VERSION}`}
-      </div>
+      {!roomId && (
+        <div
+          data-testid="app-version"
+          className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
+        >
+          {`${APP_COMMIT_ID} | v${APP_VERSION}`}
+        </div>
+      )}
     </>
   );
 }
