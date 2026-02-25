@@ -42,6 +42,7 @@ export interface MarkdownSection {
   heading: SectionHeading;
   body: BodyNode[];
   subsections: MarkdownSection[];
+  redacted?: boolean;
 }
 
 // ── Inline tokenizer ───────────────────────────────────────────────

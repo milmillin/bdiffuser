@@ -33,8 +33,21 @@ function InlineTokens({ tokens }: { tokens: InlineToken[] }) {
 
 // ── Redacted list item ─────────────────────────────────────────────
 
+/** Extract a short identifier (number/letter) from a list item for display. */
+function extractItemLabel(item: ListItem): string | null {
+  const raw = item.tokens.map((t) => t.value).join("");
+  const m =
+    raw.match(/^Equipment (\S+)/) ??
+    raw.match(/^(Yellow equipment)/) ??
+    raw.match(/^Character (\S+)/) ??
+    raw.match(/^Constraint ([A-Z])/) ??
+    raw.match(/^Challenge (\d+)/);
+  return m ? m[1] : null;
+}
+
 function RedactedListItem({ item }: { item: ListItem }) {
   const [revealed, setRevealed] = useState(false);
+  const label = extractItemLabel(item);
 
   if (revealed) {
     return (
@@ -58,10 +71,15 @@ function RedactedListItem({ item }: { item: ListItem }) {
         onClick={() => setRevealed(true)}
         className="w-full rounded border border-dashed border-amber-500/40 bg-gray-900/60 px-2 py-1.5 text-left"
       >
-        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500/70">
+        {label && (
+          <span className="text-[10px] font-bold text-gray-400">
+            {label}
+          </span>
+        )}
+        <span className={`${label ? "ml-2 " : ""}font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500/70`}>
           CLASSIFIED
         </span>
-        <span className="ml-2 text-[10px] text-gray-500">
+        <span className="ml-1 text-[10px] text-gray-500">
           — tap to reveal
         </span>
       </button>
@@ -127,9 +145,39 @@ function BodyNodeView({ node }: { node: BodyNode }) {
   }
 }
 
+// ── Redacted section ──────────────────────────────────────────────
+
+function RedactedSection({ section }: { section: MarkdownSection }) {
+  const [revealed, setRevealed] = useState(false);
+
+  if (revealed) {
+    return <SectionView section={{ ...section, redacted: false }} />;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setRevealed(true)}
+      className="w-full rounded border border-dashed border-amber-500/40 bg-gray-900/60 px-3 py-2 text-left"
+    >
+      <span className="text-xs font-bold text-gray-400">
+        {section.heading.text}
+      </span>
+      <span className="ml-2 font-mono text-[10px] font-bold uppercase tracking-widest text-amber-500/70">
+        CLASSIFIED
+      </span>
+      <span className="ml-1 text-[10px] text-gray-500">— tap to reveal</span>
+    </button>
+  );
+}
+
 // ── Section rendering ──────────────────────────────────────────────
 
 export function SectionView({ section }: { section: MarkdownSection }) {
+  if (section.redacted) {
+    return <RedactedSection section={section} />;
+  }
+
   return (
     <section className="space-y-2">
       {section.heading.level === 2 ? (

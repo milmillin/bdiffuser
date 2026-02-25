@@ -63,16 +63,19 @@ const REDACTION_RULES: RedactionRule[] = [
   },
 ];
 
+/** Matches "Mission 12" → 12 */
+const MISSION_HEADING_RE = /^Mission (\d+)$/;
+
 /**
- * Walks the section tree and marks list items as `redacted` based on
- * campaign progression (mission number).
+ * Walks the section tree and marks list items / mission sections as
+ * `redacted` based on campaign progression (mission number).
  */
 function applyRedactions(
   sections: MarkdownSection[],
   mission: number,
 ): MarkdownSection[] {
   return sections.map((section) => {
-    // Check if any redaction rules apply to this section's heading
+    // ── Item-level redaction ──────────────────────────────────────
     const activeRules = REDACTION_RULES.filter(
       (rule) =>
         rule.sectionMatcher(section.heading) &&
@@ -98,11 +101,26 @@ function applyRedactions(
       });
     }
 
-    // Recurse into subsections
-    const subsections =
-      section.subsections.length > 0
-        ? applyRedactions(section.subsections, mission)
-        : section.subsections;
+    // ── Section-level redaction (mission cards) ──────────────────
+    let subsections = section.subsections;
+    if (subsections.length > 0) {
+      subsections = subsections.map((sub) => {
+        const m = MISSION_HEADING_RE.exec(sub.heading.text);
+        if (m && Number(m[1]) !== mission) {
+          return { ...sub, redacted: true };
+        }
+        return sub;
+      });
+      // Recurse into non-redacted subsections for deeper redaction
+      subsections = subsections.map((sub) =>
+        sub.redacted
+          ? sub
+          : (() => {
+              const deeper = applyRedactions([sub], mission);
+              return deeper[0];
+            })(),
+      );
+    }
 
     if (body === section.body && subsections === section.subsections)
       return section;
