@@ -82,7 +82,7 @@ import {
   validateSetupInfoTokenPlacement,
 } from "./setupTokenRules.js";
 import { applyMission25ChatPenalty } from "./mission25.js";
-import { applyMissionInfoTokenVariant, describeInfoToken } from "./infoTokenRules.js";
+import { applyMissionInfoTokenVariant, describeInfoToken, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import {
   buildSimultaneousFourCutTargets,
@@ -845,7 +845,7 @@ export class BombBustersServer extends Server<Env> {
       position: infoTokenPlacementIndex,
       isYellow: isYellowToken,
     }, player);
-    player.infoTokens.push(token);
+    pushInfoToken(player, token);
     if (state.mission === 22) {
       getMission22TokenPassBoardState(state);
     }

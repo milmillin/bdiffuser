@@ -47,7 +47,7 @@ import {
   hasActiveConstraint,
   emitMissionFailureTelemetry,
 } from "./missionHooks.js";
-import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequiredById } from "./equipmentUnlockRules.js";
 
@@ -1274,7 +1274,7 @@ export function executeUseEquipment(
     case "post_it": {
       const tile = getTileByFlatIndex(actor, payload.tileIndex)!;
       const value = tile.gameValue as number;
-      actor.infoTokens.push(applyMissionInfoTokenVariant(state, {
+      pushInfoToken(actor, applyMissionInfoTokenVariant(state, {
         value,
         position: payload.tileIndex,
         isYellow: false,

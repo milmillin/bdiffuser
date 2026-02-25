@@ -142,6 +142,19 @@ export function applyMissionInfoTokenVariant(
   return token;
 }
 
+/**
+ * Push an info token onto a player, replacing any existing count token at the
+ * same position to prevent stacking (relevant for missions 24 / 40).
+ */
+export function pushInfoToken(player: Player, token: InfoToken): void {
+  if (token.countHint != null && token.position >= 0) {
+    player.infoTokens = player.infoTokens.filter(
+      (t) => !(t.countHint != null && t.position === token.position),
+    );
+  }
+  player.infoTokens.push(token);
+}
+
 export function describeInfoToken(token: Readonly<InfoToken>): string {
   if (token.relation === "eq") return "=";
   if (token.relation === "neq") return "!=";

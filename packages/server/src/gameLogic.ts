@@ -21,7 +21,7 @@ import {
   getHookRules,
   hasActiveConstraint,
 } from "./missionHooks.js";
-import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequired } from "./equipmentUnlockRules.js";
 import { isMission46SevenTile } from "./mission46.js";
@@ -703,7 +703,7 @@ export function executeDualCut(
           : targetTile.color === "yellow";
 
       // Place mission-specific failure info token (actual value by default).
-      target.infoTokens.push(applyMissionInfoTokenVariant(state, {
+      pushInfoToken(target, applyMissionInfoTokenVariant(state, {
         value: tokenValue,
         position: failureInfoTokenMode === "stand" ? -1 : targetTileIndex,
         isYellow: tokenIsYellow,
@@ -956,7 +956,7 @@ export function executeSimultaneousRedCut(
         return { type: "gameOver", result: "loss_red_wire" };
       }
 
-      failPlayer.infoTokens.push(applyMissionInfoTokenVariant(state, {
+      pushInfoToken(failPlayer, applyMissionInfoTokenVariant(state, {
         value: typeof failTile.gameValue === "number" ? failTile.gameValue : 0,
         position: failTarget.tileIndex,
         isYellow: failTile.color === "yellow",
@@ -996,7 +996,7 @@ export function executeSimultaneousRedCut(
         const tile = player ? getTileByFlatIndex(player, target.tileIndex) : null;
         if (!player || !tile || tile.cut) continue;
 
-        player.infoTokens.push(applyMissionInfoTokenVariant(state, {
+        pushInfoToken(player, applyMissionInfoTokenVariant(state, {
           value: typeof tile.gameValue === "number" ? tile.gameValue : 0,
           position: target.tileIndex,
           isYellow: tile.color === "yellow",
@@ -1673,7 +1673,7 @@ function resolveDoubleDetectorNoMatch(
     const tokenIsYellow =
       usesAnnouncedFalseToken ? false : infoTokenTile.color === "yellow";
 
-    target.infoTokens.push(applyMissionInfoTokenVariant(state, {
+    pushInfoToken(target, applyMissionInfoTokenVariant(state, {
       value: tokenValue,
       position: failureInfoTokenMode === "stand" ? -1 : infoTokenTileIndex,
       isYellow: tokenIsYellow,

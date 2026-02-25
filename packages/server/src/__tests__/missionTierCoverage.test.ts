@@ -910,6 +910,37 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
+  it("mid-campaign tier (mission 24): second failure on same wire replaces count token instead of stacking", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t3-a", color: "blue", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t3-b", color: "blue", gameValue: 3, sortValue: 3, cut: true }),
+      ],
+      infoTokens: [
+        makeInfoToken({ value: 0, countHint: 1, position: 0, isYellow: false }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 24,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    executeDualCut(state, "actor", "target", 0, 5);
+
+    // Should have exactly 1 count token on position 0 (replaced, not stacked)
+    const countTokensAtPos0 = target.infoTokens.filter(
+      (t) => t.countHint != null && t.position === 0,
+    );
+    expect(countTokensAtPos0).toHaveLength(1);
+    expect(countTokensAtPos0[0].countHint).toBe(2);
+  });
+
   it("expert tier (mission 40): captain seat receives x1/x2/x3 tokens on failed cuts", () => {
     const captain = makePlayer({
       id: "captain",
