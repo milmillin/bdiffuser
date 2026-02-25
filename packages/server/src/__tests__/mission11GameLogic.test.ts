@@ -172,7 +172,7 @@ describe("mission 11 game logic", () => {
     expect(target.hand[0].cut).toBe(true);
   });
 
-  it("does not instantly explode when the actor lacks the announced hidden red-like value", () => {
+  it("explodes when a dual cut targets hidden red-like value even if actor lacks it", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
@@ -202,12 +202,12 @@ describe("mission 11 game logic", () => {
     expect(action.type).toBe("dualCutResult");
     if (action.type !== "dualCutResult") return;
     expect(action.success).toBe(false);
-    expect(action.detonatorAdvanced).toBe(true);
-    expect(state.board.detonatorPosition).toBe(beforeDetonator + 1);
-    expect(state.result).toBeNull();
-    expect(state.phase).toBe("playing");
-    expect(target.hand[0].cut).toBe(false);
-    expect(actor.hand[0].cut).toBe(true);
+    expect(action.explosion).toBe(true);
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
+    expect(target.hand[0].cut).toBe(true);
+    expect(actor.hand[0].cut).toBe(false);
+    expect(state.board.detonatorPosition).toBe(beforeDetonator);
   });
 
   it("explodes when a solo cut cuts the hidden red-like value", () => {

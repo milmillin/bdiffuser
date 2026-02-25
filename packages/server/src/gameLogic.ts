@@ -418,7 +418,7 @@ export function executeDualCut(
       typeof targetTile.gameValue === "number" &&
       targetTile.gameValue === hiddenBlueAsRedValue;
 
-    if (targetTile.color === "red" || (isHiddenRedLikeTarget && actorHasMatchingGuess)) {
+    if (targetTile.color === "red" || isHiddenRedLikeTarget) {
       if (stabilizerActive) {
         if (targetTile.color === "red") {
           targetTile.cut = true;
