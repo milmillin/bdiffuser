@@ -171,6 +171,28 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain("YELLOW");
   });
 
+  it("does NOT offer YELLOW in mission 41 where yellow tripwires are special-action-only", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeYellowTile({ id: "y1" }),
+            makeYellowTile({ id: "y2" }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", color: "blue", gameValue: 4 })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain("YELLOW");
+  });
+
   it("does NOT offer protected mission 23 value for solo cut before special action", () => {
     const state = makeGameState({
       mission: 23,

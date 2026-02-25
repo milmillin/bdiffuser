@@ -189,8 +189,8 @@ export function getSoloCutValues(
         values.push(value);
       }
     } else {
-      if (state.mission === 48) {
-        // Mission 48 yellow wires can only be cut via the simultaneous 3-yellow action.
+      if (state.mission === 48 || state.mission === 41) {
+        // Missions 48 and 41 use special actions for yellow wires and forbid normal solo cuts.
         continue;
       }
       const { setup } = resolveMissionSetup(state.mission, state.players.length);
