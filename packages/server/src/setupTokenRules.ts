@@ -169,7 +169,7 @@ export function validateSetupInfoTokenPlacement(
       );
     }
 
-    // Evaluate duplicate placement before pool availability for clearer mission-22 feedback.
+    // Mission 22: check duplicate absent-value declarations before board pool validation.
     const alreadyPlaced = player.infoTokens.some((t) => {
       if (value === 0) return t.isYellow && t.position === -1;
       return !t.isYellow && t.value === value && t.position === -1;
