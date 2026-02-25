@@ -422,7 +422,7 @@ export function GameBoard({
       ).filter((constraint) => constraint.active)
     : [];
   const showTurnConstraintReminder =
-    gameState.phase === "playing" &&
+    (gameState.phase === "playing" || gameState.phase === "finished") &&
     (activeGlobalConstraints.length > 0 ||
       activeTurnPlayerConstraints.length > 0);
   const turnConstraintPlayerLabel =
@@ -1361,6 +1361,17 @@ export function GameBoard({
                   </div>
                 )}
 
+                <MissionRuleHints gameState={gameState} />
+
+                {gameState.phase !== "finished" && (
+                  <MissionAudioPlayer gameState={gameState} send={send} />
+                )}
+
+              </div>
+            </div>
+            {/* Player stand + actions — always at the bottom */}
+            {me && (
+              <div className="flex flex-col gap-2 min-w-0">
                 {showTurnConstraintReminder && (
                   <div
                     className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-100"
@@ -1387,20 +1398,6 @@ export function GameBoard({
                     )}
                   </div>
                 )}
-
-                {gameState.phase !== "finished" && (
-                  <MissionRuleHints gameState={gameState} />
-                )}
-
-                {gameState.phase !== "finished" && (
-                  <MissionAudioPlayer gameState={gameState} send={send} />
-                )}
-
-              </div>
-            </div>
-            {/* Player stand + actions — always at the bottom */}
-            {me && (
-              <div className="flex flex-col gap-2 min-w-0">
                 {/* Playing phase: forced action (captain chooses next player) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
