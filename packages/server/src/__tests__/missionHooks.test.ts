@@ -974,6 +974,109 @@ describe("missionHooks dispatcher", () => {
       expect(state.campaign?.mission59Nano?.position).toBe(4);
     });
 
+    it("mission 59: allows rotating Nano after a failed cut when requested", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "actor-5", gameValue: 5, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "team-5", gameValue: 5, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-visible-1", value: 1, faceUp: true },
+              { id: "m59-visible-2", value: 2, faceUp: true },
+              { id: "m59-visible-3", value: 3, faceUp: true },
+              { id: "m59-visible-4", value: 4, faceUp: true },
+              { id: "m59-visible-5", value: 5, faceUp: true },
+              { id: "m59-visible-6", value: 6, faceUp: true },
+              { id: "m59-visible-7", value: 7, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: 1,
+          },
+        },
+      });
+
+      dispatchHooks(59, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 5,
+          mission59RotateNano: true,
+        },
+        cutValue: 5,
+        cutSuccess: false,
+      });
+
+      expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+    });
+
+    it("mission 59: does not rotate Nano after a failed cut unless requested", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "actor-5", gameValue: 5, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "team-5", gameValue: 5, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-visible-1", value: 1, faceUp: true },
+              { id: "m59-visible-2", value: 2, faceUp: true },
+              { id: "m59-visible-3", value: 3, faceUp: true },
+              { id: "m59-visible-4", value: 4, faceUp: true },
+              { id: "m59-visible-5", value: 5, faceUp: true },
+              { id: "m59-visible-6", value: 6, faceUp: true },
+              { id: "m59-visible-7", value: 7, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: 1,
+          },
+        },
+      });
+
+      dispatchHooks(59, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 5,
+        },
+        cutValue: 5,
+        cutSuccess: false,
+      });
+
+      expect(state.campaign?.mission59Nano?.facing).toBe(1);
+    });
+
     it("mission 47: discards two Number cards when a valid cut action resolves", () => {
       const actor = makePlayer({
         id: "actor",

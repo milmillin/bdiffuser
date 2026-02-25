@@ -1612,4 +1612,76 @@ describe("mission progression hooks", () => {
       state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
     ).toBe(1);
   });
+
+  it("mission 59: rotates Nano after a solo cut when requested", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "actor-5", gameValue: 5, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 59,
+      players: [actor],
+      log: [],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m59-visible-1", value: 1, faceUp: true },
+            { id: "m59-visible-2", value: 2, faceUp: true },
+            { id: "m59-visible-3", value: 3, faceUp: true },
+            { id: "m59-visible-4", value: 4, faceUp: true },
+            { id: "m59-visible-5", value: 5, faceUp: true },
+            { id: "m59-visible-6", value: 6, faceUp: true },
+            { id: "m59-visible-7", value: 7, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    });
+
+    executeSoloCut(state, "actor", 5, undefined, true);
+
+    expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+  });
+
+  it("mission 59: does not rotate Nano after a solo cut unless requested", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "actor-5", gameValue: 5, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 59,
+      players: [actor],
+      log: [],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m59-visible-1", value: 1, faceUp: true },
+            { id: "m59-visible-2", value: 2, faceUp: true },
+            { id: "m59-visible-3", value: 3, faceUp: true },
+            { id: "m59-visible-4", value: 4, faceUp: true },
+            { id: "m59-visible-5", value: 5, faceUp: true },
+            { id: "m59-visible-6", value: 6, faceUp: true },
+            { id: "m59-visible-7", value: 7, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    });
+
+    executeSoloCut(state, "actor", 5);
+
+    expect(state.campaign?.mission59Nano?.facing).toBe(1);
+  });
 });

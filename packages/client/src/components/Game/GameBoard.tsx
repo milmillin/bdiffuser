@@ -176,12 +176,14 @@ type PendingAction =
       targetPlayerId: string;
       targetTileIndex: number;
       oxygenRecipientPlayerId?: string;
+      mission59RotateNano?: boolean;
     }
   | {
       kind: "solo_cut";
       value: number | "YELLOW";
       actorTileIndex: number;
       targetPlayerId?: string;
+      mission59RotateNano?: boolean;
     }
   | {
       kind: "reveal_reds";
@@ -232,6 +234,7 @@ export function GameBoard({
   >(null);
   const [selectedDualCutGuessValueIsCustom, setSelectedDualCutGuessValueIsCustom] =
     useState(false);
+  const [mission59RotateNano, setMission59RotateNano] = useState(false);
 
   // Staged action requiring explicit Confirm / Cancel.
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -403,6 +406,7 @@ export function GameBoard({
     setSelectedGuessTile(null);
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
+    setMission59RotateNano(false);
     setEquipmentMode(null);
     setSelectedDockCardId(null);
   }, [mission46ForcedForMe]);
@@ -642,6 +646,7 @@ export function GameBoard({
         value: selectedGuessValue,
         actorTileIndex: selectedGuessTile ?? 0,
         targetPlayerId: mission49DefaultRecipientId,
+        mission59RotateNano: mission59RotateNano,
       });
       setSelectedGuessTile(null);
       setSelectedDualCutGuessValue(null);
@@ -649,14 +654,20 @@ export function GameBoard({
       setSelectedDockCardId(null);
       return;
     }
-    send({ type: "soloCut", value: selectedGuessValue });
+    send({
+      type: "soloCut",
+      value: selectedGuessValue,
+      ...(mission59RotateNano ? { mission59RotateNano: true } : {}),
+    });
     setSelectedGuessTile(null);
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
     setSelectedDockCardId(null);
+    setMission59RotateNano(false);
   }, [
     canConfirmSoloFromDraft,
     gameState.mission,
+    mission59RotateNano,
     mission49DefaultRecipientId,
     send,
     selectedGuessTile,
@@ -743,6 +754,7 @@ export function GameBoard({
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
     setSelectedDockCardId(null);
+    setMission59RotateNano(false);
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
   }, [gameState.turnNumber, gameState.phase]);
@@ -966,6 +978,7 @@ export function GameBoard({
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
     setSelectedDockCardId(null);
+    setMission59RotateNano(false);
   };
 
   const stageMission11RevealAttempt = () => {
@@ -1094,6 +1107,9 @@ export function GameBoard({
           targetTileIndex: pendingAction.targetTileIndex,
           guessValue: pendingAction.guessValue,
           actorTileIndex: pendingAction.actorTileIndex,
+          ...(gameState.mission === 59 && pendingAction.mission59RotateNano
+            ? { mission59RotateNano: true }
+            : {}),
           ...(pendingAction.oxygenRecipientPlayerId
             ? { oxygenRecipientPlayerId: pendingAction.oxygenRecipientPlayerId }
             : {}),
@@ -1104,6 +1120,9 @@ export function GameBoard({
         send({
           type: "soloCut",
           value: pendingAction.value,
+          ...(gameState.mission === 59 && pendingAction.mission59RotateNano
+            ? { mission59RotateNano: true }
+            : {}),
           ...(pendingAction.targetPlayerId
             ? { targetPlayerId: pendingAction.targetPlayerId }
             : {}),
@@ -1128,6 +1147,7 @@ export function GameBoard({
     setSelectedDualCutGuessValue(null);
     setSelectedDualCutGuessValueIsCustom(false);
     setSelectedDockCardId(null);
+    setMission59RotateNano(false);
   };
 
   return (
@@ -1212,6 +1232,10 @@ export function GameBoard({
                                 targetPlayerId: opp.id,
                                 targetTileIndex: tileIndex,
                                 oxygenRecipientPlayerId: mission49DefaultRecipientId,
+                                mission59RotateNano:
+                                  gameState.mission === 59
+                                    ? pendingAction.mission59RotateNano ?? mission59RotateNano
+                                    : pendingAction.mission59RotateNano,
                               });
                             }
                                 : playingInteractionEnabled &&
@@ -1230,8 +1254,11 @@ export function GameBoard({
                                 actorTileIndex: selectedGuessTile,
                                 guessValue,
                                 targetPlayerId: opp.id,
-                                    targetTileIndex: tileIndex,
-                                  });
+                                targetTileIndex: tileIndex,
+                                ...(gameState.mission === 59
+                                  ? { mission59RotateNano }
+                                  : {}),
+                              });
                                 }
                               : undefined
                       }
@@ -1545,11 +1572,31 @@ export function GameBoard({
                         mission9PendingDualBlocked
                       )
                     }
+                    mission59RotateNano={
+                      pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut"
+                        ? pendingAction.mission59RotateNano ?? false
+                        : mission59RotateNano
+                    }
                     onMission11RevealAttempt={stageMission11RevealAttempt}
                     onConfirmSoloFromDraft={confirmSoloFromDraft}
                     onDualCutGuessValueChange={(value) => {
                       setSelectedDualCutGuessValue(value);
                       setSelectedDualCutGuessValueIsCustom(true);
+                    }}
+                    onMission59RotateNanoChange={(value) => {
+                      if (
+                        gameState.mission === 59 &&
+                        (pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut")
+                      ) {
+                        setPendingAction({
+                          ...pendingAction,
+                          mission59RotateNano: value,
+                        });
+                        return;
+                      }
+                      if (gameState.mission === 59 && pendingAction == null) {
+                        setMission59RotateNano(value);
+                      }
                     }}
                     onMission49RecipientChange={(targetPlayerId) => {
                       if (pendingAction?.kind !== "solo_cut" &&
@@ -1713,7 +1760,15 @@ export function GameBoard({
                                   });
                                 if (!nextAction) return;
 
-                                setPendingAction(nextAction);
+                                setPendingAction(
+                                  nextAction.kind === "dual_cut"
+                                    ? {
+                                      ...nextAction,
+                                      mission59RotateNano:
+                                        pendingAction.mission59RotateNano,
+                                    }
+                                    : nextAction,
+                                );
                                 if (!selectedDualCutGuessValueIsCustom) {
                                   setSelectedDualCutGuessValue(nextAction.guessValue);
                                 }
@@ -2223,6 +2278,8 @@ export function PendingActionStrip({
   onConfirmSoloFromDraft,
   activeDualCutGuessValue,
   onDualCutGuessValueChange,
+  mission59RotateNano,
+  onMission59RotateNanoChange,
   onConfirm,
   onCancel,
   onMission49RecipientChange,
@@ -2236,12 +2293,14 @@ export function PendingActionStrip({
   mission9SelectedGuessBlocked: boolean;
   mission9ActiveValue?: number;
   mission11RevealAttemptAvailable: boolean;
+  mission59RotateNano: boolean;
   actorId: string;
   mission: number;
   canConfirm: boolean;
   onMission11RevealAttempt: () => void;
   onConfirmSoloFromDraft: () => void;
   onDualCutGuessValueChange: (value: number | "YELLOW") => void;
+  onMission59RotateNanoChange: (value: boolean) => void;
   onConfirm: () => void;
   onCancel: () => void;
   onMission49RecipientChange?: (targetPlayerId: string) => void;
@@ -2313,6 +2372,18 @@ export function PendingActionStrip({
               : ""}
             .
           </div>
+        )}
+        {mission === 59 && (
+          <label className="mt-2 flex items-center gap-2 text-xs text-sky-100/90">
+            <input
+              type="checkbox"
+              checked={mission59RotateNano}
+              onChange={(event) => {
+                onMission59RotateNanoChange(event.target.checked);
+              }}
+            />
+            <span>Rotate Nano 180° after this cut</span>
+          </label>
         )}
         <div className="mt-2">
           <div className="flex items-center gap-2">
@@ -2413,6 +2484,18 @@ export function PendingActionStrip({
         Pending Action
       </div>
       <div className={PANEL_TEXT_CLASS}>{summary}</div>
+      {mission === 59 && (pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut") && (
+        <label className="mt-2 flex items-center gap-2 text-xs text-sky-100/90">
+          <input
+            type="checkbox"
+            checked={mission59RotateNano}
+            onChange={(event) => {
+              onMission59RotateNanoChange(event.target.checked);
+            }}
+          />
+          <span>Rotate Nano 180° after this cut</span>
+        </label>
+      )}
       <div className="flex items-center gap-2">
         {(pendingAction?.kind === "solo_cut" || pendingAction?.kind === "dual_cut") &&
           mission === 49 &&

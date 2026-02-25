@@ -332,8 +332,9 @@ export class BombBustersServer extends Server<Env> {
           msg.targetPlayerId,
           msg.targetTileIndex,
           msg.guessValue,
-          msg.oxygenRecipientPlayerId,
           msg.actorTileIndex,
+          msg.oxygenRecipientPlayerId,
+          msg.mission59RotateNano,
         );
         break;
       case "dualCutDoubleDetector":
@@ -348,7 +349,12 @@ export class BombBustersServer extends Server<Env> {
         );
         break;
       case "soloCut":
-        this.handleSoloCut(connection, msg.value, msg.targetPlayerId);
+        this.handleSoloCut(
+          connection,
+          msg.value,
+          msg.targetPlayerId,
+          msg.mission59RotateNano,
+        );
         break;
       case "revealReds":
         this.handleRevealReds(connection);
@@ -794,8 +800,9 @@ export class BombBustersServer extends Server<Env> {
     targetPlayerId: string,
     targetTileIndex: number,
     guessValue: number | "YELLOW",
-    oxygenRecipientPlayerId?: string,
     actorTileIndex?: number,
+    oxygenRecipientPlayerId?: string,
+    mission59RotateNano?: boolean,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
@@ -827,6 +834,7 @@ export class BombBustersServer extends Server<Env> {
       actorTileIndex,
       undefined,
       oxygenRecipientPlayerId,
+      mission59RotateNano,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 
@@ -889,6 +897,7 @@ export class BombBustersServer extends Server<Env> {
     conn: Connection,
     value: number | "YELLOW",
     targetPlayerId?: string,
+    mission59RotateNano?: boolean,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
@@ -909,7 +918,13 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeSoloCut(state, conn.id, value, targetPlayerId);
+    const action = executeSoloCut(
+      state,
+      conn.id,
+      value,
+      targetPlayerId,
+      mission59RotateNano,
+    );
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();

@@ -66,6 +66,10 @@ describe("GameBoard PendingActionStrip", () => {
         onDualCutGuessValueChange={() => {
           throw new Error("unexpected dual-cut guess update");
         }}
+        mission59RotateNano={false}
+        onMission59RotateNanoChange={() => {
+          throw new Error("unexpected nano rotation toggle");
+        }}
         onConfirm={() => {
           throw new Error("unexpected confirm");
         }}

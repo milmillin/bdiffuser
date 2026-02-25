@@ -27,6 +27,7 @@ export type ClientMessage =
       guessValue: number | "YELLOW";
       oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
+      mission59RotateNano?: boolean;
     }
   | {
       type: "dualCutDoubleDetector";
@@ -37,7 +38,12 @@ export type ClientMessage =
       oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
     }
-  | { type: "soloCut"; value: number | "YELLOW"; targetPlayerId?: string }
+  | {
+      type: "soloCut";
+      value: number | "YELLOW";
+      targetPlayerId?: string;
+      mission59RotateNano?: boolean;
+    }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "useEquipment"; equipmentId: AnyEquipmentId; payload: UseEquipmentPayload }

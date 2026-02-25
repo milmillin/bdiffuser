@@ -864,6 +864,14 @@ function completeMission59NumberCard(
   });
 }
 
+function shouldRotateMission59NanoAfterCut(action: ResolveHookContext["action"]): boolean {
+  if (action.type === "revealReds") {
+    return false;
+  }
+
+  return (action as { mission59RotateNano?: unknown }).mission59RotateNano === true;
+}
+
 function skipMission59NoMatchTurns(state: GameState): void {
   if (state.mission !== 59 || state.phase === "finished") return;
 
@@ -1868,8 +1876,13 @@ registerHookHandler<"nano_progression">("nano_progression", {
 
   resolve(rule: NanoProgressionRuleDef, ctx: ResolveHookContext): void {
     if (rule.advanceOn !== "successful_cut") return;
-    if (!ctx.cutSuccess) return;
     if (ctx.state.phase === "finished") return;
+
+    if (ctx.state.mission === 59 && shouldRotateMission59NanoAfterCut(ctx.action)) {
+      rotateMission59(ctx.state);
+    }
+
+    if (!ctx.cutSuccess) return;
 
     let delta = Math.abs(Math.floor(rule.advanceBy ?? 1));
     if (delta === 0) return;

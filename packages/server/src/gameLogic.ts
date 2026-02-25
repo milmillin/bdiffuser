@@ -392,6 +392,7 @@ export function executeDualCut(
   actorTileIndex?: number,
   guessLabel?: string,
   oxygenRecipientPlayerId?: string,
+  mission59RotateNano?: boolean,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -424,6 +425,9 @@ export function executeDualCut(
         targetTileIndex,
         guessValue,
         oxygenRecipientPlayerId,
+        ...(mission59RotateNano === true
+          ? { mission59RotateNano: true }
+          : {}),
       },
       cutValue: guessValue,
       cutSuccess: true,
@@ -525,6 +529,9 @@ export function executeDualCut(
         targetTileIndex,
         guessValue,
         oxygenRecipientPlayerId,
+        ...(mission59RotateNano === true
+          ? { mission59RotateNano: true }
+          : {}),
       },
       cutValue: guessValue,
       cutSuccess: false,
@@ -815,6 +822,7 @@ export function executeSoloCut(
   actorId: string,
   value: number | "YELLOW",
   targetPlayerId?: string,
+  mission59RotateNano?: boolean,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const actorUncut = getUncutTiles(actor);
@@ -835,6 +843,7 @@ export function executeSoloCut(
       value,
       targetPlayerId,
       tilesCut: matchingTiles.length,
+      ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
     },
     cutValue: value,
     cutSuccess: true,
