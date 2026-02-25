@@ -66,7 +66,6 @@ function CampaignCardThumbnail({
   landscape,
   dimmed,
   overlayLabel,
-  rotateCcw90,
   onClick,
 }: {
   image: string;
@@ -74,40 +73,8 @@ function CampaignCardThumbnail({
   landscape?: boolean;
   dimmed?: boolean;
   overlayLabel?: string;
-  rotateCcw90?: boolean;
   onClick: () => void;
 }) {
-  if (rotateCcw90) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={`relative overflow-hidden rounded-md border-2 ${borderColor} w-10 shrink-0`}
-        style={{ aspectRatio: "739/1040" }}
-      >
-        <img
-          src={`/images/${image}`}
-          alt=""
-          className="absolute object-cover"
-          style={{
-            width: "calc(100% * 1040 / 739)",
-            height: "calc(100% * 739 / 1040)",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%) rotate(-90deg)",
-          }}
-        />
-        {dimmed && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            {overlayLabel && (
-              <span className="text-[9px] font-bold text-white uppercase">{overlayLabel}</span>
-            )}
-          </div>
-        )}
-      </button>
-    );
-  }
-
   const width = landscape ? "w-14" : "w-10";
   const aspectRatio = landscape ? "1037/736" : "739/1040";
 
@@ -311,12 +278,10 @@ function CampaignObjectsHint({
                 <CampaignCardThumbnail
                   image={cutterImage}
                   borderColor="border-emerald-400"
-                  rotateCcw90
                   onClick={() =>
                     setPreviewCard({
                       name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
                       previewImage: cutterImage,
-                      previewRotateCcw90: true,
                     })
                   }
                 />
