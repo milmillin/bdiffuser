@@ -130,7 +130,6 @@ type MissionAudioControlCommand = Extract<
 interface Env {
   [key: string]: unknown;
   BombBustersServer: DurableObjectNamespace;
-  StatsServer: DurableObjectNamespace;
   ZHIPU_API_KEY: string;
 }
 
@@ -143,6 +142,9 @@ function describeInfoTokenLocation(
 }
 
 export class BombBustersServer extends Server<Env> {
+  /** In-memory stats map used only by the `__stats__` room. */
+  private statsMap = new Map<string, { players: number; updatedAt: number }>();
+
   room: RoomStateSnapshot = {
     gameState: null,
     players: [],
@@ -228,9 +230,10 @@ export class BombBustersServer extends Server<Env> {
   }
 
   private reportStats() {
+    if (this.name === "__stats__") return;
     const connectedCount = this.room.players.filter((p) => p.connected).length;
-    const id = this.env.StatsServer.idFromName("global");
-    const stub = this.env.StatsServer.get(id);
+    const id = this.env.BombBustersServer.idFromName("__stats__");
+    const stub = this.env.BombBustersServer.get(id);
     stub.fetch("https://stats/report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2495,8 +2498,42 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
-  onRequest(request: Request): Response {
+  onRequest(request: Request): Response | Promise<Response> {
     const url = new URL(request.url);
+
+    // Stats aggregation (only for the __stats__ room)
+    if (this.name === "__stats__") {
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      };
+      if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: corsHeaders });
+      }
+      if (request.method === "POST") {
+        return request.json().then((body: unknown) => {
+          const { roomId, players } = body as { roomId: string; players: number };
+          if (players <= 0) {
+            this.statsMap.delete(roomId);
+          } else {
+            this.statsMap.set(roomId, { players, updatedAt: Date.now() });
+          }
+          return new Response("ok", { headers: corsHeaders });
+        });
+      }
+      // GET — prune stale entries (>5 min) and return aggregated stats
+      const now = Date.now();
+      for (const [id, entry] of this.statsMap) {
+        if (now - entry.updatedAt > 5 * 60 * 1000) this.statsMap.delete(id);
+      }
+      let totalPlayers = 0;
+      for (const entry of this.statsMap.values()) totalPlayers += entry.players;
+      return new Response(
+        JSON.stringify({ rooms: this.statsMap.size, players: totalPlayers }),
+        { headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
 
     if (url.pathname.endsWith("/debug")) {
       return Response.json({
@@ -2594,13 +2631,9 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/stats") {
-      try {
-        const id = env.StatsServer.idFromName("global");
-        const stub = env.StatsServer.get(id);
-        return await stub.fetch(request);
-      } catch (e) {
-        return new Response(String(e), { status: 500 });
-      }
+      const id = env.BombBustersServer.idFromName("__stats__");
+      const stub = env.BombBustersServer.get(id);
+      return stub.fetch(request);
     }
 
     return (
