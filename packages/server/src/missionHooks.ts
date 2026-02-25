@@ -813,21 +813,50 @@ function canPlayerPlayMission59(
 ): boolean {
   const legalValues = getMission59CutValues(state);
   if (legalValues.size === 0) return false;
-  const hasPlayableHand = actor.hand.some((tile) => !tile.cut);
-  if (!hasPlayableHand) return false;
+  const actorUncutTiles = actor.hand.filter((tile) => !tile.cut);
+  if (actorUncutTiles.length === 0) return false;
 
   const mission59Nano = getMission59NanoState(state);
   if (mission59Nano == null) return false;
   const currentLineValue = state.campaign?.numberCards?.visible?.[
     mission59Nano.position
   ]?.value;
-  if (typeof currentLineValue === "number") {
-    return true;
+
+  const totalUncutCounts = new Map<number, number>();
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (tile.cut || typeof tile.gameValue !== "number") continue;
+      totalUncutCounts.set(
+        tile.gameValue,
+        (totalUncutCounts.get(tile.gameValue) ?? 0) + 1,
+      );
+    }
   }
 
-  return actor.hand.some(
+  const actorValueCounts = new Map<number, number>();
+  for (const tile of actorUncutTiles) {
+    if (typeof tile.gameValue !== "number") continue;
+    actorValueCounts.set(
+      tile.gameValue,
+      (actorValueCounts.get(tile.gameValue) ?? 0) + 1,
+    );
+  }
+
+  const canSoloCut = Array.from(actorValueCounts.entries()).some(([value, actorCount]) => {
+    if (!legalValues.has(value)) return false;
+    if (actorCount !== 2 && actorCount !== 4) return false;
+    return totalUncutCounts.get(value) === actorCount;
+  });
+  if (canSoloCut) return true;
+
+  const hasAnyUncutTarget = state.players.some(
+    (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+  );
+  if (!hasAnyUncutTarget) return false;
+
+  if (typeof currentLineValue === "number") return true;
+  return actorUncutTiles.some(
     (tile) =>
-      !tile.cut &&
       typeof tile.gameValue === "number" &&
       legalValues.has(tile.gameValue),
   );
