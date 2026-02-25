@@ -20,6 +20,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       red: exact(2),
       equipment: { mode: "default", excludedUnlockValues: [10] },
     },
+    overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_26_visible_number_card_gate"],
     hookRules: [{ kind: "visible_number_card_gate" }],
   });

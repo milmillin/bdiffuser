@@ -36,4 +36,9 @@ describe("resolved mission setup snapshots", () => {
       }).toMatchSnapshot();
     });
   }
+
+  it("mission 26 gives 2-player setup 3 reds", () => {
+    const { setup } = resolveMissionSetup(26, 2);
+    expect(setup.red).toEqual({ kind: "exact", count: 3 });
+  });
 });
