@@ -169,7 +169,7 @@ export function validateSetupInfoTokenPlacement(
       );
     }
 
-    // No duplicate absent tokens for same value
+    // Evaluate duplicate placement before pool availability for clearer mission-22 feedback.
     const alreadyPlaced = player.infoTokens.some((t) => {
       if (value === 0) return t.isYellow && t.position === -1;
       return !t.isYellow && t.value === value && t.position === -1;
