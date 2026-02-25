@@ -1934,6 +1934,15 @@ export class BombBustersServer extends Server<Env> {
 
   onRequest(request: Request): Response {
     const url = new URL(request.url);
+
+    if (url.pathname.endsWith("/debug")) {
+      return Response.json({
+        roomId: this.name,
+        queriedAt: Date.now(),
+        room: this.room,
+      });
+    }
+
     if (!url.pathname.endsWith("/telemetry/failure-counters")) {
       return new Response("Not found", { status: 404 });
     }
