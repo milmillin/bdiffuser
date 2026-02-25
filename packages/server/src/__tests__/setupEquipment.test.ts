@@ -1,6 +1,85 @@
 import { describe, it, expect } from "vitest";
 import { PLAYER_COUNT_CONFIG, resolveMissionSetup } from "@bomb-busters/shared";
-import { resolveEquipmentPoolIds, setupGame } from "../setup";
+import { makePlayer } from "@bomb-busters/shared/testing";
+import {
+  resolveEquipmentPoolIds,
+  setupGame,
+  assignCharactersForGameStart,
+} from "../setup";
+
+const MISSION_BASE_CHARACTERS = new Set([
+  "double_detector",
+  "character_2",
+  "character_3",
+  "character_4",
+  "character_5",
+]);
+
+describe("setupGame character assignment", () => {
+  it("always assigns base characters for missions below Rule Sticker B", () => {
+    const players = [
+      makePlayer({
+        id: "a",
+        name: "A",
+        isCaptain: true,
+        character: "character_e1",
+        characterUsed: false,
+      }),
+      makePlayer({
+        id: "b",
+        name: "B",
+        isCaptain: false,
+        character: "character_e2",
+        characterUsed: false,
+      }),
+      makePlayer({
+        id: "c",
+        name: "C",
+        isCaptain: false,
+        character: "character_e3",
+        characterUsed: false,
+      }),
+    ];
+
+    assignCharactersForGameStart(players as any, 30);
+
+    expect(players.every((player) => player.character)).toBe(true);
+    expect(new Set(players.map((player) => player.character)).size).toBe(3);
+    expect(players.every((player) => MISSION_BASE_CHARACTERS.has(player.character!))).toBe(true);
+  });
+
+  it("preserves preselected characters for missions with Rule Sticker B", () => {
+    const players = [
+      makePlayer({
+        id: "captain",
+        name: "Captain",
+        isCaptain: true,
+        character: "character_e1",
+        characterUsed: false,
+      }),
+      makePlayer({
+        id: "member",
+        name: "Member",
+        isCaptain: false,
+        character: null,
+      }),
+      makePlayer({
+        id: "helper",
+        name: "Helper",
+        isCaptain: false,
+        character: "character_2",
+        characterUsed: false,
+      }),
+    ];
+
+    assignCharactersForGameStart(players as any, 31);
+
+    expect(players[0].character).toBe("character_e1");
+    expect(players[2].character).toBe("character_2");
+    expect(players[1].character).not.toBeNull();
+    expect(MISSION_BASE_CHARACTERS.has(players[1].character!)).toBe(true);
+  });
+});
 
 describe("equipment pool resolution", () => {
   it("uses base pool by default", () => {

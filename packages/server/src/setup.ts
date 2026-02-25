@@ -257,6 +257,37 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
   65: ["x_or_y_ray"],
 } as const;
 
+const STARTUP_BASE_CHARACTERS = [
+  "double_detector",
+  "character_2",
+  "character_3",
+  "character_4",
+  "character_5",
+] as const;
+
+/**
+ * Assign character cards at game start.
+ * - Missions 1-30 assign all 5 base character cards randomly.
+ * - Missions 31+ preserve preselected characters and only fill unselected players.
+ */
+export function assignCharactersForGameStart(players: Player[], mission: MissionId): void {
+  const deck = [...STARTUP_BASE_CHARACTERS];
+  shuffle(deck);
+
+  if (mission < 31) {
+    for (let i = 0; i < players.length; i++) {
+      players[i].character = deck[i];
+    }
+    return;
+  }
+
+  let nextDeckIndex = 0;
+  for (const player of players) {
+    if (player.character != null) continue;
+    player.character = deck[Math.min(nextDeckIndex++, deck.length - 1)];
+  }
+}
+
 function resolveRedrawForbiddenEquipmentIds(
   mission: MissionId,
   spec: MissionEquipmentSpec,

@@ -14,7 +14,11 @@ import type {
 } from "@bomb-busters/shared";
 import { MISSION_SCHEMAS, logTemplate, wireLabel, wireLabelOf } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
-import { setupGame, shuffle } from "./setup.js";
+import {
+  setupGame,
+  shuffle,
+  assignCharactersForGameStart,
+} from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
 import {
   validateDualCutWithHooks,
@@ -625,18 +629,6 @@ export class BombBustersServer extends Server<Env> {
     shuffle(this.room.players);
 
     // Randomly assign characters to players
-    const allCharacters: CharacterId[] = [
-      "double_detector",
-      "character_2",
-      "character_3",
-      "character_4",
-      "character_5",
-    ];
-    shuffle(allCharacters);
-    for (let i = 0; i < this.room.players.length; i++) {
-      this.room.players[i].character = allCharacters[i];
-    }
-
     // Assign captain based on mode
     let captainIndex: number;
     if (this.room.captainMode === "selection" && this.room.selectedCaptainId) {
@@ -650,6 +642,8 @@ export class BombBustersServer extends Server<Env> {
     for (let i = 0; i < this.room.players.length; i++) {
       this.room.players[i].isCaptain = i === captainIndex;
     }
+
+    assignCharactersForGameStart(this.room.players, this.room.mission);
 
     // Setup the game
     let board: import("@bomb-busters/shared").BoardState;
