@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { ClientGameState, GameState } from "@bomb-busters/shared";
+import {
+  INFO_TOKEN_VALUES,
+  TOTAL_INFO_TOKENS,
+  YELLOW_INFO_TOKENS,
+  type ClientGameState,
+  type GameState,
+} from "@bomb-busters/shared";
 import { makeGameState, makePlayer, makeTile } from "@bomb-busters/shared/testing";
 import { Mission22TokenPassPanel } from "./Mission22TokenPassPanel.js";
 
@@ -103,5 +109,46 @@ describe("Mission22TokenPassPanel", () => {
 
     const html = renderPanel(clientState, "p2");
     expect(html).toBe("");
+  });
+
+  it("excludes exhausted numeric token values when board info is missing", () => {
+    const exhaustedValue = 4;
+    const numericTokenCopiesPerValue =
+      (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
+    const exhaustedTokens = Array.from({ length: numericTokenCopiesPerValue }, () => ({
+      value: exhaustedValue,
+      position: -1,
+      isYellow: false,
+    }));
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "captain",
+          isCaptain: true,
+          hand: [makeTile({ id: "c1", gameValue: 2 })],
+          infoTokens: exhaustedTokens,
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "b1", gameValue: 6 })],
+        }),
+      ],
+      pendingForcedAction: {
+        kind: "mission22TokenPass",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        passingOrder: [0, 1],
+        completedCount: 0,
+      },
+    });
+
+    const clientState = toClientGameState(state, "captain");
+    const html = renderPanel(clientState, "captain");
+
+    expect(html).toContain(`data-testid="mission22-token-${INFO_TOKEN_VALUES[0]}"`);
+    expect(html).not.toContain(`data-testid="mission22-token-${exhaustedValue}"`);
   });
 });

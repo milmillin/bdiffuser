@@ -1,4 +1,10 @@
-import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
+import {
+  INFO_TOKEN_VALUES,
+  TOTAL_INFO_TOKENS,
+  YELLOW_INFO_TOKENS,
+  type ClientGameState,
+  type ClientMessage,
+} from "@bomb-busters/shared";
 
 function getTokenLabel(value: number): string {
   return value === 0 ? "YELLOW" : String(value);
@@ -23,6 +29,8 @@ export function Mission22TokenPassPanel({
     recipient?.id === playerId ? "yourself" : (recipient?.name ?? "the next player");
 
   const boardValues = new Set<number>();
+  const numericTokenCopiesPerValue =
+    (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
   const board = gameState.campaign?.mission22TokenPassBoard;
   if (board) {
     if (board.yellowTokens > 0) {
@@ -32,11 +40,36 @@ export function Mission22TokenPassPanel({
       boardValues.add(value);
     }
   } else {
+    const usedNumericCounts = new Map<number, number>();
+    let usedYellowTokens = 0;
+
     for (const player of gameState.players) {
       for (const token of player.infoTokens) {
         if (token.position !== -1) continue;
-        boardValues.add(token.isYellow ? 0 : token.value);
+        if (token.isYellow) {
+          usedYellowTokens += 1;
+          continue;
+        }
+
+        if (!Number.isInteger(token.value) || token.value < 1 || token.value > 12) {
+          continue;
+        }
+
+        usedNumericCounts.set(
+          token.value,
+          (usedNumericCounts.get(token.value) ?? 0) + 1,
+        );
       }
+    }
+
+    for (const value of INFO_TOKEN_VALUES) {
+      if ((usedNumericCounts.get(value) ?? 0) < numericTokenCopiesPerValue) {
+        boardValues.add(value);
+      }
+    }
+
+    if (usedYellowTokens < YELLOW_INFO_TOKENS) {
+      boardValues.add(0);
     }
   }
 
