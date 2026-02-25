@@ -14,7 +14,7 @@ import type {
 } from "@bomb-busters/shared";
 import { MISSION_SCHEMAS, logTemplate, wireLabel, wireLabelOf } from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
-import { setupGame } from "./setup.js";
+import { setupGame, shuffle } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
 import {
   validateDualCutWithHooks,
@@ -556,11 +556,8 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    // Shuffle player order (Fisher-Yates) — randomizes turn order
-    for (let i = this.room.players.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.room.players[i], this.room.players[j]] = [this.room.players[j], this.room.players[i]];
-    }
+    // Randomize turn order
+    shuffle(this.room.players);
 
     // Randomly assign characters to players
     const allCharacters: CharacterId[] = [
@@ -570,11 +567,7 @@ export class BombBustersServer extends Server<Env> {
       "character_4",
       "character_5",
     ];
-    // Fisher-Yates shuffle
-    for (let i = allCharacters.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [allCharacters[i], allCharacters[j]] = [allCharacters[j], allCharacters[i]];
-    }
+    shuffle(allCharacters);
     for (let i = 0; i < this.room.players.length; i++) {
       this.room.players[i].character = allCharacters[i];
     }
