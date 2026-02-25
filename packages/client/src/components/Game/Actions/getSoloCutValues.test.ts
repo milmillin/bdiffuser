@@ -152,6 +152,107 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain(5);
   });
 
+  it("offers a numeric solo-cut value when player holds all 4 copies", () => {
+    const state = makeGameState({
+      mission: 2,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 0 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "my-1", gameValue: 5 }),
+            makeTile({ id: "my-2", gameValue: 5 }),
+            makeTile({ id: "my-3", gameValue: 5 }),
+            makeTile({ id: "my-4", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "opp-1", gameValue: 3 }),
+            makeTile({ id: "opp-2", gameValue: 8 }),
+          ],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).toContain(5);
+  });
+
+  it("offers a numeric solo-cut value when player holds 2 and the other 2 copies are already cut", () => {
+    const state = makeGameState({
+      mission: 2,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 2 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "my-1", gameValue: 5 }),
+            makeTile({ id: "my-2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "opp-cut-1", gameValue: 5, cut: true }),
+            makeTile({ id: "opp-cut-2", gameValue: 5, cut: true }),
+            { id: "opp-hidden-1", cut: false } as unknown as ReturnType<typeof makeTile>,
+            { id: "opp-hidden-2", cut: false } as unknown as ReturnType<typeof makeTile>,
+          ],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).toContain(5);
+  });
+
+  it("does NOT offer a numeric solo-cut value when player holds 2 but other 2 copies are uncut on hidden opponent tiles", () => {
+    const state = makeGameState({
+      mission: 2,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 0 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "my-1", gameValue: 5 }),
+            makeTile({ id: "my-2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            { id: "opp-hidden-1", cut: false } as unknown as ReturnType<typeof makeTile>,
+            { id: "opp-hidden-2", cut: false } as unknown as ReturnType<typeof makeTile>,
+            { id: "opp-hidden-3", cut: false } as unknown as ReturnType<typeof makeTile>,
+          ],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(5);
+  });
+
   it("does NOT offer YELLOW in mission 48 where yellow must use simultaneous action", () => {
     const state = makeGameState({
       mission: 48,
@@ -357,7 +458,13 @@ describe("getSoloCutValues yellow logic", () => {
         }),
         makePlayer({
           id: "opponent",
-          hand: [makeTile({ id: "o1", gameValue: 3 })],
+          hand: [
+            makeTile({ id: "o1", gameValue: 3 }),
+            makeTile({ id: "o5-1", gameValue: 5, cut: true }),
+            makeTile({ id: "o5-2", gameValue: 5, cut: true }),
+            makeTile({ id: "o6-1", gameValue: 6, cut: true }),
+            makeTile({ id: "o6-2", gameValue: 6, cut: true }),
+          ],
         }),
       ],
       campaign: {
@@ -389,7 +496,13 @@ describe("getSoloCutValues yellow logic", () => {
         }),
         makePlayer({
           id: "opponent",
-          hand: [makeTile({ id: "o1", gameValue: 4 })],
+          hand: [
+            makeTile({ id: "o1", gameValue: 4 }),
+            makeTile({ id: "o2-1", gameValue: 2, cut: true }),
+            makeTile({ id: "o2-2", gameValue: 2, cut: true }),
+            makeTile({ id: "o6-1", gameValue: 6, cut: true }),
+            makeTile({ id: "o6-2", gameValue: 6, cut: true }),
+          ],
         }),
       ],
       campaign: {
@@ -428,7 +541,11 @@ describe("getSoloCutValues yellow logic", () => {
         }),
         makePlayer({
           id: "teammate",
-          hand: [makeYellowTile({ id: "y1", cut: true })],
+          hand: [
+            makeYellowTile({ id: "y1", cut: true }),
+            makeTile({ id: "o5-1", gameValue: 5, cut: true }),
+            makeTile({ id: "o5-2", gameValue: 5, cut: true }),
+          ],
         }),
       ],
     }) as unknown as ClientGameState;
@@ -473,7 +590,11 @@ describe("getSoloCutValues yellow logic", () => {
         }),
         makePlayer({
           id: "opponent",
-          hand: [makeTile({ id: "o1", gameValue: 7 })],
+          hand: [
+            makeTile({ id: "o1", gameValue: 7 }),
+            makeTile({ id: "o5-1", gameValue: 5, cut: true }),
+            makeTile({ id: "o5-2", gameValue: 5, cut: true }),
+          ],
         }),
       ],
       campaign: {
@@ -540,6 +661,17 @@ describe("getSoloCutValues yellow logic", () => {
             makeYellowTile({ id: "y1" }),
           ],
         }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "o2-1", gameValue: 2, cut: true }),
+            makeTile({ id: "o2-2", gameValue: 2, cut: true }),
+            makeTile({ id: "o9-1", gameValue: 9, cut: true }),
+            makeTile({ id: "o9-2", gameValue: 9, cut: true }),
+            makeTile({ id: "o7-1", gameValue: 7, cut: true }),
+            makeTile({ id: "o7-2", gameValue: 7, cut: true }),
+          ],
+        }),
       ],
       campaign: {
         numberCards: {
@@ -580,6 +712,13 @@ describe("getSoloCutValues yellow logic", () => {
           hand: [
             makeTile({ id: "m1", gameValue: 4 }),
             makeTile({ id: "m2", gameValue: 4 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "o4-1", gameValue: 4, cut: true }),
+            makeTile({ id: "o4-2", gameValue: 4, cut: true }),
           ],
         }),
       ],
@@ -750,6 +889,10 @@ describe("getSoloCutValues yellow logic", () => {
           hand: [
             makeTile({ id: "o1", gameValue: 7 }),
             makeTile({ id: "o2", gameValue: 7 }),
+            makeTile({ id: "o3-1", gameValue: 3, cut: true }),
+            makeTile({ id: "o3-2", gameValue: 3, cut: true }),
+            makeTile({ id: "o5-1", gameValue: 5, cut: true }),
+            makeTile({ id: "o5-2", gameValue: 5, cut: true }),
           ],
         }),
       ],
@@ -815,6 +958,10 @@ describe("getSoloCutValues yellow logic", () => {
             makeTile({ id: "o3", gameValue: 6 }),
             makeTile({ id: "o4", gameValue: 7 }),
             makeTile({ id: "o5", gameValue: 7 }),
+            makeTile({ id: "o5-1", gameValue: 5, cut: true }),
+            makeTile({ id: "o5-2", gameValue: 5, cut: true }),
+            makeTile({ id: "o10-1", gameValue: 10, cut: true }),
+            makeTile({ id: "o10-2", gameValue: 10, cut: true }),
           ],
         }),
       ],
@@ -843,6 +990,15 @@ describe("getSoloCutValues yellow logic", () => {
             makeTile({ id: "m2", gameValue: 4 }),
             makeTile({ id: "m3", gameValue: 9 }),
             makeTile({ id: "m4", gameValue: 9 }),
+          ],
+        }),
+        makePlayer({
+          id: "other",
+          hand: [
+            makeTile({ id: "o4-1", gameValue: 4, cut: true }),
+            makeTile({ id: "o4-2", gameValue: 4, cut: true }),
+            makeTile({ id: "o9-1", gameValue: 9, cut: true }),
+            makeTile({ id: "o9-2", gameValue: 9, cut: true }),
           ],
         }),
       ],

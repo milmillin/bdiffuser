@@ -5,6 +5,7 @@ import type {
   UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import {
+  BLUE_COPIES_PER_VALUE,
   getWirePoolCount,
   isLogTextDetail,
   resolveMissionSetup,
@@ -230,18 +231,6 @@ export function getSoloCutValues(
     return typeof visibleValue === "number" ? visibleValue : null;
   })();
 
-  const totalRemainingValueCounts = new Map<number, number>();
-  for (const player of state.players) {
-    for (const tile of player.hand) {
-      if (tile.cut) continue;
-      if (typeof tile.gameValue !== "number") continue;
-      totalRemainingValueCounts.set(
-        tile.gameValue,
-        (totalRemainingValueCounts.get(tile.gameValue) ?? 0) + 1,
-      );
-    }
-  }
-
   const valueCounts = new Map<string, number>();
   for (const tile of myUncut) {
     if (tile.gameValue == null || tile.gameValue === "RED") continue;
@@ -270,8 +259,14 @@ export function getSoloCutValues(
       ) {
         continue;
       }
-      const remaining = totalRemainingValueCounts.get(value) ?? 0;
-      if (myCount === remaining && (myCount === 2 || myCount === 4)) {
+      const cutCount = state.players.reduce((sum, player) => {
+        return (
+          sum
+          + player.hand.filter((tile) => tile.cut && tile.gameValue === value).length
+        );
+      }, 0);
+      const remaining = Math.max(0, BLUE_COPIES_PER_VALUE - cutCount);
+      if (myCount === remaining && (remaining === 2 || remaining === 4)) {
         values.push(value);
       }
     } else {
