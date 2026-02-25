@@ -458,17 +458,48 @@ describe("setupTokenRules", () => {
         isCaptain: true,
         hand: [makeTile({ id: "c1", gameValue: 2, color: "blue" })],
       });
-      const state = makeGameState({ mission: 22, phase: "setup_info_tokens", players: [player] });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [makeTile({ id: "p1", gameValue: 3, color: "blue" })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "p2", gameValue: 4, color: "blue" })],
+      });
+      const state = makeGameState({
+        mission: 22,
+        phase: "setup_info_tokens",
+        players: [player, partner, teammate],
+      });
 
       expect(validateSetupInfoTokenPlacement(state, player, 0, -1)).toBeNull();
       player.infoTokens.push({ value: 0, position: -1, isYellow: true });
 
-      expect(validateSetupInfoTokenPlacement(state, player, 0, -1)).toBeNull();
-      player.infoTokens.push({ value: 0, position: -1, isYellow: true });
+      expect(validateSetupInfoTokenPlacement(state, partner, 0, -1)).toBeNull();
+      partner.infoTokens.push({ value: 0, position: -1, isYellow: true });
 
-      const error = validateSetupInfoTokenPlacement(state, player, 0, -1);
+      const error = validateSetupInfoTokenPlacement(state, teammate, 0, -1);
       expect(error?.code).toBe("MISSION_RULE_VIOLATION");
       expect(error?.message).toBe("Token value is not available on the board");
+    });
+
+    it("mission 22: rejects duplicate absent value declarations from same player", () => {
+      const player = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "c1", gameValue: 2, color: "blue" })],
+      });
+      const state = makeGameState({ mission: 22, phase: "setup_info_tokens", players: [player] });
+
+      player.infoTokens.push({ value: 3, position: -1, isYellow: false });
+
+      const numericDuplicate = validateSetupInfoTokenPlacement(state, player, 3, -1);
+      expect(numericDuplicate?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(numericDuplicate?.message).toContain("already placed");
+
+      player.infoTokens.push({ value: 0, position: -1, isYellow: true });
+      const yellowDuplicate = validateSetupInfoTokenPlacement(state, player, 0, -1);
+      expect(yellowDuplicate?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(yellowDuplicate?.message).toContain("already placed");
     });
 
     it("mission 22: rejects selecting a yellow token when none remain on board", () => {

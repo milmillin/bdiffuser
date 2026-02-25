@@ -171,6 +171,19 @@ export function validateSetupInfoTokenPlacement(
 
     // Check the value is actually absent from player's uncut hand
     const isYellowAbsent = value === 0;
+    const alreadyDeclared = player.infoTokens.some(
+      (token) =>
+        token.position === -1 &&
+        token.isYellow === isYellowAbsent &&
+        token.value === value,
+    );
+    if (alreadyDeclared) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Cannot declare the same absent value more than once (already placed).",
+      );
+    }
+
     if (isYellowAbsent) {
       if (mission22Board.yellowTokens <= 0) {
         return legalityError(
