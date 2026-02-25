@@ -272,6 +272,7 @@ export function GameBoard({
         gameState.players.length,
         me.isCaptain,
         me.hand,
+        gameState.campaign,
       )
     : 0;
   const requiresSetupToken =
@@ -1470,7 +1471,7 @@ export function GameBoard({
                         ? (tileIndex) => {
                             if (
                               useFalseSetupTokenMode &&
-                              gameState.mission === 17 &&
+                              useCaptainFalseSetupTokenMode &&
                               me?.isCaptain &&
                               me?.hand[tileIndex]?.color === "red"
                             ) {

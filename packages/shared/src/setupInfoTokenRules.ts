@@ -2,7 +2,7 @@ import {
   NO_SETUP_TOKEN_MISSIONS,
   TWO_PLAYER_CAPTAIN_SKIP_MISSIONS,
 } from "./constants.js";
-import type { WireValue } from "./types.js";
+import type { CampaignState, WireValue } from "./types.js";
 
 const MISSION_22_POSSIBLE_VALUES = 13;
 
@@ -80,12 +80,21 @@ export function requiredSetupInfoTokenCountForMissionAndHand(
   playerCount: number,
   isCaptain: boolean,
   hand: readonly Mission22HandTile[],
+  campaign?: Pick<CampaignState, "falseInfoTokenMode" | "falseTokenMode">,
 ): number {
   const base = requiredSetupInfoTokenCountForMission(
     mission,
     playerCount,
     isCaptain,
   );
+
+  if (campaign?.falseTokenMode === true) {
+    return 2;
+  }
+
+  if (campaign?.falseInfoTokenMode === true) {
+    return isCaptain ? 2 : base;
+  }
 
   if (mission === 22) {
     return Math.min(base, countMission22AbsentValues(hand));

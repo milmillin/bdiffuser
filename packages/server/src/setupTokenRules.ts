@@ -23,19 +23,13 @@ export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
-  const base = requiredSetupInfoTokenCountForMissionAndHand(
+  return requiredSetupInfoTokenCountForMissionAndHand(
     state.mission,
     state.players.length,
     player.isCaptain,
     player.hand,
+    state.campaign,
   );
-  if (isAllFalseSetupMode(state)) {
-    return 2;
-  }
-  if (isCaptainFalseSetupMode(state, player)) {
-    return 2;
-  }
-  return base;
 }
 
 /**

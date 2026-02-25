@@ -94,6 +94,68 @@ describe("setupInfoTokenRules", () => {
     ).toBe(2);
   });
 
+  it("supports campaign captain-only false setup token overrides", () => {
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        1,
+        3,
+        true,
+        [{ gameValue: 4, cut: false }],
+        { falseInfoTokenMode: true },
+      ),
+    ).toBe(2);
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        1,
+        3,
+        false,
+        [{ gameValue: 4, cut: false }],
+        { falseInfoTokenMode: true },
+      ),
+    ).toBe(1);
+  });
+
+  it("supports campaign all-player false setup token overrides", () => {
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        1,
+        3,
+        true,
+        [{ gameValue: 4, cut: false }],
+        { falseTokenMode: true },
+      ),
+    ).toBe(2);
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        1,
+        3,
+        false,
+        [{ gameValue: 4, cut: false }],
+        { falseTokenMode: true },
+      ),
+    ).toBe(2);
+  });
+
+  it("campaign all-player false setup override bypasses mission 22 absent-value cap", () => {
+    const fullMission22Hand = [
+      ...Array.from({ length: 12 }, (_, index) => ({
+        gameValue: (index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12,
+        cut: false,
+      })),
+      { gameValue: "YELLOW" as const, cut: false },
+    ];
+
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        22,
+        4,
+        true,
+        fullMission22Hand,
+        { falseTokenMode: true },
+      ),
+    ).toBe(2);
+  });
+
   it("uses only uncut yellow and numeric values for mission 22 present-value tracking", () => {
     const present = getMission22PresentValues([
       { gameValue: 4, cut: false },
