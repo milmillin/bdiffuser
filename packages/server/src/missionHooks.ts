@@ -868,11 +868,13 @@ function actorCanAffordAnyMission44Cut(
 
   // Dual-cut guesses can be intentionally wrong; mission rules do not require
   // matching actor-owned value to declare a legal (and cost-bearing) cut.
-  // Dual-cut actions are only considered when the actor has a non-red wire they can cut.
-  // Mission 63 explicitly skips players who cannot take a legal cut action with available oxygen;
-  // players with only RED/invalid cut candidates should not block auto-skip progression.
+  // Dual-cut actions are only considered when the actor has a non-RED numeric wire
+  // they can cut. Missions treat YELLOW as a special value and are not treated as
+  // a universally legal guess target.
+  // Mission 63 explicitly skips players who cannot take a legal cut action with
+  // available oxygen.
   const hasAnyDualCutTarget = actor.hand.some((tile) =>
-    !tile.cut && tile.gameValue !== "RED",
+    !tile.cut && typeof tile.gameValue === "number",
   ) && state.players.some((player) =>
     player.id !== actor.id && player.hand.some((tile) => !tile.cut),
   );
