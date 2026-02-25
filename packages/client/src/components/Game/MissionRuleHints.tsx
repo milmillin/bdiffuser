@@ -1,4 +1,12 @@
+import { useState } from "react";
 import type { ClientGameState } from "@bomb-busters/shared";
+import {
+  getNumberCardImage,
+  getConstraintCardImage,
+  getChallengeCardImage,
+  NUMBER_CARD_BACK,
+} from "@bomb-busters/shared";
+import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 
 type EquipmentSecondaryLock = {
   secondaryLockValue?: number;
@@ -46,6 +54,44 @@ function TrackerBar({ label, position, max }: { label: string; position: number;
         {position}/{max}
       </span>
     </div>
+  );
+}
+
+function CampaignCardThumbnail({
+  image,
+  borderColor,
+  landscape,
+  dimmed,
+  overlayLabel,
+  onClick,
+}: {
+  image: string;
+  borderColor: string;
+  landscape?: boolean;
+  dimmed?: boolean;
+  overlayLabel?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative overflow-hidden rounded-md border-2 ${borderColor} ${landscape ? "w-14" : "w-10"} shrink-0`}
+      style={{ aspectRatio: landscape ? "1037/736" : "739/1040" }}
+    >
+      <img
+        src={`/images/${image}`}
+        alt=""
+        className="h-full w-full object-cover"
+      />
+      {dimmed && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          {overlayLabel && (
+            <span className="text-[9px] font-bold text-white uppercase">{overlayLabel}</span>
+          )}
+        </div>
+      )}
+    </button>
   );
 }
 
@@ -141,6 +187,8 @@ function CampaignObjectsHint({
   hideSequencePointer: boolean;
   hideNumberCards: boolean;
 }) {
+  const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
+
   const campaign = gameState.campaign;
   if (!campaign) return null;
 
@@ -200,202 +248,248 @@ function CampaignObjectsHint({
   if (!hasAnyContent) return null;
 
   return (
-    <div className="rounded-xl bg-[var(--color-bomb-surface)] border border-gray-700 p-3 space-y-2">
-      <div className="text-xs font-bold uppercase text-gray-300">
-        Campaign Objects
+    <>
+      <div className="rounded-xl bg-[var(--color-bomb-surface)] border border-gray-700 p-3 space-y-2">
+        <div className="text-xs font-bold uppercase text-gray-300">
+          Campaign Objects
+        </div>
+
+        {hasNumberCardContent && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Number Cards</div>
+            {visibleCards.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {visibleCards.map((card) => {
+                  const image = card.faceUp
+                    ? getNumberCardImage(card.value)
+                    : NUMBER_CARD_BACK;
+                  return (
+                    <CampaignCardThumbnail
+                      key={card.id}
+                      image={image}
+                      borderColor={card.faceUp ? "border-blue-400" : "border-gray-600"}
+                      dimmed={!card.faceUp}
+                      onClick={() =>
+                        setPreviewCard({
+                          name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
+                          previewImage: image,
+                          detailSubtitle: card.faceUp
+                            ? `Value: ${card.value}`
+                            : "This card is face down.",
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              {deckCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="relative w-6 h-7">
+                    <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
+                    <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
+                </div>
+              )}
+              {discardCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
+                  <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Constraints</div>
+            {globalConstraints.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase">Global</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {globalConstraints.map((constraint) => {
+                    const image = getConstraintCardImage(constraint.id);
+                    return (
+                      <CampaignCardThumbnail
+                        key={constraint.id}
+                        image={image}
+                        borderColor="border-red-500/60"
+                        onClick={() =>
+                          setPreviewCard({
+                            name: `Constraint ${constraint.id}`,
+                            previewImage: image,
+                            detailSubtitle: constraint.name || constraint.id,
+                            detailEffect: constraint.description,
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {perPlayerConstraints.map((entry) => (
+              <div key={entry.playerName} className="space-y-1">
+                <div className="text-[10px] text-gray-500">{entry.playerName}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {entry.cards.map((constraint) => {
+                    const image = getConstraintCardImage(constraint.id);
+                    return (
+                      <CampaignCardThumbnail
+                        key={constraint.id}
+                        image={image}
+                        borderColor="border-amber-500/60"
+                        onClick={() =>
+                          setPreviewCard({
+                            name: `Constraint ${constraint.id}`,
+                            previewImage: image,
+                            detailSubtitle: constraint.name || constraint.id,
+                            detailEffect: constraint.description,
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(activeChallenges.length > 0 || completedChallenges.length > 0 || challengeDeckCount > 0) && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Challenges</div>
+            {activeChallenges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {activeChallenges.map((challenge) => {
+                  const image = getChallengeCardImage(challenge.id);
+                  return (
+                    <CampaignCardThumbnail
+                      key={challenge.id}
+                      image={image}
+                      borderColor="border-amber-400/60"
+                      landscape
+                      onClick={() =>
+                        setPreviewCard({
+                          name: `Challenge #${challenge.id}`,
+                          previewImage: image,
+                          previewAspectRatio: "1037/736",
+                          detailSubtitle: challenge.name,
+                          detailEffect: challenge.description,
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {completedChallenges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {completedChallenges.map((challenge) => {
+                  const image = getChallengeCardImage(challenge.id);
+                  return (
+                    <CampaignCardThumbnail
+                      key={challenge.id}
+                      image={image}
+                      borderColor="border-emerald-500/50"
+                      landscape
+                      dimmed
+                      overlayLabel="Done"
+                      onClick={() =>
+                        setPreviewCard({
+                          name: `Challenge #${challenge.id} (Completed)`,
+                          previewImage: image,
+                          previewAspectRatio: "1037/736",
+                          detailSubtitle: challenge.name,
+                          detailEffect: challenge.description,
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {challengeDeckCount > 0 && (
+              <div className="text-xs text-gray-400">Deck: {challengeDeckCount} remaining</div>
+            )}
+          </div>
+        )}
+
+        {oxygen && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Oxygen</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-sky-300 font-semibold">Pool</span>
+              <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all bg-sky-500"
+                  style={{ width: `${Math.min(100, (oxygen.pool / Math.max(oxygen.pool, 10)) * 100)}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold text-sky-200 tabular-nums">{oxygen.pool}</span>
+            </div>
+            {oxygenByPlayer.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {oxygenByPlayer.map((entry) => (
+                  <span key={entry.name} className="inline-flex items-center gap-1 rounded bg-sky-900/40 px-1.5 py-0.5 text-[11px] text-sky-200">
+                    {entry.name}: <span className="font-bold">{entry.amount}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(campaign.nanoTracker || campaign.bunkerTracker) && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Trackers</div>
+            {campaign.nanoTracker && (
+              <TrackerBar
+                label="Nano"
+                position={campaign.nanoTracker.position}
+                max={campaign.nanoTracker.max}
+              />
+            )}
+            {campaign.bunkerTracker && (
+              <TrackerBar
+                label="Bunker"
+                position={campaign.bunkerTracker.position}
+                max={campaign.bunkerTracker.max}
+              />
+            )}
+          </div>
+        )}
+
+        {specialMarkers.length > 0 && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5">
+            <div className="text-[10px] uppercase text-gray-400 mb-1">Special Markers</div>
+            <div className="text-xs text-gray-200">
+              {specialMarkers
+                .map((marker) => {
+                  const label =
+                    marker.kind === "action_pointer"
+                      ? "Action Pointer"
+                      : marker.kind === "sequence_pointer"
+                        ? "Sequence Pointer"
+                        : "X Marker";
+                  return `${label}: ${marker.value}`;
+                })
+                .join(" | ")}
+            </div>
+          </div>
+        )}
       </div>
 
-      {hasNumberCardContent && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-          <div className="text-[10px] uppercase text-gray-400">Number Cards</div>
-          {visibleCards.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {visibleCards.map((card) => (
-                <div
-                  key={card.id}
-                  className={`flex items-center justify-center w-8 h-10 rounded-md border-2 ${
-                    card.faceUp
-                      ? "border-blue-400 bg-blue-950/50 text-blue-200"
-                      : "border-gray-600 bg-gray-800/50 text-gray-400"
-                  }`}
-                >
-                  <span className="text-sm font-black">{card.faceUp ? card.value : "?"}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            {deckCount > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="relative w-6 h-7">
-                  <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
-                  <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
-                </div>
-                <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
-              </div>
-            )}
-            {discardCount > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
-                <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
-              </div>
-            )}
-          </div>
-        </div>
+      {previewCard && (
+        <CardPreviewModal
+          card={previewCard}
+          onClose={() => setPreviewCard(null)}
+        />
       )}
-
-      {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-          <div className="text-[10px] uppercase text-gray-400">Constraints</div>
-          {globalConstraints.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-[10px] text-gray-500 uppercase">Global</div>
-              <div className="flex flex-wrap gap-1">
-                {globalConstraints.map((constraint) => (
-                  <div
-                    key={constraint.id}
-                    className="group relative rounded border border-red-500/60 bg-red-950/30 px-2 py-1 text-xs text-red-200 cursor-default"
-                    title={constraint.description}
-                  >
-                    <span className="font-semibold">{constraint.id}</span>{" "}
-                    <span className="text-red-300/80">{constraint.name || constraint.id}</span>
-                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-48 rounded bg-gray-900 border border-red-500/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
-                      {constraint.description}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {perPlayerConstraints.map((entry) => (
-            <div key={entry.playerName} className="space-y-1">
-              <div className="text-[10px] text-gray-500">{entry.playerName}</div>
-              <div className="flex flex-wrap gap-1">
-                {entry.cards.map((constraint) => (
-                  <div
-                    key={constraint.id}
-                    className="group relative rounded border border-amber-500/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200 cursor-default"
-                    title={constraint.description}
-                  >
-                    <span className="font-semibold">{constraint.id}</span>{" "}
-                    <span className="text-amber-300/80">{constraint.name || constraint.id}</span>
-                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-48 rounded bg-gray-900 border border-amber-500/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
-                      {constraint.description}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {(activeChallenges.length > 0 || completedChallenges.length > 0 || challengeDeckCount > 0) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-          <div className="text-[10px] uppercase text-gray-400">Challenges</div>
-          {activeChallenges.length > 0 && (
-            <div className="space-y-1">
-              <div className="flex flex-wrap gap-1">
-                {activeChallenges.map((challenge) => (
-                  <div
-                    key={challenge.id}
-                    className="group relative rounded border border-amber-400/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200 cursor-default"
-                    title={challenge.description}
-                  >
-                    <span className="font-semibold">#{challenge.id}</span>{" "}
-                    <span className="text-amber-300/80">{challenge.name}</span>
-                    <div className="hidden group-hover:block absolute z-10 left-0 top-full mt-1 w-52 rounded bg-gray-900 border border-amber-400/40 px-2 py-1.5 text-[11px] text-gray-200 shadow-lg">
-                      {challenge.description}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {completedChallenges.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {completedChallenges.map((challenge) => (
-                <div
-                  key={challenge.id}
-                  className="rounded border border-emerald-500/50 bg-emerald-950/30 px-2 py-1 text-xs text-emerald-300 line-through opacity-70"
-                  title={`Completed: ${challenge.description}`}
-                >
-                  <span className="font-semibold">#{challenge.id}</span>{" "}
-                  {challenge.name}
-                </div>
-              ))}
-            </div>
-          )}
-          {challengeDeckCount > 0 && (
-            <div className="text-xs text-gray-400">Deck: {challengeDeckCount} remaining</div>
-          )}
-        </div>
-      )}
-
-      {oxygen && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-          <div className="text-[10px] uppercase text-gray-400">Oxygen</div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-sky-300 font-semibold">Pool</span>
-            <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all bg-sky-500"
-                style={{ width: `${Math.min(100, (oxygen.pool / Math.max(oxygen.pool, 10)) * 100)}%` }}
-              />
-            </div>
-            <span className="text-xs font-bold text-sky-200 tabular-nums">{oxygen.pool}</span>
-          </div>
-          {oxygenByPlayer.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {oxygenByPlayer.map((entry) => (
-                <span key={entry.name} className="inline-flex items-center gap-1 rounded bg-sky-900/40 px-1.5 py-0.5 text-[11px] text-sky-200">
-                  {entry.name}: <span className="font-bold">{entry.amount}</span>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {(campaign.nanoTracker || campaign.bunkerTracker) && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-          <div className="text-[10px] uppercase text-gray-400">Trackers</div>
-          {campaign.nanoTracker && (
-            <TrackerBar
-              label="Nano"
-              position={campaign.nanoTracker.position}
-              max={campaign.nanoTracker.max}
-            />
-          )}
-          {campaign.bunkerTracker && (
-            <TrackerBar
-              label="Bunker"
-              position={campaign.bunkerTracker.position}
-              max={campaign.bunkerTracker.max}
-            />
-          )}
-        </div>
-      )}
-
-      {specialMarkers.length > 0 && (
-        <div className="rounded-md bg-black/30 px-2 py-1.5">
-          <div className="text-[10px] uppercase text-gray-400 mb-1">Special Markers</div>
-          <div className="text-xs text-gray-200">
-            {specialMarkers
-              .map((marker) => {
-                const label =
-                  marker.kind === "action_pointer"
-                    ? "Action Pointer"
-                    : marker.kind === "sequence_pointer"
-                      ? "Sequence Pointer"
-                      : "X Marker";
-                return `${label}: ${marker.value}`;
-              })
-              .join(" | ")}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 

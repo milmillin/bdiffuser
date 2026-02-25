@@ -3,6 +3,8 @@ import { useEffect } from "react";
 export type CardPreviewCard = {
   name: string;
   previewImage: string | null;
+  /** Override the default portrait aspect ratio (e.g. "1037/736" for landscape). */
+  previewAspectRatio?: string;
   detailSubtitle?: string;
   detailTiming?: string;
   detailEffect?: string;
@@ -44,7 +46,7 @@ export function CardPreviewModal({
           Close
         </button>
         <div className="min-h-0 grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <div className="shrink-0 w-full aspect-[739/1040] max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900">
+          <div className="shrink-0 w-full max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900" style={{ aspectRatio: card.previewAspectRatio ?? "739/1040" }}>
             {card.previewImage ? (
               <img
                 src={`/images/${card.previewImage}`}

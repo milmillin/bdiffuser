@@ -320,9 +320,67 @@ export const MISSION_IMAGES: Record<number, string> = {
   66: "mission_66.jpg",
 };
 
+// ── Number Card Images (campaign) ───────────────────────────
+
+export const NUMBER_CARD_IMAGES: Record<number, string> = {
+  1: "number_1.png",
+  2: "number_2.png",
+  3: "number_3.png",
+  4: "number_4.png",
+  5: "number_5.png",
+  6: "number_6.png",
+  7: "number_7.png",
+  8: "number_8.png",
+  9: "number_9.png",
+  10: "number_10.png",
+  11: "number_11.png",
+  12: "number_12.png",
+};
+
+export const NUMBER_CARD_BACK = "number_back.png";
+
+// ── Constraint Card Images (campaign) ───────────────────────
+
+export const CONSTRAINT_CARD_IMAGES: Record<string, string> = {
+  A: "constraint_a.png",
+  B: "constraint_b.png",
+  C: "constraint_c.png",
+  D: "constraint_d.png",
+  E: "constraint_e.png",
+  F: "constraint_f.png",
+  G: "constraint_g.png",
+  H: "constraint_h.png",
+  I: "constraint_i.png",
+  J: "constraint_j.png",
+  K: "constraint_k.png",
+  L: "constraint_l.png",
+};
+
+export const CONSTRAINT_CARD_BACK = "constraint_back.png";
+
+// ── Challenge Card Images (campaign, landscape) ─────────────
+
+export const CHALLENGE_CARD_IMAGES: Record<string, string> = {
+  "1": "challenge_1.png",
+  "2": "challenge_2.png",
+  "3": "challenge_3.png",
+  "4": "challenge_4.png",
+  "5": "challenge_5.png",
+  "6": "challenge_6.png",
+  "7": "challenge_7.png",
+  "8": "challenge_8.png",
+  "9": "challenge_9.png",
+  "10": "challenge_10.png",
+};
+
+export const CHALLENGE_CARD_BACK = "challenge_back.png";
+
 // ── Helper to get wire image by color and sort value ────────
 
-export function getWireImage(color: "blue" | "red" | "yellow", sortValue: number): string {
+export function getWireImage(
+  color: "blue" | "red" | "yellow",
+  sortValue: number,
+): string {
   switch (color) {
     case "blue":
       return BLUE_WIRE_IMAGES[sortValue] ?? "wire_1.png";
@@ -331,4 +389,33 @@ export function getWireImage(color: "blue" | "red" | "yellow", sortValue: number
     case "yellow":
       return YELLOW_WIRE_IMAGES[sortValue] ?? "wire_yellow_1-1.png";
   }
+}
+
+// ── Campaign card image helpers ─────────────────────────────
+
+export function getNumberCardImage(value: number): string {
+  return NUMBER_CARD_IMAGES[value] ?? NUMBER_CARD_BACK;
+}
+
+export function getConstraintCardImage(id: string): string {
+  return CONSTRAINT_CARD_IMAGES[id.toUpperCase()] ?? CONSTRAINT_CARD_BACK;
+}
+
+function parseChallengeCardValue(id: string): number | null {
+  const bareNumber = /^\d+$/.exec(id);
+  if (bareNumber?.[0]) {
+    const parsed = Number.parseInt(bareNumber[0], 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  const prefixed = /^challenge-value-(\d+)(?:-.*)?$/.exec(id);
+  if (!prefixed?.[1]) return null;
+
+  const parsed = Number.parseInt(prefixed[1], 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function getChallengeCardImage(id: string): string {
+  const value = parseChallengeCardValue(id);
+  return value != null ? CHALLENGE_CARD_IMAGES[value] ?? CHALLENGE_CARD_BACK : CHALLENGE_CARD_BACK;
 }
