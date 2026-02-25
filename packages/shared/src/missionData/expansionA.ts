@@ -14,7 +14,6 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       equipment: {
         mode: "default",
         includeCampaignEquipment: true,
-        excludedEquipmentIds: ["false_bottom"],
       },
     },
     overrides: {

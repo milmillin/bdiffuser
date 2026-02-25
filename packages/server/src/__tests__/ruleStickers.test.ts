@@ -73,13 +73,13 @@ describe("Rule Sticker A — False Bottom (missions 9+)", () => {
     );
   });
 
-  it("mission 41 excludes false_bottom from the setup equipment pool", () => {
+  it("mission 41 applies False Bottom replacement during setup dealing", () => {
     const missionId = 41 as MissionId;
     const players = createPlayers(firstAllowedPlayerCount(missionId));
-    const { board, equipmentReserve } = setupGame(players, missionId);
+    const { board } = setupGame(players, missionId);
 
-    const allIds = allEquipmentIdsFromSetupResult(board, equipmentReserve);
-    expect(allIds.has("false_bottom")).toBe(false);
+    const boardIds = new Set(board.equipment.map((eq) => eq.id));
+    expect(boardIds.has("false_bottom")).toBe(false);
   });
 });
 

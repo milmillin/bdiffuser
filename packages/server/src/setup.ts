@@ -224,9 +224,8 @@ function resolveSetupEquipmentPool(
   const byId = new Map(candidateDefs.map((def) => [def.id, def] as const));
 
   // Rule Sticker A (missions 9+): shuffle False Bottom into the equipment pool
-  // for missions with yellow wires. Mission 41 is handled via explicit mission
-  // setup exclusions/replacement rules.
-  if (mission >= 9 && mission !== 41 && yellow.kind !== "none") {
+  // for missions with yellow wires.
+  if (mission >= 9 && yellow.kind !== "none") {
     const falseBottom = EQUIPMENT_DEFS.find((def) => def.id === "false_bottom");
     if (falseBottom && !byId.has(falseBottom.id)) {
       byId.set(falseBottom.id, falseBottom);
@@ -261,10 +260,27 @@ function createEquipmentCards(
   count: number,
   candidateDefs: (typeof EQUIPMENT_DEFS)[number][],
   shuffleBeforeDeal = true,
+  mission: MissionId,
 ): { dealt: EquipmentCard[]; reserve: EquipmentCard[] } {
   const pool = [...candidateDefs];
   if (shuffleBeforeDeal) {
     shuffle(pool);
+  }
+
+  if (mission === 41) {
+    const dealt: typeof pool = [];
+    let cursor = 0;
+    while (dealt.length < count && cursor < pool.length) {
+      const card = pool[cursor];
+      cursor += 1;
+      if (card.id === "false_bottom") continue;
+      dealt.push(card);
+    }
+
+    return {
+      dealt: dealt.map(defToCard),
+      reserve: pool.slice(cursor).map(defToCard),
+    };
   }
 
   return {
@@ -546,6 +562,7 @@ export function setupGame(
     config.equipmentCount,
     equipmentPool,
     setup.equipment.mode !== "fixed_pool",
+    mission,
   );
 
   const board: BoardState = {

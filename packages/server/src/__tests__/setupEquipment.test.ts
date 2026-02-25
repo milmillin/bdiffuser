@@ -13,13 +13,13 @@ describe("equipment pool resolution", () => {
     expect(ids).not.toContain("disintegrator");
   });
 
-  it("mission 41 excludes only campaign false_bottom (not base rewinder)", () => {
+  it("mission 41 includes campaign false_bottom in the setup pool", () => {
     const { setup } = resolveMissionSetup(41, 4);
     const ids = resolveEquipmentPoolIds(setup.equipment);
 
     expect(ids).toContain("rewinder");
     expect(ids).toContain("x_or_y_ray");
-    expect(ids).not.toContain("false_bottom");
+    expect(ids).toContain("false_bottom");
   });
 
   it("mission 57 excludes only campaign disintegrator (not base X/Y Ray)", () => {
@@ -70,9 +70,7 @@ describe("setupGame equipmentReserve", () => {
     const missionNumber: number = mission;
     const expectedPoolSize =
       basePoolSize +
-      (missionNumber >= 9 && missionNumber !== 41 && setup.yellow.kind !== "none"
-        ? 1
-        : 0);
+      (missionNumber >= 9 && setup.yellow.kind !== "none" ? 1 : 0);
 
     // Deal count should stay at the player-count baseline.
     expect(board.equipment).toHaveLength(equipmentCount);
@@ -88,6 +86,29 @@ describe("setupGame equipmentReserve", () => {
     const allIds = new Set([...dealtIds, ...equipmentReserve.map((eq: { id: string }) => eq.id)]);
     expect(allIds.size).toBe(expectedPoolSize);
     expect(allIds.has("false_bottom")).toBe(true);
+  });
+
+  it("mission 41 setup avoids dealing false_bottom to board", () => {
+    const playerCount = 4;
+    const mission = 41;
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.5;
+    try {
+      const { board } = setupGame(players as any, mission);
+      expect(board.equipment.some((eq) => eq.id === "false_bottom")).toBe(false);
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   it("returns empty equipmentReserve for fixed_pool missions", () => {
