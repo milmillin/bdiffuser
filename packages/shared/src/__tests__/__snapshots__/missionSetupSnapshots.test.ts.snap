@@ -3212,9 +3212,6 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "false_bottom",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -3234,9 +3231,6 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "false_bottom",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -3256,9 +3250,6 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "false_bottom",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -3278,9 +3269,6 @@ exports[`resolved mission setup snapshots > mission 41 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "false_bottom",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -4620,9 +4608,6 @@ exports[`resolved mission setup snapshots > mission 57 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "disintegrator",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -4640,9 +4625,6 @@ exports[`resolved mission setup snapshots > mission 57 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "disintegrator",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -4660,9 +4642,6 @@ exports[`resolved mission setup snapshots > mission 57 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "disintegrator",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -4680,9 +4659,6 @@ exports[`resolved mission setup snapshots > mission 57 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedEquipmentIds": [
-          "disintegrator",
-        ],
         "includeCampaignEquipment": true,
         "mode": "default",
       },
@@ -4709,10 +4685,6 @@ exports[`resolved mission setup snapshots > mission 58 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          4,
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4729,10 +4701,6 @@ exports[`resolved mission setup snapshots > mission 58 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          4,
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4749,10 +4717,6 @@ exports[`resolved mission setup snapshots > mission 58 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          4,
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4769,10 +4733,6 @@ exports[`resolved mission setup snapshots > mission 58 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          4,
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4798,9 +4758,6 @@ exports[`resolved mission setup snapshots > mission 59 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4817,9 +4774,6 @@ exports[`resolved mission setup snapshots > mission 59 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4837,9 +4791,6 @@ exports[`resolved mission setup snapshots > mission 59 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4857,9 +4808,6 @@ exports[`resolved mission setup snapshots > mission 59 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {

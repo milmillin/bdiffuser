@@ -267,45 +267,24 @@ function createEquipmentCards(
     shuffle(pool);
   }
 
-  if (mission === 41) {
+  const redrawForbiddenIds =
+    mission === 41
+      ? new Set(["false_bottom"])
+      : mission === 57
+        ? new Set(["disintegrator"])
+        : mission === 58
+          ? new Set(["post_it", "emergency_batteries"])
+          : mission === 59
+            ? new Set(["x_or_y_ray"])
+            : null;
+
+  if (redrawForbiddenIds) {
     const dealt: typeof pool = [];
     let cursor = 0;
     while (dealt.length < count && cursor < pool.length) {
       const card = pool[cursor];
       cursor += 1;
-      if (card.id === "false_bottom") continue;
-      dealt.push(card);
-    }
-
-    return {
-      dealt: dealt.map(defToCard),
-      reserve: pool.slice(cursor).map(defToCard),
-    };
-  }
-
-  if (mission === 57) {
-    const dealt: typeof pool = [];
-    let cursor = 0;
-    while (dealt.length < count && cursor < pool.length) {
-      const card = pool[cursor];
-      cursor += 1;
-      if (card.id === "disintegrator") continue;
-      dealt.push(card);
-    }
-
-    return {
-      dealt: dealt.map(defToCard),
-      reserve: pool.slice(cursor).map(defToCard),
-    };
-  }
-
-  if (mission === 58) {
-    const dealt: typeof pool = [];
-    let cursor = 0;
-    while (dealt.length < count && cursor < pool.length) {
-      const card = pool[cursor];
-      cursor += 1;
-      if (card.id === "post_it" || card.id === "emergency_batteries") continue;
+      if (redrawForbiddenIds.has(card.id)) continue;
       dealt.push(card);
     }
 

@@ -22,7 +22,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_59_nano_navigation_values"],
