@@ -198,13 +198,17 @@ function getFailureInfoTokenMode(
 
 function usesAnnouncedFalseTokenForDualCut(
   state: Readonly<GameState>,
+  actor: Readonly<Player>,
   target: Readonly<Player>,
 ): boolean {
   const falseInfoTokenMode =
     state.campaign?.falseInfoTokenMode === true || state.mission === 17;
   const falseTokenMode = state.campaign?.falseTokenMode === true || state.mission === 52;
 
-  return (target.isCaptain && falseInfoTokenMode) || falseTokenMode;
+  return (
+    falseTokenMode
+    || (falseInfoTokenMode && (actor.isCaptain || target.isCaptain))
+  );
 }
 
 /** Update marker confirmed status based on cut tiles */
@@ -581,7 +585,11 @@ export function executeDualCut(
     const failureInfoTokenMode = getFailureInfoTokenMode(state, actorId, targetPlayerId);
     const suppressInfoTokens = failureInfoTokenMode === "none";
     if (!suppressInfoTokens) {
-      const usesAnnouncedFalseToken = usesAnnouncedFalseTokenForDualCut(state, target);
+      const usesAnnouncedFalseToken = usesAnnouncedFalseTokenForDualCut(
+        state,
+        actor,
+        target,
+      );
       const tokenValue =
         usesAnnouncedFalseToken
           ? typeof guessValue === "number"
@@ -1478,7 +1486,7 @@ function resolveDoubleDetectorNoMatch(
   const failureInfoTokenMode = getFailureInfoTokenMode(state, actorId, targetPlayerId);
   const suppressInfoTokens = failureInfoTokenMode === "none";
   if (!suppressInfoTokens) {
-    const usesAnnouncedFalseToken = usesAnnouncedFalseTokenForDualCut(state, target);
+    const usesAnnouncedFalseToken = usesAnnouncedFalseTokenForDualCut(state, actor, target);
     const tokenValue =
       usesAnnouncedFalseToken
         ? guessValue
