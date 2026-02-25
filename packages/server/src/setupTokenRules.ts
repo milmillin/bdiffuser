@@ -169,18 +169,6 @@ export function validateSetupInfoTokenPlacement(
       );
     }
 
-    // Mission 22: check duplicate absent-value declarations before board pool validation.
-    const alreadyPlaced = player.infoTokens.some((t) => {
-      if (value === 0) return t.isYellow && t.position === -1;
-      return !t.isYellow && t.value === value && t.position === -1;
-    });
-    if (alreadyPlaced) {
-      return legalityError(
-        "MISSION_RULE_VIOLATION",
-        "You already placed an absent token for this value",
-      );
-    }
-
     // Check the value is actually absent from player's uncut hand
     const isYellowAbsent = value === 0;
     if (isYellowAbsent) {

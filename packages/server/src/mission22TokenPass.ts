@@ -1,6 +1,13 @@
-import { INFO_TOKEN_VALUES, YELLOW_INFO_TOKENS } from "@bomb-busters/shared";
+import {
+  INFO_TOKEN_VALUES,
+  TOTAL_INFO_TOKENS,
+  YELLOW_INFO_TOKENS,
+} from "@bomb-busters/shared";
 import type { ForcedAction, GameState, InfoToken } from "@bomb-busters/shared";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
+
+const NUMERIC_TOKEN_COPIES =
+  (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
 
 function normalizeMission22NumericToken(value: number): number | null {
   if (!Number.isInteger(value) || value < 1 || value > 12) return null;
@@ -10,7 +17,7 @@ function normalizeMission22NumericToken(value: number): number | null {
 function collectMission22TokenPassBoardFromPlayers(
   state: GameState,
 ): { numericTokens: number[]; yellowTokens: number } {
-  const usedNumericValues = new Set<number>();
+  const usedNumericCounts = new Map<number, number>();
   let usedYellowTokens = 0;
 
   for (const player of state.players) {
@@ -20,14 +27,20 @@ function collectMission22TokenPassBoardFromPlayers(
         usedYellowTokens += 1;
       } else {
         const normalizedValue = normalizeMission22NumericToken(token.value);
-        if (normalizedValue !== null) {
-          usedNumericValues.add(normalizedValue);
-        }
+        if (normalizedValue === null) continue;
+        usedNumericCounts.set(
+          normalizedValue,
+          (usedNumericCounts.get(normalizedValue) ?? 0) + 1,
+        );
       }
     }
   }
 
-  const numericTokens = INFO_TOKEN_VALUES.filter((value) => !usedNumericValues.has(value));
+  const numericTokens = INFO_TOKEN_VALUES.flatMap((value) => {
+    const usedCount = usedNumericCounts.get(value) ?? 0;
+    const availableCount = Math.max(0, NUMERIC_TOKEN_COPIES - usedCount);
+    return Array.from({ length: availableCount }, () => value);
+  });
   const yellowTokens = Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens);
 
   return { numericTokens, yellowTokens };
@@ -83,7 +96,7 @@ export function applyMission22TokenPassChoice(
   }
 
   const board = getMission22TokenPassBoardState(state);
-  let sourceToken: { value: number; isYellow: boolean } | null = null;
+  let sourceToken: { value: number; isYellow: boolean };
   if (isYellow) {
     if (board.yellowTokens <= 0) {
       return { ok: false, message: "Token value is not available on the board" };
@@ -101,32 +114,6 @@ export function applyMission22TokenPassChoice(
     }
     board.numericTokens.splice(tokenIndex, 1);
     sourceToken = { value: sourceValue, isYellow: false };
-  }
-
-  let sourcePlayerIndex = -1;
-  let sourceTokenIndex = -1;
-  if (sourceToken != null) {
-    for (let playerIndex = 0; playerIndex < state.players.length; playerIndex++) {
-      const player = state.players[playerIndex];
-      for (let tokenIndex = 0; tokenIndex < player.infoTokens.length; tokenIndex++) {
-        const token = player.infoTokens[tokenIndex];
-        if (token.position !== -1) continue;
-        if (
-          sourceToken.isYellow
-            ? token.isYellow
-            : (!token.isYellow && token.value === sourceToken.value)
-        ) {
-          sourcePlayerIndex = playerIndex;
-          sourceTokenIndex = tokenIndex;
-          break;
-        }
-      }
-      if (sourcePlayerIndex !== -1) break;
-    }
-  }
-
-  if (sourcePlayerIndex !== -1 && sourceTokenIndex !== -1) {
-    state.players[sourcePlayerIndex].infoTokens.splice(sourceTokenIndex, 1);
   }
 
   const sourceValue = sourceToken.value;
