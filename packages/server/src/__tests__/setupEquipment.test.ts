@@ -228,6 +228,45 @@ describe("setupGame equipmentReserve", () => {
     }
   });
 
+  it.each([63, 65] as const)(
+    "mission %i setup avoids dealing x or y ray to board",
+    (mission) => {
+      const playerCount = 4;
+      const players = Array.from({ length: playerCount }, (_, i) => ({
+        id: `player-${i + 1}`,
+        name: `Player ${i + 1}`,
+        hand: [],
+        standSizes: [],
+        isCaptain: i === 0,
+        character: `character_${i + 1}`,
+        characterUsed: false,
+      }));
+      const setup = resolveMissionSetup(mission, playerCount).setup;
+      const poolIds = resolveEquipmentPoolIds(setup.equipment);
+      const poolSize = poolIds.length;
+      const xOrYRayIndex = poolIds.indexOf("x_or_y_ray");
+      expect(xOrYRayIndex).toBeGreaterThan(0);
+
+      const originalRandom = Math.random;
+      const randomValues: number[] = [];
+      for (let i = poolSize - 1; i >= 1; i--) {
+        randomValues.push(i === xOrYRayIndex ? 0 : i / (i + 1));
+      }
+      for (let i = poolSize - 1; i >= 1; i--) {
+        randomValues.push(i / (i + 1));
+      }
+      let randomIdx = 0;
+      Math.random = () => (randomValues[randomIdx++] ?? 0.5);
+
+      try {
+        const { board } = setupGame(players as any, mission);
+        expect(board.equipment.some((eq) => eq.id === "x_or_y_ray")).toBe(false);
+      } finally {
+        Math.random = originalRandom;
+      }
+    },
+  );
+
   it("returns empty equipmentReserve for fixed_pool missions", () => {
     const playerCount = 4;
     const mission = 18; // fixed_pool with only general_radar

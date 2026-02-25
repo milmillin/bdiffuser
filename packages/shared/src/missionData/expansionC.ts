@@ -83,7 +83,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: exact(2),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_63_rotating_oxygen_pool"],
@@ -117,7 +117,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: exact(3),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     allowedPlayerCounts: [3, 4, 5],
     behaviorHooks: ["mission_65_personal_number_cards"],

@@ -274,7 +274,7 @@ function createEquipmentCards(
         ? new Set(["disintegrator"])
         : mission === 58
           ? new Set(["post_it", "emergency_batteries"])
-          : mission === 59
+          : mission === 59 || mission === 63 || mission === 65
             ? new Set(["x_or_y_ray"])
             : null;
 
