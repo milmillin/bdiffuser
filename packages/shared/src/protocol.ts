@@ -28,7 +28,7 @@ export type ClientMessage =
       actorTileIndex?: number;
     }
   | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number; actorTileIndex?: number }
-  | { type: "soloCut"; value: number | "YELLOW" }
+  | { type: "soloCut"; value: number | "YELLOW"; targetPlayerId?: string }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "useEquipment"; equipmentId: AnyEquipmentId; payload: UseEquipmentPayload }

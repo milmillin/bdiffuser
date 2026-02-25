@@ -796,6 +796,7 @@ export function executeSoloCut(
   state: GameState,
   actorId: string,
   value: number | "YELLOW",
+  targetPlayerId?: string,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const actorUncut = getUncutTiles(actor);
@@ -810,7 +811,13 @@ export function executeSoloCut(
   const resolveResult = dispatchHooks(state.mission, {
     point: "resolve",
     state,
-    action: { type: "soloCut", actorId, value, tilesCut: matchingTiles.length },
+    action: {
+      type: "soloCut",
+      actorId,
+      value,
+      targetPlayerId,
+      tilesCut: matchingTiles.length,
+    },
     cutValue: value,
     cutSuccess: true,
   });

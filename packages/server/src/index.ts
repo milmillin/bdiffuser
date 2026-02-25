@@ -322,7 +322,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleDualCutDoubleDetector(connection, msg.targetPlayerId, msg.tileIndex1, msg.tileIndex2, msg.guessValue, msg.actorTileIndex);
         break;
       case "soloCut":
-        this.handleSoloCut(connection, msg.value);
+        this.handleSoloCut(connection, msg.value, msg.targetPlayerId);
         break;
       case "revealReds":
         this.handleRevealReds(connection);
@@ -844,7 +844,11 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
-  handleSoloCut(conn: Connection, value: number | "YELLOW") {
+  handleSoloCut(
+    conn: Connection,
+    value: number | "YELLOW",
+    targetPlayerId?: string,
+  ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
@@ -859,7 +863,7 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeSoloCut(state, conn.id, value);
+    const action = executeSoloCut(state, conn.id, value, targetPlayerId);
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();

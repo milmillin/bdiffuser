@@ -883,6 +883,20 @@ function getMission49OxygenRecipientId(
   state: GameState,
   action: ValidateHookContext["action"],
 ): string | undefined {
+  if (action.type === "soloCut") {
+    const actorId = action.actorId;
+    const requestedRecipientId = typeof action.targetPlayerId === "string"
+      ? action.targetPlayerId
+      : undefined;
+    if (
+      requestedRecipientId != null &&
+      requestedRecipientId !== actorId &&
+      state.players.some((player) => player.id === requestedRecipientId)
+    ) {
+      return requestedRecipientId;
+    }
+  }
+
   if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
     return typeof action.targetPlayerId === "string" ? action.targetPlayerId : undefined;
   }
@@ -895,7 +909,6 @@ function getMission49OxygenRecipientId(
       const leftPlayer = state.players[(actorIndex + 1) % state.players.length];
       return leftPlayer?.id;
     }
-    return undefined;
   }
 
   return undefined;
@@ -1684,6 +1697,22 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     const actorId = ctx.action.actorId;
     const cutValue = extractCutValue(ctx.action);
     if (typeof cutValue !== "number") return;
+    if (
+      ctx.state.mission === 49 &&
+      ctx.action.type === "soloCut" &&
+      typeof ctx.action.targetPlayerId === "string"
+    ) {
+      const targetPlayerId = ctx.action.targetPlayerId;
+      if (
+        targetPlayerId === actorId ||
+        !ctx.state.players.some((player) => player.id === targetPlayerId)
+      ) {
+        return {
+          validationError: `Mission 49: solo-cut oxygen recipient must be a teammate`,
+          validationCode: "MISSION_RULE_VIOLATION",
+        };
+      }
+    }
 
     const requiredCost = getOxygenCostForCut(rule, cutValue);
     const oxygen = ctx.state.campaign?.oxygen;

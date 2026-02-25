@@ -153,6 +153,7 @@ type PendingAction =
       kind: "solo_cut";
       value: number | "YELLOW";
       actorTileIndex: number;
+      targetPlayerId?: string;
     }
   | {
       kind: "reveal_reds";
@@ -556,6 +557,14 @@ export function GameBoard({
     selectedGuessValue != null &&
     selectedGuessValue !== "RED" &&
     isMission9BlockedValue(selectedGuessValue);
+  const mission49DefaultRecipientId = useMemo(() => {
+    if (gameState.mission !== 49) return undefined;
+    const actorIndex = gameState.players.findIndex((player) =>
+      player.id === playerId,
+    );
+    if (actorIndex < 0 || gameState.players.length < 2) return undefined;
+    return gameState.players[(actorIndex + 1) % gameState.players.length]?.id;
+  }, [gameState.mission, gameState.players, playerId]);
   const mission9PendingDualBlocked =
     pendingAction?.kind === "dual_cut" &&
     isMission9BlockedValue(pendingAction.guessValue);
@@ -584,10 +593,28 @@ export function GameBoard({
   const confirmSoloFromDraft = useCallback(() => {
     if (!canConfirmSoloFromDraft) return;
     if (selectedGuessValue == null) return;
+    if (gameState.mission === 49 && mission49DefaultRecipientId) {
+      setPendingAction({
+        kind: "solo_cut",
+        value: selectedGuessValue,
+        actorTileIndex: selectedGuessTile ?? 0,
+        targetPlayerId: mission49DefaultRecipientId,
+      });
+      setSelectedGuessTile(null);
+      setSelectedDockCardId(null);
+      return;
+    }
     send({ type: "soloCut", value: selectedGuessValue });
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
-  }, [canConfirmSoloFromDraft, selectedGuessValue, send]);
+  }, [
+    canConfirmSoloFromDraft,
+    gameState.mission,
+    mission49DefaultRecipientId,
+    send,
+    selectedGuessTile,
+    selectedGuessValue,
+  ]);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -1002,7 +1029,13 @@ export function GameBoard({
         break;
       }
       case "solo_cut":
-        send({ type: "soloCut", value: pendingAction.value });
+        send({
+          type: "soloCut",
+          value: pendingAction.value,
+          ...(pendingAction.targetPlayerId
+            ? { targetPlayerId: pendingAction.targetPlayerId }
+            : {}),
+        });
         break;
       case "reveal_reds":
         send({ type: "revealReds" });
@@ -1408,6 +1441,8 @@ export function GameBoard({
                 {!equipmentMode && gameState.phase === "playing" && (
                   <PendingActionStrip
                     players={gameState.players}
+                    actorId={playerId}
+                    mission={gameState.mission}
                     pendingAction={pendingAction}
                     selectedGuessTile={selectedGuessTile}
                     selectedGuessValue={selectedGuessValue}
@@ -1424,6 +1459,13 @@ export function GameBoard({
                     }
                     onMission11RevealAttempt={stageMission11RevealAttempt}
                     onConfirmSoloFromDraft={confirmSoloFromDraft}
+                    onMission49RecipientChange={(targetPlayerId) => {
+                      if (pendingAction?.kind !== "solo_cut") return;
+                      setPendingAction({
+                        ...pendingAction,
+                        targetPlayerId,
+                      });
+                    }}
                     onCancel={cancelPendingAction}
                     onConfirm={confirmPendingAction}
                   />
@@ -2048,6 +2090,8 @@ function MissionSpecialThreeCutPanel({
 
 function PendingActionStrip({
   players,
+  actorId,
+  mission,
   pendingAction,
   selectedGuessTile,
   selectedGuessValue,
@@ -2060,6 +2104,7 @@ function PendingActionStrip({
   onConfirmSoloFromDraft,
   onConfirm,
   onCancel,
+  onMission49RecipientChange,
 }: {
   players: ClientGameState["players"];
   pendingAction: PendingAction | null;
@@ -2069,11 +2114,14 @@ function PendingActionStrip({
   mission9SelectedGuessBlocked: boolean;
   mission9ActiveValue?: number;
   mission11RevealAttemptAvailable: boolean;
+  actorId: string;
+  mission: number;
   canConfirm: boolean;
   onMission11RevealAttempt: () => void;
   onConfirmSoloFromDraft: () => void;
   onConfirm: () => void;
   onCancel: () => void;
+  onMission49RecipientChange?: (targetPlayerId: string) => void;
 }) {
   if (!pendingAction) {
     if (selectedGuessTile == null) {
@@ -2149,6 +2197,14 @@ function PendingActionStrip({
     pendingAction.kind === "equipment" &&
     pendingAction.equipmentId === "rewinder";
   let confirmLabel = "Confirm";
+  const mission49Recipients = mission === 49
+    ? players.filter((player) => player.id !== actorId)
+    : [];
+  const selectedMission49RecipientId =
+    pendingAction.kind === "solo_cut" &&
+    mission49Recipients.some((player) => player.id === pendingAction.targetPlayerId)
+      ? pendingAction.targetPlayerId
+      : mission49Recipients[0]?.id;
   switch (pendingAction.kind) {
     case "dual_cut": {
       const targetName =
@@ -2161,7 +2217,19 @@ function PendingActionStrip({
       break;
     }
     case "solo_cut":
-      summary = `Solo Cut: ${String(pendingAction.value)}`;
+      if (
+        mission === 49 &&
+        pendingAction.kind === "solo_cut" &&
+        pendingAction.targetPlayerId != null
+      ) {
+        const recipient = players.find(
+          (player) => player.id === pendingAction.targetPlayerId,
+        );
+        const recipientName = recipient?.name ?? pendingAction.targetPlayerId;
+        summary = `Solo Cut: ${String(pendingAction.value)} (give to ${recipientName})`;
+      } else {
+        summary = `Solo Cut: ${String(pendingAction.value)}`;
+      }
       break;
     case "reveal_reds":
       summary = `Reveal Reds from your stand`;
@@ -2181,6 +2249,26 @@ function PendingActionStrip({
       </div>
       <div className={PANEL_TEXT_CLASS}>{summary}</div>
       <div className="flex items-center gap-2">
+        {pendingAction?.kind === "solo_cut" &&
+          mission === 49 &&
+          players.length > 1 && (
+            <label className="flex items-center gap-2">
+              <span className="text-xs text-red-200">Give oxygen to:</span>
+              <select
+                className="rounded bg-red-900/60 border border-red-400/60 text-red-100 px-2 py-1 text-xs"
+                value={selectedMission49RecipientId ?? ""}
+                onChange={(event) => {
+                  onMission49RecipientChange?.(event.target.value);
+                }}
+              >
+                {mission49Recipients.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         {!hideCancelForRewinder && (
           <button
             type="button"
