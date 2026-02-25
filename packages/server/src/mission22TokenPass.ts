@@ -50,11 +50,36 @@ function isBoardValueSafe(value: number): value is number {
   return Number.isInteger(value) && value >= 1 && value <= 12;
 }
 
+function countNumericTokensByValue(tokens: number[]): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (const token of tokens) {
+    counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function boardHasExtraCopies(
+  cached: { numericTokens: number[]; yellowTokens: number },
+  derived: { numericTokens: number[]; yellowTokens: number },
+): boolean {
+  const cachedCounts = countNumericTokensByValue(cached.numericTokens);
+  const derivedCounts = countNumericTokensByValue(derived.numericTokens);
+
+  if (cached.yellowTokens > derived.yellowTokens) return true;
+
+  for (const [value, count] of cachedCounts) {
+    if (count > (derivedCounts.get(value) ?? 0)) return true;
+  }
+
+  return false;
+}
+
 export function getMission22TokenPassBoardState(
   state: GameState,
 ): { numericTokens: number[]; yellowTokens: number } {
   state.campaign ??= {};
   const existingBoard = state.campaign.mission22TokenPassBoard;
+  const board = collectMission22TokenPassBoardFromPlayers(state);
   if (
     state.phase !== "setup_info_tokens"
     && existingBoard
@@ -62,11 +87,11 @@ export function getMission22TokenPassBoardState(
     && existingBoard.numericTokens.every(isBoardValueSafe)
     && Number.isInteger(existingBoard.yellowTokens)
     && existingBoard.yellowTokens >= 0
+    && !boardHasExtraCopies(existingBoard, board)
   ) {
     return existingBoard;
   }
 
-  const board = collectMission22TokenPassBoardFromPlayers(state);
   state.campaign.mission22TokenPassBoard = board;
   return board;
 }

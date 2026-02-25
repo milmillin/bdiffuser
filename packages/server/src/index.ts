@@ -77,6 +77,7 @@ import { validateMission18DesignatedCutterTarget } from "./mission18.js";
 import {
   applyMission22TokenPassChoice,
   getMission22TokenPassAvailableValues,
+  getMission22TokenPassBoardState,
 } from "./mission22TokenPass.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
@@ -738,6 +739,9 @@ export class BombBustersServer extends Server<Env> {
       isYellow: isYellowToken,
     }, player);
     player.infoTokens.push(token);
+    if (state.mission === 22) {
+      getMission22TokenPassBoardState(state);
+    }
 
     pushGameLog(state, {
       turn: 0,

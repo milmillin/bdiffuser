@@ -5,7 +5,10 @@ import {
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { applyMission22TokenPassChoice } from "../mission22TokenPass";
+import {
+  applyMission22TokenPassChoice,
+  getMission22TokenPassBoardState,
+} from "../mission22TokenPass";
 
 describe("Mission 22 token pass helper", () => {
   it("consumes one available stand token and transfers it to the recipient", () => {
@@ -309,4 +312,38 @@ describe("Mission 22 token pass helper", () => {
       message: "Token value is not available on the board",
     });
   });
+
+  it("refreshes cached mission22 token pool state when cached values are stale", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", gameValue: 1 })],
+      infoTokens: [
+        { value: 4, position: -1, isYellow: false },
+        { value: 4, position: -1, isYellow: false },
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [captain, partner],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [4, 5],
+          yellowTokens: 2,
+        },
+      },
+      turnNumber: 1,
+    });
+    const board = getMission22TokenPassBoardState(state);
+
+    expect(board.numericTokens).not.toContain(4);
+    expect(board).not.toBeNull();
+    expect(board.yellowTokens).toBe(2);
+  });
+
 });
