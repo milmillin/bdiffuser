@@ -490,6 +490,33 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain(5);
   });
 
+  it("does not use reserve oxygen to fund mission 54 solo cuts", () => {
+    const state = makeGameState({
+      mission: 54,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 2 }),
+            makeTile({ id: "m2", gameValue: 2 }),
+            makeTile({ id: "m3", gameValue: 7 }),
+            makeTile({ id: "m4", gameValue: 7 }),
+          ],
+        }),
+      ],
+      campaign: {
+        oxygen: {
+          pool: 2,
+          playerOxygen: { me: 0 },
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toEqual([]);
+  });
+
   it("filters out mission 63 solo cut values that exceed player-only oxygen availability", () => {
     const state = makeGameState({
       mission: 63,

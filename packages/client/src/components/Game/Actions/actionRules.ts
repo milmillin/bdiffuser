@@ -44,11 +44,11 @@ function getMissionOxygenAvailability(state: ClientGameState, playerId: string):
   if (!oxygen) return null;
 
   const owned = Math.max(0, Math.floor(oxygen.playerOxygen[playerId] ?? 0));
-  if (state.mission === 44 || state.mission === 54) {
+  if (state.mission === 44) {
     return owned + Math.max(0, Math.floor(oxygen.pool));
   }
 
-  if (state.mission === 49 || state.mission === 63) {
+  if (state.mission === 49 || state.mission === 54 || state.mission === 63) {
     return owned;
   }
 
