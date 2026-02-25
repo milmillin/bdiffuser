@@ -209,6 +209,13 @@ export function validateDualCutLegality(
     );
   }
 
+  if (state.mission === 13 && targetTile.color === "red") {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 13 requires the simultaneous red cut action to target red wires",
+    );
+  }
+
   if (targetTile.isXMarked && mission35HasUncutYellowWires(state)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",

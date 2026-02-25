@@ -153,6 +153,27 @@ describe("validateDualCut", () => {
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
     expect(error!.message).toContain("YELLOW");
   });
+
+  it("rejects dual cut on red wire in mission 13", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeRedTile({ id: "t1" })],
+    });
+    const state = makeGameState({
+      mission: 13,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous red cut");
+  });
 });
 
 describe("mission 35 X-wire cut lock", () => {
