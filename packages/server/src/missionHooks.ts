@@ -1890,11 +1890,15 @@ registerHookHandler<"nano_progression">("nano_progression", {
     if (rule.advanceOn !== "successful_cut") return;
     if (ctx.state.phase === "finished") return;
 
-    if (ctx.state.mission === 59 && shouldRotateMission59NanoAfterCut(ctx.action)) {
-      rotateMission59(ctx.state);
-    }
+    const shouldRotateMission59Nano = ctx.state.mission === 59 &&
+      shouldRotateMission59NanoAfterCut(ctx.action);
 
-    if (!ctx.cutSuccess) return;
+    if (!ctx.cutSuccess) {
+      if (shouldRotateMission59Nano) {
+        rotateMission59(ctx.state);
+      }
+      return;
+    }
 
     let delta = Math.abs(Math.floor(rule.advanceBy ?? 1));
     if (delta === 0) return;
@@ -1907,6 +1911,10 @@ registerHookHandler<"nano_progression">("nano_progression", {
     if (ctx.state.mission === 59 && typeof ctx.cutValue === "number") {
       moveMission59ToValue(ctx.state, ctx.cutValue);
       completeMission59NumberCard(ctx.state, ctx);
+    }
+
+    if (shouldRotateMission59Nano) {
+      rotateMission59(ctx.state);
     }
 
     applyNanoDelta(ctx.state, delta, ctx.action.actorId, "point=resolve");
