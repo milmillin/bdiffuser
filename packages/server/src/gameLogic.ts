@@ -1230,7 +1230,11 @@ export function resolveDetectorTileChoice(
   const target = state.players.find((p) => p.id === targetPlayerId)!;
   const availableMatches = forced.matchingTileIndices.filter((idx) => {
     const tile = getTileByFlatIndex(target, idx);
-    return !!tile && !tile.cut && tile.gameValue === guessValue;
+    return !!tile &&
+      !tile.cut &&
+      tile.color === "blue" &&
+      typeof tile.gameValue === "number" &&
+      tile.gameValue === guessValue;
   });
   const matchCount = availableMatches.length;
 
