@@ -206,9 +206,6 @@ export function getSoloCutValues(
 
   const myUncut = me.hand.filter((t) => !t.cut);
   const values: (number | "YELLOW")[] = [];
-  const mission59ForwardValues = state.mission === 59
-    ? new Set(getMission59ForwardValues(state))
-    : null;
   const mission35HasUncutYellowWires =
     state.mission === 35 &&
     state.players.some((player) =>
@@ -255,10 +252,12 @@ export function getSoloCutValues(
   for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
-      if (state.mission === 59 && !mission59ForwardValues?.has(value)) {
+      if (state.mission === 59 && !isMission59DualCutActorTileValueAllowed(state, value)) {
         continue;
       }
-      if (!isMission26CutValueVisible(state, value)) continue;
+      if (state.mission !== 59 && !isMission26CutValueVisible(state, value)) {
+        continue;
+      }
       if (value === protectedSimultaneousFourValue) {
         continue;
       }

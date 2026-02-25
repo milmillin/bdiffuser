@@ -571,6 +571,41 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain(4);
   });
 
+  it("includes mission 59 current Nano value for solo cuts even when facedown", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 4 }),
+            makeTile({ id: "m2", gameValue: 4 }),
+          ],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n4", value: 4, faceUp: false },
+            { id: "n6", value: 6, faceUp: true },
+            { id: "n7", value: 7, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(4);
+  });
+
   it("checks mission 59 forward visibility from Nano-facing direction", () => {
     const state = makeGameState({
       mission: 59,
