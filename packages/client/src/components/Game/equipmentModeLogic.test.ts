@@ -352,7 +352,7 @@ describe("getOwnTileSelectableFilter", () => {
   });
 
   it("label_eq step 1: allows all uncut tiles", () => {
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: null };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: null, secondTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(true);
@@ -360,7 +360,7 @@ describe("getOwnTileSelectableFilter", () => {
   });
 
   it("label_eq step 2: allows only adjacent tiles", () => {
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 2 };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 2, secondTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 1)).toBe(true); // idx 1 is adjacent to 2
     expect(filter(tile(), 3)).toBe(true); // idx 3 is adjacent to 2
@@ -368,8 +368,16 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile(), 4)).toBe(false); // idx 4 is not adjacent
   });
 
+  it("label_eq step 3: blocks all tiles when both selected", () => {
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
+    const filter = getOwnTileSelectableFilter(mode, player())!;
+    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile(), 1)).toBe(false);
+    expect(filter(tile(), 2)).toBe(false);
+  });
+
   it("label_neq step 1: allows cut and uncut tiles", () => {
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null, secondTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ cut: true }), 0)).toBe(true);
@@ -384,11 +392,18 @@ describe("getOwnTileSelectableFilter", () => {
         tile({ cut: false }),
       ],
     });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1 };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1, secondTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, me)!;
     expect(filter(tile({ cut: true }), 0)).toBe(false);
     expect(filter(tile({ cut: false }), 2)).toBe(true);
     expect(filter(tile({ cut: false }), 3)).toBe(false);
+  });
+
+  it("label_neq step 3: blocks all tiles when both selected", () => {
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 };
+    const filter = getOwnTileSelectableFilter(mode, player())!;
+    expect(filter(tile(), 0)).toBe(false);
+    expect(filter(tile(), 1)).toBe(false);
   });
 
   it("talkies_walkies: allows uncut tiles even when no teammate selected", () => {
@@ -685,14 +700,14 @@ describe("highlight functions", () => {
       expect(getOwnSelectedTileIndex(mode)).toBeUndefined();
     });
 
-    it("label_eq: returns firstTileIndex", () => {
-      const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1 };
-      expect(getOwnSelectedTileIndex(mode)).toBe(1);
+    it("label_eq: returns undefined (uses getOwnSelectedTileIndices instead)", () => {
+      const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: null };
+      expect(getOwnSelectedTileIndex(mode)).toBeUndefined();
     });
 
-    it("label_neq: returns firstTileIndex", () => {
-      const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 3 };
-      expect(getOwnSelectedTileIndex(mode)).toBe(3);
+    it("label_neq: returns undefined (uses getOwnSelectedTileIndices instead)", () => {
+      const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 3, secondTileIndex: null };
+      expect(getOwnSelectedTileIndex(mode)).toBeUndefined();
     });
 
     it("talkies_walkies: returns myTileIndex", () => {
@@ -782,6 +797,26 @@ describe("highlight functions", () => {
         guessTileIndex: 2,
       };
       expect(getOwnSelectedTileIndices(mode)).toBeUndefined();
+    });
+
+    it("label_eq: returns both indices when set", () => {
+      const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
+      expect(getOwnSelectedTileIndices(mode)).toEqual([1, 2]);
+    });
+
+    it("label_eq: returns only firstTileIndex when secondTileIndex is null", () => {
+      const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: null };
+      expect(getOwnSelectedTileIndices(mode)).toEqual([1]);
+    });
+
+    it("label_eq: returns undefined when no indices set", () => {
+      const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: null, secondTileIndex: null };
+      expect(getOwnSelectedTileIndices(mode)).toBeUndefined();
+    });
+
+    it("label_neq: returns both indices when set", () => {
+      const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 };
+      expect(getOwnSelectedTileIndices(mode)).toEqual([0, 1]);
     });
   });
 });
@@ -1103,63 +1138,78 @@ describe("handleOwnTileClickEquipment", () => {
 
   it("label_eq step 1: sets firstTileIndex", () => {
     const me = player({ hand: [tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: null };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: null, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: 0 });
+    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: 0, secondTileIndex: null });
     expect(result.sendPayload).toBeUndefined();
   });
 
-  it("label_eq step 2: sends useEquipment when adjacent tile clicked", () => {
+  it("label_eq step 2: sets secondTileIndex when adjacent tile clicked", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1 };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 2, me);
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "label_eq",
-      payload: { kind: "label_eq", tileIndexA: 1, tileIndexB: 2 },
-    });
+    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
   it("label_eq step 2: ignores non-adjacent tile", () => {
     const me = player({ hand: [tile(), tile(), tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 0 };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 0, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 3, me);
     expect(result.newMode).toEqual(mode);
     expect(result.sendPayload).toBeUndefined();
   });
 
+  it("label_eq: clicking secondTileIndex deselects it", () => {
+    const me = player({ hand: [tile(), tile(), tile()] });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
+    const result = handleOwnTileClickEquipment(mode, 2, me);
+    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: null });
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("label_eq: ignores other tiles when both are set", () => {
+    const me = player({ hand: [tile(), tile(), tile(), tile()] });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
+    const result = handleOwnTileClickEquipment(mode, 3, me);
+    expect(result.newMode).toEqual(mode);
+  });
+
   it("label_neq step 1: sets firstTileIndex", () => {
     const me = player({ hand: [tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 1, me);
-    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 1 });
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 1, secondTileIndex: null });
   });
 
   it("label_neq step 1: allows selecting a cut tile as firstTileIndex", () => {
     const me = player({ hand: [tile({ cut: true }), tile()] });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: null, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 0, me);
-    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0 });
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0, secondTileIndex: null });
   });
 
-  it("label_neq step 2: sends useEquipment for adjacent tile", () => {
+  it("label_neq step 2: sets secondTileIndex for adjacent tile", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0 };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 1, me);
-    expect(result.newMode).toBeNull();
-    expect(result.sendPayload).toEqual({
-      type: "useEquipment",
-      equipmentId: "label_neq",
-      payload: { kind: "label_neq", tileIndexA: 0, tileIndexB: 1 },
-    });
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 });
+    expect(result.sendPayload).toBeUndefined();
   });
 
-  it("label_neq step 2: blocks sending when both selected tiles are cut", () => {
+  it("label_neq step 2: blocks when both selected tiles are cut", () => {
     const me = player({ hand: [tile({ cut: true }), tile({ cut: true }), tile()] });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0 };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 1, me);
     expect(result.newMode).toEqual(mode);
+    expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("label_neq: clicking secondTileIndex deselects it", () => {
+    const me = player({ hand: [tile(), tile(), tile()] });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0, secondTileIndex: null });
     expect(result.sendPayload).toBeUndefined();
   });
 
@@ -1479,19 +1529,19 @@ describe("handleOwnTileClickEquipment", () => {
 
   // -- label_eq / label_neq first tile deselection --
 
-  it("label_eq: clicking selected first tile deselects it", () => {
+  it("label_eq: clicking selected first tile deselects both", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1 };
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
     const result = handleOwnTileClickEquipment(mode, 1, me);
-    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: null });
+    expect(result.newMode).toEqual({ kind: "label_eq", firstTileIndex: null, secondTileIndex: null });
     expect(result.sendPayload).toBeUndefined();
   });
 
-  it("label_neq: clicking selected first tile deselects it", () => {
+  it("label_neq: clicking selected first tile deselects both", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
-    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1 };
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1, secondTileIndex: 2 };
     const result = handleOwnTileClickEquipment(mode, 1, me);
-    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: null });
+    expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: null, secondTileIndex: null });
     expect(result.sendPayload).toBeUndefined();
   });
 });

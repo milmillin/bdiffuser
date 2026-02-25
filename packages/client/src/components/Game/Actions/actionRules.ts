@@ -130,9 +130,9 @@ export function getInitialEquipmentMode(
     case "general_radar":
       return { kind: "general_radar", selectedValue: null };
     case "label_eq":
-      return { kind: "label_eq", firstTileIndex: null };
+      return { kind: "label_eq", firstTileIndex: null, secondTileIndex: null };
     case "label_neq":
-      return { kind: "label_neq", firstTileIndex: null };
+      return { kind: "label_neq", firstTileIndex: null, secondTileIndex: null };
     case "talkies_walkies":
       return {
         kind: "talkies_walkies",

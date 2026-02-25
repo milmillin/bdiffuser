@@ -27,8 +27,8 @@ export type EquipmentMode = (
       oxygenRecipientPlayerId?: string;
     }
   | { kind: "general_radar"; selectedValue: number | null }
-  | { kind: "label_eq"; firstTileIndex: number | null }
-  | { kind: "label_neq"; firstTileIndex: number | null }
+  | { kind: "label_eq"; firstTileIndex: number | null; secondTileIndex: number | null }
+  | { kind: "label_neq"; firstTileIndex: number | null; secondTileIndex: number | null }
   | {
       kind: "talkies_walkies";
       teammateId: string | null;
@@ -392,6 +392,34 @@ export function EquipmentModePanel({
         content = mode.kind === "label_neq"
           ? "Click one of your wires to select the first wire."
           : "Click one of your uncut wires to select the first wire.";
+      } else if (mode.secondTileIndex !== null) {
+        const symbol = mode.kind === "label_eq" ? "=" : "≠";
+        content = (
+          <>
+            Wires {wireLabel(mode.firstTileIndex)} &amp;{" "}
+            {wireLabel(mode.secondTileIndex)} will be labeled {symbol}.
+          </>
+        );
+        confirmButton = (
+          <button
+            type="button"
+            data-testid={`${mode.kind}-confirm`}
+            onClick={() =>
+              sendAndCancel({
+                type: "useEquipment",
+                equipmentId: mode.kind,
+                payload: {
+                  kind: mode.kind,
+                  tileIndexA: mode.firstTileIndex!,
+                  tileIndexB: mode.secondTileIndex!,
+                },
+              })
+            }
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            {mode.kind === "label_eq" ? "Confirm Label =" : "Confirm Label ≠"}
+          </button>
+        );
       } else {
         const adjacentLabels: string[] = [];
         if (mode.firstTileIndex > 0)

@@ -61,8 +61,8 @@ const ALL_MODES: EquipmentMode[] = [
     guessTileIndex: null,
   },
   { kind: "general_radar", selectedValue: null },
-  { kind: "label_eq", firstTileIndex: null },
-  { kind: "label_neq", firstTileIndex: null },
+  { kind: "label_eq", firstTileIndex: null, secondTileIndex: null },
+  { kind: "label_neq", firstTileIndex: null, secondTileIndex: null },
   {
     kind: "talkies_walkies",
     teammateId: null,
@@ -302,13 +302,22 @@ describe("EquipmentModePanel — general_radar", () => {
 
 describe("EquipmentModePanel — label_eq", () => {
   it("step 1: shows instruction to click an uncut wire", () => {
-    const html = renderMode({ kind: "label_eq", firstTileIndex: null });
+    const html = renderMode({ kind: "label_eq", firstTileIndex: null, secondTileIndex: null });
     expect(html).toContain("Click one of your uncut wires");
+    expect(html).not.toContain("Confirm Label =");
   });
 
   it("step 2: shows adjacent text after selecting a wire", () => {
-    const html = renderMode({ kind: "label_eq", firstTileIndex: 1 });
+    const html = renderMode({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: null });
     expect(html).toContain("adjacent");
+    expect(html).not.toContain("Confirm Label =");
+  });
+
+  it("step 3: shows confirm button when both wires selected", () => {
+    const html = renderMode({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 });
+    expect(html).toContain("Confirm Label =");
+    expect(html).toContain("data-testid=\"label_eq-confirm\"");
+    expect(html).toContain("will be labeled =");
   });
 });
 
@@ -316,13 +325,22 @@ describe("EquipmentModePanel — label_eq", () => {
 
 describe("EquipmentModePanel — label_neq", () => {
   it("step 1: shows instruction to click a wire", () => {
-    const html = renderMode({ kind: "label_neq", firstTileIndex: null });
+    const html = renderMode({ kind: "label_neq", firstTileIndex: null, secondTileIndex: null });
     expect(html).toContain("Click one of your wires");
+    expect(html).not.toContain("Confirm Label");
   });
 
   it("step 2: shows adjacent text after selecting a wire", () => {
-    const html = renderMode({ kind: "label_neq", firstTileIndex: 1 });
+    const html = renderMode({ kind: "label_neq", firstTileIndex: 1, secondTileIndex: null });
     expect(html).toContain("adjacent");
+    expect(html).not.toContain("Confirm Label");
+  });
+
+  it("step 3: shows confirm button when both wires selected", () => {
+    const html = renderMode({ kind: "label_neq", firstTileIndex: 1, secondTileIndex: 2 });
+    expect(html).toContain("Confirm Label ≠");
+    expect(html).toContain("data-testid=\"label_neq-confirm\"");
+    expect(html).toContain("will be labeled ≠");
   });
 });
 
