@@ -7,7 +7,7 @@ import {
   makePlayer,
 } from "@bomb-busters/shared/testing";
 import { dispatchHooks } from "../missionHooks";
-import { executeSoloCut } from "../gameLogic";
+import { executeDualCut, executeSoloCut } from "../gameLogic";
 
 // Side-effect import registers built-in handlers.
 import "../missionHooks";
@@ -320,5 +320,32 @@ describe("mission progression hooks", () => {
     expect(
       state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
     ).toBe(2);
+  });
+
+  it("mission 66 dual cut failure advances bunker tracker and action pointer", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "p1-4a", gameValue: 4, sortValue: 4 })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-2", gameValue: 2, sortValue: 2 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+
+    executeDualCut(state, "p1", "p2", 0, 4);
+
+    expect(state.campaign?.bunkerTracker?.position).toBe(1);
+    expect(
+      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+    ).toBe(1);
   });
 });

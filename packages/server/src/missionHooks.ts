@@ -1487,8 +1487,7 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
   },
 
   resolve(rule: BunkerFlowRuleDef, ctx: ResolveHookContext): void {
-    if (!ctx.cutSuccess) return;
-
+    if (ctx.action.type !== "soloCut" && ctx.action.type !== "dualCut") return;
     const tracker = ctx.state.campaign?.bunkerTracker;
     if (!tracker) return;
 

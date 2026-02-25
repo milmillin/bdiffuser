@@ -410,6 +410,14 @@ export function executeDualCut(
       success: true,
     };
   } else {
+    dispatchHooks(state.mission, {
+      point: "resolve",
+      state,
+      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex, guessValue },
+      cutValue: guessValue,
+      cutSuccess: false,
+    });
+
     // Failure
     const hiddenBlueAsRedValue =
       state.mission === 11 ? getBlueAsRedValue(state) : null;
