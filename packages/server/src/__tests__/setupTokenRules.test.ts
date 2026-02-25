@@ -88,6 +88,32 @@ describe("setupTokenRules", () => {
     expect(allSetupInfoTokensPlaced(state)).toBe(false);
   });
 
+  it("uses campaign falseInfoTokenMode for captain-only false setup count", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+    const state = makeGameState({
+      mission: 1,
+      players: [captain, partner],
+      campaign: { falseInfoTokenMode: true },
+    });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(2);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(1);
+  });
+
+  it("uses campaign falseTokenMode for all-player false setup count", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
+    const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
+    const state = makeGameState({
+      mission: 1,
+      players: [captain, partner],
+      campaign: { falseTokenMode: true },
+    });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(2);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(2);
+  });
+
   it.each([13, 27, 29, 40, 46, 51] as const)(
     "mission %i (2p): captain requires 0 setup info tokens",
     (mission) => {
@@ -568,6 +594,49 @@ describe("setupTokenRules", () => {
       expect(error).toEqual({
         code: "MISSION_RULE_VIOLATION",
         message: "Captain false setup tokens cannot target red wires",
+      });
+    });
+
+    it("campaign false-info-token flag applies captain false setup rules on non-17 missions", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "b-6", gameValue: 6, sortValue: 6, color: "blue" })],
+      });
+      const state = makeGameState({
+        mission: 1,
+        phase: "setup_info_tokens",
+        players: [captain],
+        campaign: { falseInfoTokenMode: true },
+      });
+
+      const passError = validateSetupInfoTokenPlacement(state, captain, 5, 0);
+      expect(passError).toBeNull();
+
+      const failError = validateSetupInfoTokenPlacement(state, captain, 6, 0);
+      expect(failError).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Captain setup token must be false in mission 17",
+      });
+    });
+
+    it("campaign false-token flag applies all-player false setup rules on non-52 missions", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-4", gameValue: 4, sortValue: 4, color: "blue" })],
+      });
+      const state = makeGameState({
+        mission: 1,
+        phase: "setup_info_tokens",
+        players: [player],
+        campaign: { falseTokenMode: true },
+      });
+
+      const passError = validateSetupInfoTokenPlacement(state, player, 3, 0);
+      expect(passError).toBeNull();
+
+      const failError = validateSetupInfoTokenPlacement(state, player, 4, 0);
+      expect(failError).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Mission 52 setup token must be false",
       });
     });
 

@@ -23,12 +23,19 @@ export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
-  return requiredSetupInfoTokenCountForMissionAndHand(
+  const base = requiredSetupInfoTokenCountForMissionAndHand(
     state.mission,
     state.players.length,
     player.isCaptain,
     player.hand,
   );
+  if (isAllFalseSetupMode(state)) {
+    return 2;
+  }
+  if (isCaptainFalseSetupMode(state, player)) {
+    return 2;
+  }
+  return base;
 }
 
 /**
@@ -135,6 +142,20 @@ export function autoPlaceMission13RandomSetupInfoTokens(
   }
 
   return placements;
+}
+
+function isCaptainFalseSetupMode(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  return (
+    player.isCaptain
+    && (state.campaign?.falseInfoTokenMode === true || state.mission === 17)
+  );
+}
+
+function isAllFalseSetupMode(state: Readonly<GameState>): boolean {
+  return state.campaign?.falseTokenMode === true || state.mission === 52;
 }
 
 /**
@@ -247,8 +268,8 @@ export function validateSetupInfoTokenPlacement(
     );
   }
 
-  // Mission 17: captain places false tokens and may not place on red wires.
-  if (state.mission === 17 && player.isCaptain) {
+  // Mission 17 and campaign false-info-token mode: captain places false tokens and may not place on red wires.
+  if (isCaptainFalseSetupMode(state, player)) {
     if (tile.color === "red") {
       return legalityError(
         "MISSION_RULE_VIOLATION",
@@ -264,8 +285,8 @@ export function validateSetupInfoTokenPlacement(
     return null;
   }
 
-  // Mission 52: all setup tokens are false and may target blue or red wires.
-  if (state.mission === 52) {
+  // Mission 52 and campaign false-token mode: all setup tokens are false and may target blue or red wires.
+  if (isAllFalseSetupMode(state)) {
     if (tile.color === "yellow") {
       return legalityError(
         "MISSION_RULE_VIOLATION",
