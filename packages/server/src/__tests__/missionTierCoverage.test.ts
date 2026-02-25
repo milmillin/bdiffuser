@@ -512,7 +512,7 @@ describe("mission complexity tier representative coverage", () => {
     ]);
   });
 
-  it("mid-campaign tier (mission 22): failed dual cut places absent-value token", () => {
+  it("mid-campaign tier (mission 22): failed dual cut places target blue wire value", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
@@ -536,14 +536,14 @@ describe("mission complexity tier representative coverage", () => {
     }
     expect(target.infoTokens).toEqual([
       {
-        value: 1,
+        value: 3,
         position: 0,
         isYellow: false,
       },
     ]);
   });
 
-  it("mid-campaign tier (mission 22): yellow-wire failure token is also absent-value", () => {
+  it("mid-campaign tier (mission 22): yellow-wire failure token uses yellow value", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a6", color: "blue", gameValue: 6, sortValue: 6 })],
@@ -567,9 +567,9 @@ describe("mission complexity tier representative coverage", () => {
     }
     expect(target.infoTokens).toEqual([
       {
-        value: 1,
+        value: 0,
         position: 0,
-        isYellow: false,
+        isYellow: true,
       },
     ]);
   });
