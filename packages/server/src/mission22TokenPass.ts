@@ -22,7 +22,6 @@ function collectMission22TokenPassBoardFromPlayers(
 
   for (const player of state.players) {
     for (const token of player.infoTokens) {
-      if (token.position !== -1) continue;
       if (token.isYellow) {
         usedYellowTokens += 1;
       } else {

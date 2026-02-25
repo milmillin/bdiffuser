@@ -307,6 +307,37 @@ describe("Mission 22 token pass helper", () => {
     });
   });
 
+  it("derives mission 22 board state from all mission tokens, including played tokens", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c2", gameValue: 2, sortValue: 2 }),
+        makeYellowTile({ id: "cY", sortValue: 2.1 }),
+      ],
+      infoTokens: [
+        { value: 4, position: -1, isYellow: false },
+        { value: 4, position: 0, isYellow: false },
+        { value: 0, position: 1, isYellow: true },
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p3-8", gameValue: 8 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [captain, partner],
+      campaign: {},
+    });
+
+    const board = getMission22TokenPassBoardState(state);
+
+    expect(board.numericTokens).not.toContain(4);
+    expect(board.yellowTokens).toBe(1);
+  });
+
   it("refreshes cached mission22 token pool state when cached values are stale", () => {
     const captain = makePlayer({
       id: "captain",
