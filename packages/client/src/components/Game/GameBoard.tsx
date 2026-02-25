@@ -269,14 +269,20 @@ export function GameBoard({
   }, [gameState.pendingForcedAction, playerId]);
 
   const isSetup = gameState.phase === "setup_info_tokens";
+  const randomSetupCaptainOnly =
+    gameState.campaign != null &&
+    gameState.players.length === 2 &&
+    (gameState.campaign as Record<string, unknown>).randomSetupCaptainOnly === true;
   const requiredSetupTokens = me
-    ? requiredSetupInfoTokenCountForMissionAndHand(
-        gameState.mission,
-        gameState.players.length,
-        me.isCaptain,
-        me.hand,
-        gameState.campaign,
-      )
+    ? randomSetupCaptainOnly && !me.isCaptain
+      ? 0
+      : requiredSetupInfoTokenCountForMissionAndHand(
+          gameState.mission,
+          gameState.players.length,
+          me.isCaptain,
+          me.hand,
+          gameState.campaign,
+        )
     : 0;
   const requiresSetupToken =
     !isSetup || !me
