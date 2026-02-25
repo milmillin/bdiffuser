@@ -375,6 +375,13 @@ export const CHALLENGE_CARD_IMAGES: Record<string, string> = {
 
 export const CHALLENGE_CARD_BACK = "challenge_back.png";
 
+// ── Cutter Card Images (sequence priority) ──────────────────
+
+export const CUTTER_CARD_IMAGES: Record<string, string> = {
+  face_a: "cutter_a.png",
+  face_b: "cutter_b.png",
+};
+
 // ── Helper to get wire image by color and sort value ────────
 
 export function getWireImage(

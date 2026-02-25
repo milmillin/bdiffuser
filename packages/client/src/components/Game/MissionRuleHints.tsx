@@ -5,6 +5,8 @@ import {
   getConstraintCardImage,
   getChallengeCardImage,
   NUMBER_CARD_BACK,
+  CUTTER_CARD_IMAGES,
+  MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 
@@ -192,6 +194,14 @@ function CampaignObjectsHint({
   const campaign = gameState.campaign;
   if (!campaign) return null;
 
+  const sequenceRule = MISSION_SCHEMAS[gameState.mission]?.hookRules?.find(
+    (r) => r.kind === "sequence_priority",
+  );
+  const cutterImage =
+    sequenceRule?.kind === "sequence_priority"
+      ? CUTTER_CARD_IMAGES[sequenceRule.variant]
+      : undefined;
+
   const visibleCards = campaign.numberCards?.visible ?? [];
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
@@ -230,8 +240,9 @@ function CampaignObjectsHint({
   );
 
   const hasNumberCardContent =
-    !hideNumberCards &&
-    (visibleCards.length > 0 || deckCount > 0 || discardCount > 0);
+    cutterImage != null ||
+    (!hideNumberCards &&
+      (visibleCards.length > 0 || deckCount > 0 || discardCount > 0));
 
   const hasAnyContent =
     hasNumberCardContent ||
@@ -257,6 +268,20 @@ function CampaignObjectsHint({
         {hasNumberCardContent && (
           <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
             <div className="text-[10px] uppercase text-gray-400">Number Cards</div>
+            {cutterImage && (
+              <div className="flex items-center gap-1.5">
+                <CampaignCardThumbnail
+                  image={cutterImage}
+                  borderColor="border-emerald-400"
+                  onClick={() =>
+                    setPreviewCard({
+                      name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
+                      previewImage: cutterImage,
+                    })
+                  }
+                />
+              </div>
+            )}
             {visibleCards.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap">
                 {visibleCards.map((card) => {
@@ -494,7 +519,12 @@ function CampaignObjectsHint({
 }
 
 export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) {
-  const showSequence = gameState.mission === 9;
+  const showSequence =
+    gameState.mission === 9 ||
+    ((gameState.campaign?.numberCards?.visible?.length ?? 0) >= 3 &&
+      gameState.campaign?.specialMarkers?.some(
+        (m) => m.kind === "sequence_pointer",
+      ) === true);
   const showEquipmentLocks = gameState.mission === 12;
   const showCampaignObjects = gameState.campaign != null;
 
@@ -508,7 +538,7 @@ export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) 
         <CampaignObjectsHint
           gameState={gameState}
           hideSequencePointer={showSequence}
-          hideNumberCards={showSequence}
+          hideNumberCards={false}
         />
       )}
     </div>
