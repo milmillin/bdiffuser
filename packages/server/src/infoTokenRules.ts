@@ -1,4 +1,5 @@
 import type { GameState, InfoToken, Player, WireValue } from "@bomb-busters/shared";
+import { flatIndexToStandIndex, resolveStandRange } from "./validation.js";
 
 const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21, 33]);
 const COUNT_TOKEN_MISSIONS = new Set<number>([24, 40]);
@@ -27,10 +28,20 @@ function toCountHint(count: number): 1 | 2 | 3 {
   return 3;
 }
 
-function countValueCopies(owner: Readonly<Player>, value: WireValue): number {
+function countValueCopies(
+  owner: Readonly<Player>,
+  value: WireValue,
+  tokenPosition: number,
+): number {
+  const standIndex = flatIndexToStandIndex(owner, tokenPosition);
+  const range = standIndex != null ? resolveStandRange(owner, standIndex) : null;
+
+  const start = range?.start ?? 0;
+  const end = range?.endExclusive ?? owner.hand.length;
+
   let count = 0;
-  for (const tile of owner.hand) {
-    if (tile.gameValue === value) count++;
+  for (let i = start; i < end; i++) {
+    if (owner.hand[i].gameValue === value) count++;
   }
   return count;
 }
@@ -96,7 +107,7 @@ export function applyMissionInfoTokenVariant(
       value: 0,
       isYellow: false,
       parity: undefined,
-      countHint: toCountHint(countValueCopies(owner, tile.gameValue)),
+      countHint: toCountHint(countValueCopies(owner, tile.gameValue, token.position)),
     };
   }
 

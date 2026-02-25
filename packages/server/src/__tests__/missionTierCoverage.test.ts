@@ -5,6 +5,7 @@ import {
   makeBoardState,
   makeEquipmentCard,
   makeGameState,
+  makeInfoToken,
   makePlayer,
   makeTile,
   makeYellowTile,
@@ -19,6 +20,7 @@ import {
   requiredSetupInfoTokenCount,
   validateSetupInfoTokenPlacement,
 } from "../setupTokenRules";
+import { applyMissionInfoTokenVariant } from "../infoTokenRules";
 
 function createSetupPlayers(count: 2 | 3 | 4 | 5) {
   return Array.from({ length: count }, (_, idx) =>
@@ -1335,5 +1337,32 @@ describe("mission complexity tier representative coverage", () => {
     expect(validateRevealRedsLegality(blockedState, "actor")?.code).toBe(
       "REVEAL_REDS_REQUIRES_ALL_RED",
     );
+  });
+
+  it("count token missions (24/40): count scopes to the stand where the token is placed", () => {
+    // Player with 2 stands: stand 0 has two 3s, stand 1 has one 3
+    const player = makePlayer({
+      id: "owner",
+      hand: [
+        makeTile({ id: "t0", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t1", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5, sortValue: 5 }),
+        makeTile({ id: "t3", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "t4", gameValue: 7, sortValue: 7 }),
+      ],
+      standSizes: [3, 2],
+    });
+
+    const state = makeGameState({ mission: 24, players: [player] });
+
+    // Token on stand 0, position 0 (value 3): should count 2 copies on stand 0
+    const tokenOnStand0 = makeInfoToken({ value: 3, position: 0 });
+    const result0 = applyMissionInfoTokenVariant(state, tokenOnStand0, player);
+    expect(result0.countHint).toBe(2);
+
+    // Token on stand 1, position 3 (value 3): should count 1 copy on stand 1
+    const tokenOnStand1 = makeInfoToken({ value: 3, position: 3 });
+    const result1 = applyMissionInfoTokenVariant(state, tokenOnStand1, player);
+    expect(result1.countHint).toBe(1);
   });
 });
