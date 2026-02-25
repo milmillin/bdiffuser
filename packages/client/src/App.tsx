@@ -49,12 +49,27 @@ function saveLastName(name: string) {
   } catch { /* ignore */ }
 }
 
+const PARTYKIT_HOST =
+  import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
+
 function getRoomFromPath(): string | null {
   const path = window.location.pathname.replace(/^\//, "").trim();
+  if (path.endsWith("/debug")) return null;
   return path || null;
 }
 
+function maybeRedirectDebug() {
+  const path = window.location.pathname.replace(/^\//, "").trim();
+  const match = path.match(/^(.+)\/debug$/);
+  if (match) {
+    const protocol = PARTYKIT_HOST.startsWith("localhost") ? "http" : "https";
+    window.location.href = `${protocol}://${PARTYKIT_HOST}/parties/bomb-busters-server/${match[1]}/debug`;
+  }
+}
+
 export default function App() {
+  maybeRedirectDebug();
+
   const [roomId, setRoomId] = useState<string | null>(() => {
     // Auto-join if we have a stored session for the URL room
     const pathRoom = getRoomFromPath();
