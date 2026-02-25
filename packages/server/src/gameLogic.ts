@@ -254,6 +254,29 @@ function resolveActorDualCutTile(
   return actorUncut.find(canUseActorTile);
 }
 
+function resolveActorDualCutFallbackTile(
+  state: GameState,
+  actor: Player,
+  actorTileIndex?: number,
+): WireTile | undefined {
+  const actorUncut = getUncutTiles(actor);
+  const mission35XWireCutLocked = state.mission === 35;
+  const shouldPreferNonXWire = mission35XWireCutLocked
+    && actorUncut.some((tile) => !tile.isXMarked);
+
+  const canUseActorTile = (tile: WireTile): boolean =>
+    !shouldPreferNonXWire || !tile.isXMarked;
+
+  if (actorTileIndex != null) {
+    const candidate = getTileByFlatIndex(actor, actorTileIndex);
+    if (candidate && !candidate.cut && canUseActorTile(candidate)) {
+      return candidate;
+    }
+  }
+
+  return actorUncut.find(canUseActorTile);
+}
+
 function missionSelfCutFailureExplodes(state: GameState): boolean {
   return getHookRules(state.mission).some((rule) =>
     rule.kind === "upside_down_wire" && rule.selfCutExplodes === true
@@ -491,9 +514,23 @@ export function executeDualCut(
       };
     }
 
+    const actorHasMatchingGuess = actor.hand.some(
+      (tile) => !tile.cut && tile.gameValue === guessValue,
+    );
+    const shouldUseFallbackActorCut = !actorHasMatchingGuess;
+    const mistakenValueActorTile = shouldUseFallbackActorCut
+      ? resolveActorDualCutFallbackTile(state, actor, actorTileIndex)
+      : undefined;
+    if (mistakenValueActorTile) mistakenValueActorTile.cut = true;
+    const actorDualCutFailureTile = shouldUseFallbackActorCut
+      ? mistakenValueActorTile
+      : resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
+
     if (missionSelfCutFailureExplodes(state)) {
-      const actorTile = resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
-      if (actorTile && (actorTile as WireTile & { upsideDown?: boolean }).upsideDown === true) {
+      if (
+        actorDualCutFailureTile &&
+        (actorDualCutFailureTile as WireTile & { upsideDown?: boolean }).upsideDown === true
+      ) {
         state.result = "loss_red_wire";
         state.phase = "finished";
         emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);

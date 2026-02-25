@@ -80,6 +80,36 @@ describe("mission 11 game logic", () => {
     expect(state.phase).toBe("playing");
   });
 
+  it("cuts a fallback actor wire when a wrong value is announced", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "blue", gameValue: 5 }),
+        makeTile({ id: "a2", color: "blue", gameValue: 7 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const beforeDetonator = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "actor", "target", 0, 9);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(beforeDetonator + 1);
+    expect(target.hand[0].cut).toBe(false);
+    expect(actor.hand[0].cut).toBe(true);
+    expect(actor.hand[1].cut).toBe(false);
+  });
+
   it("explodes when a dual cut targets a hidden red-like wire with a wrong guess", () => {
     const actor = makePlayer({
       id: "actor",

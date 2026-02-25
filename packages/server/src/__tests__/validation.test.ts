@@ -104,6 +104,23 @@ describe("validateDualCut", () => {
     expect(validateDualCut(state, "actor", "target", 0, 5)).toBeNull();
   });
 
+  it("allows dual cut even when announced value is absent from actor hand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    expect(validateDualCut(state, "actor", "target", 0, 7)).toBeNull();
+  });
+
   it("rejects when actor targets themselves", () => {
     const actor = makePlayer({
       id: "actor",
