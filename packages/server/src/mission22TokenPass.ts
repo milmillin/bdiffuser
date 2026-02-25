@@ -106,6 +106,7 @@ export function getMission22TokenPassBoardState(
   const existingBoard = state.campaign.mission22TokenPassBoard;
   const board = collectMission22TokenPassBoardFromPlayers(state);
   const isActiveTokenPass = state.pendingForcedAction?.kind === "mission22TokenPass";
+  const tokenPassHasStarted = state.campaign?.mission22TokenPassTriggered === true;
   if (
     state.phase !== "setup_info_tokens"
     && existingBoard
@@ -114,7 +115,7 @@ export function getMission22TokenPassBoardState(
     && Number.isInteger(existingBoard.yellowTokens)
     && existingBoard.yellowTokens >= 0
     && !boardHasExtraCopies(existingBoard, board)
-    && (isActiveTokenPass || !boardHasMissingCopies(existingBoard, board))
+    && (isActiveTokenPass || tokenPassHasStarted || !boardHasMissingCopies(existingBoard, board))
   ) {
     return existingBoard;
   }

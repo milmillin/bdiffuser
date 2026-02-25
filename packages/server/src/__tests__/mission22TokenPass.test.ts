@@ -371,4 +371,34 @@ describe("Mission 22 token pass helper", () => {
     expect(board.yellowTokens).toBe(2);
   });
 
+  it("does not refresh mission22 board cache after token pass trigger if it is missing values", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", gameValue: 1 })],
+      infoTokens: [{ value: 4, position: -1, isYellow: false }],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [chooser, partner],
+      campaign: {
+        mission22TokenPassTriggered: true,
+        mission22TokenPassBoard: {
+          numericTokens: [],
+          yellowTokens: 2,
+        },
+      },
+    });
+
+    const board = getMission22TokenPassBoardState(state);
+
+    expect(board.numericTokens).toEqual([]);
+    expect(board.yellowTokens).toBe(2);
+  });
+
 });
