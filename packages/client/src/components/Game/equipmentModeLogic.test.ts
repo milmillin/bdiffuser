@@ -83,6 +83,20 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
   });
 
+  it("double_detector: restricts mission 13 targets to blue wires only", () => {
+    const mode: EquipmentMode = {
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0],
+      guessTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 2)).toBe(false);
+    expect(filter(tile({ color: "blue", gameValue: 7, cut: true }), 3)).toBe(false);
+  });
+
   it("talkies_walkies: allows uncut opponent tile selection", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",
@@ -119,6 +133,19 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
   });
 
+  it("triple_detector: restricts mission 48 targets to non-yellow wires", () => {
+    const mode: EquipmentMode = {
+      kind: "triple_detector",
+      targetPlayerId: "opp1",
+      targetTileIndices: [0],
+      guessTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 48)!;
+    expect(filter(tile({ color: "blue", gameValue: 6 }), 0)).toBe(true);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 2)).toBe(false);
+  });
+
   it("super_detector: returns true for uncut tiles on any opponent", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
@@ -142,6 +169,19 @@ describe("getOpponentTileSelectableFilter", () => {
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
     expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ cut: true }), 0)).toBe(false);
+  });
+
+  it("x_or_y_ray: restricts mission 13 targets to blue wires only", () => {
+    const mode: EquipmentMode = {
+      kind: "x_or_y_ray",
+      targetPlayerId: "opp1",
+      targetTileIndex: 0,
+      guessATileIndex: null,
+      guessBTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
+    expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
   });
 
   it("post_it: returns a function that always returns false", () => {

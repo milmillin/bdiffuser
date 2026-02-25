@@ -13,6 +13,21 @@ function canPostItTargetCutWire(
   return gameState?.mission === 24 || gameState?.mission === 40;
 }
 
+function isMissionRestrictedDetectorTarget(
+  tile: VisibleTile,
+  mission: number | undefined,
+): boolean {
+  if (mission === 13) {
+    return tile.color !== "blue";
+  }
+
+  if (mission === 48) {
+    return tile.color === "yellow";
+  }
+
+  return false;
+}
+
 // --- Selectability filters ---
 
 export function getOpponentTileSelectableFilter(
@@ -25,16 +40,16 @@ export function getOpponentTileSelectableFilter(
   switch (mode.kind) {
     case "double_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "talkies_walkies":
       return (tile) => !tile.cut;
     case "triple_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "super_detector":
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "x_or_y_ray":
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "grappling_hook":
       return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
     default:
