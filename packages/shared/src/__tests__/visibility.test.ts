@@ -61,6 +61,11 @@ describe("CAMPAIGN_VISIBILITY", () => {
   it("marks mission 22 token-pass board as public", () => {
     expect(CAMPAIGN_VISIBILITY.mission22TokenPassBoard).toBe("public");
   });
+
+  it("marks false setup token campaign flags as public", () => {
+    expect(CAMPAIGN_VISIBILITY.falseInfoTokenMode).toBe("public");
+    expect(CAMPAIGN_VISIBILITY.falseTokenMode).toBe("public");
+  });
 });
 
 // ── Redaction helpers ──────────────────────────────────────
@@ -255,5 +260,15 @@ describe("filterCampaignState", () => {
     const campaign = makeCampaignState({ mission22TokenPassBoard: board });
     const filtered = filterCampaignState(campaign, "p1");
     expect(filtered.mission22TokenPassBoard).toEqual(board);
+  });
+
+  it("passes false setup token flags through unchanged", () => {
+    const campaign = makeCampaignState({
+      falseInfoTokenMode: true,
+      falseTokenMode: true,
+    });
+    const filtered = filterCampaignState(campaign, "p1");
+    expect(filtered.falseInfoTokenMode).toBe(true);
+    expect(filtered.falseTokenMode).toBe(true);
   });
 });

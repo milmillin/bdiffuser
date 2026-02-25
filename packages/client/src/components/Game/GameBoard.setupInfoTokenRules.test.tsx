@@ -123,6 +123,50 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).toContain("Select an allowed wire tile on your stand to place a false info token.");
   });
 
+  it("uses campaign false token mode for false setup UI without mission 52", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "c2", color: "red", gameValue: "RED", sortValue: 4.5 }),
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      phase: "setup_info_tokens",
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+      campaign: {
+        falseTokenMode: true,
+      },
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).toContain("Select an allowed wire tile on your stand to place a false info token.");
+
+    const redButtonStart = html.lastIndexOf(
+      "<button",
+      html.indexOf("data-testid=\"wire-tile-captain-1\""),
+    );
+    const redButton = html.slice(redButtonStart, redButtonStart + 140);
+    expect(redButton).not.toContain("disabled");
+
+    const blueButtonStart = html.lastIndexOf(
+      "<button",
+      html.indexOf("data-testid=\"wire-tile-captain-0\""),
+    );
+    const blueButton = html.slice(blueButtonStart, blueButtonStart + 140);
+    expect(blueButton).not.toContain("disabled");
+  });
+
   it("shows false-token prompt for mission 17 captain setup", () => {
     const captain = makePlayer({
       id: "captain",

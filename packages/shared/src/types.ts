@@ -325,6 +325,8 @@ export interface CampaignState {
   mission46PendingSevensPlayerId?: string;
   /** Mission 17: Rhett Herrings places false info tokens. */
   falseInfoTokenMode?: boolean;
+  /** Mission 52 (and variants): all setup info tokens are false. */
+  falseTokenMode?: boolean;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────

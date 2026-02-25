@@ -124,10 +124,6 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
   "grappling_hook",
 ]);
 
-function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
-  return mission === 22 || mission === 52 || (mission === 17 && isCaptain);
-}
-
 function getDefaultFalseSetupTokenValue(
   tile: VisibleTile | undefined,
 ): number | null {
@@ -285,8 +281,18 @@ export function GameBoard({
   const totalSetupTokens = !isSetup || !me
     ? 1
     : requiredSetupTokens;
+  const falseInfoTokenMode = gameState.campaign?.falseInfoTokenMode;
+  const falseTokenMode = gameState.campaign?.falseTokenMode;
+  const useCaptainFalseSetupTokenMode = !!me && me.isCaptain &&
+    (falseInfoTokenMode === true || gameState.mission === 17);
+  const useAllFalseSetupTokenMode =
+    falseTokenMode === true || gameState.mission === 52;
   const useFalseSetupTokenMode =
-    !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
+    !!me &&
+    (gameState.mission === 22 ||
+      useCaptainFalseSetupTokenMode ||
+      useAllFalseSetupTokenMode);
+  const allowRedFalseSetupTargets = useAllFalseSetupTokenMode;
   const hasXWireEquipmentRestriction =
     gameState.mission === 20 || gameState.mission === 35;
   const dynamicTurnActive =
@@ -1587,7 +1593,7 @@ export function GameBoard({
                               return false;
                             }
                             if (useFalseSetupTokenMode) {
-                              if (gameState.mission === 52) {
+                              if (allowRedFalseSetupTargets) {
                                 return (
                                   tile.color === "blue" || tile.color === "red"
                                 );
