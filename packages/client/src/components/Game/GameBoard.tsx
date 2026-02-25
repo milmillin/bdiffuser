@@ -391,7 +391,6 @@ export function GameBoard({
     let usedYellowTokens = 0;
     for (const player of gameState.players) {
       for (const token of player.infoTokens) {
-        if (token.position !== -1) continue;
         if (token.isYellow) {
           usedYellowTokens += 1;
         } else {

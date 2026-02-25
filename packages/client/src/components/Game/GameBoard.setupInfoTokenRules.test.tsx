@@ -240,6 +240,41 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).not.toContain("<option value=\"0\"");
   });
 
+  it("counts consumed mission-22 tokens as unavailable when setup board state is absent", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", gameValue: 4, sortValue: 4 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", gameValue: 7, sortValue: 7 })],
+      infoTokens: [
+        { value: 3, position: -2, isYellow: false },
+        { value: 3, position: -2, isYellow: false },
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [makeTile({ id: "t1", gameValue: 8, sortValue: 8 })],
+    });
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [captain, partner, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).not.toContain("<option value=\"3\"");
+    expect(html).toContain("<option value=\"2\"");
+    expect(html).toContain("<option value=\"5\"");
+  });
+
   it("keeps a mission 22 absent value available when one copy remains and board state is absent", () => {
     const captain = makePlayer({
       id: "captain",
