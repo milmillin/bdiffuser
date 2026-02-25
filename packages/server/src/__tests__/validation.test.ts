@@ -1507,6 +1507,34 @@ describe("mission 46 sevens-last validation", () => {
     expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
   });
 
+  it("rejects dual cut of value 7 when target still has non-sevens", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeYellowTile({ id: "a1", sortValue: 7.1 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeYellowTile({ id: "t1", sortValue: 7.1 }), makeYellowTile({ id: "t2", sortValue: 4.1 })],
+    });
+    const state = makeGameState({
+      mission: 46,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: "YELLOW",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
+  });
+
   it("rejects solo cut of value 7 while actor still has yellow wires", () => {
     const actor = makePlayer({
       id: "actor",

@@ -5075,18 +5075,48 @@ function actionAttemptsSevenCut(
   return cuts.some((cut) => cut.guessValue === 7);
 }
 
-function actorHasUncutNonSevenCuttableWire(
+function playerHasUncutNonSevenCuttableWire(
   state: Readonly<GameState>,
   actorId: string,
 ): boolean {
-  const actor = state.players.find((player) => player.id === actorId);
-  if (!actor) return false;
+  const player = state.players.find((candidate) => candidate.id === actorId);
+  if (!player) return false;
 
-  return actor.hand.some((tile) =>
+  return player.hand.some((tile) =>
     !tile.cut && (state.mission === 46
       ? !isMission46SevenTileForMission(state, tile)
       : tile.gameValue !== 7),
   );
+}
+
+function mission46PlayersToCheckForSevensLastValidation(
+  action: ValidateHookContext["action"],
+): readonly string[] {
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    const targetPlayerId = (action as { targetPlayerId?: unknown }).targetPlayerId;
+    return typeof targetPlayerId === "string" ? [action.actorId, targetPlayerId] : [action.actorId];
+  }
+
+  if (action.type === "soloCut") {
+    return [action.actorId];
+  }
+
+  if (action.type === "simultaneousCut") {
+    const cuts = Array.isArray(action.cuts) ? action.cuts : [];
+    const targets: string[] = [];
+
+    for (const cut of cuts) {
+      const targetPlayerId = (cut as { targetPlayerId?: unknown })
+        .targetPlayerId;
+      if (typeof targetPlayerId === "string") {
+        targets.push(targetPlayerId);
+      }
+    }
+
+    return targets;
+  }
+
+  return [];
 }
 
 function playerHasOnlySevenCuttableWires(
@@ -5134,7 +5164,11 @@ function updateMission46SevensPendingAction(state: GameState): void {
 registerHookHandler<"sevens_last">("sevens_last", {
   validate(_rule: SevensLastRuleDef, ctx: ValidateHookContext): HookResult | void {
     if (!actionAttemptsSevenCut(ctx.state, ctx.action)) return;
-    if (!actorHasUncutNonSevenCuttableWire(ctx.state, ctx.action.actorId)) return;
+    if (
+      !mission46PlayersToCheckForSevensLastValidation(ctx.action).some((playerId) =>
+        playerHasUncutNonSevenCuttableWire(ctx.state, playerId),
+      )
+    ) return;
 
     return {
       validationCode: "MISSION_RULE_VIOLATION",
