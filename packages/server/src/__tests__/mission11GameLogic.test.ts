@@ -110,6 +110,32 @@ describe("mission 11 game logic", () => {
     expect(actor.hand[1].cut).toBe(false);
   });
 
+  it("fails when target matches the announced value but actor lacks that value in hand", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const beforeDetonator = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "actor", "target", 0, 7);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(beforeDetonator + 1);
+    expect(target.hand[0].cut).toBe(false);
+    expect(actor.hand[0].cut).toBe(true);
+  });
+
   it("explodes when a dual cut targets a hidden red-like wire with a wrong guess", () => {
     const actor = makePlayer({
       id: "actor",
@@ -144,6 +170,44 @@ describe("mission 11 game logic", () => {
     expect(state.result).toBe("loss_red_wire");
     expect(state.phase).toBe("finished");
     expect(target.hand[0].cut).toBe(true);
+  });
+
+  it("does not instantly explode when the actor lacks the announced hidden red-like value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 11,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    });
+    const beforeDetonator = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "actor", "target", 0, 7);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type !== "dualCutResult") return;
+    expect(action.success).toBe(false);
+    expect(action.detonatorAdvanced).toBe(true);
+    expect(state.board.detonatorPosition).toBe(beforeDetonator + 1);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+    expect(target.hand[0].cut).toBe(false);
+    expect(actor.hand[0].cut).toBe(true);
   });
 
   it("explodes when a solo cut cuts the hidden red-like value", () => {

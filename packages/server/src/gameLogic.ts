@@ -305,8 +305,12 @@ export function executeDualCut(
   const displayGuess = guessLabel ?? String(guessValue);
 
   const isCorrect = targetTile.gameValue === guessValue;
+  const actorHasMatchingGuess = actor.hand.some(
+    (tile) => !tile.cut && tile.gameValue === guessValue,
+  );
+  const dualCutSuccess = isCorrect && actorHasMatchingGuess;
 
-  if (isCorrect) {
+  if (dualCutSuccess) {
     // Success: cut the target tile first. The actor tile is cut only if no hook
     // turns this success into an immediate mission loss.
     targetTile.cut = true;
@@ -414,7 +418,7 @@ export function executeDualCut(
       typeof targetTile.gameValue === "number" &&
       targetTile.gameValue === hiddenBlueAsRedValue;
 
-    if (targetTile.color === "red" || isHiddenRedLikeTarget) {
+    if (targetTile.color === "red" || (isHiddenRedLikeTarget && actorHasMatchingGuess)) {
       if (stabilizerActive) {
         if (targetTile.color === "red") {
           targetTile.cut = true;
@@ -514,9 +518,6 @@ export function executeDualCut(
       };
     }
 
-    const actorHasMatchingGuess = actor.hand.some(
-      (tile) => !tile.cut && tile.gameValue === guessValue,
-    );
     const shouldUseFallbackActorCut = !actorHasMatchingGuess;
     const mistakenValueActorTile = shouldUseFallbackActorCut
       ? resolveActorDualCutFallbackTile(state, actor, actorTileIndex)

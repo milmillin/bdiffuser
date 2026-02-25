@@ -677,7 +677,10 @@ describe("mission complexity tier representative coverage", () => {
     const captain = makePlayer({
       id: "captain",
       isCaptain: true,
-      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+      hand: [
+        makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeYellowTile({ id: "cy", sortValue: 3.1 }),
+      ],
     });
     const target = makePlayer({
       id: "target",
@@ -695,12 +698,6 @@ describe("mission complexity tier representative coverage", () => {
 
     // First yellow cut — trigger count not yet reached
     executeDualCut(state, "captain", "target", 0, "YELLOW");
-    expect(state.pendingForcedAction?.kind).not.toBe("mission22TokenPass");
-
-    // Second yellow cut — trigger should fire at endTurn
-    state.currentPlayerIndex = 0;
-    state.phase = "playing";
-    executeDualCut(state, "captain", "target", 1, "YELLOW");
     expect(state.campaign?.mission22TokenPassTriggered).toBe(true);
     expect(state.pendingForcedAction?.kind).toBe("mission22TokenPass");
   });

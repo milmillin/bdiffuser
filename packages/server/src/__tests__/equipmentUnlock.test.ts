@@ -21,8 +21,9 @@ describe("equipment unlock lifecycle", () => {
 
   it("equipment stays locked at 1 cut (threshold=2)", () => {
     // Actor dual-cuts a value-5 tile on target's stand.
-    // Only the target tile is cut (actor has no value-5 tile to auto-cut).
-    // With only 1 cut of value 5, equipment should remain locked.
+    // Actor cannot complete a successful dual cut without a matching value-5 tile,
+    // so this should be a failed attempt: actor cuts one fallback wire, target stays.
+    // With only 1 cut of value 5 total, equipment should remain locked.
     const actor = makePlayer({
       id: "actor",
       name: "Actor",
@@ -58,8 +59,8 @@ describe("equipment unlock lifecycle", () => {
 
     executeDualCut(state, "actor", "target", 0, 5);
 
-    // Target tile is cut, but actor has no value-5 tile → only 1 cut total
-    expect(state.players[1].hand[0].cut).toBe(true);
+    expect(state.players[0].hand[0].cut).toBe(true);
+    expect(state.players[1].hand[0].cut).toBe(false);
     expect(state.board.equipment[0].unlocked).toBe(false);
   });
 
