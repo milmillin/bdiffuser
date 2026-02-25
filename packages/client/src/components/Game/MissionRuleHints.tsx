@@ -810,22 +810,6 @@ function CampaignObjectsHint({
             </CampaignRow>
           </SectionShell>
         )}
-
-        {!hasNumberCardContent &&
-          globalConstraints.length === 0 &&
-          perPlayerConstraints.length === 0 &&
-          constraintDeckCount === 0 &&
-          activeChallenges.length === 0 &&
-          completedChallenges.length === 0 &&
-          challengeDeckCount === 0 &&
-          oxygen == null &&
-          campaign.nanoTracker == null &&
-          campaign.bunkerTracker == null &&
-          specialMarkers.length === 0 && (
-            <div className="rounded-xl bg-black/20 px-3 py-3 text-sm text-gray-500">
-              No active campaign objects for this mission yet.
-            </div>
-          )}
       </div>
 
       {previewCard && (
