@@ -628,6 +628,55 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     });
   });
 
+  it("campaign false-info-token mode: failed Double Detector by captain uses announced false value", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [
+        makeTile({ id: "p1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "p2", color: "blue", gameValue: 7 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 1,
+      campaign: { falseInfoTokenMode: true },
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "captain", "partner", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(partner.infoTokens).toHaveLength(1);
+    expect(partner.infoTokens[0]).toMatchObject({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+    expect(partner.hand[0].gameValue).toBe(3);
+    expect(partner.hand[0].cut).toBe(false);
+  });
+
   it("revalidates matches when targeted wires change before resolution", () => {
     const actor = makePlayer({
       id: "actor",
