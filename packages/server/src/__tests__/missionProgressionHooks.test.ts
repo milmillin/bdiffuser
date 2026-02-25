@@ -1406,6 +1406,109 @@ describe("mission progression hooks", () => {
     ).toBe(false);
   });
 
+  it("mission 57 auto-skips all blocked players and stalls the round", () => {
+    const state = makeGameState({
+      mission: 57,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 1 }),
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 1 })] }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-1", gameValue: 2, cut: true }),
+            makeTile({ id: "p2-2", gameValue: 4, cut: true }),
+          ],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", name: "A", description: "A", active: true })],
+          perPlayer: {},
+          deck: [
+            makeConstraintCard({ id: "B", name: "B", description: "B", active: false }),
+          ],
+        },
+      },
+    });
+
+    dispatchHooks(57, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p3",
+    });
+
+    expect(state.turnNumber).toBe(2);
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.result).toBe("loss_detonator");
+    expect(state.phase).toBe("finished");
+    expect(
+      state.log.filter(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission57:auto_skip|player="),
+      ).length,
+    ).toBe(1);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission57:round_stalled|detonator=1",
+      ),
+    ).toBe(true);
+  });
+
+  it("mission 57 stops auto-skipping when a player can play under the active constraint", () => {
+    const state = makeGameState({
+      mission: 57,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 3 }),
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 1 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-1", gameValue: 2 })] }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", name: "A", description: "A", active: true })],
+          perPlayer: {},
+          deck: [
+            makeConstraintCard({ id: "B", name: "B", description: "B", active: false }),
+          ],
+        },
+      },
+    });
+
+    dispatchHooks(57, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.turnNumber).toBe(1);
+    expect(state.board.detonatorPosition).toBe(0);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.result).toBeNull();
+    expect(
+      state.log.filter(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission57:auto_skip|player="),
+      ).length,
+    ).toBe(0);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission57:round_stalled|detonator=0",
+      ),
+    ).toBe(false);
+  });
+
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
     const state = makeGameState({
       mission: 55,
