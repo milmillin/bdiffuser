@@ -59,7 +59,17 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     behaviorHooks: ["mission_44_oxygen_cost_and_no_talking"],
     hookRules: [
-      { kind: "oxygen_progression", initialPool: 8, perTurnCost: 1 },
+      {
+        kind: "oxygen_progression",
+        initialPool: 4,
+        perTurnCost: 1,
+        initialPoolByPlayerCount: {
+          2: 4,
+          3: 6,
+          4: 8,
+          5: 10,
+        },
+      },
     ],
     notes: [
       "FAQ: Stabilizer can pretend-cut zone 1 when everything is already cut.",

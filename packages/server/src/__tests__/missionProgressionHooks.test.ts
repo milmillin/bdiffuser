@@ -70,14 +70,14 @@ describe("mission progression hooks", () => {
     });
     dispatchHooks(44, { point: "setup", state });
 
-    expect(state.campaign?.oxygen?.pool).toBe(8);
+    expect(state.campaign?.oxygen?.pool).toBe(4);
 
     dispatchHooks(44, {
       point: "endTurn",
       state,
       previousPlayerId: "p1",
     });
-    expect(state.campaign?.oxygen?.pool).toBe(7);
+    expect(state.campaign?.oxygen?.pool).toBe(3);
 
     state.campaign!.oxygen!.pool = 0;
     dispatchHooks(44, {
@@ -89,6 +89,30 @@ describe("mission progression hooks", () => {
     expect(state.board.detonatorPosition).toBe(2);
     expect(state.result).toBe("loss_detonator");
     expect(state.phase).toBe("finished");
+  });
+
+  it("mission 44 setup scales oxygen reserve by player count", () => {
+    const cases: Array<{ playerCount: 2 | 3 | 4 | 5; expectedPool: number }> = [
+      { playerCount: 2, expectedPool: 4 },
+      { playerCount: 3, expectedPool: 6 },
+      { playerCount: 4, expectedPool: 8 },
+      { playerCount: 5, expectedPool: 10 },
+    ];
+
+    for (const { playerCount, expectedPool } of cases) {
+      const players = Array.from({ length: playerCount }, (_, idx) =>
+        makePlayer({ id: `p${idx + 1}` }),
+      );
+      const state = makeGameState({
+        mission: 44,
+        log: [],
+        players,
+      });
+
+      dispatchHooks(44, { point: "setup", state });
+
+      expect(state.campaign?.oxygen?.pool).toBe(expectedPool);
+    }
   });
 
   it("mission 49 setup distributes oxygen per player count", () => {
