@@ -1,6 +1,6 @@
 {
   "name": "@bomb-busters/client",
-  "version": "1.1.281",
+  "version": "1.1.282",
   "type": "module",
   "scripts": {
     "dev": "vite",

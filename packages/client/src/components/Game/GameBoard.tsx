@@ -507,6 +507,7 @@ export function GameBoard({
     (gameState.mission === 41 ? !mission41SkipIfNeeded : gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
   const missionSpecialCanBypassForcedReveal =
     revealRedsForced &&
+    (gameState.mission === 13 || gameState.mission === 48) &&
     missionSupportsSimultaneousThreeCut &&
     missionSpecialAnyTargetColorAvailable &&
     missionSpecialActorEligible;
