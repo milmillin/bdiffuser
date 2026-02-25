@@ -12,13 +12,18 @@ import type {
   GameResult,
   MissionAudioState,
 } from "@bomb-busters/shared";
-import { MISSION_SCHEMAS, logTemplate, wireLabel, wireLabelOf } from "@bomb-busters/shared";
+import {
+  MISSION_SCHEMAS,
+  isNonCaptainCharacterForbidden,
+  logTemplate,
+  wireLabel,
+  wireLabelOf,
+} from "@bomb-busters/shared";
 import { validateMissionPlayerCount } from "./startValidation.js";
 import {
   setupGame,
   shuffle,
   assignCharactersForGameStart,
-  isNonCaptainCharacterForbidden,
 } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
 import {

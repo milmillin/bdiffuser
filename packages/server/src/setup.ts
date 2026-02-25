@@ -7,9 +7,11 @@ import {
   EQUIPMENT_DEFS,
   getWireImage,
   resolveMissionSetup,
+  isNonCaptainCharacterForbidden,
   type MissionEquipmentSpec,
   type WirePoolSpec,
 } from "@bomb-busters/shared";
+export { isNonCaptainCharacterForbidden };
 import type {
   WireTile,
   Player,
@@ -17,7 +19,6 @@ import type {
   EquipmentCard,
   BoardMarker,
   MissionId,
-  CharacterId,
 } from "@bomb-busters/shared";
 
 let tileIdCounter = 0;
@@ -257,28 +258,6 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
   63: ["x_or_y_ray"],
   65: ["x_or_y_ray"],
 } as const;
-
-export const MISSION_FORBIDDEN_NON_CAPTAIN_CHARACTERS: Readonly<
-  Partial<Record<MissionId, readonly CharacterId[]>>
-> = {
-  44: ["character_e4"],
-  45: ["character_e4"],
-  47: ["character_e4"],
-  49: ["character_e4"],
-  51: ["character_e4"],
-  54: ["character_e4"],
-  59: ["character_e4"],
-  63: ["character_e4"],
-  65: ["character_e4"],
-} as const;
-
-export function isNonCaptainCharacterForbidden(
-  mission: MissionId,
-  characterId: CharacterId,
-): boolean {
-  const forbiddenCharacters = MISSION_FORBIDDEN_NON_CAPTAIN_CHARACTERS[mission] ?? [];
-  return forbiddenCharacters.includes(characterId);
-}
 
 const STARTUP_BASE_CHARACTERS = [
   "double_detector",

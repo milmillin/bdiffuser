@@ -1,5 +1,12 @@
 import type { CaptainMode, CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
-import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS, RULE_STICKER_IMAGES } from "@bomb-busters/shared";
+import {
+  ALL_MISSION_IDS,
+  CHARACTER_CARD_TEXT,
+  isNonCaptainCharacterForbidden,
+  MISSIONS,
+  MISSION_SCHEMAS,
+  RULE_STICKER_IMAGES,
+} from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
 const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
@@ -262,7 +269,7 @@ function CharacterSelector({
   playerId,
   players,
 }: {
-  mission: number;
+  mission: MissionId;
   send: (msg: ClientMessage) => void;
   playerId: string;
   players: LobbyState["players"];
@@ -273,6 +280,9 @@ function CharacterSelector({
   const allCharacters = Object.entries(CHARACTER_CARD_TEXT) as Array<
     [CharacterId, (typeof CHARACTER_CARD_TEXT)[CharacterId]]
   >;
+  const filteredCharacters = allCharacters.filter(([id]) => (
+    !isNonCaptainCharacterForbidden(mission, id)
+  ));
 
   return (
     <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 space-y-3">
@@ -281,7 +291,7 @@ function CharacterSelector({
       </h2>
       <p className="text-xs text-gray-500">Mission 31+ allows expert characters. Select your character:</p>
       <div className="grid grid-cols-3 gap-2">
-        {allCharacters.map(([id, text]) => {
+        {filteredCharacters.map(([id, text]) => {
           const isSelected = me?.character === id;
           const isExpert = id.startsWith("character_e");
           return (
