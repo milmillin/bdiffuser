@@ -111,6 +111,38 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain("YELLOW");
   });
 
+  it("does NOT offer a numeric solo-cut value when 3 remaining copies are held", () => {
+    const state = makeGameState({
+      mission: 2,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 3,
+        validationTrack: { 5: 1 },
+        markers: [],
+        equipment: [],
+      },
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "my-1", gameValue: 5 }),
+            makeTile({ id: "my-2", gameValue: 5 }),
+            makeTile({ id: "my-3", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "opp-1", gameValue: 5 }),
+          ],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(5);
+  });
+
   it("does NOT offer YELLOW in mission 48 where yellow must use simultaneous action", () => {
     const state = makeGameState({
       mission: 48,
