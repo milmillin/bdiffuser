@@ -13,6 +13,7 @@ import {
 function getFalseTokenValueOptions(
   tile: ClientPlayer["hand"][number] | undefined,
   hand: ClientPlayer["hand"],
+  declaredValues: ReadonlyArray<number>,
   allowMissingValue = false,
   requiresTileTarget = true,
   mission22BoardValues?: number[],
@@ -21,6 +22,7 @@ function getFalseTokenValueOptions(
     const presentValues = getMission22PresentValues(hand);
 
     const values: number[] = [];
+    const declaredValueSet = new Set(declaredValues);
     const availableValues = (mission22BoardValues ?? []).filter((value) =>
       value >= 0 && value <= 12 && Number.isInteger(value),
     );
@@ -35,6 +37,9 @@ function getFalseTokenValueOptions(
         continue;
       }
       if (value !== 0 && presentValues.has(value)) {
+        continue;
+      }
+      if (declaredValueSet.has(value)) {
         continue;
       }
       values.push(value);
@@ -89,6 +94,9 @@ export function InfoTokenSetup({
     ? getFalseTokenValueOptions(
       selectedTile,
       player.hand,
+      player.infoTokens
+        .filter((token) => token.position === -1)
+        .map((token) => token.value),
       !requiresTileTarget,
       requiresTileTarget,
       mission22BoardValues,
