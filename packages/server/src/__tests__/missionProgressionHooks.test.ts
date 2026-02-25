@@ -289,6 +289,92 @@ describe("mission progression hooks", () => {
     expect(state.board.detonatorPosition).toBe(1);
   });
 
+  it("mission 54 setup distributes oxygen per player count", () => {
+    const cases: Array<{ playerCount: 2 | 3 | 4 | 5; expectedPerPlayer: number }> = [
+      { playerCount: 2, expectedPerPlayer: 9 },
+      { playerCount: 3, expectedPerPlayer: 6 },
+      { playerCount: 4, expectedPerPlayer: 3 },
+      { playerCount: 5, expectedPerPlayer: 2 },
+    ];
+
+    for (const { playerCount, expectedPerPlayer } of cases) {
+      const players = Array.from({ length: playerCount }, (_, idx) =>
+        makePlayer({ id: `p${idx + 1}` }),
+      );
+      const state = makeGameState({
+        mission: 54,
+        log: [],
+        players,
+      });
+
+      dispatchHooks(54, { point: "setup", state });
+
+      expect(state.campaign?.oxygen?.pool).toBe(7);
+      for (const player of players) {
+        expect(state.campaign?.oxygen?.playerOxygen[player.id]).toBe(expectedPerPlayer);
+      }
+    }
+  });
+
+  it("mission 54 validate blocks cuts when oxygen is insufficient for wire depth", () => {
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    state.campaign!.oxygen!.playerOxygen.p1 = 0;
+    state.campaign!.oxygen!.pool = 0;
+
+    const result = dispatchHooks(54, {
+      point: "validate",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+    });
+
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toContain("insufficient oxygen");
+  });
+
+  it("mission 54 resolve consumes oxygen on cut based on wire depth", () => {
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    dispatchHooks(54, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 8 },
+      cutValue: 8,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(7);
+  });
+
+  it("mission 54 endTurn does not consume oxygen", () => {
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 3 }),
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    dispatchHooks(54, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p1",
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(9);
+    expect(state.board.detonatorPosition).toBe(1);
+  });
+
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
     const state = makeGameState({
       mission: 55,
