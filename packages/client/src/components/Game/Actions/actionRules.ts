@@ -122,6 +122,15 @@ export function getSoloCutValues(
       player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
     );
 
+  const hasMission46NonSevenUncutWire = (() => {
+    if (state.mission !== 46) return false;
+    return me.hand.some(
+      (tile) =>
+        !tile.cut &&
+        (tile.color !== "yellow" || tile.gameValue !== 7),
+    );
+  })();
+
   const protectedSimultaneousFourValue = (() => {
     if ((state.mission !== 23 && state.mission !== 39) || state.campaign?.mission23SpecialActionDone) {
       return null;
@@ -154,6 +163,9 @@ export function getSoloCutValues(
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
       if (value === protectedSimultaneousFourValue) {
+        continue;
+      }
+      if (state.mission === 46 && value === 7 && hasMission46NonSevenUncutWire) {
         continue;
       }
       if (

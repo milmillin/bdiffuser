@@ -312,6 +312,29 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
     expect(values).toContain(5);
   });
+
+  it("does NOT offer solo cut 7 in mission 46 when actor still has non-7 uncut wires", () => {
+    const state = makeGameState({
+      mission: 46,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeYellowTile({ id: "s1", sortValue: 7.1 }),
+            makeYellowTile({ id: "s2", sortValue: 7.1 }),
+            makeYellowTile({ id: "s3", sortValue: 6.1 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", gameValue: 5 })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(7);
+  });
 });
 
 describe("canRevealReds mission rules", () => {
