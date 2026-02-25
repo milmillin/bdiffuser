@@ -34,7 +34,12 @@ import {
   validateDualCutWithHooks,
 } from "./validation.js";
 import { executeDualCut, advanceTurn, clearSatisfiedSecondaryEquipmentLocks } from "./gameLogic.js";
-import { dispatchHooks, hasActiveConstraint, emitMissionFailureTelemetry } from "./missionHooks.js";
+import {
+  dispatchHooks,
+  getHookRules,
+  hasActiveConstraint,
+  emitMissionFailureTelemetry,
+} from "./missionHooks.js";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequiredById } from "./equipmentUnlockRules.js";
@@ -65,6 +70,9 @@ function legalityError(
 
 const MISSION_46_PENDING_SEVENS_MESSAGE =
   "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously";
+
+const UPSIDE_DOWN_EQUIPMENT_MESSAGE =
+  "Mission upside-down wire: cut your own upside-down wire using a regular cut action";
 
 function isMission46PendingSevensCut(
   state: Readonly<GameState>,
@@ -98,6 +106,31 @@ function isXMarkedWire(tile: WireTile | undefined): boolean {
 
 function hasXWireEquipmentRestriction(state: Readonly<GameState>): boolean {
   return state.mission === 20 || state.mission === 35;
+}
+
+function upsideDownNoEquipmentRestriction(state: Readonly<GameState>): boolean {
+  return getHookRules(state.mission).some(
+    (rule) => rule.kind === "upside_down_wire" && rule.noEquipmentOnFlipped === true,
+  );
+}
+
+function validateOwnUpsideDownWireTarget(
+  state: Readonly<GameState>,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+): ActionLegalityError | null {
+  if (!upsideDownNoEquipmentRestriction(state)) return null;
+  if (actorId !== targetPlayerId) return null;
+
+  const target = getPlayer(state, targetPlayerId);
+  if (!target) return null;
+
+  const tile = getTileByFlatIndex(target, targetTileIndex);
+  if (!tile || tile.cut) return null;
+  if ((tile as { upsideDown?: boolean }).upsideDown !== true) return null;
+
+  return legalityError("MISSION_RULE_VIOLATION", UPSIDE_DOWN_EQUIPMENT_MESSAGE);
 }
 
 function canPostItTargetCutWire(state: Readonly<GameState>): boolean {
@@ -426,6 +459,13 @@ export function validateUseEquipment(
       }
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      const ownFlippedWireError = validateOwnUpsideDownWireTarget(
+        state,
+        actor.id,
+        actor.id,
+        payload.tileIndex,
+      );
+      if (ownFlippedWireError) return ownFlippedWireError;
       if (tile.cut && !canPostItTargetCutWire(state)) {
         return legalityError("TILE_ALREADY_CUT", "Cannot place Post-it on a cut wire");
       }
@@ -459,6 +499,20 @@ export function validateUseEquipment(
       if (!tileA || !tileB) {
         return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       }
+      const ownFlippedTileAError = validateOwnUpsideDownWireTarget(
+        state,
+        actor.id,
+        actor.id,
+        payload.tileIndexA,
+      );
+      if (ownFlippedTileAError) return ownFlippedTileAError;
+      const ownFlippedTileBError = validateOwnUpsideDownWireTarget(
+        state,
+        actor.id,
+        actor.id,
+        payload.tileIndexB,
+      );
+      if (ownFlippedTileBError) return ownFlippedTileBError;
       if (hasXWireEquipmentRestriction(state) && (isXMarkedWire(tileA) || isXMarkedWire(tileB))) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
@@ -756,6 +810,13 @@ export function validateUseEquipment(
           "Single Wire Label can only target blue wires",
         );
       }
+      const ownFlippedWireError = validateOwnUpsideDownWireTarget(
+        state,
+        actor.id,
+        actor.id,
+        payload.tileIndex,
+      );
+      if (ownFlippedWireError) return ownFlippedWireError;
       // The value must appear exactly once in the stand (cut wires included)
       const valueCount = getAllTiles(actor).filter(
         (t) => t.color === "blue" && t.gameValue === tile.gameValue,
@@ -930,6 +991,13 @@ function validateTalkiesWalkiesPayload(
   if (!myTile) {
     return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
   }
+  const ownFlippedWireError = validateOwnUpsideDownWireTarget(
+    state,
+    actor.id,
+    actor.id,
+    payload.myTileIndex,
+  );
+  if (ownFlippedWireError) return ownFlippedWireError;
   if (hasXWireEquipmentRestriction(state) && isXMarkedWire(myTile)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",

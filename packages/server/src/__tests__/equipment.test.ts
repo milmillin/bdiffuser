@@ -754,6 +754,104 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "label_eq", "MISSION_RULE_VIOLATION");
   });
 
+  it.each([38, 56, 64] as const)(
+    "mission %i: rejects equipment that targets actor's flipped wire",
+    (missionId) => {
+      const cases: {
+        equipmentId:
+          | "post_it"
+          | "label_eq"
+          | "label_neq"
+          | "talkies_walkies"
+          | "single_wire_label";
+        payload: UseEquipmentPayload;
+        upsideDownIndex: number;
+      }[] = [
+        { equipmentId: "post_it", payload: { kind: "post_it", tileIndex: 0 }, upsideDownIndex: 0 },
+        {
+          equipmentId: "label_eq",
+          payload: { kind: "label_eq", tileIndexA: 0, tileIndexB: 1 },
+          upsideDownIndex: 0,
+        },
+        {
+          equipmentId: "label_neq",
+          payload: { kind: "label_neq", tileIndexA: 0, tileIndexB: 1 },
+          upsideDownIndex: 0,
+        },
+        {
+          equipmentId: "talkies_walkies",
+          payload: {
+            kind: "talkies_walkies",
+            teammateId: "teammate",
+            myTileIndex: 0,
+            teammateTileIndex: 0,
+          },
+          upsideDownIndex: 0,
+        },
+        {
+          equipmentId: "single_wire_label",
+          payload: { kind: "single_wire_label", tileIndex: 0 },
+          upsideDownIndex: 0,
+        },
+      ];
+
+      for (const { equipmentId, payload, upsideDownIndex } of cases) {
+        const actor = makePlayer({
+          id: "actor",
+          isCaptain: missionId === 38,
+          hand: [
+            makeTile({ id: "a1", color: "blue", gameValue: 4 }),
+            makeTile({ id: "a2", color: "blue", gameValue: 5 }),
+            makeTile({ id: "a3", color: "blue", gameValue: 7 }),
+          ],
+        });
+        const teammate = makePlayer({
+          id: "teammate",
+          hand: [
+            makeTile({ id: "t1", color: "blue", gameValue: 4 }),
+            makeTile({ id: "t2", color: "blue", gameValue: 5 }),
+          ],
+        });
+
+        (actor.hand[upsideDownIndex] as unknown as { upsideDown?: boolean }).upsideDown =
+          true;
+
+        const state = makeGameState({
+          mission: missionId,
+          players: [actor, teammate],
+          currentPlayerIndex: 0,
+          board: {
+            ...makeGameState().board,
+            equipment: [
+              unlockedEquipmentCard(
+                equipmentId,
+                equipmentId === "single_wire_label"
+                  ? "Single Wire Label"
+                  : equipmentId === "talkies_walkies"
+                    ? "Talkies-Walkies"
+                    : equipmentId === "label_eq"
+                      ? "Label ="
+                      : equipmentId === "label_neq"
+                        ? "Label !="
+                        : equipmentId === "post_it"
+                        ? "Post-it"
+                        : "Single Wire Label",
+                4,
+              ),
+            ],
+          },
+        });
+
+        const error = validateUseEquipment(state, "actor", equipmentId, payload);
+        expect(error).not.toBeNull();
+        expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+        expect(error?.message).toBe(
+          "Mission upside-down wire: cut your own upside-down wire using a regular cut action",
+        );
+      }
+    },
+  );
+
   it("mission 40: captain-seat Post-it may target cut blue wires", () => {
     const state = buildStateForEquipmentMatrix("post_it");
     state.mission = 40;
