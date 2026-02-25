@@ -268,7 +268,8 @@ const STARTUP_BASE_CHARACTERS = [
 /**
  * Assign character cards at game start.
  * - Missions 1-30 assign all 5 base character cards randomly.
- * - Missions 31+ preserve preselected characters and only fill unselected players.
+ * - Missions 31+ force the Captain to Double Detector, then preserve non-captain
+ *   preselected characters and fill remaining non-captain players from base cards.
  */
 export function assignCharactersForGameStart(players: Player[], mission: MissionId): void {
   const deck = [...STARTUP_BASE_CHARACTERS];
@@ -281,10 +282,32 @@ export function assignCharactersForGameStart(players: Player[], mission: Mission
     return;
   }
 
+  const captain = players.find((player) => player.isCaptain);
+  const usedCharacters = new Set<string>();
+  if (captain) {
+    captain.character = "double_detector";
+    captain.characterUsed = false;
+    usedCharacters.add(captain.character);
+  }
+
   let nextDeckIndex = 0;
   for (const player of players) {
-    if (player.character != null) continue;
-    player.character = deck[Math.min(nextDeckIndex++, deck.length - 1)];
+    if (player.isCaptain) continue;
+    if (player.character != null) {
+      if (!usedCharacters.has(player.character)) {
+        usedCharacters.add(player.character);
+        continue;
+      }
+    }
+
+    while (nextDeckIndex < deck.length && usedCharacters.has(deck[nextDeckIndex]!)) {
+      nextDeckIndex += 1;
+    }
+
+    player.character = deck[nextDeckIndex] ?? "double_detector";
+    player.characterUsed = false;
+    usedCharacters.add(player.character);
+    nextDeckIndex += 1;
   }
 }
 
