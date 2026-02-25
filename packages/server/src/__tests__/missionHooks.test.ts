@@ -253,6 +253,37 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 41: skips captain's turn on setup if they only have their tripwire", () => {
+      const skipPlayer = makePlayer({
+        id: "p1",
+        isCaptain: true,
+        hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+      });
+      const activePlayer = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "b2", gameValue: 7 })],
+      });
+
+      const state = makeGameState({
+        mission: 41,
+        players: [skipPlayer, activePlayer],
+        currentPlayerIndex: 0,
+        turnNumber: 3,
+        log: [],
+      });
+
+      dispatchHooks(41, { point: "setup", state });
+
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(4);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "iberian_yellow_mode:auto_skip|player=p1",
+      );
+      expect(skipLog).toBeDefined();
+    });
+
     it("mission 12: assigns per-equipment secondary lock values from number cards", () => {
       const state = makeGameState({
         mission: 12,
@@ -1214,6 +1245,36 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 41: auto-skips a player with only their tripwire", () => {
+      const skipPlayer = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+      });
+      const activePlayer = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "b2", gameValue: 5 })],
+      });
+
+      const state = makeGameState({
+        mission: 41,
+        players: [skipPlayer, activePlayer],
+        currentPlayerIndex: 0,
+        turnNumber: 6,
+        log: [],
+      });
+
+      dispatchHooks(41, { point: "endTurn", state });
+
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(7);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "iberian_yellow_mode:auto_skip|player=p1",
+      );
+      expect(skipLog).toBeDefined();
+    });
+
     it("mission 65: auto-skips a stuck player and advances detonator", () => {
       const p1 = makePlayer({
         id: "p1",
@@ -1475,6 +1536,37 @@ describe("missionHooks dispatcher", () => {
         },
       });
       expect(allowed.validationError).toBeUndefined();
+    });
+
+    it("mission 41: blocks actions for players with only their tripwire", () => {
+      const skipPlayer = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+      });
+      const targetPlayer = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "b2", gameValue: 5 })],
+      });
+      const state = makeGameState({
+        mission: 41,
+        players: [skipPlayer, targetPlayer],
+        currentPlayerIndex: 0,
+        log: [],
+      });
+
+      const result = dispatchHooks(41, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "p1",
+          targetPlayerId: "p2",
+          targetTileIndex: 0,
+        },
+      });
+
+      expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(result.validationError).toContain("player must skip");
     });
   });
 

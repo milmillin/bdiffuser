@@ -324,13 +324,10 @@ function hasOnlyUncutTripwireAndRedWires(
   player: Readonly<import("@bomb-busters/shared").Player>,
 ): boolean {
   const uncutTiles = player.hand.filter((tile) => !tile.cut);
-  if (uncutTiles.length < 2) return false;
+  if (uncutTiles.length === 0) return false;
 
   const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
   if (uncutYellowCount !== 1) return false;
-
-  const hasRed = uncutTiles.some((tile) => tile.color === "red");
-  if (!hasRed) return false;
 
   return uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red");
 }

@@ -419,10 +419,9 @@ export function GameBoard({
       ? (() => {
         const uncutTiles = me.hand.filter((tile) => !tile.cut);
         const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
-        const hasRed = uncutTiles.some((tile) => tile.color === "red");
         return (
           uncutYellowCount === 1 &&
-          hasRed &&
+          uncutTiles.length > 0 &&
           uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red")
         );
       })()
