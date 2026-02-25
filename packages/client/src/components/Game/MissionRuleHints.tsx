@@ -78,19 +78,46 @@ function CampaignCardThumbnail({
   rotateCcw90?: boolean;
   onClick: () => void;
 }) {
-  const effectiveLandscape = landscape || rotateCcw90;
-  const width = effectiveLandscape ? "w-14" : "w-10";
-  const aspectRatio = effectiveLandscape ? "1037/736" : "739/1040";
+  if (rotateCcw90) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative overflow-hidden rounded-md border-2 ${borderColor} w-10 shrink-0`}
+        style={{ aspectRatio: "739/1040" }}
+      >
+        <img
+          src={`/images/${image}`}
+          alt=""
+          className="absolute object-cover"
+          style={{
+            width: "calc(100% * 1040 / 739)",
+            height: "calc(100% * 739 / 1040)",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%) rotate(-90deg)",
+          }}
+        />
+        {dimmed && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            {overlayLabel && (
+              <span className="text-[9px] font-bold text-white uppercase">{overlayLabel}</span>
+            )}
+          </div>
+        )}
+      </button>
+    );
+  }
 
-  const button = (
+  const width = landscape ? "w-14" : "w-10";
+  const aspectRatio = landscape ? "1037/736" : "739/1040";
+
+  return (
     <button
       type="button"
       onClick={onClick}
       className={`relative overflow-hidden rounded-md border-2 ${borderColor} ${width} shrink-0`}
-      style={{
-        aspectRatio,
-        ...(rotateCcw90 ? { transform: "rotate(-90deg)" } : {}),
-      }}
+      style={{ aspectRatio }}
     >
       <img
         src={`/images/${image}`}
@@ -106,18 +133,6 @@ function CampaignCardThumbnail({
       )}
     </button>
   );
-
-  if (rotateCcw90) {
-    return (
-      <div className="relative w-10 shrink-0" style={{ aspectRatio: "739/1040" }}>
-        <div className="absolute inset-0 flex items-center justify-center">
-          {button}
-        </div>
-      </div>
-    );
-  }
-
-  return button;
 }
 
 function SequencePriorityHint({ gameState }: { gameState: ClientGameState }) {
