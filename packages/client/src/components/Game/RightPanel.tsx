@@ -8,7 +8,7 @@ import type {
   ChatMessage,
   ClientMessage,
 } from "@bomb-busters/shared";
-import { MISSION_IMAGES } from "@bomb-busters/shared";
+import { MISSION_IMAGES, RULE_STICKER_IMAGES } from "@bomb-busters/shared";
 import { ActionLog } from "./ActionLog.js";
 import { ChatPanel } from "./Chat/ChatPanel.js";
 
@@ -41,6 +41,7 @@ export function RightPanel({
       {/* Top: scrollable info area */}
       <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">
         <MissionCard missionId={missionId} />
+        <RuleStickerBanner mission={missionId} />
         {missionExtras}
       </div>
 
@@ -128,6 +129,25 @@ function LogChatTabs({
           <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
         )}
       </div>
+    </div>
+  );
+}
+
+function RuleStickerBanner({ mission }: { mission: MissionId }) {
+  const stickers = [
+    { key: "a", image: RULE_STICKER_IMAGES.a, label: "Rule Sticker A", threshold: 9 },
+    { key: "b", image: RULE_STICKER_IMAGES.b, label: "Rule Sticker B", threshold: 31 },
+    { key: "c", image: RULE_STICKER_IMAGES.c, label: "Rule Sticker C", threshold: 55 },
+  ].filter((s) => mission >= s.threshold);
+
+  if (stickers.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-bold uppercase text-gray-400">Rule Stickers</div>
+      {stickers.map((s) => (
+        <img key={s.key} src={`/images/${s.image}`} alt={s.label} className="w-full rounded" />
+      ))}
     </div>
   );
 }

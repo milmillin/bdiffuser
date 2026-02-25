@@ -7,7 +7,6 @@ import {
   NUMBER_CARD_BACK,
   CUTTER_CARD_IMAGES,
   BUNKER_CARD_IMAGES,
-  RULE_STICKER_IMAGES,
   MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -590,14 +589,6 @@ function CampaignObjectsHint({
           </div>
         )}
 
-        {gameState.mission >= 9 && (
-          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-            <div className="text-[10px] uppercase text-gray-400">Rule Stickers</div>
-            {gameState.mission >= 9 && <img src={`/images/${RULE_STICKER_IMAGES.a}`} alt="Rule Sticker A" className="w-1/2 rounded" />}
-            {gameState.mission >= 31 && <img src={`/images/${RULE_STICKER_IMAGES.b}`} alt="Rule Sticker B" className="w-1/2 rounded" />}
-            {gameState.mission >= 55 && <img src={`/images/${RULE_STICKER_IMAGES.c}`} alt="Rule Sticker C" className="w-1/2 rounded" />}
-          </div>
-        )}
       </div>
 
       {previewCard && (
