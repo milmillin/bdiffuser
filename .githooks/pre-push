@@ -3,4 +3,5 @@ set -e
 # Type-check + build validation — runs before every push.
 
 pnpm typecheck
+pnpm test
 pnpm build
