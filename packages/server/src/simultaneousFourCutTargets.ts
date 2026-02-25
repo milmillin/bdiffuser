@@ -1,8 +1,17 @@
 import type { GameState } from "@bomb-busters/shared";
+import type { WireTile } from "@bomb-busters/shared";
 
 export interface SimultaneousFourCutTarget {
   playerId: string;
   tileIndex: number;
+}
+
+const MISSION_46_SEVEN_SORT_VALUE = 7.1;
+const MISSION_46_SEVEN_MATCH_EPSILON = 0.01;
+
+function isMission46SevenTile(tile: WireTile): boolean {
+  return tile.color === "yellow"
+    && Math.abs(tile.sortValue - MISSION_46_SEVEN_SORT_VALUE) < MISSION_46_SEVEN_MATCH_EPSILON;
 }
 
 /**
@@ -27,10 +36,14 @@ export function buildSimultaneousFourCutTargets(
   if (targetValue == null) return null;
 
   const targets: SimultaneousFourCutTarget[] = [];
+  const isMission46 = state.mission === 46;
   for (const player of state.players) {
     for (let i = 0; i < player.hand.length; i++) {
       const tile = player.hand[i];
-      if (tile.cut || tile.gameValue !== targetValue) continue;
+      const matchesTarget = isMission46
+        ? isMission46SevenTile(tile)
+        : tile.gameValue === targetValue;
+      if (tile.cut || !matchesTarget) continue;
       targets.push({ playerId: player.id, tileIndex: i });
     }
   }

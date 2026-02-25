@@ -6,6 +6,7 @@ import {
   makeGameState,
   makeBoardState,
   makeEquipmentCard,
+  makeYellowTile,
   makeNumberCard,
   makeNumberCardState,
 } from "@bomb-busters/shared/testing";
@@ -647,12 +648,12 @@ describe("executeSimultaneousFourCut", () => {
     const state = makeGameState({
       mission: 46,
       players: [
-        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 7 })] }),
+        makePlayer({ id: "p1", hand: [makeYellowTile({ id: "p1-1", sortValue: 7.1 })] }),
         makePlayer({ id: "p2", hand: [
-          makeTile({ id: "p2-1", gameValue: 7 }),
-          makeTile({ id: "p2-2", gameValue: 7 }),
-          makeTile({ id: "p2-3", gameValue: 7 }),
-          makeTile({ id: "p2-4", gameValue: 3 }),
+          makeYellowTile({ id: "p2-1", sortValue: 7.1 }),
+          makeYellowTile({ id: "p2-2", sortValue: 7.1 }),
+          makeYellowTile({ id: "p2-3", sortValue: 7.1 }),
+          makeYellowTile({ id: "p2-4", sortValue: 5.1 }),
         ] }),
       ],
       currentPlayerIndex: 0,

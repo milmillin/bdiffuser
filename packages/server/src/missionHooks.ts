@@ -3699,12 +3699,50 @@ type SimultaneousCutGuess = {
   guessValue?: number | "YELLOW";
 };
 
-function actionAttemptsSevenCut(action: ValidateHookContext["action"]): boolean {
-  if (
-    action.type === "dualCut" ||
-    action.type === "dualCutDoubleDetector"
-  ) {
-    return action.guessValue === 7;
+const MISSION_46_SEVEN_SORT_VALUE = 7.1;
+const MISSION_46_SEVEN_MATCH_EPSILON = 0.01;
+
+function isMission46SevenTile(
+  state: Readonly<GameState>,
+  tile: WireTile,
+): boolean {
+  if (state.mission !== 46) return false;
+  if (tile.color !== "yellow") return false;
+  return Math.abs(tile.sortValue - MISSION_46_SEVEN_SORT_VALUE) < MISSION_46_SEVEN_MATCH_EPSILON;
+}
+
+function actionAttemptsSevenCut(
+  state: Readonly<GameState>,
+  action: ValidateHookContext["action"],
+): boolean {
+  if (action.type === "dualCut") {
+    const typedAction = action as unknown as {
+      targetPlayerId: string;
+      targetTileIndex: number;
+      guessValue: number | "YELLOW";
+    };
+    if (typedAction.guessValue === "YELLOW") {
+      const targetPlayer = state.players.find((player) => player.id === typedAction.targetPlayerId);
+      const targetTile = targetPlayer?.hand[typedAction.targetTileIndex];
+      return !!targetTile && isMission46SevenTile(state, targetTile);
+    }
+
+    return typedAction.guessValue === 7;
+  }
+
+  if (action.type === "dualCutDoubleDetector") {
+    const typedAction = action as unknown as {
+      targetPlayerId: string;
+      tileIndex1: number;
+      guessValue: number | "YELLOW";
+    };
+    if (typedAction.guessValue === "YELLOW") {
+      const targetPlayer = state.players.find((player) => player.id === typedAction.targetPlayerId);
+      const targetTile = targetPlayer?.hand[typedAction.tileIndex1];
+      return !!targetTile && isMission46SevenTile(state, targetTile);
+    }
+
+    return typedAction.guessValue === 7;
   }
 
   if (action.type === "soloCut") {
@@ -3727,7 +3765,9 @@ function actorHasUncutNonSevenCuttableWire(
   if (!actor) return false;
 
   return actor.hand.some((tile) =>
-    !tile.cut && tile.gameValue !== 7,
+    !tile.cut && (state.mission === 46
+      ? !isMission46SevenTile(state, tile)
+      : tile.gameValue !== 7),
   );
 }
 
@@ -3742,7 +3782,7 @@ function playerHasOnlySevenCuttableWires(
   const uncutTiles = player.hand.filter((tile) => !tile.cut);
   if (uncutTiles.length === 0) return false;
 
-  return uncutTiles.every((tile) => tile.gameValue === 7);
+  return uncutTiles.every((tile) => isMission46SevenTile(state, tile));
 }
 
 function updateMission46SevensPendingAction(state: GameState): void {
@@ -3775,7 +3815,7 @@ function updateMission46SevensPendingAction(state: GameState): void {
 
 registerHookHandler<"sevens_last">("sevens_last", {
   validate(_rule: SevensLastRuleDef, ctx: ValidateHookContext): HookResult | void {
-    if (!actionAttemptsSevenCut(ctx.action)) return;
+    if (!actionAttemptsSevenCut(ctx.state, ctx.action)) return;
     if (!actorHasUncutNonSevenCuttableWire(ctx.state, ctx.action.actorId)) return;
 
     return {

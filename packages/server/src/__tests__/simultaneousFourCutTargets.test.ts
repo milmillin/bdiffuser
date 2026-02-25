@@ -6,6 +6,7 @@ import {
   makeNumberCardState,
   makePlayer,
   makeTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import {
   buildSimultaneousFourCutTargets,
@@ -20,22 +21,22 @@ describe("simultaneousFourCutTargets", () => {
         makePlayer({
           id: "p1",
           hand: [
-            makeTile({ id: "p1-7a", gameValue: 7 }),
-            makeTile({ id: "p1-4", gameValue: 4 }),
+            makeYellowTile({ id: "p1-7a", sortValue: 7.1 }),
+            makeYellowTile({ id: "p1-4", sortValue: 4.1 }),
           ],
         }),
         makePlayer({
           id: "p2",
           hand: [
-            makeTile({ id: "p2-7", gameValue: 7 }),
-            makeTile({ id: "p2-5", gameValue: 5 }),
+            makeYellowTile({ id: "p2-7", sortValue: 7.1 }),
+            makeYellowTile({ id: "p2-5", sortValue: 5.1 }),
           ],
         }),
         makePlayer({
           id: "p3",
           hand: [
-            makeTile({ id: "p3-7a", gameValue: 7 }),
-            makeTile({ id: "p3-7b", gameValue: 7 }),
+            makeYellowTile({ id: "p3-7a", sortValue: 7.1 }),
+            makeYellowTile({ id: "p3-7b", sortValue: 7.1 }),
           ],
         }),
       ],
@@ -90,8 +91,8 @@ describe("simultaneousFourCutTargets", () => {
     const state = makeGameState({
       mission: 46,
       players: [
-        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-7", gameValue: 7 })] }),
-        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-7", gameValue: 7 })] }),
+        makePlayer({ id: "p1", hand: [makeYellowTile({ id: "p1-7", sortValue: 7.1 })] }),
+        makePlayer({ id: "p2", hand: [makeYellowTile({ id: "p2-7", sortValue: 7.1 })] }),
       ],
     });
 

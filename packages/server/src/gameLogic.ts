@@ -874,6 +874,26 @@ export function executeSimultaneousRedCut(
 }
 
 /** Execute simultaneous four-of-value cut action (mission 23). */
+const MISSION_46_SEVEN_SORT_VALUE = 7.1;
+const MISSION_46_SEVEN_MATCH_EPSILON = 0.01;
+
+function isMission46SevenWire(tile: WireTile): boolean {
+  return tile.color === "yellow"
+    && Math.abs(tile.sortValue - MISSION_46_SEVEN_SORT_VALUE) < MISSION_46_SEVEN_MATCH_EPSILON;
+}
+
+function isSimultaneousFourCutTargetMatch(
+  isMission46: boolean,
+  tile: WireTile,
+  targetValue: number,
+): boolean {
+  if (isMission46) {
+    return isMission46SevenWire(tile);
+  }
+
+  return tile.gameValue === targetValue;
+}
+
 export function executeSimultaneousFourCut(
   state: GameState,
   actorId: string,
@@ -901,7 +921,7 @@ export function executeSimultaneousFourCut(
   for (const target of targets) {
     const player = state.players.find((p) => p.id === target.playerId)!;
     const tile = getTileByFlatIndex(player, target.tileIndex)!;
-    if (tile.gameValue !== targetValue) {
+    if (!isSimultaneousFourCutTargetMatch(isMission46, tile, targetValue)) {
       allMatch = false;
       break;
     }
