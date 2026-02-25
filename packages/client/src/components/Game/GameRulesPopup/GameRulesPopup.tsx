@@ -35,20 +35,22 @@ function TableOfContents({
           >
             {s.heading.text}
           </button>
-          {s.subsections.map((sub) => (
-            <button
-              key={sub.heading.id}
-              type="button"
-              onClick={() => onNavigate(sub.heading.id)}
-              className={`block w-full truncate rounded py-0.5 pl-4 pr-1.5 text-left transition-colors ${
-                activeId === sub.heading.id
-                  ? "bg-amber-500/15 font-bold text-amber-300"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              {sub.heading.text}
-            </button>
-          ))}
+          {s.subsections
+            .filter((sub) => !sub.redacted)
+            .map((sub) => (
+              <button
+                key={sub.heading.id}
+                type="button"
+                onClick={() => onNavigate(sub.heading.id)}
+                className={`block w-full truncate rounded py-0.5 pl-4 pr-1.5 text-left transition-colors ${
+                  activeId === sub.heading.id
+                    ? "bg-amber-500/15 font-bold text-amber-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {sub.heading.text}
+              </button>
+            ))}
         </div>
       ))}
     </nav>
