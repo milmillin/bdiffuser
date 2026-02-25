@@ -1893,14 +1893,14 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
-    it("mission 59: auto-skips a player with no Nano-forward legal cut and rotates Nano", () => {
+    it("mission 59: auto-skips players with no playable uncut wires", () => {
       const p1 = makePlayer({
         id: "p1",
-        hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
+        hand: [makeTile({ id: "p1-10", gameValue: 10, cut: true })],
       });
       const p2 = makePlayer({
         id: "p2",
-        hand: [makeTile({ id: "p2-1", gameValue: 1, cut: false })],
+        hand: [makeTile({ id: "p2-1", gameValue: 1, cut: true })],
       });
       const state = makeGameState({
         mission: 59,
@@ -1939,9 +1939,9 @@ describe("missionHooks dispatcher", () => {
       dispatchHooks(59, { point: "endTurn", state, previousPlayerId: "p2" });
 
       expect(state.currentPlayerIndex).toBe(0);
-      expect(state.turnNumber).toBe(7);
-      expect(state.board.detonatorPosition).toBe(3);
-      expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+      expect(state.turnNumber).toBe(6);
+      expect(state.board.detonatorPosition).toBe(2);
+      expect(state.campaign?.mission59Nano?.facing).toBe(1);
       const skipLog = state.log.find(
         (entry) =>
           entry.action === "hookEffect"
@@ -1950,7 +1950,7 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
-    it("mission 59: does not auto-skip a player who can cut using only Nano's current value", () => {
+    it("mission 59: does not auto-skip a player who can cut using only Nano's hidden current value", () => {
       const actor = makePlayer({
         id: "p1",
         hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
@@ -1964,18 +1964,18 @@ describe("missionHooks dispatcher", () => {
         campaign: {
           numberCards: {
             visible: [
-              { id: "m59-v1", value: 1, faceUp: true },
-              { id: "m59-v2", value: 2, faceUp: true },
-              { id: "m59-v3", value: 3, faceUp: true },
-              { id: "m59-v4", value: 4, faceUp: true },
-              { id: "m59-v5", value: 5, faceUp: true },
-              { id: "m59-v6", value: 6, faceUp: true },
-              { id: "m59-v7", value: 7, faceUp: true },
-              { id: "m59-v8", value: 8, faceUp: true },
-              { id: "m59-v9", value: 9, faceUp: true },
-              { id: "m59-v10", value: 10, faceUp: true },
-              { id: "m59-v11", value: 11, faceUp: true },
-              { id: "m59-v12", value: 12, faceUp: true },
+              { id: "m59-v1", value: 1, faceUp: false },
+              { id: "m59-v2", value: 2, faceUp: false },
+              { id: "m59-v3", value: 3, faceUp: false },
+              { id: "m59-v4", value: 4, faceUp: false },
+              { id: "m59-v5", value: 5, faceUp: false },
+              { id: "m59-v6", value: 6, faceUp: false },
+              { id: "m59-v7", value: 7, faceUp: false },
+              { id: "m59-v8", value: 8, faceUp: false },
+              { id: "m59-v9", value: 9, faceUp: false },
+              { id: "m59-v10", value: 10, faceUp: false },
+              { id: "m59-v11", value: 11, faceUp: false },
+              { id: "m59-v12", value: 12, faceUp: false },
             ],
             deck: [],
             discard: [],
@@ -2001,6 +2001,73 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail).startsWith("mission_59:auto_skip|player=p1"),
       );
       expect(skipLog).toBeUndefined();
+    });
+
+    it("mission 59: allows dual cuts on hidden Nano current value without actor hand match", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-1", gameValue: 1, cut: false })],
+      });
+      const target = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", gameValue: 7, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor, target],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: false },
+              { id: "m59-v2", value: 2, faceUp: false },
+              { id: "m59-v3", value: 3, faceUp: false },
+              { id: "m59-v4", value: 4, faceUp: false },
+              { id: "m59-v5", value: 5, faceUp: false },
+              { id: "m59-v6", value: 6, faceUp: false },
+              { id: "m59-v7", value: 7, faceUp: false },
+              { id: "m59-v8", value: 8, faceUp: false },
+              { id: "m59-v9", value: 9, faceUp: false },
+              { id: "m59-v10", value: 10, faceUp: false },
+              { id: "m59-v11", value: 11, faceUp: false },
+              { id: "m59-v12", value: 12, faceUp: false },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "p1",
+          targetPlayerId: "p2",
+          targetTileIndex: 0,
+          guessValue: 5,
+        },
+      });
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("Nano's current line segment");
+
+      const allowed = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "p1",
+          targetPlayerId: "p2",
+          targetTileIndex: 0,
+          guessValue: 7,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
     });
 
     it("mission 47: auto-skips a stuck player and advances detonator", () => {

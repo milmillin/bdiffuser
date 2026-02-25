@@ -780,6 +780,21 @@ function getMission59ForwardValues(state: Readonly<GameState>): number[] {
   return values;
 }
 
+function getMission59CutValues(state: Readonly<GameState>): Set<number> {
+  const legalValues = new Set(getMission59ForwardValues(state));
+  const mission59Nano = getMission59NanoState(state);
+  if (!mission59Nano) return legalValues;
+
+  const currentLineValue = state.campaign?.numberCards?.visible?.[
+    mission59Nano.position
+  ]?.value;
+  if (typeof currentLineValue === "number") {
+    legalValues.add(currentLineValue);
+  }
+
+  return legalValues;
+}
+
 function getMission59AttemptedValues(
   action: ValidateHookContext["action"],
 ): number[] {
@@ -796,7 +811,7 @@ function canPlayerPlayMission59(
   state: Readonly<GameState>,
   actor: Readonly<Player>,
 ): boolean {
-  const legalValues = new Set(getMission59ForwardValues(state));
+  const legalValues = getMission59CutValues(state);
   if (legalValues.size === 0) return false;
   const hasPlayableHand = actor.hand.some((tile) => !tile.cut);
   if (!hasPlayableHand) return false;
@@ -806,10 +821,7 @@ function canPlayerPlayMission59(
   const currentLineValue = state.campaign?.numberCards?.visible?.[
     mission59Nano.position
   ]?.value;
-  if (
-    typeof currentLineValue === "number" &&
-    legalValues.has(currentLineValue)
-  ) {
+  if (typeof currentLineValue === "number") {
     return true;
   }
 
@@ -1870,7 +1882,7 @@ registerHookHandler<"nano_progression">("nano_progression", {
       ctx.action.type === "dualCutDoubleDetector";
 
     const attemptedValues = getMission59AttemptedValues(ctx.action);
-    const legalValues = new Set(getMission59ForwardValues(ctx.state));
+    const legalValues = getMission59CutValues(ctx.state);
     if (legalValues.size === 0) {
       return {
         validationCode: "MISSION_RULE_VIOLATION",
