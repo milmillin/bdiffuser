@@ -12,6 +12,7 @@ import {
 import {
   canRevealReds,
   getSoloCutValues,
+  isMission26CutValueVisible,
   isRevealRedsForced,
 } from "./actionRules.js";
 
@@ -452,6 +453,30 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
 
     expect(values).toEqual([]);
+  });
+
+  it("checks mission 26 number visibility with isMission26CutValueVisible", () => {
+    const state = makeGameState({
+      mission: 26,
+      players: [
+        makePlayer({ id: "me", hand: [makeTile({ id: "m1", gameValue: 5 })] }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n5", value: 5, faceUp: true },
+            { id: "n7", value: 7, faceUp: false },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isMission26CutValueVisible(state, 5)).toBe(true);
+    expect(isMission26CutValueVisible(state, 7)).toBe(false);
+    expect(isMission26CutValueVisible(state, "YELLOW")).toBe(false);
   });
 });
 
