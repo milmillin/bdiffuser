@@ -1201,6 +1201,43 @@ describe("mission complexity tier representative coverage", () => {
     expect(captain.hand[0].cut).toBe(false);
   });
 
+  it("campaign false-info-token mode: failed dual cut targeting captain uses announced false value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c3", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 1,
+      campaign: { falseInfoTokenMode: true },
+      players: [actor, captain],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "actor", "captain", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(captain.infoTokens).toHaveLength(1);
+    expect(captain.infoTokens[0]).toMatchObject({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+    expect(captain.hand[0].gameValue).toBe(3);
+    expect(captain.hand[0].cut).toBe(false);
+  });
+
   it("restriction tier (mission 34): enforces allowed player counts", () => {
     const invalid = validateMissionPlayerCount(34, 2);
     expect(invalid).toContain("requires 3, 4, 5 players");

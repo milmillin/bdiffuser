@@ -114,11 +114,19 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
     return;
   }
 
+  const campaignFalseInfoTokenMode =
+    state.campaign?.falseInfoTokenMode === true;
+  const campaignFalseTokenMode =
+    state.campaign?.falseTokenMode === true;
+
   // Missions with false setup tokens (mission 52 for all players,
   // mission 17 for captain only) need non-matching numeric values.
   const requiresFalseSetupToken =
     state.phase === "setup_info_tokens" &&
-    (state.mission === 52 || (state.mission === 17 && bot.isCaptain));
+    (campaignFalseTokenMode ||
+      (campaignFalseInfoTokenMode && bot.isCaptain) ||
+      state.mission === 52 ||
+      (state.mission === 17 && bot.isCaptain));
   if (requiresFalseSetupToken) {
     const existingPositions = new Set(bot.infoTokens.map((t) => t.position));
     const tryPlace = (): boolean => {

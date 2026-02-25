@@ -95,6 +95,44 @@ describe("botPlaceInfoToken", () => {
     }
   });
 
+  it("campaign false info flag: captain places false tokens on non-17 missions", () => {
+    const captainBot = makePlayer({
+      id: "campaign-captain-bot",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "b-4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "b-7", color: "blue", gameValue: 7, sortValue: 7 }),
+        makeRedTile({ id: "r-1" }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t-8", color: "blue", gameValue: 8, sortValue: 8 })],
+    });
+    const state = makeGameState({
+      mission: 1,
+      campaign: { falseInfoTokenMode: true },
+      phase: "setup_info_tokens",
+      players: [captainBot, teammate],
+    });
+
+    botPlaceInfoToken(state, "campaign-captain-bot");
+    botPlaceInfoToken(state, "campaign-captain-bot");
+    botPlaceInfoToken(state, "campaign-captain-bot");
+
+    expect(captainBot.infoTokens).toHaveLength(2);
+    expect(new Set(captainBot.infoTokens.map((token) => token.position)).size).toBe(2);
+    for (const token of captainBot.infoTokens) {
+      expect(token.position).toBeGreaterThanOrEqual(0);
+      expect(token.position).toBeLessThan(captainBot.hand.length);
+      const tile = captainBot.hand[token.position];
+      expect(tile.color).not.toBe("red");
+      if (tile.color === "blue" && typeof tile.gameValue === "number") {
+        expect(token.value).not.toBe(tile.gameValue);
+      }
+    }
+  });
+
   it.each([21, 33] as const)("mission %i: places parity setup token", (mission) => {
     const bot = makePlayer({
       id: "bot",
