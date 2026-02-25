@@ -4488,6 +4488,88 @@ function getCurrentPlayerHasUncutCards(state: Readonly<GameState>): boolean {
   return currentPlayer.hand.some((tile) => !tile.cut);
 }
 
+function getMission47AttemptedValues(
+  action: { type: string; [key: string]: unknown },
+): Array<number | "YELLOW"> {
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    const typedAction = action as { guessValue?: unknown };
+    return typeof typedAction.guessValue === "number" || typedAction.guessValue === "YELLOW"
+      ? [typedAction.guessValue]
+      : [];
+  }
+  if (action.type === "soloCut") {
+    const typedAction = action as { value?: unknown };
+    return typeof typedAction.value === "number" || typedAction.value === "YELLOW"
+      ? [typedAction.value]
+      : [];
+  }
+  if (action.type === "simultaneousCut") {
+    return (Array.isArray(action.cuts) ? action.cuts : [])
+      .map((cut) => (cut as { guessValue?: unknown }).guessValue)
+      .filter(
+        (value): value is number | "YELLOW" =>
+          typeof value === "number" || value === "YELLOW",
+      );
+  }
+
+  return [];
+}
+
+function canMission47PairToTarget(valueA: number, valueB: number, target: number): boolean {
+  if (target < 1 || target > 12) return false;
+  return valueA + valueB === target || Math.abs(valueA - valueB) === target;
+}
+
+function findMission47PairForTarget(
+  cards: ReadonlyArray<{ value: number }>,
+  target: number,
+): [number, number] | null {
+  for (let i = 0; i < cards.length; i += 1) {
+    for (let j = i + 1; j < cards.length; j += 1) {
+      if (canMission47PairToTarget(cards[i]!.value, cards[j]!.value, target)) {
+        return [i, j];
+      }
+    }
+  }
+  return null;
+}
+
+function getMission47PossibleTargets(cards: ReadonlyArray<{ value: number }>): number[] {
+  const targets = new Set<number>();
+  for (let i = 0; i < cards.length; i += 1) {
+    for (let j = i + 1; j < cards.length; j += 1) {
+      const valueA = cards[i]!.value;
+      const valueB = cards[j]!.value;
+      const sum = valueA + valueB;
+      const diff = Math.abs(valueA - valueB);
+      if (sum >= 1 && sum <= 12) targets.add(sum);
+      if (diff >= 1 && diff <= 12) targets.add(diff);
+    }
+  }
+  return [...targets].sort((a, b) => a - b);
+}
+
+function recycleMission47Cards(ctx: ResolveHookContext): void {
+  const numberCards = ctx.state.campaign?.numberCards;
+  if (!numberCards) return;
+  if (numberCards.visible.length !== 0) return;
+  if (numberCards.discard.length === 0) return;
+
+  numberCards.visible = shuffle([...numberCards.discard]);
+  for (const card of numberCards.visible) {
+    card.faceUp = true;
+  }
+  numberCards.discard = [];
+
+  pushGameLog(ctx.state, {
+    turn: ctx.state.turnNumber,
+    playerId: ctx.action.actorId,
+    action: "hookEffect",
+    detail: `add_subtract_number_cards:reshuffle|count=${numberCards.visible.length}`,
+    timestamp: Date.now(),
+  });
+}
+
 /**
  * Mission 29: Hidden number card penalty.
  * Each turn a hidden number card is revealed and penalizes the player
@@ -4563,6 +4645,117 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
       detail: "add_subtract_number_cards:init",
       timestamp: Date.now(),
     });
+  },
+
+  validate(_rule: AddSubtractNumberCardsRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (
+      ctx.action.type !== "dualCut" &&
+      ctx.action.type !== "dualCutDoubleDetector" &&
+      ctx.action.type !== "soloCut"
+    ) {
+      return;
+    }
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    if (!numberCards) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 47: Number cards are not initialized",
+      };
+    }
+
+    const remaining = [...numberCards.visible];
+    const attemptedValues = getMission47AttemptedValues(ctx.action);
+    if (attemptedValues.length === 0) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 47: cut actions must include a numeric value",
+      };
+    }
+
+    const possibleTargets = getMission47PossibleTargets(remaining);
+    if (possibleTargets.length === 0) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 47: no valid Number card pairs remain",
+      };
+    }
+
+    for (const attemptedValue of attemptedValues) {
+      if (typeof attemptedValue !== "number") {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: "Mission 47: cut values must be numeric",
+        };
+      }
+
+      const pair = findMission47PairForTarget(remaining, attemptedValue);
+      if (!pair) {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError:
+            `Mission 47: chosen value must be a sum or difference ` +
+            `of two available Number cards. Legal values: ${possibleTargets.join(", ")}`,
+        };
+      }
+
+      const [firstIndex, secondIndex] = pair[0] > pair[1]
+        ? [pair[0], pair[1]]
+        : [pair[1], pair[0]];
+      remaining.splice(firstIndex, 1);
+      remaining.splice(secondIndex, 1);
+    }
+  },
+
+  resolve(_rule: AddSubtractNumberCardsRuleDef, ctx: ResolveHookContext): void {
+    const actionType = ctx.action.type as
+      | "dualCut"
+      | "dualCutDoubleDetector"
+      | "soloCut"
+      | "revealReds";
+    if (
+      actionType !== "dualCut" &&
+      actionType !== "dualCutDoubleDetector" &&
+      actionType !== "soloCut"
+    ) {
+      return;
+    }
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    if (!numberCards) return;
+    const remaining = [...numberCards.visible];
+    const attemptedValues = getMission47AttemptedValues(ctx.action);
+    if (attemptedValues.length === 0) return;
+
+    const usedCards: typeof numberCards.visible = [];
+    for (const attemptedValue of attemptedValues) {
+      if (typeof attemptedValue !== "number") continue;
+      const pair = findMission47PairForTarget(remaining, attemptedValue);
+      if (!pair) continue;
+
+      const sorted = pair[0] > pair[1] ? [pair[0], pair[1]] : [pair[1], pair[0]];
+      const firstCard = remaining.splice(sorted[0], 1)[0];
+      const secondCard = remaining.splice(sorted[1], 1)[0];
+      if (firstCard) usedCards.push(firstCard);
+      if (secondCard) usedCards.push(secondCard);
+    }
+    if (usedCards.length === 0) return;
+
+    for (const card of usedCards) {
+      card.faceUp = true;
+      numberCards.discard.push(card);
+    }
+    numberCards.visible = remaining;
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `add_subtract_number_cards:consumed=${usedCards.length}|remaining=${remaining.length}`,
+      timestamp: Date.now(),
+    });
+
+    recycleMission47Cards(ctx);
   },
 });
 

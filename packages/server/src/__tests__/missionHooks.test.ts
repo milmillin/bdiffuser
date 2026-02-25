@@ -851,6 +851,97 @@ describe("missionHooks dispatcher", () => {
       expect(secondCard?.faceUp).toBe(true);
     });
 
+    it("mission 47: discards two Number cards when a valid cut action resolves", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 4, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "t1", gameValue: 5, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 47,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c3", value: 3, faceUp: true },
+              { id: "c4", value: 4, faceUp: true },
+              { id: "c9", value: 9, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(47, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 7,
+        },
+        cutValue: 7,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.numberCards?.visible).toHaveLength(1);
+      expect(state.campaign?.numberCards?.discard).toHaveLength(2);
+      expect(state.campaign?.numberCards?.visible?.some((card) => card.id === "c9")).toBe(true);
+      expect(state.campaign?.numberCards?.discard.every((card) => card.faceUp)).toBe(true);
+    });
+
+    it("mission 47: reshuffles discarded Number cards when none remain visible", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 4, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "t1", gameValue: 5, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 47,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c11", value: 11, faceUp: true },
+              { id: "c1", value: 1, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(47, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 10,
+        },
+        cutValue: 10,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.numberCards?.visible).toHaveLength(2);
+      expect(state.campaign?.numberCards?.discard).toHaveLength(0);
+      expect(state.campaign?.numberCards?.visible.every((card) => card.faceUp)).toBe(true);
+      expect(state.campaign?.numberCards?.visible.map((card) => card.id).sort()).toEqual(["c1", "c11"]);
+    });
+
     it("mission 11: does not trigger loss for non-matching blue value", () => {
       const state = makeGameState({
         mission: 11,
@@ -1850,6 +1941,50 @@ describe("missionHooks dispatcher", () => {
 
       expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
       expect(blocked.validationError).toContain("must cut a wire");
+    });
+
+    it("mission 47: blocks cut actions that cannot be formed by adding or subtracting two cards", () => {
+      const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 4, cut: false })] });
+      const state = makeGameState({
+        mission: 47,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m47-visible-3", value: 3, faceUp: true },
+              { id: "m47-visible-9", value: 9, faceUp: true },
+              { id: "m47-visible-10", value: 10, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(47, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 8,
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("Mission 47");
+
+      const allowed = dispatchHooks(47, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 12,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
     });
 
     it("mission 41: blocks actions for players with only their tripwire", () => {
