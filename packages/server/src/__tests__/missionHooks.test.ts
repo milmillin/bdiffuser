@@ -357,6 +357,34 @@ describe("missionHooks dispatcher", () => {
       expect(values).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     });
 
+    it("mission 26: initializes all Number cards faceup and empty deck/discard", () => {
+      const state = makeGameState({
+        mission: 26,
+        log: [],
+      });
+
+      dispatchHooks(26, { point: "setup", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards!.visible).toHaveLength(12);
+      expect(numberCards!.visible.every((card) => card.faceUp)).toBe(true);
+      expect(numberCards!.deck).toHaveLength(0);
+      expect(numberCards!.discard).toHaveLength(0);
+
+      const values = [...new Set(numberCards!.visible.map((card) => card.value))].sort(
+        (a, b) => a - b,
+      );
+      expect(values).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      const setupLog = state.log.find(
+        (entry) =>
+          entry.action === "hookSetup"
+          && renderLogDetail(entry.detail) === "visible_number_card_gate:init",
+      );
+      expect(setupLog).toBeDefined();
+    });
+
     it("mission 35: marks one blue X wire at far right of each stand", () => {
       const captain = makePlayer({
         id: "captain",
@@ -704,6 +732,58 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail).startsWith("personal_number_cards:completed=5|flipped=1"),
       );
       expect(completionLog).toBeDefined();
+    });
+
+    it("mission 26: removes Number card after 4 matching wires are cut", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a4", gameValue: 4, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "t4a", gameValue: 4, cut: true }),
+          makeTile({ id: "t4b", gameValue: 4, cut: true }),
+          makeTile({ id: "t4c", gameValue: 4, cut: true }),
+        ],
+      });
+
+      const state = makeGameState({
+        mission: 26,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [{ id: "m26-visible-4", value: 4, faceUp: true }],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(26, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 4,
+        },
+        cutValue: 4,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.numberCards?.visible).toHaveLength(0);
+      expect(state.campaign?.numberCards?.discard).toHaveLength(0);
+
+      const completedLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "visible_number_card_gate:completed=4",
+      );
+      expect(completedLog).toBeDefined();
     });
 
     it("mission 11: does not trigger loss for non-matching blue value", () => {
@@ -1212,6 +1292,59 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 26: flips all Number cards faceup when none are visible and auto-skips if no match", () => {
+      const skipPlayer = makePlayer({
+        id: "skip",
+        hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
+      });
+      const nextPlayer = makePlayer({
+        id: "next",
+        hand: [makeTile({ id: "n1", gameValue: 4, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 26,
+        players: [skipPlayer, nextPlayer],
+        currentPlayerIndex: 0,
+        turnNumber: 8,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m26-visible-4", value: 4, faceUp: false },
+              { id: "m26-visible-5", value: 5, faceUp: false },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(26, { point: "endTurn", state });
+
+      const visible = state.campaign?.numberCards?.visible;
+      expect(visible?.[0]?.faceUp).toBe(true);
+      expect(visible?.[1]?.faceUp).toBe(true);
+
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(9);
+
+      const refreshLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("visible_number_card_gate:refresh|count=2"),
+      );
+      expect(refreshLog).toBeDefined();
+
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "visible_number_card_gate:auto_skip|player=skip",
+      );
+      expect(skipLog).toBeDefined();
+    });
+
     it("mission 41: auto-skips a player with only their tripwire and red wires", () => {
       const skipPlayer = makePlayer({
         id: "p1",
@@ -1536,6 +1669,91 @@ describe("missionHooks dispatcher", () => {
         },
       });
       expect(allowed.validationError).toBeUndefined();
+    });
+
+    it("mission 26: blocks actions that do not match visible Number cards", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "a1", gameValue: 2, cut: false }),
+          makeTile({ id: "a2", gameValue: 3, cut: false }),
+        ],
+      });
+      const state = makeGameState({
+        mission: 26,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m26-visible-1", value: 1, faceUp: true },
+              { id: "m26-visible-2", value: 2, faceUp: false },
+              { id: "m26-visible-3", value: 3, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(26, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 2,
+          tileId: "a1",
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("visible Number card values");
+
+      const allowed = dispatchHooks(26, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 3,
+          tileId: "a2",
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
+    });
+
+    it("mission 26: blocks turns when player has no matching visible values", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
+      });
+      const state = makeGameState({
+        mission: 26,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [{ id: "m26-visible-1", value: 1, faceUp: true }],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(26, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 1,
+          tileId: "r1",
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("must skip");
     });
 
     it("mission 41: blocks actions for players with only their tripwire", () => {

@@ -3329,29 +3329,201 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
 registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
   setup(_rule: VisibleNumberCardGateRuleDef, ctx: SetupHookContext): void {
     const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
-    const firstValue = deckValues.shift()!;
+    const numberCards = deckValues.map((value, idx) => ({
+      id: `m26-visible-${idx}-${value}`,
+      value,
+      faceUp: true,
+    }));
 
     ctx.state.campaign ??= {};
     ctx.state.campaign.numberCards = {
-      visible: [{ id: `m26-visible-${firstValue}`, value: firstValue, faceUp: true }],
-      deck: deckValues.map((value, idx) => ({
-        id: `m26-deck-${idx}-${value}`,
-        value,
-        faceUp: false,
-      })),
+      visible: numberCards,
+      deck: [],
       discard: [],
       playerHands: {},
     };
+    skipMission26NoMatchTurns(ctx.state);
 
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `visible_number_card_gate:init:${firstValue}`,
+      detail: "visible_number_card_gate:init",
       timestamp: Date.now(),
     });
   },
+
+  validate(_rule: VisibleNumberCardGateRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.mission !== 26 || ctx.state.phase === "finished") return;
+
+    const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
+    if (!actor) return;
+
+    if (!canPlayerActWithMission26Card(ctx.state, actor.id)) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 26: player must skip their turn",
+      };
+    }
+
+    const attemptedValues = getMission26AttemptedValues(ctx.action);
+    if (attemptedValues.length === 0) return;
+
+    const visibleValues = new Set(
+      getVisibleMission26Values(ctx.state),
+    );
+
+    for (const attemptedValue of attemptedValues) {
+      if (typeof attemptedValue !== "number") {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: "Mission 26: cuts must target a visible Number card value",
+        };
+      }
+      if (!visibleValues.has(attemptedValue)) {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError:
+            "Mission 26: you must pick one of the currently visible Number card values",
+        };
+      }
+    }
+  },
+
+  resolve(_rule: VisibleNumberCardGateRuleDef, ctx: ResolveHookContext): void {
+    if (ctx.state.mission !== 26 || ctx.state.phase === "finished" || !ctx.cutSuccess) return;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    if (!numberCards) return;
+
+    const matchingCard = numberCards.visible.find((card) => card.value === ctx.cutValue);
+    if (!matchingCard) return;
+
+    matchingCard.faceUp = false;
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+    if (projectedCutCount < 4) return;
+
+    const matchingIndex = numberCards.visible.findIndex((card) => card.value === ctx.cutValue);
+    if (matchingIndex >= 0) {
+      numberCards.visible.splice(matchingIndex, 1);
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: ctx.action.actorId,
+        action: "hookEffect",
+        detail: `visible_number_card_gate:completed=${ctx.cutValue}`,
+        timestamp: Date.now(),
+      });
+    }
+  },
+
+  endTurn(_rule: VisibleNumberCardGateRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished" || ctx.state.mission !== 26) return;
+
+    revealAllMission26FaceDownCards(ctx.state);
+    skipMission26NoMatchTurns(ctx.state);
+  },
 });
+
+function getVisibleMission26Values(state: Readonly<GameState>): number[] {
+  return (state.campaign?.numberCards?.visible ?? [])
+    .filter((card) => card.faceUp)
+    .map((card) => card.value);
+}
+
+function canPlayerActWithMission26Card(state: Readonly<GameState>, actorId: string): boolean {
+  const actor = state.players.find((p) => p.id === actorId);
+  if (!actor) return false;
+
+  const visible = state.campaign?.numberCards?.visible;
+  if (!visible || visible.length === 0) return true;
+
+  const visibleValues = new Set(getVisibleMission26Values(state));
+  if (visibleValues.size === 0) return true;
+
+  return actor.hand.some(
+    (tile) => !tile.cut && typeof tile.gameValue === "number" && visibleValues.has(tile.gameValue),
+  );
+}
+
+function getMission26AttemptedValues(
+  action: ValidateHookContext["action"],
+): Array<number | "YELLOW"> {
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    return typeof action.guessValue === "number" || action.guessValue === "YELLOW"
+      ? [action.guessValue]
+      : [];
+  }
+  if (action.type === "soloCut") {
+    return typeof action.value === "number" || action.value === "YELLOW" ? [action.value] : [];
+  }
+  if (action.type === "simultaneousCut") {
+    const cuts = Array.isArray(action.cuts) ? action.cuts : [];
+    return cuts
+      .map((cut) => {
+        const asCut = cut as { guessValue?: unknown };
+        return asCut.guessValue;
+      })
+      .filter((value): value is number | "YELLOW" =>
+        typeof value === "number" || value === "YELLOW",
+      );
+  }
+  return [];
+}
+
+function revealAllMission26FaceDownCards(state: GameState): void {
+  const visible = state.campaign?.numberCards?.visible;
+  if (!visible || visible.length === 0) return;
+  if (visible.some((card) => card.faceUp)) return;
+
+  for (const card of visible) {
+    card.faceUp = true;
+  }
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: "system",
+    action: "hookEffect",
+    detail: `visible_number_card_gate:refresh|count=${visible.length}`,
+    timestamp: Date.now(),
+  });
+}
+
+function skipMission26NoMatchTurns(state: GameState): void {
+  const playerCount = state.players.length;
+  let skipCount = 0;
+
+  while (skipCount < playerCount) {
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    const canAct =
+      canPlayerActWithMission26Card(state, currentPlayer.id)
+      && getCurrentPlayerHasUncutCards(state);
+    if (canAct) return;
+
+    const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+    if (nextPlayerIndex == null) return;
+
+    state.currentPlayerIndex = nextPlayerIndex;
+    state.turnNumber += 1;
+    skipCount += 1;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: currentPlayer.id,
+      action: "hookEffect",
+      detail: `visible_number_card_gate:auto_skip|player=${currentPlayer.id}`,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+function getCurrentPlayerHasUncutCards(state: Readonly<GameState>): boolean {
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return false;
+  return currentPlayer.hand.some((tile) => !tile.cut);
+}
 
 /**
  * Mission 29: Hidden number card penalty.
