@@ -259,6 +259,85 @@ describe("validateSimultaneousRedCutLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("mission 41: with 2 players, allows actor without uncut yellow wire", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(error).toBeNull();
+  });
+
+  it("mission 41: rejects targeting the actor's own wire", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p1", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("SIMULTANEOUS_RED_CUT_INVALID_TARGETS");
+    expect(error!.message).toContain("teammate's tripwire");
+  });
+
+  it("mission 41: rejects when only actor has an uncut tripwire", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "b2", gameValue: 4 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("teammate");
+  });
+
+  it("mission 41: rejects when no uncut yellow wires remain", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "b1", gameValue: 3 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "b2", gameValue: 4 })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateSimultaneousRedCutLegality(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("mission 48: rejects when no player has uncut yellow wires", () => {
     const state = makeGameState({
       mission: 48,
@@ -564,5 +643,95 @@ describe("executeSimultaneousRedCut", () => {
 
     expect(action.type).toBe("gameOver");
     expect(state.board.equipment[0]?.unlocked).toBe(true);
+  });
+
+  it("mission 41: on successful tripwire cut, sets one wire cut and moves detonator back by 1", () => {
+    const state = makeGameState({
+      mission: 41,
+      board: {
+        detonatorPosition: 4,
+        detonatorMax: 12,
+      },
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "b1", gameValue: 3 })],
+        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(action.type).toBe("simultaneousRedCutResult");
+    if (action.type === "simultaneousRedCutResult") {
+      expect(action.totalCut).toBe(1);
+      expect(action.cuts).toEqual([{ playerId: "p2", tileIndex: 0 }]);
+    }
+    expect(state.players[1].hand[0].cut).toBe(true);
+    expect(state.board.detonatorPosition).toBe(3);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+  });
+
+  it("mission 41: mismatch on non-yellow wire places one token and advances detonator", () => {
+    const state = makeGameState({
+      mission: 41,
+      board: {
+        detonatorPosition: 0,
+        detonatorMax: 12,
+      },
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "b1", gameValue: 3 })],
+        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "b2", gameValue: 4 })] }),
+      ],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(action.type).toBe("simultaneousRedCutResult");
+    if (action.type === "simultaneousRedCutResult") {
+      expect(action.totalCut).toBe(0);
+      expect(action.cuts).toEqual([]);
+    }
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.players[1].infoTokens).toHaveLength(1);
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.turnNumber).toBe(2);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+  });
+
+  it("mission 41: designated red wire explodes immediately", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "b1", gameValue: 3 })],
+        }),
+        makePlayer({ id: "p2", hand: [makeRedTile({ id: "r2" })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const action = executeSimultaneousRedCut(state, "p1", [
+      { playerId: "p2", tileIndex: 0 },
+    ]);
+
+    expect(action).toEqual({ type: "gameOver", result: "loss_red_wire" });
+    expect(state.result).toBe("loss_red_wire");
+    expect(state.phase).toBe("finished");
+    expect(state.turnNumber).toBe(1);
   });
 });

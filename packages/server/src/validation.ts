@@ -623,8 +623,11 @@ export function validateSimultaneousRedCutLegality(
     return legalityError("ACTOR_NOT_FOUND", "Actor not found");
   }
 
-  // Check if any player has uncut target-color wires.
-  const anyUncutTargetColor = state.players.some((p) =>
+  // Check if any teammate has uncut target-color wires for mission 41, or any player for missions 13/48.
+  const targetPlayers = isMission41
+    ? state.players.filter((p) => p.id !== actorId)
+    : state.players;
+  const anyUncutTargetColor = targetPlayers.some((p) =>
     p.hand.some((t) => !t.cut && t.color === requiredColor),
   );
   if (!anyUncutTargetColor) {
@@ -633,7 +636,9 @@ export function validateSimultaneousRedCutLegality(
     }
     return legalityError(
       "MISSION_RULE_VIOLATION",
-      "No player has uncut yellow wires",
+      isMission41
+        ? "No teammate has an uncut yellow tripwire"
+        : "No player has uncut yellow wires",
     );
   }
 
