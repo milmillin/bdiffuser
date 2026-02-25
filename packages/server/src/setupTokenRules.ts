@@ -169,6 +169,18 @@ export function validateSetupInfoTokenPlacement(
       );
     }
 
+    // No duplicate absent tokens for same value
+    const alreadyPlaced = player.infoTokens.some((t) => {
+      if (value === 0) return t.isYellow && t.position === -1;
+      return !t.isYellow && t.value === value && t.position === -1;
+    });
+    if (alreadyPlaced) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "You already placed an absent token for this value",
+      );
+    }
+
     // Check the value is actually absent from player's uncut hand
     const isYellowAbsent = value === 0;
     if (isYellowAbsent) {
@@ -203,18 +215,6 @@ export function validateSetupInfoTokenPlacement(
           "Cannot declare a value absent when you have wires of that value",
         );
       }
-    }
-
-    // No duplicate absent tokens for same value
-    const alreadyPlaced = player.infoTokens.some((t) => {
-      if (isYellowAbsent) return t.isYellow && t.position === -1;
-      return !t.isYellow && t.value === value && t.position === -1;
-    });
-    if (alreadyPlaced) {
-      return legalityError(
-        "MISSION_RULE_VIOLATION",
-        "You already placed an absent token for this value",
-      );
     }
 
     return null;
