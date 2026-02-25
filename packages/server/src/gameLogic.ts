@@ -79,6 +79,40 @@ export function advanceTurn(state: GameState): void {
   }
 }
 
+export function getBotDoubleDetectorNoMatchInfoTokenIndex(
+  state: GameState,
+  targetPlayer: Player,
+  tileIndex1: number,
+  tileIndex2: number,
+): number {
+  const tile1 = targetPlayer.hand[tileIndex1];
+  const tile2 = targetPlayer.hand[tileIndex2];
+
+  const tile1IsRedLike =
+    tile1 != null && (tile1.color === "red" || isMission11HiddenRedLikeTile(state, tile1));
+  const tile2IsRedLike =
+    tile2 != null && (tile2.color === "red" || isMission11HiddenRedLikeTile(state, tile2));
+
+  if (!tile1IsRedLike) {
+    return tileIndex1;
+  }
+  if (!tile2IsRedLike) {
+    return tileIndex2;
+  }
+
+  return tileIndex2;
+}
+
+export function isMission11HiddenRedLikeTile(
+  state: GameState,
+  tile: WireTile | undefined,
+): boolean {
+  if (state.mission !== 11 || tile == null) return false;
+  if (typeof tile.gameValue !== "number") return false;
+  const hiddenBlueAsRedValue = getBlueAsRedValue(state);
+  return tile.gameValue === hiddenBlueAsRedValue;
+}
+
 /** Update the cut count for a blue value on the validation track */
 function checkValidation(state: GameState, value: number): boolean {
   if (typeof value !== "number") return false;

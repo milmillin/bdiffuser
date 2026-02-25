@@ -32,6 +32,7 @@ import {
   executeRevealReds,
   executeSimultaneousRedCut,
   executeSimultaneousFourCut,
+  getBotDoubleDetectorNoMatchInfoTokenIndex,
   resolveDetectorTileChoice,
 } from "./gameLogic.js";
 import {
@@ -41,7 +42,10 @@ import {
   executeCharacterAbility,
   resolveTalkiesWalkiesTileChoice,
 } from "./equipment.js";
-import { dispatchHooks, emitMissionFailureTelemetry } from "./missionHooks.js";
+import {
+  dispatchHooks,
+  emitMissionFailureTelemetry,
+} from "./missionHooks.js";
 import {
   createBotPlayer,
   botPlaceInfoToken,
@@ -1649,9 +1653,12 @@ export class BombBustersServer extends Server<Env> {
           // 0 match: pick first non-red tile for info token
           const tile1Idx = detectorForced.originalTileIndex1!;
           const tile2Idx = detectorForced.originalTileIndex2!;
-          const tile1 = targetPlayer.hand[tile1Idx];
-          const tile2 = targetPlayer.hand[tile2Idx];
-          infoTokenTileIndex = (tile1 && tile1.color !== "red") ? tile1Idx : tile2Idx;
+          infoTokenTileIndex = getBotDoubleDetectorNoMatchInfoTokenIndex(
+            state,
+            targetPlayer,
+            tile1Idx,
+            tile2Idx,
+          );
         }
         // else: triple/super 0-match, no choice needed
 
