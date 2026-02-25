@@ -1,5 +1,5 @@
 import type { CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
-import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS } from "@bomb-busters/shared";
+import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS, RULE_STICKER_IMAGES } from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
 const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
@@ -206,6 +206,7 @@ export function Lobby({
                 className="w-full rounded-[1.15rem]"
               />
 
+              <RuleStickerBanner mission={previewMission} />
             </div>
 
             {/* Actions */}
@@ -445,6 +446,25 @@ function MissionSelector({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function RuleStickerBanner({ mission }: { mission: MissionId }) {
+  const stickers = [
+    { key: "a", image: RULE_STICKER_IMAGES.a, label: "Mission 9+: False Bottom equipment", threshold: 9 },
+    { key: "b", image: RULE_STICKER_IMAGES.b, label: "Mission 31+: Expert characters (e1-e4)", threshold: 31 },
+    { key: "c", image: RULE_STICKER_IMAGES.c, label: "Mission 55+: Grappling Hook", threshold: 55 },
+  ].filter((s) => mission >= s.threshold);
+
+  if (stickers.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-bold uppercase text-gray-400">Active Rule Stickers</div>
+      {stickers.map((s) => (
+        <img key={s.key} src={`/images/${s.image}`} alt={s.label} title={s.label} className="w-full rounded-md" />
+      ))}
     </div>
   );
 }

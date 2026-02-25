@@ -6,6 +6,8 @@ import {
   getChallengeCardImage,
   NUMBER_CARD_BACK,
   CUTTER_CARD_IMAGES,
+  BUNKER_CARD_IMAGES,
+  RULE_STICKER_IMAGES,
   MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -185,11 +187,11 @@ function EquipmentSecondaryLocksHint({
 
 function CampaignObjectsHint({
   gameState,
-  hideSequencePointer,
+  sequencePointer,
   hideNumberCards,
 }: {
   gameState: ClientGameState;
-  hideSequencePointer: boolean;
+  sequencePointer: number | null;
   hideNumberCards: boolean;
 }) {
   const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
@@ -239,7 +241,7 @@ function CampaignObjectsHint({
     : [];
 
   const specialMarkers = (campaign.specialMarkers ?? []).filter((marker) =>
-    hideSequencePointer ? marker.kind !== "sequence_pointer" : true,
+    sequencePointer != null ? marker.kind !== "sequence_pointer" : true,
   );
 
   const hasNumberCardContent =
@@ -257,7 +259,8 @@ function CampaignObjectsHint({
     oxygen != null ||
     campaign.nanoTracker != null ||
     campaign.bunkerTracker != null ||
-    specialMarkers.length > 0;
+    specialMarkers.length > 0 ||
+    gameState.mission >= 9;
 
   if (!hasAnyContent) return null;
 
@@ -287,18 +290,40 @@ function CampaignObjectsHint({
                 />
               </div>
             )}
-            {visibleCards.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {visibleCards.map((card) => {
-                  const image = card.faceUp
-                    ? getNumberCardImage(card.value)
-                    : NUMBER_CARD_BACK;
+            <div className="flex items-start gap-3">
+              <div className="flex items-center gap-1.5 flex-wrap flex-1">
+                {visibleCards.map((card, idx) => {
+                  const isSequenceCard = sequencePointer != null && idx < 3;
+                  let image: string;
+                  let border: string;
+                  let dimmed = false;
+
+                  if (isSequenceCard) {
+                    if (idx < sequencePointer) {
+                      image = NUMBER_CARD_BACK;
+                      border = "border-gray-600";
+                      dimmed = true;
+                    } else if (idx === sequencePointer) {
+                      image = getNumberCardImage(card.value);
+                      border = "border-emerald-400";
+                    } else {
+                      image = getNumberCardImage(card.value);
+                      border = "border-amber-500";
+                    }
+                  } else {
+                    image = card.faceUp
+                      ? getNumberCardImage(card.value)
+                      : NUMBER_CARD_BACK;
+                    border = card.faceUp ? "border-blue-400" : "border-gray-600";
+                    dimmed = !card.faceUp;
+                  }
+
                   return (
                     <CampaignCardThumbnail
                       key={card.id}
                       image={image}
-                      borderColor={card.faceUp ? "border-blue-400" : "border-gray-600"}
-                      dimmed={!card.faceUp}
+                      borderColor={border}
+                      dimmed={dimmed}
                       onClick={() =>
                         setPreviewCard({
                           name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
@@ -312,23 +337,23 @@ function CampaignObjectsHint({
                   );
                 })}
               </div>
-            )}
-            <div className="flex items-center gap-3">
-              {deckCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="relative w-6 h-7">
-                    <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
-                    <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
+              <div className="flex items-center gap-2 shrink-0">
+                {deckCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="relative w-6 h-7">
+                      <div className="absolute inset-0 rounded border border-gray-600 bg-gray-800" />
+                      <div className="absolute -top-0.5 -left-0.5 w-6 h-7 rounded border border-gray-600 bg-gray-700" />
+                    </div>
+                    <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
                   </div>
-                  <span className="text-[11px] text-gray-400 font-semibold">{deckCount}</span>
-                </div>
-              )}
-              {discardCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
-                  <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
-                </div>
-              )}
+                )}
+                {discardCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-6 h-7 rounded border border-gray-700 bg-gray-900/50 opacity-50" />
+                    <span className="text-[11px] text-gray-500 font-semibold">{discardCount}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -484,11 +509,31 @@ function CampaignObjectsHint({
               />
             )}
             {campaign.bunkerTracker && (
-              <TrackerBar
-                label="Bunker"
-                position={campaign.bunkerTracker.position}
-                max={campaign.bunkerTracker.max}
-              />
+              <>
+                <div className="flex items-center gap-1.5">
+                  <CampaignCardThumbnail
+                    image={BUNKER_CARD_IMAGES.front}
+                    borderColor="border-blue-400"
+                    onClick={() => setPreviewCard({
+                      name: "Bunker Card (Front)",
+                      previewImage: BUNKER_CARD_IMAGES.front,
+                    })}
+                  />
+                  <CampaignCardThumbnail
+                    image={BUNKER_CARD_IMAGES.back}
+                    borderColor="border-gray-500"
+                    onClick={() => setPreviewCard({
+                      name: "Bunker Card (Back)",
+                      previewImage: BUNKER_CARD_IMAGES.back,
+                    })}
+                  />
+                </div>
+                <TrackerBar
+                  label="Bunker"
+                  position={campaign.bunkerTracker.position}
+                  max={campaign.bunkerTracker.max}
+                />
+              </>
             )}
           </div>
         )}
@@ -509,6 +554,15 @@ function CampaignObjectsHint({
                 })
                 .join(" | ")}
             </div>
+          </div>
+        )}
+
+        {gameState.mission >= 9 && (
+          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
+            <div className="text-[10px] uppercase text-gray-400">Rule Stickers</div>
+            {gameState.mission >= 9 && <img src={`/images/${RULE_STICKER_IMAGES.a}`} alt="Rule Sticker A" className="w-full rounded" />}
+            {gameState.mission >= 31 && <img src={`/images/${RULE_STICKER_IMAGES.b}`} alt="Rule Sticker B" className="w-full rounded" />}
+            {gameState.mission >= 55 && <img src={`/images/${RULE_STICKER_IMAGES.c}`} alt="Rule Sticker C" className="w-full rounded" />}
           </div>
         )}
       </div>
@@ -537,12 +591,12 @@ export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) 
 
   return (
     <div className="space-y-2">
-      {showSequence && <SequencePriorityHint gameState={gameState} />}
+      {showSequence && !showCampaignObjects && <SequencePriorityHint gameState={gameState} />}
       {showEquipmentLocks && <EquipmentSecondaryLocksHint gameState={gameState} />}
       {showCampaignObjects && (
         <CampaignObjectsHint
           gameState={gameState}
-          hideSequencePointer={showSequence}
+          sequencePointer={showSequence ? (gameState.campaign?.specialMarkers?.find(m => m.kind === "sequence_pointer")?.value ?? 0) : null}
           hideNumberCards={false}
         />
       )}

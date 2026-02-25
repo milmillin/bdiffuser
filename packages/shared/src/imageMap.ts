@@ -382,6 +382,21 @@ export const CUTTER_CARD_IMAGES: Record<string, string> = {
   face_b: "cutter_b.png",
 };
 
+// ── Bunker Card Images (campaign) ────────────────────────────
+
+export const BUNKER_CARD_IMAGES = {
+  front: "bunker_front.png",
+  back: "bunker_back.png",
+} as const;
+
+// ── Rule Sticker Images (campaign milestones) ────────────────
+
+export const RULE_STICKER_IMAGES = {
+  a: "rule_sticker_a.png",
+  b: "rule_sticker_b.png",
+  c: "rule_sticker_c.png",
+} as const;
+
 // ── Helper to get wire image by color and sort value ────────
 
 export function getWireImage(
