@@ -1911,18 +1911,18 @@ describe("missionHooks dispatcher", () => {
         campaign: {
           numberCards: {
             visible: [
-              { id: "m59-v1", value: 1, faceUp: true },
-              { id: "m59-v2", value: 2, faceUp: true },
-              { id: "m59-v3", value: 3, faceUp: true },
-              { id: "m59-v4", value: 4, faceUp: true },
-              { id: "m59-v5", value: 5, faceUp: true },
-              { id: "m59-v6", value: 6, faceUp: true },
-              { id: "m59-v7", value: 7, faceUp: true },
-              { id: "m59-v8", value: 8, faceUp: true },
-              { id: "m59-v9", value: 9, faceUp: true },
-              { id: "m59-v10", value: 10, faceUp: true },
-              { id: "m59-v11", value: 11, faceUp: true },
-              { id: "m59-v12", value: 12, faceUp: true },
+              { id: "m59-v1", value: 1, faceUp: false },
+              { id: "m59-v2", value: 2, faceUp: false },
+              { id: "m59-v3", value: 3, faceUp: false },
+              { id: "m59-v4", value: 4, faceUp: false },
+              { id: "m59-v5", value: 5, faceUp: false },
+              { id: "m59-v6", value: 6, faceUp: false },
+              { id: "m59-v7", value: 7, faceUp: false },
+              { id: "m59-v8", value: 8, faceUp: false },
+              { id: "m59-v9", value: 9, faceUp: false },
+              { id: "m59-v10", value: 10, faceUp: false },
+              { id: "m59-v11", value: 11, faceUp: false },
+              { id: "m59-v12", value: 12, faceUp: false },
             ],
             deck: [],
             discard: [],
@@ -1948,6 +1948,59 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail) === "mission_59:auto_skip|player=p1|detonator=2",
       );
       expect(skipLog).toBeDefined();
+    });
+
+    it("mission 59: does not auto-skip a player who can cut using only Nano's current value", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor],
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: true },
+              { id: "m59-v2", value: 2, faceUp: true },
+              { id: "m59-v3", value: 3, faceUp: true },
+              { id: "m59-v4", value: 4, faceUp: true },
+              { id: "m59-v5", value: 5, faceUp: true },
+              { id: "m59-v6", value: 6, faceUp: true },
+              { id: "m59-v7", value: 7, faceUp: true },
+              { id: "m59-v8", value: 8, faceUp: true },
+              { id: "m59-v9", value: 9, faceUp: true },
+              { id: "m59-v10", value: 10, faceUp: true },
+              { id: "m59-v11", value: 11, faceUp: true },
+              { id: "m59-v12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(59, { point: "endTurn", state, previousPlayerId: "p1" });
+
+      expect(state.currentPlayerIndex).toBe(0);
+      expect(state.turnNumber).toBe(5);
+      expect(state.board.detonatorPosition).toBe(1);
+      expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission_59:auto_skip|player=p1"),
+      );
+      expect(skipLog).toBeUndefined();
     });
 
     it("mission 47: auto-skips a stuck player and advances detonator", () => {

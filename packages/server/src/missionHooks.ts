@@ -798,9 +798,26 @@ function canPlayerPlayMission59(
 ): boolean {
   const legalValues = new Set(getMission59ForwardValues(state));
   if (legalValues.size === 0) return false;
+  const hasPlayableHand = actor.hand.some((tile) => !tile.cut);
+  if (!hasPlayableHand) return false;
+
+  const mission59Nano = getMission59NanoState(state);
+  if (mission59Nano == null) return false;
+  const currentLineValue = state.campaign?.numberCards?.visible?.[
+    mission59Nano.position
+  ]?.value;
+  if (
+    typeof currentLineValue === "number" &&
+    legalValues.has(currentLineValue)
+  ) {
+    return true;
+  }
 
   return actor.hand.some(
-    (tile) => !tile.cut && typeof tile.gameValue === "number" && legalValues.has(tile.gameValue),
+    (tile) =>
+      !tile.cut &&
+      typeof tile.gameValue === "number" &&
+      legalValues.has(tile.gameValue),
   );
 }
 
