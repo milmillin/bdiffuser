@@ -242,7 +242,7 @@ describe("setupGame equipmentReserve", () => {
     }
   });
 
-  it.each([44, 45, 47, 54, 59, 63, 65] as const)(
+  it.each([44, 45, 47, 50, 54, 59, 63, 65] as const)(
     "mission %i setup avoids dealing x or y ray to board",
     (mission) => {
       const playerCount = 4;

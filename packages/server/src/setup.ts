@@ -248,6 +248,7 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
   46: ["emergency_batteries"],
   45: ["x_or_y_ray", "coffee_mug"],
   47: ["x_or_y_ray"],
+  50: ["x_or_y_ray"],
   57: ["disintegrator"],
   58: ["post_it", "emergency_batteries"],
   54: ["x_or_y_ray"],
