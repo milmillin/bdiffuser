@@ -1109,7 +1109,7 @@ describe("mission 46 sevens-last validation", () => {
     expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
   });
 
-  it("allows value 7 cut when only 7 and red wires remain in actor hand", () => {
+  it("rejects value 7 cut when only 7 and red wires remain in actor hand", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [
@@ -1135,7 +1135,9 @@ describe("mission 46 sevens-last validation", () => {
       guessValue: 7,
     });
 
-    expect(error).toBeNull();
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 46: 7-value wires must be cut last");
   });
 
   it("blocks other actions while mission 46 forced simultaneous cut is pending", () => {

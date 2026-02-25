@@ -3727,7 +3727,7 @@ function actorHasUncutNonSevenCuttableWire(
   if (!actor) return false;
 
   return actor.hand.some((tile) =>
-    !tile.cut && tile.gameValue !== "RED" && tile.gameValue !== 7,
+    !tile.cut && tile.gameValue !== 7,
   );
 }
 
