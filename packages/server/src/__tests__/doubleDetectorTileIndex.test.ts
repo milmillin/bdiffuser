@@ -586,6 +586,54 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(state.phase).not.toBe("finished");
   });
 
+  it("double detector no-match does not advance detonator when Stabilizer is active", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "b1", color: "blue", gameValue: 5 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 3 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 7 }),
+      ],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 1,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      turnNumber: 4,
+      turnEffects: {
+        stabilizer: {
+          playerId: "actor",
+          turnNumber: 4,
+        },
+      },
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(false);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore);
+    expect(target.infoTokens).toHaveLength(1);
+    expect(state.phase).toBe("playing");
+  });
+
   it("mission 17: failed Double Detector targeting captain places false token with announced value", () => {
     const actor = makePlayer({
       id: "actor",

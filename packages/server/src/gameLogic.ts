@@ -1391,8 +1391,16 @@ function resolveDoubleDetectorNoMatch(
   const tile1 = getTileByFlatIndex(target, tileIndex1)!;
   const tile2 = getTileByFlatIndex(target, tileIndex2)!;
 
-  state.board.detonatorPosition++;
-  const detonatorPositionBeforeFailure = state.board.detonatorPosition - 1;
+  const stabilizer = state.turnEffects?.stabilizer;
+  const stabilizerActive =
+    stabilizer != null &&
+    stabilizer.playerId === actorId &&
+    stabilizer.turnNumber === state.turnNumber;
+  const detonatorAdvanced = !stabilizerActive;
+  const detonatorPositionBeforeFailure = state.board.detonatorPosition;
+  if (detonatorAdvanced) {
+    state.board.detonatorPosition++;
+  }
 
   const hiddenBlueAsRedValue =
     state.mission === 11 ? getBlueAsRedValue(state) : null;
@@ -1510,6 +1518,7 @@ function resolveDoubleDetectorNoMatch(
     actorId,
     "dualCutDoubleDetector",
     `${target.name} confirmed — no match ✗` +
+      `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
       `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
   );
 
@@ -1525,7 +1534,7 @@ function resolveDoubleDetectorNoMatch(
       tileIndex2,
       guessValue,
       outcome: "no_match" as const,
-      detonatorAdvanced: true,
+      detonatorAdvanced,
       ...(suppressInfoTokens || failureInfoTokenMode === "stand"
         ? {}
         : { infoTokenPlacedIndex: infoTokenTileIndex }),
@@ -1542,7 +1551,7 @@ function resolveDoubleDetectorNoMatch(
     tileIndex2,
     guessValue,
     outcome: "no_match" as const,
-    detonatorAdvanced: true,
+    detonatorAdvanced,
     ...(suppressInfoTokens || failureInfoTokenMode === "stand"
       ? {}
       : { infoTokenPlacedIndex: infoTokenTileIndex }),
