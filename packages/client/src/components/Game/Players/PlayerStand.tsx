@@ -329,12 +329,12 @@ function WireTileView({
     <div className="w-full">
       <button
         onClick={onClick}
-        disabled={!isSelectable || isCut}
+        disabled={!isSelectable}
         data-testid={testId}
         className={`w-full rounded-md overflow-hidden transition-all ${
           isSelected ? "ring-2 ring-white scale-105" : ""
         } ${
-          isSelectable && !isCut
+          isSelectable
             ? "cursor-pointer hover:scale-105 hover:ring-2 hover:ring-white"
             : isCut
               ? "opacity-60"
