@@ -29,6 +29,12 @@ describe("Mission 22 token pass helper", () => {
       mission: 22,
       phase: "playing",
       players: [chooser, recipient],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [4],
+          yellowTokens: 0,
+        },
+      },
       pendingForcedAction: {
         kind: "mission22TokenPass",
         currentChooserIndex: 0,
@@ -52,6 +58,10 @@ describe("Mission 22 token pass helper", () => {
       isYellow: false,
       position: -2,
     });
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [],
+      yellowTokens: 0,
+    });
   });
 
   it("rejects passing a token value not present on the board", () => {
@@ -70,6 +80,12 @@ describe("Mission 22 token pass helper", () => {
       mission: 22,
       phase: "playing",
       players: [chooser, recipient],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [3],
+          yellowTokens: 0,
+        },
+      },
       pendingForcedAction: {
         kind: "mission22TokenPass",
         currentChooserIndex: 0,
@@ -88,6 +104,10 @@ describe("Mission 22 token pass helper", () => {
     expect(result).toEqual({ ok: false, message: "Token value is not available on the board" });
     expect(chooser.infoTokens).toHaveLength(1);
     expect(recipient.infoTokens).toHaveLength(1);
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [3],
+      yellowTokens: 0,
+    });
   });
 
   it("prevents a passed token from being reused when it cannot be placed", () => {
@@ -111,6 +131,12 @@ describe("Mission 22 token pass helper", () => {
       mission: 22,
       phase: "playing",
       players: [chooser, recipient, receiver],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [4],
+          yellowTokens: 0,
+        },
+      },
       pendingForcedAction: {
         kind: "mission22TokenPass",
         currentChooserIndex: 0,
@@ -140,6 +166,10 @@ describe("Mission 22 token pass helper", () => {
       isYellow: false,
       position: -2,
     });
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [],
+      yellowTokens: 0,
+    });
 
     const secondForced = {
       ...firstForced,
@@ -152,6 +182,10 @@ describe("Mission 22 token pass helper", () => {
     expect(secondResult).toEqual({
       ok: false,
       message: "Token value is not available on the board",
+    });
+    expect(state.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [],
+      yellowTokens: 0,
     });
   });
 });

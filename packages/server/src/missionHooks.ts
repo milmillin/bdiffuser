@@ -44,6 +44,7 @@ import {
   type MissionHookRuleDef,
 } from "@bomb-busters/shared";
 import { pushGameLog } from "./gameLog.js";
+import { getMission22TokenPassBoardState } from "./mission22TokenPass.js";
 import { isMission46SevenTile } from "./mission46.js";
 
 // ── Hook Point ─────────────────────────────────────────────
@@ -2188,6 +2189,7 @@ registerHookHandler<"yellow_trigger_token_pass">("yellow_trigger_token_pass", {
     // Trigger the token pass
     ctx.state.campaign ??= {};
     ctx.state.campaign.mission22TokenPassTriggered = true;
+    getMission22TokenPassBoardState(ctx.state);
 
     const passingOrder = buildClockwisePassingOrder(ctx.state);
     if (passingOrder.length === 0) return;

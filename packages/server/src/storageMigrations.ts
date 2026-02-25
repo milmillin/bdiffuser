@@ -15,6 +15,7 @@ import {
   type ChallengeCard,
   type SpecialMarker,
   type MissionAudioState,
+  type Mission22TokenPassBoardState,
 } from "@bomb-busters/shared";
 import {
   cloneFailureCounters,
@@ -174,6 +175,34 @@ function normalizeSpecialMarkers(raw: unknown): SpecialMarker[] {
   return raw
     .map((entry) => normalizeSpecialMarker(entry))
     .filter((entry): entry is SpecialMarker => entry !== null);
+}
+
+function normalizeMission22TokenPassBoard(
+  raw: unknown,
+): Mission22TokenPassBoardState {
+  if (!isObject(raw)) {
+    return { numericTokens: [], yellowTokens: 0 };
+  }
+
+  const numericTokens = Array.isArray((raw as { numericTokens?: unknown }).numericTokens)
+    ? (raw as { numericTokens: unknown[] }).numericTokens
+      .map((value) =>
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        value >= 1 &&
+        value <= 12
+          ? value
+          : null
+      )
+      .filter((value): value is number => value !== null)
+    : [];
+  const yellowTokens = typeof (raw as { yellowTokens?: unknown }).yellowTokens === "number" &&
+    Number.isInteger((raw as { yellowTokens?: unknown }).yellowTokens) &&
+    (raw as { yellowTokens: number }).yellowTokens >= 0
+    ? (raw as { yellowTokens: number }).yellowTokens
+    : 0;
+
+  return { numericTokens, yellowTokens };
 }
 
 function normalizeNumberCardHands(raw: unknown): Record<string, NumberCard[]> {
@@ -412,6 +441,13 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
 
   if (hasOwn(raw, "equipmentReserve")) {
     campaign.equipmentReserve = normalizeEquipment(raw.equipmentReserve);
+  }
+
+  if (hasOwn(raw, "mission22TokenPassBoard")) {
+    const board = normalizeMission22TokenPassBoard(raw.mission22TokenPassBoard);
+    if (board.numericTokens.length > 0 || board.yellowTokens > 0) {
+      campaign.mission22TokenPassBoard = board;
+    }
   }
 
   if (hasOwn(raw, "mission18DesignatorIndex") && typeof raw.mission18DesignatorIndex === "number") {

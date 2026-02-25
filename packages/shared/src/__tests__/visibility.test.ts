@@ -57,6 +57,10 @@ describe("CAMPAIGN_VISIBILITY", () => {
     expect(CAMPAIGN_VISIBILITY.bunkerTracker).toBe("public");
     expect(CAMPAIGN_VISIBILITY.specialMarkers).toBe("public");
   });
+
+  it("marks mission 22 token-pass board as public", () => {
+    expect(CAMPAIGN_VISIBILITY.mission22TokenPassBoard).toBe("public");
+  });
 });
 
 // ── Redaction helpers ──────────────────────────────────────
@@ -244,5 +248,12 @@ describe("filterCampaignState", () => {
     const campaign = makeCampaignState({ specialMarkers: markers });
     const filtered = filterCampaignState(campaign, "p1");
     expect(filtered.specialMarkers).toBe(markers);
+  });
+
+  it("passes mission22 token-pass board through unchanged", () => {
+    const board = { numericTokens: [1, 5], yellowTokens: 1 };
+    const campaign = makeCampaignState({ mission22TokenPassBoard: board });
+    const filtered = filterCampaignState(campaign, "p1");
+    expect(filtered.mission22TokenPassBoard).toEqual(board);
   });
 });

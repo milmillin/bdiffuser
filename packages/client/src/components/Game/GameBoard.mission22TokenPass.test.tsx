@@ -33,6 +33,12 @@ function toClientGameState(state: GameState, playerId: string): ClientGameState 
         hand: [makeTile({ id: "b1", gameValue: 6 })],
       }),
     ],
+    campaign: {
+      mission22TokenPassBoard: {
+        numericTokens: [],
+        yellowTokens: 1,
+      },
+    },
     currentPlayerIndex: 0,
     pendingForcedAction: {
       kind: "mission22TokenPass",

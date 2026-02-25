@@ -449,6 +449,54 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("normalizes mission22 token-pass board state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 6,
+        mission: 22,
+        result: null,
+        campaign: {
+          mission22TokenPassBoard: {
+            numericTokens: [3, 13, 5, "bad"],
+            yellowTokens: 2,
+          },
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f4");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign?.mission22TokenPassBoard).toEqual({
+      numericTokens: [3, 5],
+      yellowTokens: 2,
+    });
+  });
+
   it("preserves mission46 sevens-cut forced action state across restore", () => {
     const legacy = {
       gameState: {

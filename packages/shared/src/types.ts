@@ -229,6 +229,14 @@ export interface NumberCardState {
   playerHands: Record<string, NumberCard[]>;
 }
 
+/** Remaining mission 22 token-pass values that are still on the board. */
+export interface Mission22TokenPassBoardState {
+  /** Numeric values still available for token passing. */
+  numericTokens: number[];
+  /** Remaining yellow tokens still available for token passing. */
+  yellowTokens: number;
+}
+
 /** A constraint that restricts actions during a mission. */
 export interface ConstraintCard {
   id: string;
@@ -307,6 +315,8 @@ export interface CampaignState {
   mission18DesignatorIndex?: number;
   /** Mission 22: whether the yellow-trigger token pass has been triggered. */
   mission22TokenPassTriggered?: boolean;
+  /** Mission 22: remaining board supply for the token pass action. */
+  mission22TokenPassBoard?: Mission22TokenPassBoardState;
   /** Reserve pool of undealt equipment cards for False Bottom. */
   equipmentReserve?: EquipmentCard[];
   /** Mission 23: whether the simultaneous four-of-value cut has been completed. */

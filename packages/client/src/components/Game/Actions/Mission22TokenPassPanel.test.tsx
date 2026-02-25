@@ -45,6 +45,12 @@ describe("Mission22TokenPassPanel", () => {
           infoTokens: [{ value: 12, position: 0, isYellow: false }],
         }),
       ],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [3],
+          yellowTokens: 0,
+        },
+      },
       pendingForcedAction: {
         kind: "mission22TokenPass",
         currentChooserIndex: 0,
@@ -79,6 +85,12 @@ describe("Mission22TokenPassPanel", () => {
           hand: [makeTile({ id: "b1", gameValue: 6 })],
         }),
       ],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [3],
+          yellowTokens: 0,
+        },
+      },
       pendingForcedAction: {
         kind: "mission22TokenPass",
         currentChooserIndex: 0,

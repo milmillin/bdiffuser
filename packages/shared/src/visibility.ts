@@ -76,6 +76,8 @@ export interface CampaignVisibilityModel {
   bunkerTracker: "public";
   /** Special markers (X, sequence/action pointers): visible to all (board-level). */
   specialMarkers: "public";
+  /** Mission 22 token-pass board supply: visible to all players. */
+  mission22TokenPassBoard: "public";
 }
 
 /**
@@ -105,6 +107,7 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   nanoTracker: "public",
   bunkerTracker: "public",
   specialMarkers: "public",
+  mission22TokenPassBoard: "public",
 } as const;
 
 // ── Redaction Helpers ──────────────────────────────────────
@@ -186,6 +189,9 @@ export function filterCampaignState(
     ...(campaign.bunkerTracker ? { bunkerTracker: campaign.bunkerTracker } : {}),
     ...(campaign.specialMarkers
       ? { specialMarkers: campaign.specialMarkers }
+      : {}),
+    ...(campaign.mission22TokenPassBoard
+      ? { mission22TokenPassBoard: campaign.mission22TokenPassBoard }
       : {}),
   };
 }

@@ -74,7 +74,10 @@ import {
   getSimultaneousFourCutTargetValue,
 } from "./simultaneousFourCutTargets.js";
 import { validateMission18DesignatedCutterTarget } from "./mission18.js";
-import { applyMission22TokenPassChoice } from "./mission22TokenPass.js";
+import {
+  applyMission22TokenPassChoice,
+  getMission22TokenPassAvailableValues,
+} from "./mission22TokenPass.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -1687,22 +1690,15 @@ export class BombBustersServer extends Server<Env> {
     if (m22Forced?.kind === "mission22TokenPass") {
       const chooser = state.players.find((p) => p.id === m22Forced.currentChooserId);
       if (chooser?.isBot) {
-        // Bot picks a random available board token value
-        const availableValues = new Set<number>();
-        for (const player of state.players) {
-          for (const token of player.infoTokens) {
-            if (token.position !== -1) continue;
-            availableValues.add(token.isYellow ? 0 : token.value);
-          }
-        }
-        if (availableValues.size === 0) {
+        // Bot picks a random available board token value.
+        const availableValues = getMission22TokenPassAvailableValues(state);
+        if (availableValues.length === 0) {
           state.pendingForcedAction = undefined;
           this.saveState();
           this.broadcastGameState();
           return;
         }
-        const values = Array.from(availableValues);
-        const value = values[Math.floor(Math.random() * values.length)];
+        const value = availableValues[Math.floor(Math.random() * availableValues.length)];
         const success = this.executeMission22TokenPass(state, m22Forced, value);
         if (!success) {
           state.pendingForcedAction = undefined;

@@ -21,14 +21,26 @@ export function Mission22TokenPassPanel({
   const recipient = gameState.players[recipientIndex];
   const recipientName =
     recipient?.id === playerId ? "yourself" : (recipient?.name ?? "the next player");
-  const availableValues = new Set<number>();
-  for (const player of gameState.players) {
-    for (const token of player.infoTokens) {
-      if (token.position !== -1) continue;
-      availableValues.add(token.isYellow ? 0 : token.value);
+
+  const boardValues = new Set<number>();
+  const board = gameState.campaign?.mission22TokenPassBoard;
+  if (board) {
+    if (board.yellowTokens > 0) {
+      boardValues.add(0);
+    }
+    for (const value of board.numericTokens) {
+      boardValues.add(value);
+    }
+  } else {
+    for (const player of gameState.players) {
+      for (const token of player.infoTokens) {
+        if (token.position !== -1) continue;
+        boardValues.add(token.isYellow ? 0 : token.value);
+      }
     }
   }
-  const sortedValues = Array.from(availableValues).sort((a, b) => a - b);
+
+  const sortedValues = Array.from(boardValues).sort((a, b) => a - b);
   if (sortedValues.length === 0) {
     return (
       <div
