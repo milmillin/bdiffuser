@@ -795,9 +795,6 @@ exports[`resolved mission setup snapshots > mission 10 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -815,9 +812,6 @@ exports[`resolved mission setup snapshots > mission 10 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -835,9 +829,6 @@ exports[`resolved mission setup snapshots > mission 10 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -855,9 +846,6 @@ exports[`resolved mission setup snapshots > mission 10 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3629,9 +3617,6 @@ exports[`resolved mission setup snapshots > mission 46 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3653,9 +3638,6 @@ exports[`resolved mission setup snapshots > mission 46 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3677,9 +3659,6 @@ exports[`resolved mission setup snapshots > mission 46 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          7,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3701,9 +3680,6 @@ exports[`resolved mission setup snapshots > mission 46 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          7,
-        ],
         "mode": "default",
       },
       "red": {

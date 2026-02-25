@@ -270,11 +270,15 @@ function createEquipmentCards(
   const redrawForbiddenIds =
     mission === 41
       ? new Set(["false_bottom"])
+      : mission === 10
+        ? new Set(["coffee_mug"])
+      : mission === 46
+        ? new Set(["emergency_batteries"])
       : mission === 57
         ? new Set(["disintegrator"])
         : mission === 58
           ? new Set(["post_it", "emergency_batteries"])
-          : mission === 59 || mission === 63 || mission === 65
+          : mission === 54 || mission === 59 || mission === 63 || mission === 65
             ? new Set(["x_or_y_ray"])
             : null;
 

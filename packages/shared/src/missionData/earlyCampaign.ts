@@ -31,7 +31,7 @@ export function registerEarlyCampaignMissions(setMission: MissionSetter): void {
       ...defaultSetup(),
       red: exact(1),
       yellow: exact(4),
-      equipment: { mode: "default", excludedUnlockValues: [11] },
+      equipment: { mode: "default" },
     },
     behaviorHooks: ["mission_10_timer_and_dynamic_turn_order"],
     hookRules: [

@@ -97,7 +97,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
       ...defaultSetup(),
       red: none(),
       yellow: fixed([5.1, 6.1, 7.1, 8.1]),
-      equipment: { mode: "default", excludedUnlockValues: [7] },
+      equipment: { mode: "default" },
     },
     behaviorHooks: ["mission_46_sevens_must_be_last"],
     hookRules: [{ kind: "sevens_last" }],
