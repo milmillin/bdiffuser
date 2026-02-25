@@ -1513,7 +1513,7 @@ export function GameBoard({
                               }
                               if (pendingAction) return false;
                               if (tile.cut) return false;
-                              if (forceRevealReds) return tile.color === "red";
+                              if (forceRevealReds) return gameState.mission === 11 || tile.color === "red";
                               return tile.color !== "red";
                             }
                           : undefined
