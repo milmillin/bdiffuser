@@ -37,6 +37,7 @@ export type ClientMessage =
       guessValue: number;
       oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
+      mission59RotateNano?: boolean;
     }
   | {
       type: "soloCut";

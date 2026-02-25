@@ -1555,6 +1555,21 @@ export function GameBoard({
                     onCancel={cancelEquipmentMode}
                     onClear={clearEquipmentMode}
                     onUpdateMode={setEquipmentMode}
+                    mission59RotateNano={mission59RotateNano}
+                    onMission59RotateNanoChange={(value) => {
+                      if (gameState.mission !== 59) return;
+                      if (
+                        pendingAction?.kind === "dual_cut" ||
+                        pendingAction?.kind === "solo_cut"
+                      ) {
+                        setPendingAction({
+                          ...pendingAction,
+                          mission59RotateNano: value,
+                        });
+                        return;
+                      }
+                      setMission59RotateNano(value);
+                    }}
                   />
                 )}
 

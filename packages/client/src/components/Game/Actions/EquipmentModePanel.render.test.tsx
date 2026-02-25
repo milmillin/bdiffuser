@@ -244,6 +244,18 @@ describe("EquipmentModePanel — double_detector", () => {
     expect(html).toContain("<option value=\"p3\" selected=\"\">p3</option>");
   });
 
+  it("mission 59 shows rotate Nano checkbox", () => {
+    const html = renderMode({
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0, 1],
+      guessTileIndex: 0,
+    }, {
+      mission: 59,
+    });
+    expect(html).toContain("Rotate Nano 180° after this cut");
+  });
+
   it("non-mission 49 does not show oxygen recipient selection", () => {
     const html = renderMode({
       kind: "double_detector",

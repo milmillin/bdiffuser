@@ -344,8 +344,9 @@ export class BombBustersServer extends Server<Env> {
           msg.tileIndex1,
           msg.tileIndex2,
           msg.guessValue,
-          msg.oxygenRecipientPlayerId,
           msg.actorTileIndex,
+          msg.oxygenRecipientPlayerId,
+          msg.mission59RotateNano,
         );
         break;
       case "soloCut":
@@ -850,8 +851,9 @@ export class BombBustersServer extends Server<Env> {
     tileIndex1: number,
     tileIndex2: number,
     guessValue: number,
-    oxygenRecipientPlayerId?: string,
     actorTileIndex?: number,
+    oxygenRecipientPlayerId?: string,
+    mission59RotateNano?: boolean,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
@@ -884,6 +886,7 @@ export class BombBustersServer extends Server<Env> {
       guessValue,
       actorTileIndex,
       oxygenRecipientPlayerId,
+      mission59RotateNano,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 

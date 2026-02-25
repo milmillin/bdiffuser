@@ -759,6 +759,7 @@ export function executeDualCutDoubleDetector(
   guessValue: number,
   actorTileIndex?: number,
   oxygenRecipientPlayerId?: string,
+  mission59RotateNano?: boolean,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -794,6 +795,7 @@ export function executeDualCutDoubleDetector(
     source: "doubleDetector",
     originalTileIndex1: tileIndex1,
     originalTileIndex2: tileIndex2,
+    ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
     oxygenRecipientPlayerId,
     actorTileIndex,
   };
@@ -1305,6 +1307,7 @@ export function resolveDetectorTileChoice(
     guessValue,
     source,
     oxygenRecipientPlayerId,
+    mission59RotateNano,
   } = forced;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -1328,7 +1331,14 @@ export function resolveDetectorTileChoice(
   // ── 0 matches: failure path ──────────────────────────────
   if (matchCount === 0 || (source === "doubleDetector" && !actorHasMatchingGuess)) {
     if (source === "doubleDetector") {
-      return resolveDoubleDetectorNoMatch(state, forced, actor, target, infoTokenTileIndexOverride);
+      return resolveDoubleDetectorNoMatch(
+        state,
+        forced,
+        actor,
+        target,
+        infoTokenTileIndexOverride,
+        mission59RotateNano,
+      );
     }
     // Triple/Super detector 0-match: use client's choice if valid, else pick fallback tile
     const origIndices = forced.originalTargetTileIndices ?? [];
@@ -1386,7 +1396,8 @@ export function resolveDetectorTileChoice(
       targetPlayerId,
       targetTileIndex: effectiveTileIndex,
       guessValue,
-      oxygenRecipientPlayerId: forced.oxygenRecipientPlayerId,
+      oxygenRecipientPlayerId,
+      ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
     },
     cutValue: guessValue,
     cutSuccess: true,
@@ -1532,7 +1543,17 @@ function resolveDoubleDetectorNoMatch(
   actor: Player,
   target: Player,
   infoTokenTileIndexOverride?: number,
+  mission59RotateNano?: boolean,
 ): GameAction {
+  const maybeRotateMission59Nano = () => {
+    if (state.mission !== 59 || mission59RotateNano !== true) return;
+    const mission59Nano = state.campaign?.mission59Nano;
+    if (!mission59Nano) return;
+    mission59Nano.facing *= -1;
+  };
+
+  maybeRotateMission59Nano();
+
   const { actorId, targetPlayerId, guessValue } = forced;
   const tileIndex1 = forced.originalTileIndex1!;
   const tileIndex2 = forced.originalTileIndex2!;

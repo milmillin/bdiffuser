@@ -1684,4 +1684,123 @@ describe("mission progression hooks", () => {
 
     expect(state.campaign?.mission59Nano?.facing).toBe(1);
   });
+
+  it("mission 59: rotates Nano after a double detector confirmed match when requested", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "actor-5-a", gameValue: 5 }),
+        makeTile({ id: "actor-4-a", gameValue: 4 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "target-5", gameValue: 5 }),
+        makeTile({ id: "target-6", gameValue: 6 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 59,
+      players: [actor, target],
+      log: [],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m59-visible-1", value: 1, faceUp: true },
+            { id: "m59-visible-2", value: 2, faceUp: true },
+            { id: "m59-visible-3", value: 3, faceUp: true },
+            { id: "m59-visible-4", value: 4, faceUp: true },
+            { id: "m59-visible-5", value: 5, faceUp: true },
+            { id: "m59-visible-6", value: 6, faceUp: true },
+            { id: "m59-visible-7", value: 7, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    });
+
+    executeDualCutDoubleDetector(
+      state,
+      "actor",
+      "target",
+      0,
+      1,
+      5,
+      undefined,
+      undefined,
+      true,
+    );
+    expect(state.pendingForcedAction).toMatchObject({ mission59RotateNano: true });
+    const resolveAction = resolveDetectorTileChoice(state, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    expect(state.campaign?.mission59Nano?.position).toBe(4);
+    expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+  });
+
+  it("mission 59: rotates Nano after a double detector no-match when requested", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "actor-4-a", gameValue: 4 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "target-6-a", gameValue: 6 }),
+        makeTile({ id: "target-7", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 59,
+      players: [actor, target],
+      log: [],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m59-visible-1", value: 1, faceUp: true },
+            { id: "m59-visible-2", value: 2, faceUp: true },
+            { id: "m59-visible-3", value: 3, faceUp: true },
+            { id: "m59-visible-4", value: 4, faceUp: true },
+            { id: "m59-visible-5", value: 5, faceUp: true },
+            { id: "m59-visible-6", value: 6, faceUp: true },
+            { id: "m59-visible-7", value: 7, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 6,
+          facing: 1,
+        },
+      },
+      board: makeBoardState({ detonatorMax: 12 }),
+    });
+
+    executeDualCutDoubleDetector(
+      state,
+      "actor",
+      "target",
+      0,
+      1,
+      5,
+      undefined,
+      undefined,
+      true,
+    );
+    expect(state.pendingForcedAction).toMatchObject({ mission59RotateNano: true });
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+    }
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+  });
 });

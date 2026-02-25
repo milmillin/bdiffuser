@@ -157,6 +157,8 @@ export function EquipmentModePanel({
   onCancel,
   onClear,
   onUpdateMode,
+  mission59RotateNano = false,
+  onMission59RotateNanoChange = () => {},
 }: {
   mode: EquipmentMode;
   gameState: ClientGameState;
@@ -165,6 +167,8 @@ export function EquipmentModePanel({
   onCancel: () => void;
   onClear: () => void;
   onUpdateMode: (mode: EquipmentMode) => void;
+  mission59RotateNano?: boolean;
+  onMission59RotateNanoChange?: (value: boolean) => void;
 }) {
   const me = gameState.players.find((p) => p.id === playerId);
   if (!me) return null;
@@ -234,14 +238,25 @@ export function EquipmentModePanel({
         mode.guessTileIndex != null;
       if (ddAllComplete) {
         const guessValue = me.hand[mode.guessTileIndex!]?.gameValue;
-        const targetName = opponents.find(
-          (o) => o.id === mode.targetPlayerId,
-        )?.name;
+        const targetName = opponents.find((o) => o.id === mode.targetPlayerId)?.name;
+        const mission59RotateControl = gameState.mission === 59 ? (
+          <label className="mt-2 flex items-center gap-2 text-xs text-sky-100/90">
+            <input
+              type="checkbox"
+              checked={mission59RotateNano}
+              onChange={(event) => {
+                onMission59RotateNanoChange(event.target.checked);
+              }}
+            />
+            <span>Rotate Nano 180° after this cut</span>
+          </label>
+        ) : null;
         content = (
           <>
             Target: {targetName}&apos;s wires {wireLabel(mode.selectedTiles[0])}{" "}
             & {wireLabel(mode.selectedTiles[1])}. Guess:{" "}
             {String(guessValue)}.
+            {mission59RotateControl}
             {gameState.mission === 49 && mission49Recipients.length > 0 ? (
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-xs text-red-200">Give oxygen to:</span>
@@ -279,6 +294,9 @@ export function EquipmentModePanel({
                   tileIndex2: mode.selectedTiles[1],
                   guessValue,
                   actorTileIndex: mode.guessTileIndex!,
+                  ...(gameState.mission === 59 && mission59RotateNano
+                    ? { mission59RotateNano: true }
+                    : {}),
                   ...(gameState.mission === 49 &&
                   selectedMission49RecipientId != null
                     ? { oxygenRecipientPlayerId: selectedMission49RecipientId }
