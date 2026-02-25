@@ -90,6 +90,27 @@ describe("play-again handler", () => {
     );
   });
 
+  it("rejects playAgain before mission completion", async () => {
+    const { BombBustersServer } = await import("../index.js");
+    const server = makeServer({
+      players: [makePlayer({ id: "player-1", name: "Player One" })],
+      gameState: makeGameState({
+        phase: "setup_info_tokens",
+      }),
+    });
+    Object.setPrototypeOf(server, BombBustersServer.prototype);
+    const playerConn = makeConnection("player-1");
+
+    server.handlePlayAgain(playerConn);
+
+    expect(server.broadcastLobby).not.toHaveBeenCalled();
+    expect(server.room.gameState?.phase).toBe("setup_info_tokens");
+    expect(server.room.botLastActionTurn).toEqual({ botX: 3, botY: 9 });
+    expect(playerConn.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: "error", message: "Mission must be finished before restarting." }),
+    );
+  });
+
   it("resets game and room state when a player in the room requests playAgain", async () => {
     const { BombBustersServer } = await import("../index.js");
     const server = makeServer({
