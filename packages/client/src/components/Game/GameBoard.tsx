@@ -67,6 +67,7 @@ import {
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
+  isDualCutTargetAllowed,
 } from "./Actions/actionPanelMissionRules.js";
 import {
   BUTTON_PRIMARY_CLASS,
@@ -1081,9 +1082,10 @@ export function GameBoard({
                                 toggleMission46Target(opp.id, tileIndex);
                               }
                           : pendingAction?.kind === "dual_cut"
-                            ? (tileIndex) => {
+                          ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
                                 if (!oppTile || oppTile.cut) return;
+                                if (!isDualCutTargetAllowed(gameState, oppTile.color)) return;
                                 setPendingAction({
                                   ...pendingAction,
                                   targetPlayerId: opp.id,
@@ -1129,13 +1131,15 @@ export function GameBoard({
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
-                            ? (tile: VisibleTile) => !tile.cut
+                            ? (tile: VisibleTile) =>
+                                !tile.cut && isDualCutTargetAllowed(gameState, tile.color)
                             : playingInteractionEnabled &&
                                 isMyTurn &&
                                 selectedGuessTile != null &&
                                 !revealRedsForced &&
                                 !pendingAction
-                              ? (tile: VisibleTile) => !tile.cut
+                              ? (tile: VisibleTile) =>
+                                  !tile.cut && isDualCutTargetAllowed(gameState, tile.color)
                               : undefined
                       }
                     />

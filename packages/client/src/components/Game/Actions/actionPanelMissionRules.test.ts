@@ -11,6 +11,7 @@ import {
 import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
+  isDualCutTargetAllowed,
 } from "./actionPanelMissionRules.js";
 
 function makeMission9State(pointer = 0) {
@@ -96,5 +97,28 @@ describe("actionPanelMissionRules", () => {
     });
     expect(getMission9SequenceGate(state)).toBeNull();
     expect(isMission9BlockedCutValue(state, 7)).toBe(false);
+  });
+
+  it("disallows dual-cut targets on red wires during Mission 13", () => {
+    const state = makeGameState({ mission: 13, players: [makePlayer({ id: "p1" })] });
+    expect(isDualCutTargetAllowed(state, "red")).toBe(false);
+    expect(isDualCutTargetAllowed(state, "blue")).toBe(true);
+  });
+
+  it("disallows dual-cut targets on yellow wires during Mission 41 and 48", () => {
+    const mission41 = makeGameState({ mission: 41, players: [makePlayer({ id: "p1" })] });
+    const mission48 = makeGameState({ mission: 48, players: [makePlayer({ id: "p1" })] });
+
+    expect(isDualCutTargetAllowed(mission41, "yellow")).toBe(false);
+    expect(isDualCutTargetAllowed(mission41, "blue")).toBe(true);
+    expect(isDualCutTargetAllowed(mission48, "yellow")).toBe(false);
+    expect(isDualCutTargetAllowed(mission48, "blue")).toBe(true);
+  });
+
+  it("allows dual-cut targeting of blue/yellow wires in other missions", () => {
+    const state = makeGameState({ mission: 2, players: [makePlayer({ id: "p1" })] });
+
+    expect(isDualCutTargetAllowed(state, "blue")).toBe(true);
+    expect(isDualCutTargetAllowed(state, "yellow")).toBe(true);
   });
 });

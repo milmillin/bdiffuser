@@ -92,3 +92,20 @@ export function isMission9BlockedCutValue(
 
   return blockedValues.includes(value);
 }
+
+export function isDualCutTargetAllowed(
+  state: { mission: number },
+  targetColor: "red" | "yellow" | "blue" | undefined,
+): boolean {
+  if (targetColor === "red" && state.mission === 13) {
+    return false;
+  }
+
+  if (
+    targetColor === "yellow" && (state.mission === 41 || state.mission === 48)
+  ) {
+    return false;
+  }
+
+  return true;
+}
