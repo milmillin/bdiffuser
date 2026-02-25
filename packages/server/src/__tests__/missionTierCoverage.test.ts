@@ -170,6 +170,17 @@ describe("mission complexity tier representative coverage", () => {
     expect(redTiles).toHaveLength(3);
   });
 
+  it("special setup tier (mission 54): red wires are not dealt into player hands", () => {
+    const players = createSetupPlayers(4);
+    const { board, players: dealtPlayers } = setupGame(players, 54);
+
+    const redTiles = dealtPlayers.flatMap((player) => player.hand).filter((tile) => tile.color === "red");
+    const redMarkers = board.markers.filter((marker) => marker.color === "red");
+
+    expect(redTiles).toHaveLength(0);
+    expect(redMarkers).toHaveLength(11);
+  });
+
   it("mission 64: two-stand flipped wires follow FAQ edge placement", () => {
     const captain = makePlayer({
       id: "captain",

@@ -506,12 +506,14 @@ export function setupGame(
     ...mission48YellowPredeals,
     ...mission41YellowPredeals,
   ];
-  const allTiles = mission === 48
-    ? [...blueTiles, ...red.tiles]
-    : mission === 13
-      ? [...blueTiles, ...yellow.tiles]
-      : mission === 41
-        ? [...blueTiles, ...red.tiles]
+  const allTiles = mission === 54
+    ? blueTiles
+    : mission === 48
+      ? [...blueTiles, ...red.tiles]
+      : mission === 13
+        ? [...blueTiles, ...yellow.tiles]
+        : mission === 41
+          ? [...blueTiles, ...red.tiles]
       : [...blueTiles, ...red.tiles, ...yellow.tiles];
   const standSeats = distributeTilesAcrossStands(allTiles, players, predealtTiles);
 
