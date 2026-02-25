@@ -755,9 +755,10 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const isYellowToken = state.mission === 22 && value === 0;
+    const infoTokenPlacementIndex = state.mission === 50 ? -1 : tileIndex;
     const token = applyMissionInfoTokenVariant(state, {
       value,
-      position: tileIndex,
+      position: infoTokenPlacementIndex,
       isYellow: isYellowToken,
     }, player);
     player.infoTokens.push(token);
@@ -769,7 +770,7 @@ export class BombBustersServer extends Server<Env> {
       turn: 0,
       playerId: conn.id,
       action: "placeInfoToken",
-      detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(tileIndex, player)}`,
+      detail: `placed info token ${describeInfoToken(token)} on ${describeInfoTokenLocation(infoTokenPlacementIndex, player)}`,
       timestamp: Date.now(),
     });
 

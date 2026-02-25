@@ -181,7 +181,7 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
 
   bot.infoTokens.push(applyMissionInfoTokenVariant(state, {
     value: bestValue,
-    position: target.index,
+    position: state.mission === 50 ? -1 : target.index,
     isYellow: false,
   }, bot));
 }

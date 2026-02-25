@@ -590,6 +590,30 @@ describe("setupTokenRules", () => {
       expect(error?.message).toBe("Token value is not available on the board");
     });
 
+    it("mission 50: accepts placement beside the stand when value appears on a blue wire", () => {
+      const player = makePlayer({
+        hand: [
+          makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" }),
+          makeTile({ id: "b-7", gameValue: 7, sortValue: 7, color: "blue" }),
+        ],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 3, -1);
+      expect(error).toBeNull();
+    });
+
+    it("mission 50: rejects stand placement for values not on an uncut blue wire", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 7, -1);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Setup info token value must match an uncut blue wire",
+      });
+    });
+
     it("rejects cut tiles", () => {
       const player = makePlayer({
         hand: [makeTile({ id: "b-2", gameValue: 2, sortValue: 2, color: "blue", cut: true })],
