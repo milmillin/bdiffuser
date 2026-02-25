@@ -135,6 +135,14 @@ export function Lobby({
                         Remove
                       </button>
                     )}
+                    {!p.isBot && !p.isHost && isHost && p.id !== playerId && (
+                      <button
+                        onClick={() => send({ type: "kickPlayer", playerId: p.id })}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Kick
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

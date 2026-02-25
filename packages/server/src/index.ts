@@ -432,6 +432,9 @@ export class BombBustersServer extends Server<Env> {
       case "removeBot":
         this.handleRemoveBot(connection, msg.botId);
         break;
+      case "kickPlayer":
+        this.handleKickPlayer(connection, msg.playerId);
+        break;
       case "chat":
         this.handleChat(connection, msg.text);
         break;
@@ -1882,6 +1885,41 @@ export class BombBustersServer extends Server<Env> {
     }
 
     this.room.players.splice(idx, 1);
+    this.saveState();
+    this.broadcastLobby();
+  }
+
+  handleKickPlayer(conn: Connection, playerId: string) {
+    if (this.room.gameState) {
+      this.sendMsg(conn, { type: "error", message: "Cannot kick players during game" });
+      return;
+    }
+    if (conn.id !== this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Only the host can kick players" });
+      return;
+    }
+    if (playerId === this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Cannot kick the host" });
+      return;
+    }
+
+    const idx = this.room.players.findIndex((p) => p.id === playerId && !p.isBot);
+    if (idx === -1) {
+      this.sendMsg(conn, { type: "error", message: "Player not found" });
+      return;
+    }
+
+    // Notify the kicked player
+    for (const c of this.getConnections()) {
+      if (c.id === playerId) {
+        this.sendMsg(c, { type: "kicked" });
+      }
+    }
+
+    this.room.players.splice(idx, 1);
+    if (this.room.selectedCaptainId === playerId) {
+      this.room.selectedCaptainId = null;
+    }
     this.saveState();
     this.broadcastLobby();
   }

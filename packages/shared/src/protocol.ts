@@ -76,6 +76,7 @@ export type ClientMessage =
   | { type: "selectCaptain"; playerId: string }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
+  | { type: "kickPlayer"; playerId: string }
   | { type: "chat"; text: string }
   | { type: "playAgain" };
 
@@ -86,6 +87,7 @@ export type ServerMessage =
   | { type: "gameState"; state: ClientGameState }
   | { type: "action"; action: GameAction }
   | { type: "error"; message: string; code?: ActionLegalityCode }
+  | { type: "kicked" }
   | { type: "chat"; message: ChatMessage };
 
 // ── Game Actions (for animations) ───────────────────────────

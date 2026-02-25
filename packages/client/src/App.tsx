@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { useTurnNotification } from "./hooks/useTurnNotification.js";
@@ -313,10 +313,17 @@ function GameRoom({
     saveSession(roomId, { playerId: id, playerName });
   }, [roomId, playerName]);
 
-  const { connected, lobbyState, gameState, lastAction, chatMessages, error, send, playerId } =
+  const { connected, lobbyState, gameState, lastAction, chatMessages, error, kicked, send, playerId } =
     usePartySocket(roomId, { id: stableId, onIdReady: handleIdReady });
   useTurnNotification(gameState, playerId);
   const [joined, setJoined] = useState(false);
+
+  // Leave the room when kicked by host
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
+  useEffect(() => {
+    if (kicked) onLeaveRef.current();
+  }, [kicked]);
 
   // Auto-join when connected
   if (connected && !joined) {

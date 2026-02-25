@@ -21,6 +21,7 @@ interface UsePartySocketReturn {
   chatMessages: ChatMessage[];
   error: string | null;
   errorCode: ActionLegalityCode | null;
+  kicked: boolean;
   send: (msg: ClientMessage) => void;
   playerId: string | null;
 }
@@ -39,6 +40,7 @@ export function usePartySocket(
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<ActionLegalityCode | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [kicked, setKicked] = useState(false);
 
   // Stable refs so the effect doesn't re-run when callbacks change
   const onIdReadyRef = useRef(options?.onIdReady);
@@ -93,6 +95,9 @@ export function usePartySocket(
         case "chat":
           setChatMessages((prev) => [...prev, msg.message]);
           break;
+        case "kicked":
+          setKicked(true);
+          break;
         case "error":
           setError(msg.message);
           setErrorCode(msg.code ?? null);
@@ -130,6 +135,7 @@ export function usePartySocket(
     chatMessages,
     error,
     errorCode,
+    kicked,
     send,
     playerId,
   };
