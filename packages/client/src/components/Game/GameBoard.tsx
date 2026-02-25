@@ -385,6 +385,19 @@ export function GameBoard({
         (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
       );
     });
+  const mission41SkipIfNeeded =
+    gameState.mission === 41 && me != null
+      ? (() => {
+        const uncutTiles = me.hand.filter((tile) => !tile.cut);
+        const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
+        const hasRed = uncutTiles.some((tile) => tile.color === "red");
+        return (
+          uncutYellowCount === 1 &&
+          hasRed &&
+          uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red")
+        );
+      })()
+      : false;
   const missionSpecialActorHasRequiredColor =
     missionSpecialRequiredColor != null &&
     !!me &&
@@ -393,7 +406,7 @@ export function GameBoard({
     );
   const missionSpecialActorEligible =
     missionSpecialRequiredColor != null &&
-    (gameState.mission === 41 || gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
+    (gameState.mission === 41 ? !mission41SkipIfNeeded : gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
   const missionSpecialCanBypassForcedReveal =
     revealRedsForced &&
     missionSupportsSimultaneousThreeCut &&

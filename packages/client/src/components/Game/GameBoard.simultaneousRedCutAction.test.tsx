@@ -251,6 +251,32 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
     expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
   });
 
+  it("hides the mission 41 launcher when actor is forced to skip despite teammate tripwires", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [
+            makeTile({ id: "m1", color: "yellow", gameValue: "YELLOW", sortValue: 2.1 }),
+            makeTile({ id: "m2", color: "red", gameValue: "RED", sortValue: 3.5 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: "YELLOW", sortValue: 3.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
   it("hides the mission 41 launcher when no uncut tripwire exists", () => {
     const state = makeGameState({
       mission: 41,
