@@ -43,7 +43,8 @@ export function getMission22TokenPassBoardState(
   state.campaign ??= {};
   const existingBoard = state.campaign.mission22TokenPassBoard;
   if (
-    existingBoard
+    state.phase !== "setup_info_tokens"
+    && existingBoard
     && Array.isArray(existingBoard.numericTokens)
     && existingBoard.numericTokens.every(isBoardValueSafe)
     && Number.isInteger(existingBoard.yellowTokens)

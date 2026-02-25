@@ -440,6 +440,25 @@ describe("setupTokenRules", () => {
       expect(error?.message).toBe("Token value is not available on the board");
     });
 
+    it("mission 22: consumes placed setup tokens so later players cannot reuse values", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "c1", gameValue: 2, color: "blue" })],
+      });
+      const partner = makePlayer({
+        id: "partner",
+        hand: [makeTile({ id: "p1", gameValue: 5, color: "blue" })],
+      });
+      const state = makeGameState({ mission: 22, phase: "setup_info_tokens", players: [captain, partner] });
+
+      expect(validateSetupInfoTokenPlacement(state, captain, 3, -1)).toBeNull();
+      captain.infoTokens.push({ value: 3, position: -1, isYellow: false });
+
+      const error = validateSetupInfoTokenPlacement(state, partner, 3, -1);
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe("Token value is not available on the board");
+    });
+
     it("mission 22: rejects selecting a yellow token when none remain on board", () => {
       const captain = makePlayer({
         isCaptain: true,
