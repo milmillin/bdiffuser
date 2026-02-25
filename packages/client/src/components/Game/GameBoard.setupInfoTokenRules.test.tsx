@@ -154,7 +154,6 @@ describe("GameBoard setup info token mission rules", () => {
       isCaptain: true,
       hand: [
         makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 }),
-        makeTile({ id: "c2", color: "yellow", gameValue: "YELLOW", sortValue: 1.1 }),
         makeTile({ id: "c3", color: "red", gameValue: "RED", sortValue: 4.5 }),
       ],
     });
@@ -175,5 +174,35 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).toContain("Choose a value that is not in your hand, then place it beside your stand.");
     expect(html).toContain("<option value=\"0\"");
     expect(html).toContain("Place (0)");
+  });
+
+  it("filters mission 22 absent-value options by hand contents", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "c2", color: "yellow", gameValue: "YELLOW", sortValue: 1.1 }),
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).toContain("<option value=\"2\"");
+    expect(html).toContain("<option value=\"12\"");
+    expect(html).not.toContain("<option value=\"4\"");
+    expect(html).not.toContain("<option value=\"0\"");
   });
 });

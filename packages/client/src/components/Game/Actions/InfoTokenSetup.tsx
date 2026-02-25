@@ -8,12 +8,34 @@ import {
 
 function getFalseTokenValueOptions(
   tile: ClientPlayer["hand"][number] | undefined,
+  hand: ClientPlayer["hand"],
   allowMissingValue = false,
+  requiresTileTarget = true,
 ): number[] {
-  const values: number[] = [];
-  if (allowMissingValue) {
-    values.push(0);
+  if (!requiresTileTarget && allowMissingValue) {
+    const presentValues = new Set<number | "YELLOW">();
+    for (const handTile of hand) {
+      if (handTile.cut) continue;
+      if (handTile.gameValue === "YELLOW") {
+        presentValues.add("YELLOW");
+      } else if (typeof handTile.gameValue === "number") {
+        presentValues.add(handTile.gameValue);
+      }
+    }
+
+    const values: number[] = [];
+    if (!presentValues.has("YELLOW")) {
+      values.push(0);
+    }
+    for (let value = 1; value <= 12; value++) {
+      if (!presentValues.has(value)) {
+        values.push(value);
+      }
+    }
+    return values;
   }
+
+  const values: number[] = [];
   for (let value = 1; value <= 12; value++) {
     if (
       tile?.color === "blue" &&
@@ -53,7 +75,12 @@ export function InfoTokenSetup({
   const selectedTile =
     selectedTileIndex == null ? undefined : player.hand[selectedTileIndex];
   const falseTokenOptions = useFalseTokenMode
-    ? getFalseTokenValueOptions(selectedTile, !requiresTileTarget)
+    ? getFalseTokenValueOptions(
+      selectedTile,
+      player.hand,
+      !requiresTileTarget,
+      requiresTileTarget,
+    )
     : [];
   const effectiveFalseTokenValue =
     selectedTokenValue != null && falseTokenOptions.includes(selectedTokenValue)
