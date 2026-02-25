@@ -906,6 +906,72 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "post_it", "MISSION_RULE_VIOLATION");
   });
 
+  it("mission 20: rejects Single Wire Label targeting an X-marked wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 20,
+      players: [actor],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "single_wire_label",
+            name: "Single Wire Label",
+            unlockValue: 3,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+    state.mission = 20;
+    state.players[0].hand[0].isXMarked = true;
+
+    const error = validateUseEquipment(state, "actor", "single_wire_label", {
+      kind: "single_wire_label",
+      tileIndex: 0,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 35: rejects Single Wire Label targeting an X-marked wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "single_wire_label",
+            name: "Single Wire Label",
+            unlockValue: 3,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+    state.mission = 35;
+    state.players[0].hand[0].isXMarked = true;
+
+    const error = validateUseEquipment(state, "actor", "single_wire_label", {
+      kind: "single_wire_label",
+      tileIndex: 0,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("mission 20: rejects Talkies-Walkies when either selected wire is X-marked", () => {
     const state = buildStateForEquipmentMatrix("talkies_walkies");
     state.mission = 20;

@@ -835,6 +835,12 @@ export function validateUseEquipment(
     case "single_wire_label": {
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "X-marked wires are ignored by equipment in this mission",
+        );
+      }
       if (tile.color !== "blue" || typeof tile.gameValue !== "number") {
         return legalityError(
           "EQUIPMENT_RULE_VIOLATION",
