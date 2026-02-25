@@ -14,8 +14,7 @@ import {
   CHARACTER_IMAGES,
   DOUBLE_DETECTOR_CHARACTERS,
   EQUIPMENT_DEFS,
-  requiredSetupInfoTokenCountForMission,
-  requiresSetupInfoTokenForMission,
+  requiredSetupInfoTokenCountForMissionAndHand,
   wireLabel,
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
@@ -124,19 +123,6 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
 
 function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
   return mission === 22 || mission === 52 || (mission === 17 && isCaptain);
-}
-
-function mission22RequiredSetupTokenCount(handSize: ClientPlayer["hand"]) {
-  const present = new Set<number | "YELLOW">();
-  for (const tile of handSize) {
-    if (tile.cut) continue;
-    if (tile.gameValue === "YELLOW") {
-      present.add("YELLOW");
-    } else if (typeof tile.gameValue === "number") {
-      present.add(tile.gameValue);
-    }
-  }
-  return Math.min(2, 13 - present.size);
 }
 
 function getDefaultFalseSetupTokenValue(
@@ -281,27 +267,21 @@ export function GameBoard({
   }, [gameState.pendingForcedAction, playerId]);
 
   const isSetup = gameState.phase === "setup_info_tokens";
-  const isMission22Setup = gameState.mission === 22;
-  const requiredMission22SetupTokens = me ? mission22RequiredSetupTokenCount(me.hand) : 0;
+  const requiredSetupTokens = me
+    ? requiredSetupInfoTokenCountForMissionAndHand(
+        gameState.mission,
+        gameState.players.length,
+        me.isCaptain,
+        me.hand,
+      )
+    : 0;
   const requiresSetupToken =
     !isSetup || !me
       ? true
-      : isMission22Setup
-        ? requiredMission22SetupTokens > 0
-        : requiresSetupInfoTokenForMission(
-            gameState.mission,
-            gameState.players.length,
-            me.isCaptain,
-          );
+      : requiredSetupTokens > 0;
   const totalSetupTokens = !isSetup || !me
     ? 1
-    : isMission22Setup
-      ? requiredMission22SetupTokens
-      : requiredSetupInfoTokenCountForMission(
-          gameState.mission,
-          gameState.players.length,
-          me.isCaptain,
-        );
+    : requiredSetupTokens;
   const useFalseSetupTokenMode =
     !!me && usesFalseSetupTokenMode(gameState.mission, me.isCaptain);
   const hasXWireEquipmentRestriction =

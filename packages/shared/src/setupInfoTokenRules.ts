@@ -2,6 +2,29 @@ import {
   NO_SETUP_TOKEN_MISSIONS,
   TWO_PLAYER_CAPTAIN_SKIP_MISSIONS,
 } from "./constants.js";
+import type { WireValue } from "./types.js";
+
+const MISSION_22_POSSIBLE_VALUES = 13;
+
+type Mission22HandTile = {
+  cut: boolean;
+  gameValue?: WireValue;
+};
+
+function countMission22AbsentValues(
+  hand: readonly Mission22HandTile[],
+): number {
+  const present = new Set<number | "YELLOW">();
+  for (const tile of hand) {
+    if (tile.cut) continue;
+    if (tile.gameValue === "YELLOW") {
+      present.add("YELLOW");
+    } else if (typeof tile.gameValue === "number") {
+      present.add(tile.gameValue);
+    }
+  }
+  return MISSION_22_POSSIBLE_VALUES - present.size;
+}
 
 export function requiredSetupInfoTokenCountForMission(
   mission: number,
@@ -44,4 +67,23 @@ export function requiresSetupInfoTokenForMission(
   isCaptain: boolean,
 ): boolean {
   return requiredSetupInfoTokenCountForMission(mission, playerCount, isCaptain) > 0;
+}
+
+export function requiredSetupInfoTokenCountForMissionAndHand(
+  mission: number,
+  playerCount: number,
+  isCaptain: boolean,
+  hand: readonly Mission22HandTile[],
+): number {
+  const base = requiredSetupInfoTokenCountForMission(
+    mission,
+    playerCount,
+    isCaptain,
+  );
+
+  if (mission === 22) {
+    return Math.min(base, countMission22AbsentValues(hand));
+  }
+
+  return base;
 }

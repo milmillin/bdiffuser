@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   requiredSetupInfoTokenCountForMission,
+  requiredSetupInfoTokenCountForMissionAndHand,
   requiresSetupInfoTokenForMission,
 } from "../setupInfoTokenRules.js";
 
@@ -47,5 +48,48 @@ describe("setupInfoTokenRules", () => {
   it("defaults to requiring setup token on missions without overrides", () => {
     expect(requiredSetupInfoTokenCountForMission(1, 2, true)).toBe(1);
     expect(requiresSetupInfoTokenForMission(1, 4, false)).toBe(true);
+  });
+
+  it("caps mission 22 setup token count by absent values in hand", () => {
+    const fullHand = [
+      ...Array.from({ length: 12 }, (_, value) => ({
+        gameValue: value + 1,
+        cut: false,
+      })),
+      { gameValue: "YELLOW" as const, cut: false },
+    ];
+
+    const sparseHand = [{ gameValue: 4, cut: false }];
+
+    const mixedHand = [
+      { gameValue: 3, cut: false },
+      { gameValue: "YELLOW" as const, cut: false },
+      { gameValue: 12, cut: true },
+    ];
+
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        22,
+        4,
+        true,
+        fullHand,
+      ),
+    ).toBe(0);
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        22,
+        4,
+        false,
+        sparseHand,
+      ),
+    ).toBe(2);
+    expect(
+      requiredSetupInfoTokenCountForMissionAndHand(
+        22,
+        4,
+        false,
+        mixedHand,
+      ),
+    ).toBe(2);
   });
 });

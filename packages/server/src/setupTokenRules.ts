@@ -4,7 +4,9 @@ import type {
   GameState,
   Player,
 } from "@bomb-busters/shared";
-import { requiredSetupInfoTokenCountForMission } from "@bomb-busters/shared";
+import {
+  requiredSetupInfoTokenCountForMissionAndHand,
+} from "@bomb-busters/shared";
 
 function legalityError(
   code: ActionLegalityCode,
@@ -14,42 +16,18 @@ function legalityError(
 }
 
 /**
- * Count how many of the 13 possible wire values (1-12 + YELLOW) are NOT
- * present in the player's uncut hand. Used to cap mission 22 setup tokens.
- */
-function countAbsentValues(player: Readonly<Player>): number {
-  const present = new Set<number | "YELLOW">();
-  for (const tile of player.hand) {
-    if (tile.cut) continue;
-    if (tile.gameValue === "YELLOW") {
-      present.add("YELLOW");
-    } else if (typeof tile.gameValue === "number") {
-      present.add(tile.gameValue);
-    }
-  }
-  // 13 possible values: 1-12 numeric + YELLOW
-  return 13 - present.size;
-}
-
-/**
  * Number of setup info tokens this player must place for the active mission.
  */
 export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
-  const base = requiredSetupInfoTokenCountForMission(
+  return requiredSetupInfoTokenCountForMissionAndHand(
     state.mission,
     state.players.length,
     player.isCaptain,
+    player.hand,
   );
-
-  // Mission 22: cap at the number of values absent from the player's hand
-  if (state.mission === 22) {
-    return Math.min(base, countAbsentValues(player));
-  }
-
-  return base;
 }
 
 /**
