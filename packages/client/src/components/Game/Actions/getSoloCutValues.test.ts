@@ -166,6 +166,91 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain("YELLOW");
   });
 
+  it("does NOT offer protected mission 23 value for solo cut before special action", () => {
+    const state = makeGameState({
+      mission: 23,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "s1", gameValue: 5 }),
+            makeTile({ id: "s2", gameValue: 5 }),
+            makeTile({ id: "s3", gameValue: 5 }),
+            makeTile({ id: "s4", gameValue: 5 }),
+          ],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m23", value: 5, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(5);
+  });
+
+  it("does NOT offer protected mission 39 value for solo cut before special action", () => {
+    const state = makeGameState({
+      mission: 39,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "s1", gameValue: 6 }),
+            makeTile({ id: "s2", gameValue: 6 }),
+            makeTile({ id: "s3", gameValue: 6 }),
+            makeTile({ id: "s4", gameValue: 6 }),
+          ],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m39", value: 6, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).not.toContain(6);
+  });
+
+  it("offers protected value again after mission 23 special action completes", () => {
+    const state = makeGameState({
+      mission: 23,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "s1", gameValue: 5 }),
+            makeTile({ id: "s2", gameValue: 5 }),
+            makeTile({ id: "s3", gameValue: 5 }),
+            makeTile({ id: "s4", gameValue: 5 }),
+          ],
+        }),
+      ],
+      campaign: {
+        mission23SpecialActionDone: true,
+        numberCards: {
+          visible: [{ id: "m23", value: 5, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+    expect(values).toContain(5);
+  });
+
   it("does NOT offer numeric solo cut values for mission 35 X-marked wires while yellow wires remain", () => {
     const state = makeGameState({
       mission: 35,
