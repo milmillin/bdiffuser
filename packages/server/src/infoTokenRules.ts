@@ -61,6 +61,11 @@ export function applyMissionInfoTokenVariant(
   if (token.relation != null) return token;
 
   if (isAbsentValueTokenMission(state)) {
+    // Mission 22 absent-value tokens only use variant-style behavior for
+    // stand placements. In-play token placements on a wire must keep the true
+    // announced value.
+    if (token.position >= 0) return token;
+
     if (!owner) return token;
     const tile = owner.hand[token.position];
     if (!tile) return token;

@@ -671,6 +671,33 @@ describe("mission complexity tier representative coverage", () => {
     expect(requiredSetupInfoTokenCount(state2, sparsePlayer)).toBe(2);
   });
 
+  it("mission 22: failed dual cut on wire places the target wire value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a3", color: "blue", gameValue: 3, sortValue: 3 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t4", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "t9", color: "blue", gameValue: 9, sortValue: 9 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      log: [],
+    });
+
+    executeDualCut(state, "actor", "target", 0, 5);
+
+    expect(state.players[1].infoTokens).toEqual([
+      { value: 4, position: 0, isYellow: false },
+    ]);
+  });
+
   // ── Mission 22 yellow-trigger token pass tests ──────────
 
   it("mission 22: yellow trigger fires after 2 yellow cuts via dual cut", () => {
