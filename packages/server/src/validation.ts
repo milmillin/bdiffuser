@@ -202,25 +202,6 @@ export function validateDualCutLegality(
   if (!targetTile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
   if (targetTile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
 
-  if (targetTile.color === "yellow" && guessValue !== "YELLOW") {
-    return legalityError(
-      "MISSION_RULE_VIOLATION",
-      "Dual cut on a yellow wire requires guessing YELLOW",
-    );
-  }
-
-  if (targetTile.color === "yellow" && guessValue === "YELLOW") {
-    const actorHasYellow = actor.hand.some(
-      (tile) => !tile.cut && tile.gameValue === "YELLOW",
-    );
-    if (!actorHasYellow) {
-      return legalityError(
-        "NO_MATCHING_WIRES_IN_HAND",
-        "You don't have any yellow wires to target a yellow wire",
-      );
-    }
-  }
-
   if (state.mission === 13 && targetTile.color === "red") {
     return legalityError(
       "MISSION_RULE_VIOLATION",

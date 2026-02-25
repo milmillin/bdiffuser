@@ -926,17 +926,15 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
     const projectedCutCount = getProjectedCutCountForResolve(ctx, currentRequired);
     if (projectedCutCount < rule.requiredCuts) return;
 
-    if (pointer < rule.cardCount - 1) {
-      const nextPointer = pointer + 1;
-      setSequencePointer(ctx.state, nextPointer);
-      pushGameLog(ctx.state, {
-        turn: ctx.state.turnNumber,
-        playerId: ctx.action.actorId,
-        action: "hookEffect",
-        detail: `sequence_priority:advance:${nextPointer}`,
-        timestamp: Date.now(),
-      });
-    }
+    const nextPointer = pointer + 1;
+    setSequencePointer(ctx.state, nextPointer);
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `sequence_priority:advance:${nextPointer}`,
+      timestamp: Date.now(),
+    });
   },
 
   endTurn(rule: SequencePriorityRuleDef, ctx: EndTurnHookContext): void {
