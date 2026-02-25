@@ -21,7 +21,11 @@ import {
   applyMission22TokenPassChoice,
   getMission22TokenPassAvailableValues,
 } from "../mission22TokenPass";
-import { dispatchHooks } from "../missionHooks";
+import {
+  dispatchHooks,
+  rotateMission61Constraint,
+  resolveMission61AfterConstraintDecision,
+} from "../missionHooks";
 import { buildSimultaneousFourCutTargets } from "../simultaneousFourCutTargets";
 import { setupGame } from "../setup";
 import {
@@ -530,6 +534,13 @@ function resolveForcedAction(state: GameState): boolean {
     }
 
     executeSimultaneousFourCut(state, forced.playerId, targets);
+    return true;
+  }
+
+  if (forced.kind === "mission61ConstraintRotate") {
+    rotateMission61Constraint(state, "clockwise");
+    state.pendingForcedAction = undefined;
+    resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
     return true;
   }
 
