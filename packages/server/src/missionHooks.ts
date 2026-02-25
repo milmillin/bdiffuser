@@ -852,14 +852,26 @@ function actorCanAffordAnyMission44Cut(
     : getAvailableOxygen(state, actor.id);
   if (available <= 0) return false;
 
-  const affordableValues = new Set<number>();
+  const actorAffordableValues = new Set<number>();
   for (const tile of actorUncut) {
     if (typeof tile.gameValue === "number") {
-      affordableValues.add(Math.floor(tile.gameValue));
+      actorAffordableValues.add(Math.floor(tile.gameValue));
     }
   }
 
-  for (const value of affordableValues) {
+  for (const value of actorAffordableValues) {
+    const requiredCost = getOxygenCostForCut(rule, value);
+    if (requiredCost <= available) return true;
+  }
+
+  // Dual-cut guesses can be intentionally wrong; mission rules do not require
+  // matching actor-owned value to declare a legal (and cost-bearing) cut.
+  const hasAnyDualCutTarget = state.players.some((player) =>
+    player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+  );
+  if (!hasAnyDualCutTarget) return false;
+
+  for (let value = 1; value <= 12; value++) {
     const requiredCost = getOxygenCostForCut(rule, value);
     if (requiredCost <= available) return true;
   }
