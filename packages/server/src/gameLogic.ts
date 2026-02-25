@@ -148,22 +148,6 @@ function checkDetonatorLoss(state: GameState): boolean {
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 
-function applyConstraintLFailurePenalty(
-  state: GameState,
-  actorId: string,
-): void {
-  if (!hasActiveConstraint(state, actorId, "L")) return;
-
-  state.board.detonatorPosition += 1;
-  pushGameLog(state, {
-    turn: state.turnNumber,
-    playerId: actorId,
-    action: "hookEffect",
-    detail: "constraint_L:double_detonator:+1_extra",
-    timestamp: Date.now(),
-  });
-}
-
 type FailureInfoTokenMode = "wire" | "stand" | "none";
 
 function getFailureInfoTokenMode(
@@ -565,7 +549,6 @@ export function executeDualCut(
     // Blue or yellow wire — wrong guess, wire stays uncut.
     if (!stabilizerActive) {
       state.board.detonatorPosition++;
-      applyConstraintLFailurePenalty(state, actorId);
     }
 
     const failureInfoTokenMode = getFailureInfoTokenMode(state, actorId, targetPlayerId);

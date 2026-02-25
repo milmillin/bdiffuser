@@ -113,6 +113,16 @@ export function getSoloCutValues(
 ): (number | "YELLOW")[] {
   const me = state.players.find((p) => p.id === playerId);
   if (!me) return [];
+  const hasConstraintK = (() => {
+    const globalHasK = state.campaign?.constraints?.global?.some(
+      (constraint) => constraint.id === "K" && constraint.active,
+    );
+    const playerHasK = state.campaign?.constraints?.perPlayer?.[
+      playerId
+    ]?.some((constraint) => constraint.id === "K" && constraint.active);
+    return globalHasK || playerHasK;
+  })();
+  if (hasConstraintK) return [];
 
   const myUncut = me.hand.filter((t) => !t.cut);
   const values: (number | "YELLOW")[] = [];

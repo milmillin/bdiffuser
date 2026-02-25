@@ -4,6 +4,7 @@ import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
+  makeConstraintCard,
   makeRedTile,
   makeTile,
   makeYellowTile,
@@ -253,6 +254,37 @@ describe("getSoloCutValues yellow logic", () => {
 
     const values = getSoloCutValues(state, "me");
     expect(values).toContain(5);
+  });
+
+  it("does NOT offer solo cut values when Constraint K (No Solo Cut) is active", () => {
+    const state = makeGameState({
+      mission: 2,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "s1", gameValue: 5 }),
+            makeTile({ id: "s2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [
+            makeTile({ id: "o1", gameValue: 8 }),
+            makeTile({ id: "o2", gameValue: 8 }),
+            makeTile({ id: "o3", gameValue: 5 }),
+          ],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "K", active: true })],
+          perPlayer: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(getSoloCutValues(state, "me")).toEqual([]);
   });
 
   it("does NOT offer numeric solo cut values for mission 35 X-marked wires while yellow wires remain", () => {
