@@ -32,6 +32,41 @@ export function isBaseEquipmentId(id: string): id is BaseEquipmentId {
   return BASE_EQUIPMENT_SET.has(id);
 }
 
+function getMission44DepthCost(value: number): number {
+  const normalized = Math.max(1, Math.min(12, Math.floor(value)));
+  if (normalized <= 4) return 1;
+  if (normalized <= 8) return 2;
+  return 3;
+}
+
+function getMissionOxygenAvailability(state: ClientGameState, playerId: string): number | null {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return null;
+
+  const owned = Math.max(0, Math.floor(oxygen.playerOxygen[playerId] ?? 0));
+  if (state.mission === 44 || state.mission === 54) {
+    return owned + Math.max(0, Math.floor(oxygen.pool));
+  }
+
+  if (state.mission === 49 || state.mission === 63) {
+    return owned;
+  }
+
+  return null;
+}
+
+function getMissionSoloCutOxygenCost(state: ClientGameState, value: number): number {
+  if (state.mission === 44 || state.mission === 54) {
+    return getMission44DepthCost(value);
+  }
+
+  if (state.mission === 49 || state.mission === 63) {
+    return Math.max(0, Math.floor(value));
+  }
+
+  return 0;
+}
+
 export function getImmediateEquipmentPayload(
   equipmentId: AnyEquipmentId,
 ): UseEquipmentPayload | null {
@@ -208,7 +243,13 @@ export function getSoloCutValues(
     }
   }
 
-  return values;
+  const availableOxygen = getMissionOxygenAvailability(state, playerId);
+  if (availableOxygen == null) return values;
+
+  return values.filter((value): value is number | "YELLOW" => {
+    if (value === "YELLOW") return true;
+    return getMissionSoloCutOxygenCost(state, value) <= availableOxygen;
+  });
 }
 
 export function isMission26CutValueVisible(

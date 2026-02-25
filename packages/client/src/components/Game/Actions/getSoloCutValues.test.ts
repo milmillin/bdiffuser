@@ -455,6 +455,107 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).toEqual([]);
   });
 
+  it("filters out mission 54 solo cut values that exceed depth-based oxygen availability", () => {
+    const state = makeGameState({
+      mission: 54,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 3 }),
+            makeTile({ id: "m2", gameValue: 3 }),
+            makeTile({ id: "m3", gameValue: 5 }),
+            makeTile({ id: "m4", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "other",
+          hand: [
+            makeTile({ id: "o1", gameValue: 7 }),
+            makeTile({ id: "o2", gameValue: 7 }),
+          ],
+        }),
+      ],
+      campaign: {
+        oxygen: {
+          pool: 0,
+          playerOxygen: { me: 1 },
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(3);
+    expect(values).not.toContain(5);
+  });
+
+  it("filters out mission 63 solo cut values that exceed player-only oxygen availability", () => {
+    const state = makeGameState({
+      mission: 63,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 5 }),
+            makeTile({ id: "m2", gameValue: 5 }),
+            makeTile({ id: "m3", gameValue: 10 }),
+            makeTile({ id: "m4", gameValue: 10 }),
+          ],
+        }),
+        makePlayer({
+          id: "other",
+          hand: [
+            makeTile({ id: "o1", gameValue: 4 }),
+            makeTile({ id: "o2", gameValue: 6 }),
+            makeTile({ id: "o3", gameValue: 6 }),
+            makeTile({ id: "o4", gameValue: 7 }),
+            makeTile({ id: "o5", gameValue: 7 }),
+          ],
+        }),
+      ],
+      campaign: {
+        oxygen: {
+          pool: 100,
+          playerOxygen: { me: 5, other: 100 },
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(5);
+    expect(values).not.toContain(10);
+  });
+
+  it("filters out mission 44 solo cut values using shared oxygen reserve", () => {
+    const state = makeGameState({
+      mission: 44,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 4 }),
+            makeTile({ id: "m2", gameValue: 4 }),
+            makeTile({ id: "m3", gameValue: 9 }),
+            makeTile({ id: "m4", gameValue: 9 }),
+          ],
+        }),
+      ],
+      campaign: {
+        oxygen: {
+          pool: 1,
+          playerOxygen: { me: 0 },
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(4);
+    expect(values).not.toContain(9);
+  });
+
   it("checks mission 26 number visibility with isMission26CutValueVisible", () => {
     const state = makeGameState({
       mission: 26,
