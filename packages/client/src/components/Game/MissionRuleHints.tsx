@@ -222,14 +222,12 @@ function EquipmentSecondaryLocksHint({
   );
 }
 
-function CampaignObjectsHint({
+function NumberCardsHint({
   gameState,
   sequencePointer,
-  hideNumberCards,
 }: {
   gameState: ClientGameState;
   sequencePointer: number | null;
-  hideNumberCards: boolean;
 }) {
   const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
 
@@ -247,6 +245,126 @@ function CampaignObjectsHint({
   const visibleCards = campaign.numberCards?.visible ?? [];
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
+
+  const hasContent =
+    cutterImage != null ||
+    visibleCards.length > 0 ||
+    deckCount > 0 ||
+    discardCount > 0;
+
+  if (!hasContent) return null;
+
+  return (
+    <>
+      <div className="rounded-xl bg-[var(--color-bomb-surface)] border border-gray-700 p-3 space-y-2">
+        <div className="text-xs font-bold uppercase text-gray-300">
+          Number Cards
+        </div>
+        {cutterImage && (
+          <div className="flex items-center gap-1.5">
+            <CampaignCardThumbnail
+              image={cutterImage}
+              borderColor="border-emerald-400"
+              rotateCcw90
+              onClick={() =>
+                setPreviewCard({
+                  name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
+                  previewImage: cutterImage,
+                  previewAspectRatio: "1037/736",
+                  previewRotateCcw90: true,
+                })
+              }
+            />
+          </div>
+        )}
+        <div className="flex items-start gap-3 ml-2.5">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {visibleCards.map((card, idx) => {
+              const isSequenceCard = sequencePointer != null && idx < 3;
+              let image: string;
+              let border: string;
+              let dimmed = false;
+
+              if (isSequenceCard) {
+                if (idx < sequencePointer) {
+                  image = NUMBER_CARD_BACK;
+                  border = "border-gray-600";
+                  dimmed = true;
+                } else if (idx === sequencePointer) {
+                  image = getNumberCardImage(card.value);
+                  border = "border-emerald-400";
+                } else {
+                  image = getNumberCardImage(card.value);
+                  border = "border-amber-500";
+                }
+              } else {
+                image = card.faceUp
+                  ? getNumberCardImage(card.value)
+                  : NUMBER_CARD_BACK;
+                border = card.faceUp ? "border-blue-400" : "border-gray-600";
+                dimmed = !card.faceUp;
+              }
+
+              return (
+                <CampaignCardThumbnail
+                  key={card.id}
+                  image={image}
+                  borderColor={border}
+                  dimmed={dimmed}
+                  onClick={() =>
+                    setPreviewCard({
+                      name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
+                      previewImage: image,
+                      detailSubtitle: card.faceUp
+                        ? `Value: ${card.value}`
+                        : "This card is face down.",
+                    })
+                  }
+                />
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {deckCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="relative w-12 shrink-0" style={{ aspectRatio: "739/1040" }}>
+                  <div className="absolute inset-0 rounded-md border border-gray-600 bg-gray-800" />
+                  <div className="absolute -top-0.5 -left-0.5 w-12 rounded-md border border-gray-600 bg-gray-700" style={{ aspectRatio: "739/1040" }} />
+                </div>
+                <span className="text-xs text-gray-400 font-semibold">{deckCount}</span>
+              </div>
+            )}
+            {discardCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-12 shrink-0 rounded-md border border-gray-700 bg-gray-900/50 opacity-50" style={{ aspectRatio: "739/1040" }} />
+                <span className="text-xs text-gray-500 font-semibold">{discardCount}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {previewCard && (
+        <CardPreviewModal
+          card={previewCard}
+          onClose={() => setPreviewCard(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function CampaignObjectsHint({
+  gameState,
+  sequencePointer,
+}: {
+  gameState: ClientGameState;
+  sequencePointer: number | null;
+}) {
+  const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
+
+  const campaign = gameState.campaign;
+  if (!campaign) return null;
 
   const globalConstraints =
     campaign.constraints?.global.filter((constraint) => constraint.active) ?? [];
@@ -281,13 +399,7 @@ function CampaignObjectsHint({
     sequencePointer != null ? marker.kind !== "sequence_pointer" : true,
   );
 
-  const hasNumberCardContent =
-    cutterImage != null ||
-    (!hideNumberCards &&
-      (visibleCards.length > 0 || deckCount > 0 || discardCount > 0));
-
   const hasAnyContent =
-    hasNumberCardContent ||
     globalConstraints.length > 0 ||
     perPlayerConstraints.length > 0 ||
     activeChallenges.length > 0 ||
@@ -307,94 +419,6 @@ function CampaignObjectsHint({
         <div className="text-xs font-bold uppercase text-gray-300">
           Campaign Objects
         </div>
-
-        {hasNumberCardContent && (
-          <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
-            <div className="text-[10px] uppercase text-gray-400">Number Cards</div>
-            {cutterImage && (
-              <div className="flex items-center gap-1.5">
-                <CampaignCardThumbnail
-                  image={cutterImage}
-                  borderColor="border-emerald-400"
-                  rotateCcw90
-                  onClick={() =>
-                    setPreviewCard({
-                      name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
-                      previewImage: cutterImage,
-                      previewAspectRatio: "1037/736",
-                      previewRotateCcw90: true,
-                    })
-                  }
-                />
-              </div>
-            )}
-            <div className="flex items-start gap-3 ml-2.5">
-              <div className="flex items-center gap-2 flex-wrap flex-1">
-                {visibleCards.map((card, idx) => {
-                  const isSequenceCard = sequencePointer != null && idx < 3;
-                  let image: string;
-                  let border: string;
-                  let dimmed = false;
-
-                  if (isSequenceCard) {
-                    if (idx < sequencePointer) {
-                      image = NUMBER_CARD_BACK;
-                      border = "border-gray-600";
-                      dimmed = true;
-                    } else if (idx === sequencePointer) {
-                      image = getNumberCardImage(card.value);
-                      border = "border-emerald-400";
-                    } else {
-                      image = getNumberCardImage(card.value);
-                      border = "border-amber-500";
-                    }
-                  } else {
-                    image = card.faceUp
-                      ? getNumberCardImage(card.value)
-                      : NUMBER_CARD_BACK;
-                    border = card.faceUp ? "border-blue-400" : "border-gray-600";
-                    dimmed = !card.faceUp;
-                  }
-
-                  return (
-                    <CampaignCardThumbnail
-                      key={card.id}
-                      image={image}
-                      borderColor={border}
-                      dimmed={dimmed}
-                      onClick={() =>
-                        setPreviewCard({
-                          name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
-                          previewImage: image,
-                          detailSubtitle: card.faceUp
-                            ? `Value: ${card.value}`
-                            : "This card is face down.",
-                        })
-                      }
-                    />
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {deckCount > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative w-12 shrink-0" style={{ aspectRatio: "739/1040" }}>
-                      <div className="absolute inset-0 rounded-md border border-gray-600 bg-gray-800" />
-                      <div className="absolute -top-0.5 -left-0.5 w-12 rounded-md border border-gray-600 bg-gray-700" style={{ aspectRatio: "739/1040" }} />
-                    </div>
-                    <span className="text-xs text-gray-400 font-semibold">{deckCount}</span>
-                  </div>
-                )}
-                {discardCount > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-12 shrink-0 rounded-md border border-gray-700 bg-gray-900/50 opacity-50" style={{ aspectRatio: "739/1040" }} />
-                    <span className="text-xs text-gray-500 font-semibold">{discardCount}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
           <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
@@ -624,10 +648,15 @@ export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) 
       {showSequence && !showCampaignObjects && <SequencePriorityHint gameState={gameState} />}
       {showEquipmentLocks && <EquipmentSecondaryLocksHint gameState={gameState} />}
       {showCampaignObjects && (
+        <NumberCardsHint
+          gameState={gameState}
+          sequencePointer={showSequence ? (gameState.campaign?.specialMarkers?.find(m => m.kind === "sequence_pointer")?.value ?? 0) : null}
+        />
+      )}
+      {showCampaignObjects && (
         <CampaignObjectsHint
           gameState={gameState}
           sequencePointer={showSequence ? (gameState.campaign?.specialMarkers?.find(m => m.kind === "sequence_pointer")?.value ?? 0) : null}
-          hideNumberCards={false}
         />
       )}
     </div>
