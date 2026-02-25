@@ -2,6 +2,7 @@ import type {
   ActionLegalityCode,
   AnyEquipmentId,
   BaseEquipmentId,
+  CaptainMode,
   CharacterId,
   ChatMessage,
   ClientGameState,
@@ -50,6 +51,8 @@ export type ClientMessage =
       positionMs: number;
       durationMs?: number;
     }
+  | { type: "setCaptainMode"; mode: CaptainMode }
+  | { type: "selectCaptain"; playerId: string }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
   | { type: "chat"; text: string };

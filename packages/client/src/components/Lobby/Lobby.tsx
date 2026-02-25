@@ -1,4 +1,4 @@
-import type { CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
+import type { CaptainMode, CharacterId, ClientMessage, LobbyState, MissionId, PlayerCount } from "@bomb-busters/shared";
 import { ALL_MISSION_IDS, CHARACTER_CARD_TEXT, MISSIONS, MISSION_SCHEMAS, RULE_STICKER_IMAGES } from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
@@ -149,6 +149,13 @@ export function Lobby({
                 )}
               </div>
             </div>
+
+            {/* Captain Mode */}
+            <CaptainModeSelector
+              lobby={lobby}
+              isHost={isHost}
+              send={send}
+            />
 
             {/* Character Selection (missions 31+) */}
             <CharacterSelector
@@ -466,6 +473,83 @@ function RuleStickerBanner({ mission }: { mission: MissionId }) {
       {stickers.map((s) => (
         <img key={s.key} src={`/images/${s.image}`} alt={s.label} title={s.label} className="w-full rounded-md" />
       ))}
+    </div>
+  );
+}
+
+function CaptainModeSelector({
+  lobby,
+  isHost,
+  send,
+}: {
+  lobby: LobbyState;
+  isHost: boolean;
+  send: (msg: ClientMessage) => void;
+}) {
+  const mode = lobby.captainMode;
+  const selectedId = lobby.selectedCaptainId;
+
+  return (
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 space-y-3">
+      <h2 className="text-sm font-bold text-gray-400 uppercase">Captain</h2>
+
+      {/* Mode toggle (host only can change) */}
+      <div className="flex gap-2">
+        {(["random", "selection"] as CaptainMode[]).map((m) => (
+          <button
+            key={m}
+            onClick={() => isHost && send({ type: "setCaptainMode", mode: m })}
+            disabled={!isHost}
+            className={`flex-1 ${btnSmall} transition-all ${
+              mode === m
+                ? "bg-yellow-600 border-yellow-800 text-white"
+                : isHost
+                  ? "bg-[var(--color-bomb-dark)] border-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white"
+                  : "bg-[var(--color-bomb-dark)] border-gray-700 text-gray-500 cursor-default"
+            }`}
+          >
+            {m === "random" ? "Random" : "Selection"}
+          </button>
+        ))}
+      </div>
+
+      {/* Player list for selection mode */}
+      {mode === "selection" && (
+        <div className="space-y-1.5">
+          <p className="text-xs text-gray-500">
+            {isHost ? "Choose who will be captain:" : "Host is choosing captain:"}
+          </p>
+          {lobby.players.map((p) => {
+            const isCaptain = p.id === selectedId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => isHost && send({ type: "selectCaptain", playerId: p.id })}
+                disabled={!isHost}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+                  isCaptain
+                    ? "bg-yellow-900/40 border border-yellow-600 text-yellow-300"
+                    : isHost
+                      ? "bg-[var(--color-bomb-dark)] border border-gray-700 text-gray-300 hover:border-yellow-700"
+                      : "bg-[var(--color-bomb-dark)] border border-gray-700 text-gray-400 cursor-default"
+                }`}
+              >
+                <span className={`text-base ${isCaptain ? "text-yellow-400" : "text-gray-600"}`}>
+                  {isCaptain ? "\u2605" : "\u2606"}
+                </span>
+                <span className="flex-1 text-left">{p.name}</span>
+                {isCaptain && (
+                  <span className="text-xs bg-yellow-700 px-2 py-0.5 rounded font-bold">CAPTAIN</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {mode === "random" && (
+        <p className="text-xs text-gray-500">Captain and player order will be randomized at game start.</p>
+      )}
     </div>
   );
 }

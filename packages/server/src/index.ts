@@ -103,6 +103,8 @@ export class BombBustersServer extends Server<Env> {
     players: [],
     mission: 1,
     hostId: null,
+    captainMode: "random",
+    selectedCaptainId: null,
     botCount: 0,
     botLastActionTurn: {},
     failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
@@ -313,6 +315,12 @@ export class BombBustersServer extends Server<Env> {
           msg.durationMs,
         );
         break;
+      case "setCaptainMode":
+        this.handleSetCaptainMode(connection, msg.mode);
+        break;
+      case "selectCaptain":
+        this.handleSelectCaptain(connection, msg.playerId);
+        break;
       case "addBot":
         this.handleAddBot(connection);
         break;
@@ -496,6 +504,39 @@ export class BombBustersServer extends Server<Env> {
     this.broadcastLobby();
   }
 
+  handleSetCaptainMode(conn: Connection, mode: "random" | "selection") {
+    if (this.room.gameState) return;
+    if (conn.id !== this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Only the host can change captain mode" });
+      return;
+    }
+    this.room.captainMode = mode;
+    if (mode === "random") {
+      this.room.selectedCaptainId = null;
+    }
+    this.saveState();
+    this.broadcastLobby();
+  }
+
+  handleSelectCaptain(conn: Connection, playerId: string) {
+    if (this.room.gameState) return;
+    if (conn.id !== this.room.hostId) {
+      this.sendMsg(conn, { type: "error", message: "Only the host can select the captain" });
+      return;
+    }
+    if (this.room.captainMode !== "selection") {
+      this.sendMsg(conn, { type: "error", message: "Captain selection is only available in selection mode" });
+      return;
+    }
+    if (!this.room.players.some((p) => p.id === playerId)) {
+      this.sendMsg(conn, { type: "error", message: "Player not found" });
+      return;
+    }
+    this.room.selectedCaptainId = playerId;
+    this.saveState();
+    this.broadcastLobby();
+  }
+
   handleStartGame(conn: Connection) {
     if (this.room.gameState) return;
     if (conn.id !== this.room.hostId) {
@@ -515,6 +556,12 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    // Shuffle player order (Fisher-Yates) — randomizes turn order
+    for (let i = this.room.players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.room.players[i], this.room.players[j]] = [this.room.players[j], this.room.players[i]];
+    }
+
     // Randomly assign characters to players
     const allCharacters: CharacterId[] = [
       "double_detector",
@@ -532,8 +579,16 @@ export class BombBustersServer extends Server<Env> {
       this.room.players[i].character = allCharacters[i];
     }
 
-    // Assign captain (first player / host)
-    const captainIndex = 0;
+    // Assign captain based on mode
+    let captainIndex: number;
+    if (this.room.captainMode === "selection" && this.room.selectedCaptainId) {
+      const selectedIdx = this.room.players.findIndex(
+        (p) => p.id === this.room.selectedCaptainId,
+      );
+      captainIndex = selectedIdx >= 0 ? selectedIdx : Math.floor(Math.random() * this.room.players.length);
+    } else {
+      captainIndex = Math.floor(Math.random() * this.room.players.length);
+    }
     for (let i = 0; i < this.room.players.length; i++) {
       this.room.players[i].isCaptain = i === captainIndex;
     }
@@ -1476,6 +1531,8 @@ export class BombBustersServer extends Server<Env> {
           players: [],
           mission: 1,
           hostId: null,
+          captainMode: "random",
+          selectedCaptainId: null,
           botCount: 0,
           botLastActionTurn: {},
           failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
@@ -1880,6 +1937,8 @@ export class BombBustersServer extends Server<Env> {
       this.room.players,
       this.room.mission,
       this.room.hostId ?? "",
+      this.room.captainMode,
+      this.room.selectedCaptainId,
     );
     const msg: ServerMessage = { type: "lobby", state: lobbyState };
     const json = JSON.stringify(msg);

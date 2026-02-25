@@ -296,6 +296,8 @@ export function createLobbyState(
   players: Player[],
   mission: number,
   hostId: string,
+  captainMode: "random" | "selection" = "random",
+  selectedCaptainId: string | null = null,
 ): LobbyState {
   return {
     roomId,
@@ -309,5 +311,7 @@ export function createLobbyState(
     })),
     mission: mission as any,
     hostId,
+    captainMode,
+    selectedCaptainId,
   };
 }

@@ -28,6 +28,8 @@ export interface RoomStateSnapshot {
   players: Player[];
   mission: MissionId;
   hostId: string | null;
+  captainMode: "random" | "selection";
+  selectedCaptainId: string | null;
   botCount: number;
   botLastActionTurn: Record<string, number>;
   failureCounters: FailureCounters;
@@ -39,6 +41,8 @@ const DEFAULT_ROOM_STATE: RoomStateSnapshot = {
   players: [],
   mission: 1,
   hostId: null,
+  captainMode: "random",
+  selectedCaptainId: null,
   botCount: 0,
   botLastActionTurn: {},
   failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
@@ -648,6 +652,13 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
 
   const failureCounters = normalizeFailureCounters(raw.failureCounters);
 
+  const captainMode =
+    raw.captainMode === "random" || raw.captainMode === "selection"
+      ? raw.captainMode
+      : "random";
+  const selectedCaptainId =
+    typeof raw.selectedCaptainId === "string" ? raw.selectedCaptainId : null;
+
   const finishedAt =
     typeof raw.finishedAt === "number" && Number.isFinite(raw.finishedAt)
       ? raw.finishedAt
@@ -658,6 +669,8 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
     players,
     mission,
     hostId,
+    captainMode,
+    selectedCaptainId,
     botCount,
     botLastActionTurn,
     failureCounters,

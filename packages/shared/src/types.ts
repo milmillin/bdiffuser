@@ -596,11 +596,15 @@ export interface ClientPlayer {
 
 // ── Lobby State ─────────────────────────────────────────────
 
+export type CaptainMode = "random" | "selection";
+
 export interface LobbyState {
   roomId: string;
   players: LobbyPlayer[];
   mission: MissionId;
   hostId: string;
+  captainMode: CaptainMode;
+  selectedCaptainId: string | null;
 }
 
 export interface LobbyPlayer {
