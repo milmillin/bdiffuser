@@ -1877,13 +1877,33 @@ registerHookHandler<"nano_progression">("nano_progression", {
     }
 
     const invalid = attemptedValues.find((value) => !legalValues.has(value));
-    if (invalid === undefined) return;
+    if (invalid !== undefined) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          `Mission 59: cut value ${invalid} is not on Nano's current line segment`,
+      };
+    }
 
-    return {
-      validationCode: "MISSION_RULE_VIOLATION",
-      validationError:
-        `Mission 59: cut value ${invalid} is not on Nano's current line segment`,
-    };
+    const mission59Nano = getMission59NanoState(ctx.state);
+    const currentLineValue = mission59Nano == null || !ctx.state.campaign?.numberCards?.visible
+      ? null
+      : ctx.state.campaign.numberCards.visible[mission59Nano.position]?.value;
+
+    const actorHasUncutValue = (value: number): boolean =>
+      actor.hand.some((tile) => !tile.cut && tile.gameValue === value);
+
+    const requiresMovementByValueInHand = attemptedValues.some(
+      (value) => value !== currentLineValue && !actorHasUncutValue(value),
+    );
+
+    if (requiresMovementByValueInHand) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          "Mission 59: you may only cut a non-current Nano value if that value is in your uncut hand",
+      };
+    }
   },
 
   resolve(rule: NanoProgressionRuleDef, ctx: ResolveHookContext): void {

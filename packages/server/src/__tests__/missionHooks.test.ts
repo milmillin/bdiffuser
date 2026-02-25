@@ -2508,6 +2508,73 @@ describe("missionHooks dispatcher", () => {
       expect(allowed.validationError).toBeUndefined();
     });
 
+    it("mission 59: allows dual cuts on Nano current value without hand match, but requires hand match for movement values", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-1", gameValue: 1, cut: false })],
+      });
+      const target = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", gameValue: 5, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor, target],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: true },
+              { id: "m59-v2", value: 2, faceUp: true },
+              { id: "m59-v3", value: 3, faceUp: true },
+              { id: "m59-v4", value: 4, faceUp: true },
+              { id: "m59-v5", value: 5, faceUp: true },
+              { id: "m59-v6", value: 6, faceUp: true },
+              { id: "m59-v7", value: 7, faceUp: true },
+              { id: "m59-v8", value: 8, faceUp: true },
+              { id: "m59-v9", value: 9, faceUp: true },
+              { id: "m59-v10", value: 10, faceUp: true },
+              { id: "m59-v11", value: 11, faceUp: true },
+              { id: "m59-v12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "p1",
+          targetPlayerId: "p2",
+          targetTileIndex: 0,
+          guessValue: 5,
+        },
+      });
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("non-current Nano value");
+
+      const allowed = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "p1",
+          targetPlayerId: "p2",
+          targetTileIndex: 0,
+          guessValue: 7,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
+    });
+
     it("mission 26: blocks revealReds even when a matching visible number exists", () => {
       const actor = makePlayer({
         id: "p1",
