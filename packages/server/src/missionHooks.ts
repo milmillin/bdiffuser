@@ -3478,6 +3478,94 @@ function rotateMission37Constraint(state: GameState): boolean {
   return true;
 }
 
+export function rotateMission61Constraint(
+  state: GameState,
+  direction: "clockwise" | "counter_clockwise",
+): boolean {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return false;
+
+  const activeIndex = constraints.global.findIndex((constraint) => constraint.active);
+  if (activeIndex < 0) return false;
+
+  const deck = constraints.deck;
+  if (!Array.isArray(deck) || deck.length === 0) return false;
+
+  const active = constraints.global[activeIndex];
+  if (direction === "clockwise") {
+    const next = deck.shift();
+    if (!next) return false;
+    active.active = false;
+    deck.push(active);
+    constraints.global[activeIndex] = {
+      ...next,
+      active: true,
+    };
+  } else {
+    const next = deck.pop();
+    if (!next) return false;
+    active.active = false;
+    deck.unshift(active);
+    constraints.global[activeIndex] = {
+      ...next,
+      active: true,
+    };
+  }
+
+  return true;
+}
+
+export function resolveMission61AfterConstraintDecision(
+  state: GameState,
+  previousPlayerId?: string,
+): void {
+  if (state.mission !== 61 || state.phase === "finished") return;
+
+  const playerCount = state.players.length;
+  const activePlayerCount = state.players.filter((player) =>
+    player.hand.some((tile) => !tile.cut)
+  ).length;
+  if (playerCount === 0 || activePlayerCount === 0) return;
+
+  const skippedPlayers = new Set<number>();
+  while (skippedPlayers.size < activePlayerCount) {
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    if (canPlayerPlayMission61(state, currentPlayer)) {
+      return;
+    }
+
+    skippedPlayers.add(state.currentPlayerIndex);
+    state.turnNumber += 1;
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: currentPlayer.id,
+      action: "hookEffect",
+      detail: `mission61:auto_skip|player=${currentPlayer.id}`,
+      timestamp: Date.now(),
+    });
+
+    const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+    if (nextPlayerIndex == null) break;
+
+    state.currentPlayerIndex = nextPlayerIndex;
+  }
+
+  if (skippedPlayers.size >= activePlayerCount) {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: previousPlayerId ?? "system",
+      action: "hookEffect",
+      detail: `mission61:round_stalled|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", previousPlayerId ?? "system", null);
+  }
+}
+
 function canPlayerPlayMission37(
   state: Readonly<GameState>,
   player: Readonly<Player>,
@@ -3915,50 +4003,28 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
 
   endTurn(_rule: ConstraintEnforcementRuleDef, ctx: EndTurnHookContext): void {
     if (ctx.state.mission === 61 && ctx.state.phase !== "finished") {
-      const playerCount = ctx.state.players.length;
-      const activePlayerCount = ctx.state.players.filter((player) =>
-        player.hand.some((tile) => !tile.cut)
-      ).length;
-      if (playerCount === 0 || activePlayerCount === 0) return;
+      const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!currentPlayer) return;
 
-      const skippedPlayers = new Set<number>();
-      while (skippedPlayers.size < activePlayerCount) {
-        const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
-        if (!currentPlayer) return;
-
-        if (canPlayerPlayMission61(ctx.state, currentPlayer)) {
-          return;
-        }
-
-        skippedPlayers.add(ctx.state.currentPlayerIndex);
-        ctx.state.turnNumber += 1;
-        pushGameLog(ctx.state, {
-          turn: ctx.state.turnNumber,
-          playerId: currentPlayer.id,
-          action: "hookEffect",
-          detail: `mission61:auto_skip|player=${currentPlayer.id}`,
-          timestamp: Date.now(),
-        });
-
-        const nextPlayerIndex = findNextUncutPlayerIndex(ctx.state, ctx.state.currentPlayerIndex);
-        if (nextPlayerIndex == null) break;
-
-        ctx.state.currentPlayerIndex = nextPlayerIndex;
+      if (
+        currentPlayer.isCaptain &&
+        (!ctx.state.pendingForcedAction ||
+          ctx.state.pendingForcedAction.kind !== "mission61ConstraintRotate")
+      ) {
+        ctx.state.pendingForcedAction = {
+          kind: "mission61ConstraintRotate",
+          captainId: currentPlayer.id,
+          direction: "clockwise",
+          ...(ctx.previousPlayerId ? { previousPlayerId: ctx.previousPlayerId } : {}),
+        };
+        return;
       }
 
-      if (skippedPlayers.size >= activePlayerCount) {
-        const previousPlayerId = ctx.previousPlayerId;
-        pushGameLog(ctx.state, {
-          turn: ctx.state.turnNumber,
-          playerId: previousPlayerId ?? "system",
-          action: "hookEffect",
-          detail: `mission61:round_stalled|detonator=${ctx.state.board.detonatorPosition}`,
-          timestamp: Date.now(),
-        });
-        ctx.state.result = "loss_detonator";
-        ctx.state.phase = "finished";
-        emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
+      if (ctx.state.pendingForcedAction?.kind === "mission61ConstraintRotate") {
+        return;
       }
+
+      resolveMission61AfterConstraintDecision(ctx.state, ctx.previousPlayerId);
 
       return;
     }

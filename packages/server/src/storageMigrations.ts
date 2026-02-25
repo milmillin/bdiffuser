@@ -555,6 +555,23 @@ function normalizeGameState(
         playerId: obj.pendingForcedAction.playerId,
       };
     } else if (
+      obj.pendingForcedAction.kind === "mission61ConstraintRotate"
+      && typeof obj.pendingForcedAction.captainId === "string"
+      && obj.pendingForcedAction.captainId
+    ) {
+      pendingForcedAction = {
+        kind: "mission61ConstraintRotate" as const,
+        captainId: obj.pendingForcedAction.captainId,
+        direction:
+          obj.pendingForcedAction.direction === "counter_clockwise"
+            ? "counter_clockwise"
+            : "clockwise",
+        ...(typeof obj.pendingForcedAction.previousPlayerId === "string"
+          && obj.pendingForcedAction.previousPlayerId
+            ? { previousPlayerId: obj.pendingForcedAction.previousPlayerId }
+            : {}),
+      };
+    } else if (
       obj.pendingForcedAction.kind === "detectorTileChoice"
       && typeof obj.pendingForcedAction.targetPlayerId === "string"
       && obj.pendingForcedAction.targetPlayerId

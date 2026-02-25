@@ -210,7 +210,8 @@ export type BotAction =
       guessValue: number;
     }
   | { action: "chooseNextPlayer"; targetPlayerId: string }
-  | { action: "designateCutter"; targetPlayerId: string };
+  | { action: "designateCutter"; targetPlayerId: string }
+  | { action: "mission61ConstraintRotate"; direction: "clockwise" | "counter_clockwise" };
 
 export interface BotActionResult {
   action: BotAction;
@@ -239,6 +240,11 @@ export async function getBotAction(
   const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
   if (forcedMission46Action) {
     return { action: forcedMission46Action, reasoning: null };
+  }
+
+  const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
+  if (forcedMission61Action) {
+    return { action: forcedMission61Action, reasoning: null };
   }
 
   const filtered = filterStateForPlayer(state, botId);
@@ -400,6 +406,12 @@ function parseLLMAction(
     return { action: "designateCutter", targetPlayerId };
   }
 
+  if (action === "mission61ConstraintRotate") {
+    const direction = result.direction as string;
+    if (direction !== "clockwise" && direction !== "counter_clockwise") return null;
+    return { action: "mission61ConstraintRotate", direction };
+  }
+
   return null;
 }
 
@@ -470,6 +482,16 @@ function validateBotAction(
       if (!target) return "Target player not found";
       if (!target.hand.some((t) => !t.cut)) {
         return "Target player has no remaining tiles";
+      }
+      return null;
+    }
+    case "mission61ConstraintRotate": {
+      const forced = state.pendingForcedAction;
+      if (!forced || forced.kind !== "mission61ConstraintRotate") {
+        return "No pending mission61 constraint-rotate action";
+      }
+      if (forced.captainId !== botId) {
+        return "Only the captain can rotate constraints on mission 61";
       }
       return null;
     }
@@ -544,6 +566,21 @@ function getForcedMission46SevensCutAction(
   if (!targets) return null;
 
   return { action: "simultaneousFourCut" };
+}
+
+function getForcedMission61ConstraintRotateAction(
+  state: GameState,
+  botId: string,
+): BotAction | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission61ConstraintRotate") return null;
+  if (forced.captainId !== botId) return null;
+
+  const direction =
+    forced.direction === "clockwise" || forced.direction === "counter_clockwise"
+      ? forced.direction
+      : "clockwise";
+  return { action: "mission61ConstraintRotate", direction };
 }
 
 function collectBotGuessValues(
@@ -631,6 +668,11 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
   if (forcedMission46Action) {
     return forcedMission46Action;
+  }
+
+  const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
+  if (forcedMission61Action) {
+    return forcedMission61Action;
   }
 
   const bot = state.players.find((p) => p.id === botId)!;

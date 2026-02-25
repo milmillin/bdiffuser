@@ -56,6 +56,8 @@ import {
 import {
   dispatchHooks,
   emitMissionFailureTelemetry,
+  rotateMission61Constraint,
+  resolveMission61AfterConstraintDecision,
 } from "./missionHooks.js";
 import {
   createBotPlayer,
@@ -407,6 +409,9 @@ export class BombBustersServer extends Server<Env> {
       case "talkiesWalkiesChoice":
         this.handleTalkiesWalkiesChoice(connection, msg.tileIndex);
         break;
+      case "mission61ConstraintRotate":
+        this.handleMission61ConstraintRotate(connection, msg.direction);
+        break;
       case "missionAudioControl":
         this.handleMissionAudioControl(
           connection,
@@ -492,6 +497,13 @@ export class BombBustersServer extends Server<Env> {
           }
           if (gs.pendingForcedAction.actorId === oldId) {
             gs.pendingForcedAction.actorId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission61ConstraintRotate") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
+          }
+          if (gs.pendingForcedAction.previousPlayerId === oldId) {
+            gs.pendingForcedAction.previousPlayerId = newId;
           }
         }
       }
@@ -1436,6 +1448,67 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleMission61ConstraintRotate(
+    conn: Connection,
+    direction: "clockwise" | "counter_clockwise",
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot rotate constraints: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Constraint rotation is only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission61ConstraintRotate") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "No pending Mission 61 constraint rotation request",
+      });
+      return;
+    }
+    if (forced.captainId !== conn.id) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the captain can rotate constraints on Mission 61",
+      });
+      return;
+    }
+
+    const applied = rotateMission61Constraint(state, direction);
+    if (!applied) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Constraint rotation could not be completed.",
+      });
+      return;
+    }
+
+    const captain = state.players.find((p) => p.id === forced.captainId);
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: forced.captainId,
+      action: "hookEffect",
+      detail: `mission61:constraints_rotated|direction=${direction}|captain=${captain?.name ?? forced.captainId}`,
+      timestamp: Date.now(),
+    });
+
+    state.pendingForcedAction = undefined;
+    resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   private executeMission22TokenPass(
     state: GameState,
     forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission22TokenPass" }>,
@@ -1844,40 +1917,43 @@ export class BombBustersServer extends Server<Env> {
     ) {
       const forced = state.pendingForcedAction;
 
-      // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only)
-      if (state.phase === "playing") {
-        // For choose/designate forced actions, currentPlayer remains the decider.
-        if (
+      // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only).
+      // For forced actions that keep the turn on the decider, currentPlayer
+      // remains the one to act.
+      if (
+        state.phase === "playing" &&
+        (
           !forced
           || forced.kind === "chooseNextPlayer"
           || forced.kind === "designateCutter"
-        ) {
-          const currentPlayer = state.players[state.currentPlayerIndex];
-          if (currentPlayer?.isBot) {
-            const botMs = Date.now() + 1500;
-            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
-          }
+          || forced.kind === "mission61ConstraintRotate"
+        )
+      ) {
+        const currentPlayer = state.players[state.currentPlayerIndex];
+        if (currentPlayer?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
+      }
 
-        // Mission 22 token pass: schedule alarm if current chooser is a bot
-        if (forced?.kind === "mission22TokenPass") {
-          const chooser = state.players.find((p) => p.id === forced.currentChooserId);
-          if (chooser?.isBot) {
-            const botMs = Date.now() + 1500;
-            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
-          }
-        } else if (forced?.kind === "detectorTileChoice") {
-          const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
-          if (chooser?.isBot) {
-            const botMs = Date.now() + 1500;
-            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
-          }
-        } else if (forced?.kind === "talkiesWalkiesTileChoice") {
-          const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
-          if (chooser?.isBot) {
-            const botMs = Date.now() + 1500;
-            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
-          }
+      // Mission 22 token pass: schedule alarm if current chooser is a bot
+      if (forced?.kind === "mission22TokenPass") {
+        const chooser = state.players.find((p) => p.id === forced.currentChooserId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
+      } else if (forced?.kind === "detectorTileChoice") {
+        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
+      } else if (forced?.kind === "talkiesWalkiesTileChoice") {
+        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
       }
 
@@ -2167,6 +2243,44 @@ export class BombBustersServer extends Server<Env> {
 
         state.pendingForcedAction = undefined;
         state.currentPlayerIndex = targetIndex;
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      case "mission61ConstraintRotate": {
+        const forced = state.pendingForcedAction;
+        if (!forced || forced.kind !== "mission61ConstraintRotate") {
+          console.log(`Bot ${botId} mission61ConstraintRotate ignored: no pending forced action`);
+          return;
+        }
+        if (forced.captainId !== botId) {
+          console.log(`Bot ${botId} mission61ConstraintRotate rejected: bot is not forced-action captain`);
+          return;
+        }
+
+        const applied = rotateMission61Constraint(state, botAction.direction);
+        if (!applied) {
+          console.log(`Bot ${botId} mission61ConstraintRotate rejected: constraint rotation failed`);
+          state.pendingForcedAction = undefined;
+          resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+          this.saveState();
+          this.broadcastGameState();
+          this.scheduleBotTurnIfNeeded();
+          return;
+        }
+
+        const captain = state.players.find((p) => p.id === forced.captainId);
+        pushGameLog(state, {
+          turn: state.turnNumber,
+          playerId: forced.captainId,
+          action: "hookEffect",
+          detail: `mission61:constraints_rotated|direction=${botAction.direction}|captain=${captain?.name ?? forced.captainId}`,
+          timestamp: Date.now(),
+        });
+
+        state.pendingForcedAction = undefined;
+        resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
         this.saveState();
         this.broadcastGameState();
         this.scheduleBotTurnIfNeeded();

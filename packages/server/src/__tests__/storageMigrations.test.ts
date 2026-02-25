@@ -543,6 +543,56 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves mission61 constraint-rotate forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 7,
+        mission: 61,
+        result: null,
+        pendingForcedAction: {
+          kind: "mission61ConstraintRotate",
+          captainId: "captain",
+          direction: "counter_clockwise",
+          previousPlayerId: "p2",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f5");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission61ConstraintRotate",
+      captainId: "captain",
+      direction: "counter_clockwise",
+      previousPlayerId: "p2",
+    });
+  });
+
   it("preserves detector tile-choice forced action state across restore", () => {
     const legacy = {
       gameState: {
