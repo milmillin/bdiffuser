@@ -2594,9 +2594,13 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/stats") {
-      const id = env.StatsServer.idFromName("global");
-      const stub = env.StatsServer.get(id);
-      return stub.fetch(request);
+      try {
+        const id = env.StatsServer.idFromName("global");
+        const stub = env.StatsServer.get(id);
+        return await stub.fetch(request);
+      } catch (e) {
+        return new Response(String(e), { status: 500 });
+      }
     }
 
     return (
