@@ -200,6 +200,9 @@ export function GameBoard({
   const [selectedGuessTile, setSelectedGuessTile] = useState<number | null>(
     null,
   );
+  const [selectedDualCutGuessValue, setSelectedDualCutGuessValue] = useState<
+    number | "YELLOW" | null
+  >(null);
 
   // Staged action requiring explicit Confirm / Cancel.
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -369,6 +372,7 @@ export function GameBoard({
     // Mission 46 forced action supersedes any staged normal action.
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setEquipmentMode(null);
     setSelectedDockCardId(null);
   }, [mission46ForcedForMe]);
@@ -554,11 +558,18 @@ export function GameBoard({
     return isMission26CutValueVisible(gameState, value);
   };
   const selectedGuessValue =
-    selectedGuessTile != null ? me?.hand[selectedGuessTile]?.gameValue : null;
+    selectedGuessTile != null
+      ? (me?.hand[selectedGuessTile]?.gameValue ?? null)
+      : null;
+  const normalizedSelectedGuessValue =
+    selectedGuessValue === "RED" ? null : selectedGuessValue;
+  const activeDualCutGuessValue =
+    selectedDualCutGuessValue != null
+      ? selectedDualCutGuessValue
+      : normalizedSelectedGuessValue;
   const mission9SelectedGuessBlocked =
-    selectedGuessValue != null &&
-    selectedGuessValue !== "RED" &&
-    isMission9BlockedValue(selectedGuessValue);
+    activeDualCutGuessValue != null &&
+    isMission9BlockedValue(activeDualCutGuessValue);
   const mission49DefaultRecipientId = useMemo(() => {
     if (gameState.mission !== 49) return undefined;
     const actorIndex = gameState.players.findIndex((player) =>
@@ -603,11 +614,13 @@ export function GameBoard({
         targetPlayerId: mission49DefaultRecipientId,
       });
       setSelectedGuessTile(null);
+      setSelectedDualCutGuessValue(null);
       setSelectedDockCardId(null);
       return;
     }
     send({ type: "soloCut", value: selectedGuessValue });
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   }, [
     canConfirmSoloFromDraft,
@@ -695,6 +708,7 @@ export function GameBoard({
     setEquipmentMode(null);
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
@@ -706,6 +720,7 @@ export function GameBoard({
       prev?.kind === "reveal_reds" ? prev : null,
     );
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
   }, [revealRedsForced, missionSpecialCanBypassForcedReveal]);
 
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
@@ -867,6 +882,7 @@ export function GameBoard({
         immediatePayload,
       });
       setSelectedGuessTile(null);
+      setSelectedDualCutGuessValue(null);
       return true;
     }
 
@@ -874,6 +890,7 @@ export function GameBoard({
     if (!modeOnConfirm) return false;
     setEquipmentMode(modeOnConfirm);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     return true;
   };
 
@@ -886,6 +903,7 @@ export function GameBoard({
       guessTileIndex: null,
     });
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     return true;
   };
 
@@ -908,6 +926,7 @@ export function GameBoard({
   const cancelPendingAction = () => {
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   };
 
@@ -924,6 +943,7 @@ export function GameBoard({
       actorTileIndex,
     });
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   };
 
@@ -975,6 +995,7 @@ export function GameBoard({
     setMissionSpecialMode(true);
     setMissionSpecialTargets([]);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setPendingAction(null);
     setSelectedDockCardId(null);
     setEquipmentMode(null);
@@ -996,6 +1017,7 @@ export function GameBoard({
     setMissionSpecialTargets([]);
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   }, [missionSpecialMode, missionSpecialTargets, send, missionSpecialTargetCount]);
 
@@ -1005,6 +1027,7 @@ export function GameBoard({
     setMission46Targets([]);
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   }, [mission46ForcedForMe, mission46Targets, send]);
 
@@ -1013,6 +1036,7 @@ export function GameBoard({
     setEquipmentMode(null);
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
   }, []);
 
   const confirmPendingAction = () => {
@@ -1058,6 +1082,7 @@ export function GameBoard({
 
     setPendingAction(null);
     setSelectedGuessTile(null);
+    setSelectedDualCutGuessValue(null);
     setSelectedDockCardId(null);
   };
 
@@ -1145,12 +1170,8 @@ export function GameBoard({
                                     !revealRedsForced &&
                                     !pendingAction
                               ? (tileIndex) => {
-                              const guessValue = me?.hand[selectedGuessTile]?.gameValue;
-                              if (
-                                guessValue == null ||
-                                guessValue === "RED" ||
-                                typeof guessValue === "undefined"
-                              ) {
+                              const guessValue = activeDualCutGuessValue;
+                              if (guessValue == null) {
                                 return;
                               }
                               if (!isVisibleMission26CutValue(guessValue)) return;
@@ -1452,6 +1473,7 @@ export function GameBoard({
                     pendingAction={pendingAction}
                     selectedGuessTile={selectedGuessTile}
                     selectedGuessValue={selectedGuessValue}
+                    activeDualCutGuessValue={activeDualCutGuessValue}
                     canConfirmSoloFromDraft={canConfirmSoloFromDraft}
                     mission9SelectedGuessBlocked={mission9SelectedGuessBlocked}
                     mission9ActiveValue={mission9ActiveValue}
@@ -1465,6 +1487,7 @@ export function GameBoard({
                     }
                     onMission11RevealAttempt={stageMission11RevealAttempt}
                     onConfirmSoloFromDraft={confirmSoloFromDraft}
+                    onDualCutGuessValueChange={(value) => setSelectedDualCutGuessValue(value)}
                     onMission49RecipientChange={(targetPlayerId) => {
                       if (pendingAction?.kind !== "solo_cut" &&
                         pendingAction?.kind !== "dual_cut") {
@@ -1613,7 +1636,7 @@ export function GameBoard({
                           : playingInteractionEnabled &&
                               isMyTurn
                             ? (tileIndex) => {
-                              if (pendingAction?.kind === "dual_cut") {
+                                if (pendingAction?.kind === "dual_cut") {
                                 if (tileIndex === pendingAction.actorTileIndex) return;
                                 const tile = me.hand[tileIndex];
                                 if (!tile || tile.cut || tile.color === "red") return;
@@ -1623,7 +1646,6 @@ export function GameBoard({
                                 setPendingAction({
                                   ...pendingAction,
                                   actorTileIndex: tileIndex,
-                                  guessValue: newGuessValue,
                                 });
                                 return;
                               }
@@ -1643,13 +1665,20 @@ export function GameBoard({
 
                               if (selectedGuessTile == null) {
                                 setSelectedGuessTile(tileIndex);
+                                setSelectedDualCutGuessValue(
+                                  tile.gameValue as number | "YELLOW",
+                                );
                                 return;
                               }
                               if (selectedGuessTile === tileIndex) {
                                 setSelectedGuessTile(null);
+                                setSelectedDualCutGuessValue(null);
                                 return;
                               }
                               setSelectedGuessTile(tileIndex);
+                              setSelectedDualCutGuessValue(
+                                tile.gameValue as number | "YELLOW",
+                              );
                             }
                           : undefined
                   }
@@ -2105,7 +2134,7 @@ function MissionSpecialThreeCutPanel({
   );
 }
 
-function PendingActionStrip({
+export function PendingActionStrip({
   players,
   actorId,
   mission,
@@ -2119,6 +2148,8 @@ function PendingActionStrip({
   canConfirm,
   onMission11RevealAttempt,
   onConfirmSoloFromDraft,
+  activeDualCutGuessValue,
+  onDualCutGuessValueChange,
   onConfirm,
   onCancel,
   onMission49RecipientChange,
@@ -2127,6 +2158,7 @@ function PendingActionStrip({
   pendingAction: PendingAction | null;
   selectedGuessTile: number | null;
   selectedGuessValue: ClientGameState["players"][number]["hand"][number]["gameValue"] | null;
+  activeDualCutGuessValue: number | "YELLOW" | null;
   canConfirmSoloFromDraft: boolean;
   mission9SelectedGuessBlocked: boolean;
   mission9ActiveValue?: number;
@@ -2136,6 +2168,7 @@ function PendingActionStrip({
   canConfirm: boolean;
   onMission11RevealAttempt: () => void;
   onConfirmSoloFromDraft: () => void;
+  onDualCutGuessValueChange: (value: number | "YELLOW") => void;
   onConfirm: () => void;
   onCancel: () => void;
   onMission49RecipientChange?: (targetPlayerId: string) => void;
@@ -2174,8 +2207,31 @@ function PendingActionStrip({
         </div>
         <div className={PANEL_TEXT_CLASS}>
           Selected your wire <span className="font-semibold">{wireLabel(selectedGuessTile)}</span>{" "}
-          (value {String(selectedGuessValue)}). Click an opponent wire for Dual Cut.
+          (value {String(activeDualCutGuessValue)}). Click an opponent wire for Dual Cut.
         </div>
+        {typeof activeDualCutGuessValue === "number" && (
+        <label className="mt-2 block text-xs text-sky-100/90">
+          Dual Cut announced value
+          <select
+            className="mt-1 w-full rounded bg-sky-900/60 border border-sky-500/60 text-sky-100 px-2 py-1 text-xs"
+            value={String(activeDualCutGuessValue)}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              if (!Number.isInteger(nextValue) || nextValue < 1 || nextValue > 12) {
+                return;
+              }
+              onDualCutGuessValueChange(nextValue);
+            }}
+            data-testid="dual-cut-guess-select"
+          >
+            {Array.from({ length: 12 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {index + 1}
+              </option>
+            ))}
+          </select>
+        </label>
+        )}
         {mission9SelectedGuessBlocked && (
           <div className={PANEL_SUBTEXT_CLASS}>
             Mission 9: this value cannot be used for Dual Cut right now
