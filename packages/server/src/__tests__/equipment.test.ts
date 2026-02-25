@@ -754,6 +754,45 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "label_eq", "MISSION_RULE_VIOLATION");
   });
 
+  it("mission 58: rejects Label ≠ because info tokens are disabled", () => {
+    const state = buildStateForEquipmentMatrix("label_neq");
+    state.mission = 58;
+
+    expectLegalityCode(state, "actor", "label_neq", "MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 58: rejects Single Wire Label because info tokens are disabled", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "blue", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 58,
+      players: [actor],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "single_wire_label",
+            name: "Single Wire Label",
+            unlockValue: 3,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+    state.mission = 58;
+
+    const error = validateUseEquipment(state, "actor", "single_wire_label", {
+      kind: "single_wire_label",
+      tileIndex: 0,
+    });
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it.each([38, 56, 64] as const)(
     "mission %i: rejects equipment that targets actor's flipped wire",
     (missionId) => {

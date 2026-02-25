@@ -835,6 +835,12 @@ export function validateUseEquipment(
     case "single_wire_label": {
       const tile = getTileByFlatIndex(actor, payload.tileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      if (state.mission === 58) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Mission 58 does not allow placing info tokens",
+        );
+      }
       if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
