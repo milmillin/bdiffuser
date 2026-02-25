@@ -797,6 +797,55 @@ function getOxygenCostForCut(rule: OxygenProgressionRuleDef, cutValue: number): 
   return Math.max(0, Math.floor(rule.perTurnCost));
 }
 
+function actorCanAffordAnyMission44Cut(
+  state: Readonly<GameState>,
+  actor: { id: string; hand: ReadonlyArray<WireTile> },
+  rule: OxygenProgressionRuleDef,
+): boolean {
+  const actorUncut = actor.hand.filter((tile) => !tile.cut);
+  if (actorUncut.length === 0) return false;
+
+  // If all remaining wires are RED, RevealReds remains legal and should not auto-skip.
+  const allRemainingRed = actorUncut.every((tile) => tile.gameValue === "RED");
+  if (allRemainingRed) return true;
+
+  const available = getAvailableOxygen(state, actor.id);
+  if (available <= 0) return false;
+
+  const affordableValues = new Set<number>();
+  for (const tile of actorUncut) {
+    if (typeof tile.gameValue === "number") {
+      affordableValues.add(Math.floor(tile.gameValue));
+    }
+  }
+
+  for (const value of affordableValues) {
+    if (getOxygenCostForCut(rule, value) <= available) return true;
+  }
+
+  return false;
+}
+
+function advanceToNextPlayerWithUncutTiles(
+  state: GameState,
+  currentPlayerIndex: number,
+): number {
+  const playerCount = state.players.length;
+  let next = currentPlayerIndex;
+  let attempts = 0;
+
+  while (attempts < playerCount) {
+    next = (next + 1) % playerCount;
+    attempts += 1;
+    const player = state.players[next];
+    if (!player) continue;
+    const uncutTiles = player.hand.filter((tile) => !tile.cut);
+    if (uncutTiles.length > 0) return next;
+  }
+
+  return -1;
+}
+
 function getAvailableOxygen(state: Readonly<GameState>, playerId: string): number {
   const oxygen = state.campaign?.oxygen;
   if (!oxygen) return 0;
@@ -1562,41 +1611,92 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
   },
 
   endTurn(rule: OxygenProgressionRuleDef, ctx: EndTurnHookContext): void {
-    if (rule.consumeOnCut) return;
-    if (ctx.state.phase === "finished") return;
-    const oxygen = ctx.state.campaign?.oxygen;
-    if (!oxygen) return;
+    if (!rule.consumeOnCut) {
+      if (ctx.state.phase === "finished") return;
+      const oxygen = ctx.state.campaign?.oxygen;
+      if (!oxygen) return;
 
-    const perTurnCost = Math.max(0, Math.floor(rule.perTurnCost));
-    const actorId = ctx.previousPlayerId ?? "system";
-    const { paid, deficit } = spendOxygenForTurn(ctx.state, perTurnCost, ctx.previousPlayerId);
+      const perTurnCost = Math.max(0, Math.floor(rule.perTurnCost));
+      const actorId = ctx.previousPlayerId ?? "system";
+      const { paid, deficit } = spendOxygenForTurn(ctx.state, perTurnCost, ctx.previousPlayerId);
 
-    if (rule.rotatePlayerOxygen) {
-      rotatePlayerOxygenClockwise(ctx.state);
+      if (rule.rotatePlayerOxygen) {
+        rotatePlayerOxygenClockwise(ctx.state);
+      }
+
+      if (deficit > 0) {
+        ctx.state.board.detonatorPosition += 1;
+        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+          ctx.state.result = "loss_detonator";
+          ctx.state.phase = "finished";
+          emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+        }
+      }
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail: [
+          `oxygen_progression:mode=endTurn`,
+          `cost=${perTurnCost}`,
+          `paid=${paid}`,
+          `deficit=${deficit}`,
+          `pool=${oxygen.pool}`,
+        ].join("|"),
+        timestamp: Date.now(),
+      });
+
+      return;
     }
 
-    if (deficit > 0) {
+    if (ctx.state.phase === "finished") return;
+    if (ctx.state.campaign?.oxygen == null) return;
+
+    const playerCount = ctx.state.players.length;
+    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+
+    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+      if (ctx.state.result != null) return;
+
+      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!actor) return;
+
+      const actorCanAct = actorCanAffordAnyMission44Cut(ctx.state, actor, rule);
+      if (actorCanAct) return;
+
+      const hasUncutTiles = actor.hand.some((tile) => !tile.cut);
+      if (!hasUncutTiles) return;
+
       ctx.state.board.detonatorPosition += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actor.id,
+        action: "hookEffect",
+        detail: `oxygen_progression:auto_skip|player=${actor.id}|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
       if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
         ctx.state.result = "loss_detonator";
         ctx.state.phase = "finished";
-        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actor.id, null);
+        return;
       }
-    }
 
-    pushGameLog(ctx.state, {
-      turn: ctx.state.turnNumber,
-      playerId: actorId,
-      action: "hookEffect",
-      detail: [
-        `oxygen_progression:mode=endTurn`,
-        `cost=${perTurnCost}`,
-        `paid=${paid}`,
-        `deficit=${deficit}`,
-        `pool=${oxygen.pool}`,
-      ].join("|"),
-      timestamp: Date.now(),
-    });
+      const nextPlayerIndex = advanceToNextPlayerWithUncutTiles(
+        ctx.state,
+        ctx.state.currentPlayerIndex,
+      );
+      if (nextPlayerIndex < 0) {
+        ctx.state.result = "win";
+        ctx.state.phase = "finished";
+        return;
+      }
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+      ctx.state.turnNumber += 1;
+    }
   },
 
   resolve(rule: OxygenProgressionRuleDef, ctx: ResolveHookContext): void {

@@ -137,6 +137,49 @@ describe("mission progression hooks", () => {
     expect(state.board.detonatorPosition).toBe(1);
   });
 
+  it("mission 44 endTurn auto-skips players with insufficient oxygen", () => {
+    const actor = makePlayer({
+      id: "p1",
+      hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
+    });
+    const next = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "p2-1", gameValue: 4, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 44,
+      log: [],
+      players: [actor, next],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 5 }),
+    });
+    dispatchHooks(44, { point: "setup", state });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 44 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 0;
+    state.campaign.oxygen.playerOxygen.p2 = 1;
+    state.campaign.oxygen.pool = 0;
+
+    dispatchHooks(44, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.turnNumber).toBe(2);
+    expect(state.board.detonatorPosition).toBe(2);
+    const autoSkipLog = state.log.find(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "oxygen_progression:auto_skip|player=p1|detonator=2",
+    );
+    expect(autoSkipLog).toBeDefined();
+  });
+
   it("mission 44 setup scales oxygen reserve by player count", () => {
     const cases: Array<{ playerCount: 2 | 3 | 4 | 5; expectedPool: number }> = [
       { playerCount: 2, expectedPool: 4 },
