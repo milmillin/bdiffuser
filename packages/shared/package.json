@@ -1,6 +1,6 @@
 {
   "name": "@bomb-busters/shared",
-  "version": "1.1.345",
+  "version": "1.1.347",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

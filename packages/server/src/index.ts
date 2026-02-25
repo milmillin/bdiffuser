@@ -554,7 +554,13 @@ export class BombBustersServer extends Server<Env> {
   }
 
   handleSelectCharacter(conn: Connection, characterId: CharacterId) {
-    if (this.room.gameState) return;
+    if (this.room.gameState) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot select character: game has already started.",
+      });
+      return;
+    }
     if (this.room.mission < 31) return;
 
     const validCharacterIds: CharacterId[] = [
@@ -586,7 +592,13 @@ export class BombBustersServer extends Server<Env> {
   }
 
   handleSelectMission(conn: Connection, mission: MissionId) {
-    if (this.room.gameState) return;
+    if (this.room.gameState) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot select mission: game has already started.",
+      });
+      return;
+    }
     if (conn.id !== this.room.hostId) {
       this.sendMsg(conn, { type: "error", message: "Only the host can change the mission" });
       return;
@@ -598,7 +610,13 @@ export class BombBustersServer extends Server<Env> {
   }
 
   handleSetCaptainMode(conn: Connection, mode: "random" | "selection") {
-    if (this.room.gameState) return;
+    if (this.room.gameState) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot change captain mode: game has already started.",
+      });
+      return;
+    }
     if (conn.id !== this.room.hostId) {
       this.sendMsg(conn, { type: "error", message: "Only the host can change captain mode" });
       return;
@@ -612,7 +630,13 @@ export class BombBustersServer extends Server<Env> {
   }
 
   handleSelectCaptain(conn: Connection, playerId: string) {
-    if (this.room.gameState) return;
+    if (this.room.gameState) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot select captain: game has already started.",
+      });
+      return;
+    }
     if (conn.id !== this.room.hostId) {
       this.sendMsg(conn, { type: "error", message: "Only the host can select the captain" });
       return;
@@ -631,7 +655,13 @@ export class BombBustersServer extends Server<Env> {
   }
 
   handleStartGame(conn: Connection) {
-    if (this.room.gameState) return;
+    if (this.room.gameState) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot start game: one is already in progress.",
+      });
+      return;
+    }
     if (conn.id !== this.room.hostId) {
       this.sendMsg(conn, { type: "error", message: "Only the host can start the game" });
       return;
