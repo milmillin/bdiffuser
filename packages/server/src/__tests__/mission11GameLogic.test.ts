@@ -417,5 +417,36 @@ describe("mission 11 game logic", () => {
       expect(state.result).toBeNull();
       expect(state.phase).toBe("playing");
     });
+
+    it("grants one reserve oxygen to every player when mission 54 places a validation token", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "p1-5a", gameValue: 5 }),
+          makeTile({ id: "p1-5b", gameValue: 5 }),
+          makeTile({ id: "p1-5c", gameValue: 5 }),
+          makeTile({ id: "p1-5d", gameValue: 5 }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6 })],
+      });
+      const state = makeGameState({
+        mission: 54,
+        players: [actor, teammate],
+        currentPlayerIndex: 0,
+      });
+
+      dispatchHooks(54, { point: "setup", state });
+      const action = executeSoloCut(state, "p1", 5);
+      expect(action.type).toBe("soloCutResult");
+      if (action.type !== "soloCutResult") return;
+
+      expect(state.board.validationTrack[5]).toBe(4);
+      expect(state.campaign?.oxygen?.pool).toBe(5);
+      expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(8);
+      expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(10);
+    });
   });
 });

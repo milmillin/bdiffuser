@@ -33,7 +33,12 @@ import {
   isPlayersTurn,
   validateDualCutWithHooks,
 } from "./validation.js";
-import { executeDualCut, advanceTurn, clearSatisfiedSecondaryEquipmentLocks } from "./gameLogic.js";
+import {
+  awardMission54ValidationOxygenBonus,
+  advanceTurn,
+  clearSatisfiedSecondaryEquipmentLocks,
+  executeDualCut,
+} from "./gameLogic.js";
 import {
   dispatchHooks,
   getHookRules,
@@ -933,7 +938,11 @@ function updateValidationTrack(state: GameState, value: number): void {
       if (tile.gameValue === value && tile.cut) cutCount++;
     }
   }
+  const previousCount = Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
   state.board.validationTrack[value] = cutCount;
+  if (state.mission === 54 && previousCount < 4 && cutCount >= 4) {
+    awardMission54ValidationOxygenBonus(state);
+  }
 }
 
 function countCutTilesByValue(state: GameState, value: EquipmentUnlockValue): number {

@@ -114,6 +114,28 @@ export function isMission11HiddenRedLikeTile(
 }
 
 /** Update the cut count for a blue value on the validation track */
+export function awardMission54ValidationOxygenBonus(state: GameState): void {
+  if (state.mission !== 54) return;
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return;
+  if (state.players.length === 0) return;
+
+  let remainingPool = Math.max(0, Math.floor(oxygen.pool));
+  if (remainingPool <= 0) return;
+
+  for (const player of state.players) {
+    if (remainingPool <= 0) break;
+
+    oxygen.playerOxygen[player.id] = Math.max(
+      0,
+      Math.floor(oxygen.playerOxygen[player.id] ?? 0),
+    ) + 1;
+    remainingPool -= 1;
+  }
+
+  oxygen.pool = remainingPool;
+}
+
 function checkValidation(state: GameState, value: number): boolean {
   if (typeof value !== "number") return false;
 
@@ -126,7 +148,11 @@ function checkValidation(state: GameState, value: number): boolean {
     }
   }
 
+  const previousCount = Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
   state.board.validationTrack[value] = cutCount;
+  if (state.mission === 54 && previousCount < 4 && cutCount >= 4) {
+    awardMission54ValidationOxygenBonus(state);
+  }
   return cutCount >= 4;
 }
 
