@@ -281,6 +281,14 @@ export function validateSetupInfoTokenPlacement(
     return null;
   }
 
+  const isFalseSetupMode = isCaptainFalseSetupMode(state, player) || isAllFalseSetupMode(state);
+  if (isFalseSetupMode && (!Number.isInteger(value) || value < 1 || value > 12)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Setup info token value must be an integer between 1 and 12",
+    );
+  }
+
   if (!Number.isInteger(value) || value < 1 || value > 12) {
     return legalityError(
       "MISSION_RULE_VIOLATION",

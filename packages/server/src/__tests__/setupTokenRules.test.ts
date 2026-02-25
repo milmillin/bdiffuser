@@ -660,6 +660,19 @@ describe("setupTokenRules", () => {
       expect(error).toBeNull();
     });
 
+    it("mission 17: captain rejects false setup token with invalid value", () => {
+      const captain = makePlayer({
+        isCaptain: true,
+        hand: [makeTile({ id: "b-6", gameValue: 6, sortValue: 6, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(17, captain), captain, 0, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Setup info token value must be an integer between 1 and 12",
+      });
+    });
+
     it("mission 17: captain rejects matching setup token on blue wire", () => {
       const captain = makePlayer({
         isCaptain: true,
@@ -756,6 +769,18 @@ describe("setupTokenRules", () => {
       expect(error).toEqual({
         code: "MISSION_RULE_VIOLATION",
         message: "Mission 52 setup token must be false",
+      });
+    });
+
+    it("mission 52: rejects invalid false setup token value", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-7", gameValue: 7, sortValue: 7, color: "blue" })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(52, player), player, 13, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Setup info token value must be an integer between 1 and 12",
       });
     });
 
