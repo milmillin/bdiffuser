@@ -339,6 +339,72 @@ describe("getSoloCutValues yellow logic", () => {
     expect(values).not.toContain(5);
   });
 
+  it("filters numeric solo cut options for active global value constraints", () => {
+    const state = makeGameState({
+      mission: 2,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "a1", gameValue: 5 }),
+            makeTile({ id: "a2", gameValue: 5 }),
+            makeTile({ id: "b1", gameValue: 6 }),
+            makeTile({ id: "b2", gameValue: 6 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", gameValue: 3 })],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", active: true })],
+          perPlayer: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(6);
+    expect(values).not.toContain(5);
+  });
+
+  it("filters numeric solo cut options for active per-player value constraints", () => {
+    const state = makeGameState({
+      mission: 2,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "a1", gameValue: 2 }),
+            makeTile({ id: "a2", gameValue: 2 }),
+            makeTile({ id: "b1", gameValue: 6 }),
+            makeTile({ id: "b2", gameValue: 6 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", gameValue: 4 })],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", active: true })],
+          perPlayer: {
+            me: [makeConstraintCard({ id: "F", active: true })],
+          },
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(2);
+    expect(values).not.toContain(6);
+  });
+
   it("offers mission 35 X-marked numeric solo value after all yellow wires are cut", () => {
     const state = makeGameState({
       mission: 35,

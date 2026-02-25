@@ -27,9 +27,50 @@ const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
 ] as const;
 
 const BASE_EQUIPMENT_SET = new Set<string>(BASE_EQUIPMENT_IDS);
+const VALUE_CONSTRAINT_IDS = new Set(["A", "B", "C", "D", "E", "F"]);
 
 export function isBaseEquipmentId(id: string): id is BaseEquipmentId {
   return BASE_EQUIPMENT_SET.has(id);
+}
+
+function valuePassesConstraint(value: number, constraintId: string): boolean {
+  switch (constraintId) {
+    case "A":
+      return value % 2 === 0;
+    case "B":
+      return value % 2 !== 0;
+    case "C":
+      return value >= 1 && value <= 6;
+    case "D":
+      return value >= 7 && value <= 12;
+    case "E":
+      return value >= 4 && value <= 9;
+    case "F":
+      return value < 4 || value > 9;
+    default:
+      return true;
+  }
+}
+
+function getActiveConstraintIds(state: ClientGameState, playerId: string): string[] {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return [];
+
+  const active: string[] = [];
+
+  for (const card of constraints.global ?? []) {
+    if (card.active) {
+      active.push(card.id);
+    }
+  }
+
+  for (const card of constraints.perPlayer?.[playerId] ?? []) {
+    if (card.active) {
+      active.push(card.id);
+    }
+  }
+
+  return active;
 }
 
 function getMission44DepthCost(value: number): number {
@@ -148,6 +189,10 @@ export function getSoloCutValues(
 ): (number | "YELLOW")[] {
   const me = state.players.find((p) => p.id === playerId);
   if (!me) return [];
+  const activeValueConstraintIds = getActiveConstraintIds(state, playerId).filter((id) =>
+    VALUE_CONSTRAINT_IDS.has(id),
+  );
+
   const hasConstraintK = (() => {
     const globalHasK = state.campaign?.constraints?.global?.some(
       (constraint) => constraint.id === "K" && constraint.active,
@@ -244,10 +289,17 @@ export function getSoloCutValues(
   }
 
   const availableOxygen = getMissionOxygenAvailability(state, playerId);
-  if (availableOxygen == null) return values;
-
   return values.filter((value): value is number | "YELLOW" => {
     if (value === "YELLOW") return true;
+    if (
+      activeValueConstraintIds.length > 0 &&
+      !activeValueConstraintIds.every((constraintId) =>
+        valuePassesConstraint(value, constraintId),
+      )
+    ) {
+      return false;
+    }
+    if (availableOxygen == null) return true;
     return getMissionSoloCutOxygenCost(state, value) <= availableOxygen;
   });
 }
