@@ -843,6 +843,16 @@ function actorCanAffordAnyMission44Cut(
   actor: { id: string; hand: ReadonlyArray<WireTile> },
   rule: OxygenProgressionRuleDef,
 ): boolean {
+  const activeConstraintIds = getActiveConstraints(state, actor.id);
+
+  const valueAllowedByConstraints = (value: number): boolean =>
+    activeConstraintIds.every((constraintId) => {
+      if (constraintId >= "A" && constraintId <= "F") {
+        return valuePassesConstraint(value, constraintId);
+      }
+      return true;
+    });
+
   const actorUncut = actor.hand.filter((tile) => !tile.cut);
   if (actorUncut.length === 0) return false;
 
@@ -869,6 +879,7 @@ function actorCanAffordAnyMission44Cut(
   }
 
   for (const value of actorAffordableValues) {
+    if (!valueAllowedByConstraints(value)) continue;
     const requiredCost = getOxygenCostForCut(rule, value);
     if (requiredCost <= available) return true;
   }
@@ -887,6 +898,7 @@ function actorCanAffordAnyMission44Cut(
   );
   if (hasAnyDualCutTarget) {
     for (let value = 1; value <= 12; value++) {
+      if (!valueAllowedByConstraints(value)) continue;
       const requiredCost = getOxygenCostForCut(rule, value);
       if (requiredCost <= available) return true;
     }

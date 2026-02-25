@@ -875,6 +875,62 @@ describe("mission progression hooks", () => {
     expect(autoSkipLog).toBeUndefined();
   });
 
+  it("mission 54 endTurn auto-skips if constraint blocks all affordable dual-cut guesses", () => {
+    const actor = makePlayer({
+      id: "p1",
+      hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
+    });
+    const teammate = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "p2-1", gameValue: 4, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 5 }),
+      campaign: {
+        constraints: {
+          global: [
+            makeConstraintCard({
+              id: "D",
+              name: "D",
+              description: "7-12",
+              active: true,
+            }),
+          ],
+          perPlayer: {},
+          deck: [],
+        },
+      },
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 54 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 1;
+    state.campaign.oxygen.playerOxygen.p2 = 0;
+    state.campaign.oxygen.pool = 0;
+
+    dispatchHooks(54, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.board.detonatorPosition).toBe(5);
+    expect(state.result).toBe("loss_detonator");
+    const autoSkipLog = state.log.find(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "oxygen_progression:auto_skip|player=p1|detonator=2",
+    );
+    expect(autoSkipLog).toBeDefined();
+  });
+
   it("mission 63 endTurn does not auto-skip if a non-owned low-cost dual-cut guess is possible", () => {
     const actor = makePlayer({
       id: "p1",
