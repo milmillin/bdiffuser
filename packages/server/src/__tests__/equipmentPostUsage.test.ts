@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EquipmentUnlockValue, GameState } from "@bomb-busters/shared";
+import { logText } from "@bomb-busters/shared";
 import {
   makeEquipmentCard,
   makeGameState,
@@ -459,6 +460,69 @@ describe("equipment post-usage effects", () => {
       // It will be a wrong guess (no tile has value 5), so success is false
       expect(resolveAction.success).toBe(false);
     }
+  });
+
+  it("Triple detector mission 11 excludes hidden red-like wire from fallback choice on no match", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      name: "Target",
+      hand: [
+        makeTile({ id: "t0", gameValue: 7, sortValue: 1 }),
+        makeTile({ id: "t1", gameValue: 3, sortValue: 2 }),
+        makeTile({ id: "t2", gameValue: 8, sortValue: 3 }),
+      ],
+    });
+    const baseBoard = makeGameState().board;
+    const state = makeGameState({
+      mission: 11,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      board: {
+        ...baseBoard,
+        detonatorMax: 10,
+        equipment: [unlockedEquipment("triple_detector", "Triple Detector 3000", 3)],
+      },
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    });
+
+    const action = executeUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "target",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 5,
+    });
+
+    // Now creates a pending forced action
+    expect(action.type).toBe("equipmentUsed");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    // Resolve: 0-match fallback should avoid t0 (hidden red-like) and use t1
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutResult");
+    if (resolveAction.type === "dualCutResult") {
+      expect(resolveAction.targetTileIndex).toBe(1);
+      expect(resolveAction.success).toBe(false);
+      expect(resolveAction.explosion).toBeUndefined();
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(target.hand[0].cut).toBe(false);
+      expect(target.hand[1].cut).toBe(false);
+      expect(target.hand[2].cut).toBe(false);
+      expect(target.infoTokens).toEqual([{ value: 3, position: 1, isYellow: false }]);
+    }
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
   });
 
   // ── 13. Triple detector: fallback to first index when all red ──

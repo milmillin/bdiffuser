@@ -1207,14 +1207,24 @@ export function resolveDetectorTileChoice(
     }
     // Triple/Super detector 0-match: use client's choice if valid, else pick fallback tile
     const origIndices = forced.originalTargetTileIndices ?? [];
+    const hiddenRedLikeValue = state.mission === 11 ? getBlueAsRedValue(state) : null;
+    const isHiddenRedLike = (tile: WireTile | undefined) =>
+      hiddenRedLikeValue != null &&
+      tile != null &&
+      tile.color === "blue" &&
+      typeof tile.gameValue === "number" &&
+      tile.gameValue === hiddenRedLikeValue;
     const fallbackTile =
       (chosenTileIndex != null &&
         origIndices.includes(chosenTileIndex) &&
-        (() => { const t = getTileByFlatIndex(target, chosenTileIndex); return t && !t.cut && t.color !== "red"; })())
+        (() => {
+          const t = getTileByFlatIndex(target, chosenTileIndex);
+          return t && !t.cut && t.color !== "red" && !isHiddenRedLike(t);
+        })())
         ? chosenTileIndex
         : origIndices.find((idx) => {
             const t = getTileByFlatIndex(target, idx);
-            return t && !t.cut && t.color !== "red";
+            return t && !t.cut && t.color !== "red" && !isHiddenRedLike(t);
           }) ?? origIndices[0] ?? 0;
     addLog(state, actorId, "useEquipment", `${target.name} confirmed detector result`);
     return executeDualCut(state, actorId, targetPlayerId, fallbackTile, guessValue);

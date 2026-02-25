@@ -79,7 +79,12 @@ export function getDetectorChoiceSelectableIndices(
   const tileIndices = forced.originalTargetTileIndices ?? [];
   return tileIndices.filter((idx) => {
     const tile = hand[idx];
-    return !!tile && tile.color !== "red" && !tile.cut;
+    return (
+      !!tile &&
+      tile.color !== "red" &&
+      !isHiddenRedLike(tile, mission11BlueAsRedValue) &&
+      !tile.cut
+    );
   });
 }
 

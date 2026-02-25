@@ -5,6 +5,7 @@ import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
+  makeRedTile,
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
@@ -161,6 +162,54 @@ describe("DetectorTileChoicePanel stand-selection flow", () => {
     const confirmButton = getConfirmButtonTag(html);
 
     expect(html).toContain("Info token target: wire B.");
+    expect(confirmButton).not.toMatch(/\sdisabled(?:=|>| )/);
+  });
+
+  it("mission 11 excludes hidden red-like wire from triple detector no-match fallback options", () => {
+    const state = makeGameState({
+      mission: 11,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "target",
+          name: "Target",
+          hand: [
+            makeTile({ id: "t0", color: "blue", gameValue: 7, sortValue: 1 }),
+            makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 2 }),
+            makeRedTile({ id: "t2", sortValue: 3 }),
+          ],
+        }),
+        makePlayer({
+          id: "actor",
+          name: "Actor",
+          hand: [makeTile({ id: "a0", color: "blue", gameValue: 5, sortValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 1,
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+      pendingForcedAction: {
+        kind: "detectorTileChoice",
+        actorId: "actor",
+        targetPlayerId: "target",
+        matchingTileIndices: [],
+        guessValue: 5,
+        source: "tripleDetector",
+        originalTargetTileIndices: [0, 1, 2],
+      },
+    });
+
+    const html = renderPanel(toClientGameState(state, "target"), "target", null);
+    const confirmButton = getConfirmButtonTag(html);
+
+    expect(html).toContain("Fallback wire: B.");
     expect(confirmButton).not.toMatch(/\sdisabled(?:=|>| )/);
   });
 
