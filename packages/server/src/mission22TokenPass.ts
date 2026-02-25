@@ -59,6 +59,11 @@ export function applyMission22TokenPassChoice(
     position,
     isYellow: sourceIsYellow,
   }, recipient);
+  // Prevent tokens that weren't placed from being reused later in the same pass chain.
+  // Mission 22 requires each chooser to consume one board token per turn.
+  if (token.position < 0) {
+    token.position = -2;
+  }
   recipient.infoTokens.push(token);
 
   return { ok: true, recipientIndex, updatedRecipientToken: token };

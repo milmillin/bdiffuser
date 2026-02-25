@@ -50,7 +50,7 @@ describe("Mission 22 token pass helper", () => {
     expect(recipient.infoTokens[0]).toMatchObject({
       value: 4,
       isYellow: false,
-      position: -1,
+      position: -2,
     });
   });
 
@@ -88,5 +88,70 @@ describe("Mission 22 token pass helper", () => {
     expect(result).toEqual({ ok: false, message: "Token value is not available on the board" });
     expect(chooser.infoTokens).toHaveLength(1);
     expect(recipient.infoTokens).toHaveLength(1);
+  });
+
+  it("prevents a passed token from being reused when it cannot be placed", () => {
+    const chooser = makePlayer({
+      id: "p1",
+      isCaptain: true,
+      hand: [makeTile({ id: "c2", gameValue: 2 })],
+      infoTokens: [{ value: 4, position: -1, isYellow: false }],
+    });
+    const recipient = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b3", gameValue: 3 })],
+      infoTokens: [{ value: 5, position: -1, isYellow: false }],
+    });
+    const receiver = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "c8", gameValue: 8 })],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [chooser, recipient, receiver],
+      pendingForcedAction: {
+        kind: "mission22TokenPass",
+        currentChooserIndex: 0,
+        currentChooserId: "p1",
+        passingOrder: [0, 1, 2],
+        completedCount: 0,
+      },
+    });
+
+    const firstForced = state.pendingForcedAction;
+    if (!firstForced || firstForced.kind !== "mission22TokenPass") {
+      throw new Error("Expected mission22 forced action to be set");
+    }
+    const firstResult = applyMission22TokenPassChoice(state, firstForced, 4);
+    expect(firstResult).toEqual({
+      ok: true,
+      recipientIndex: 1,
+      updatedRecipientToken: {
+        value: 4,
+        isYellow: false,
+        position: -2,
+      },
+    });
+    expect(recipient.infoTokens).toHaveLength(2);
+    expect(recipient.infoTokens[1]).toMatchObject({
+      value: 4,
+      isYellow: false,
+      position: -2,
+    });
+
+    const secondForced = {
+      ...firstForced,
+      currentChooserIndex: 1,
+      currentChooserId: "p2",
+      completedCount: 1,
+    };
+    const secondResult = applyMission22TokenPassChoice(state, secondForced, 4);
+
+    expect(secondResult).toEqual({
+      ok: false,
+      message: "Token value is not available on the board",
+    });
   });
 });
