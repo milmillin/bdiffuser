@@ -191,7 +191,7 @@ describe("setupGame equipmentReserve", () => {
     }
   });
 
-  it.each([59, 63, 65] as const)(
+  it.each([44, 45, 47, 54, 59, 63, 65] as const)(
     "mission %i setup avoids dealing x or y ray to board",
     (mission) => {
       const playerCount = 4;
@@ -232,6 +232,7 @@ describe("setupGame equipmentReserve", () => {
 
   it.each([
     { mission: 10, forbiddenId: "coffee_mug" },
+    { mission: 45, forbiddenId: "coffee_mug" },
     { mission: 46, forbiddenId: "emergency_batteries" },
   ] as const)(
     "mission $mission setup avoids dealing $forbiddenId to board",

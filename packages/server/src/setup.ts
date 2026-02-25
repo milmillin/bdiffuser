@@ -272,8 +272,14 @@ function createEquipmentCards(
       ? new Set(["false_bottom"])
       : mission === 10
         ? new Set(["coffee_mug"])
+      : mission === 44
+        ? new Set(["x_or_y_ray"])
       : mission === 46
         ? new Set(["emergency_batteries"])
+      : mission === 45
+        ? new Set(["x_or_y_ray", "coffee_mug"])
+      : mission === 47
+        ? new Set(["x_or_y_ray"])
       : mission === 57
         ? new Set(["disintegrator"])
         : mission === 58

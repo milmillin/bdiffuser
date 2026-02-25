@@ -55,7 +55,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: outOf(1, 3),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     behaviorHooks: ["mission_44_oxygen_cost_and_no_talking"],
     hookRules: [
@@ -84,7 +84,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: exact(2),
-      equipment: { mode: "default", excludedUnlockValues: [10, 11] },
+      equipment: { mode: "default" },
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_45_squeak_number_challenge"],
@@ -108,7 +108,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     setup: {
       ...defaultSetup(),
       red: outOf(2, 3),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_47_add_subtract_number_cards"],

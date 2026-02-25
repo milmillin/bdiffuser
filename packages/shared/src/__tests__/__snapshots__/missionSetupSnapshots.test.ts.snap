@@ -3439,9 +3439,6 @@ exports[`resolved mission setup snapshots > mission 44 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3459,9 +3456,6 @@ exports[`resolved mission setup snapshots > mission 44 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3479,9 +3473,6 @@ exports[`resolved mission setup snapshots > mission 44 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3499,9 +3490,6 @@ exports[`resolved mission setup snapshots > mission 44 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3528,10 +3516,6 @@ exports[`resolved mission setup snapshots > mission 45 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3548,10 +3532,6 @@ exports[`resolved mission setup snapshots > mission 45 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3568,10 +3548,6 @@ exports[`resolved mission setup snapshots > mission 45 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3588,10 +3564,6 @@ exports[`resolved mission setup snapshots > mission 45 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-          11,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3710,9 +3682,6 @@ exports[`resolved mission setup snapshots > mission 47 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3729,9 +3698,6 @@ exports[`resolved mission setup snapshots > mission 47 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3749,9 +3715,6 @@ exports[`resolved mission setup snapshots > mission 47 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -3769,9 +3732,6 @@ exports[`resolved mission setup snapshots > mission 47 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4301,9 +4261,6 @@ exports[`resolved mission setup snapshots > mission 54 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4332,9 +4289,6 @@ exports[`resolved mission setup snapshots > mission 54 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4363,9 +4317,6 @@ exports[`resolved mission setup snapshots > mission 54 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {
@@ -4394,9 +4345,6 @@ exports[`resolved mission setup snapshots > mission 54 1`] = `
         "minValue": 1,
       },
       "equipment": {
-        "excludedUnlockValues": [
-          10,
-        ],
         "mode": "default",
       },
       "red": {

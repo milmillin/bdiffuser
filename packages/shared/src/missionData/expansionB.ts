@@ -94,7 +94,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
       ...defaultSetup(),
       red: fixed(redAll),
       yellow: none(),
-      equipment: { mode: "default", excludedUnlockValues: [10] },
+      equipment: { mode: "default" },
     },
     behaviorHooks: ["mission_54_red_stack_and_oxygen", "mission_54_audio_prompt"],
     hookRules: [
