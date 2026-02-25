@@ -1084,6 +1084,14 @@ registerHookHandler<"blue_value_treated_as_red">("blue_value_treated_as_red", {
       replacedCount++;
     }
 
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: [{ id: `m11-blue-as-red-${hiddenRedValue}`, value: hiddenRedValue, faceUp: true }],
+      deck: [],
+      discard: [],
+      playerHands: {},
+    };
+
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
