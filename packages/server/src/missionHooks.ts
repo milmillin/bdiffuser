@@ -38,6 +38,7 @@ import type {
   MissionId,
   NumberCardState,
   Mission57ConstraintPerValidatedValueRuleDef,
+  Mission59NanoState,
   WireTile,
 } from "@bomb-busters/shared";
 import {
@@ -730,6 +731,176 @@ function applyNanoDelta(
     state.result = "loss_detonator";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+  }
+}
+
+function getMission59NanoState(state: Readonly<GameState>): Mission59NanoState | null {
+  const mission59Nano = state.campaign?.mission59Nano;
+  if (!mission59Nano) return null;
+  if (!Number.isInteger(mission59Nano.position)) return null;
+  if (mission59Nano.facing !== 1 && mission59Nano.facing !== -1) return null;
+  return mission59Nano;
+}
+
+function initMission59State(state: GameState): void {
+  const campaign = state.campaign;
+  if (!campaign) return;
+  const line = campaign.numberCards?.visible;
+  if (!line || line.length === 0) return;
+
+  const position = line.findIndex((card) => card.value === 7);
+  if (position < 0) return;
+
+  const rightCards = line.length - 1 - position;
+  const leftCards = position;
+  campaign.mission59Nano = {
+    position,
+    facing: rightCards > leftCards ? 1 : -1,
+  };
+}
+
+function getMission59ForwardValues(state: Readonly<GameState>): number[] {
+  const mission59Nano = getMission59NanoState(state);
+  if (!mission59Nano) return [];
+  const line = state.campaign?.numberCards?.visible;
+  if (!line || line.length === 0) return [];
+  if (mission59Nano.position < 0 || mission59Nano.position >= line.length) return [];
+
+  const values: number[] = [];
+  for (
+    let index = mission59Nano.position;
+    index >= 0 && index < line.length;
+    index += mission59Nano.facing
+  ) {
+    const card = line[index];
+    if (!card) continue;
+    if (card.faceUp) values.push(card.value);
+  }
+
+  return values;
+}
+
+function getMission59AttemptedValues(
+  action: ValidateHookContext["action"],
+): number[] {
+  if (action.type === "soloCut") {
+    return typeof action.value === "number" ? [action.value] : [];
+  }
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    return typeof action.guessValue === "number" ? [action.guessValue] : [];
+  }
+  return [];
+}
+
+function canPlayerPlayMission59(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+): boolean {
+  const legalValues = new Set(getMission59ForwardValues(state));
+  if (legalValues.size === 0) return false;
+
+  return actor.hand.some(
+    (tile) => !tile.cut && typeof tile.gameValue === "number" && legalValues.has(tile.gameValue),
+  );
+}
+
+function rotateMission59(state: GameState): void {
+  const mission59Nano = state.campaign?.mission59Nano;
+  if (!mission59Nano) return;
+  mission59Nano.facing *= -1;
+}
+
+function moveMission59ToValue(state: GameState, value: number): void {
+  const mission59Nano = getMission59NanoState(state);
+  if (!mission59Nano) return;
+
+  const line = state.campaign?.numberCards?.visible;
+  if (!line || line.length === 0) return;
+
+  const targetIndex = line.findIndex((card) => card.value === value);
+  if (targetIndex < 0) return;
+
+  const legalValues = new Set(getMission59ForwardValues(state));
+  if (!legalValues.has(value) && targetIndex !== mission59Nano.position) return;
+
+  if (targetIndex !== mission59Nano.position) {
+    const previousPosition = mission59Nano.position;
+    mission59Nano.position = targetIndex;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail: `mission_59:nano_move:${previousPosition}->${targetIndex}|value=${value}`,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+function completeMission59NumberCard(
+  state: GameState,
+  ctx: ResolveHookContext,
+): void {
+  if (typeof ctx.cutValue !== "number") return;
+  if (!ctx.cutSuccess) return;
+
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  const projectedCutCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+  if (projectedCutCount < 4) return;
+
+  const matchingCard = numberCards.visible.find((card) => card.value === ctx.cutValue);
+  if (!matchingCard) return;
+
+  matchingCard.faceUp = false;
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: ctx.action.actorId,
+    action: "hookEffect",
+    detail: `mission_59:number_card_complete:${ctx.cutValue}`,
+    timestamp: Date.now(),
+  });
+}
+
+function skipMission59NoMatchTurns(state: GameState): void {
+  if (state.mission !== 59 || state.phase === "finished") return;
+
+  const playerCount = state.players.length;
+  let skipCount = 0;
+
+  while (skipCount < playerCount) {
+    const actor = state.players[state.currentPlayerIndex];
+    if (!actor) return;
+
+    if (canPlayerPlayMission59(state, actor)) return;
+
+    state.board.detonatorPosition += 1;
+    rotateMission59(state);
+    state.turnNumber += 1;
+    skipCount += 1;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actor.id,
+      action: "hookEffect",
+      detail:
+        `mission_59:auto_skip|player=${actor.id}|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", actor.id, null);
+      return;
+    }
+
+    const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+    if (nextPlayerIndex == null) return;
+
+    state.currentPlayerIndex = nextPlayerIndex;
   }
 }
 
@@ -1632,6 +1803,23 @@ registerHookHandler<"nano_progression">("nano_progression", {
   setup(rule: NanoProgressionRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
 
+    if (ctx.state.mission === 59) {
+      const visibleValues = shuffle([...MISSION_NUMBER_VALUES]);
+      ctx.state.campaign ??= {};
+      ctx.state.campaign.numberCards = {
+        visible: visibleValues.map((value, idx) => ({
+          id: `m59-visible-${idx}-${value}`,
+          value,
+          faceUp: true,
+        })),
+        deck: [],
+        discard: [],
+        playerHands: {},
+      };
+      initMission59State(ctx.state);
+      skipMission59NoMatchTurns(ctx.state);
+    }
+
     const max = Math.max(1, Math.floor(rule.max));
     const start = clampProgress(rule.start, max);
     ctx.state.campaign!.nanoTracker = { position: start, max };
@@ -1643,6 +1831,39 @@ registerHookHandler<"nano_progression">("nano_progression", {
       detail: `nano_progression:start=${start},max=${max},advanceOn=${rule.advanceOn},movement=${rule.movement ?? "forward"}`,
       timestamp: Date.now(),
     });
+  },
+
+  validate(_rule: NanoProgressionRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.phase === "finished") return;
+    if (ctx.state.mission !== 59) return;
+
+    const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
+    if (!actor) return;
+
+    const attemptedValues = getMission59AttemptedValues(ctx.action);
+    const legalValues = new Set(getMission59ForwardValues(ctx.state));
+    if (legalValues.size === 0) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 59: you must skip your turn",
+      };
+    }
+
+    if (attemptedValues.length === 0) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 59: you must cut using a Number card value from Nano's line",
+      };
+    }
+
+    const invalid = attemptedValues.find((value) => !legalValues.has(value));
+    if (invalid === undefined) return;
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError:
+        `Mission 59: cut value ${invalid} is not on Nano's current line segment`,
+    };
   },
 
   resolve(rule: NanoProgressionRuleDef, ctx: ResolveHookContext): void {
@@ -1658,10 +1879,20 @@ registerHookHandler<"nano_progression">("nano_progression", {
       delta = ctx.cutValue % 2 === 0 ? -delta : delta;
     }
 
+    if (ctx.state.mission === 59 && typeof ctx.cutValue === "number") {
+      moveMission59ToValue(ctx.state, ctx.cutValue);
+      completeMission59NumberCard(ctx.state, ctx);
+    }
+
     applyNanoDelta(ctx.state, delta, ctx.action.actorId, "point=resolve");
   },
 
   endTurn(rule: NanoProgressionRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.mission === 59) {
+      skipMission59NoMatchTurns(ctx.state);
+      return;
+    }
+
     if (rule.advanceOn !== "end_turn") return;
     if (ctx.state.phase === "finished") return;
 

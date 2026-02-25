@@ -299,6 +299,14 @@ export interface SpecialMarker {
   value: number;
 }
 
+/** Mission 59: Nano navigation state on the Number card line. */
+export interface Mission59NanoState {
+  /** Current index into the shared Number card line. */
+  position: number;
+  /** Direction Nano faces: 1 for increasing index, -1 for decreasing. */
+  facing: 1 | -1;
+}
+
 /**
  * All campaign-specific state, attached optionally to GameState.
  * Each sub-object is present only when the active mission uses that mechanic.
@@ -327,6 +335,8 @@ export interface CampaignState {
   falseInfoTokenMode?: boolean;
   /** Mission 52 (and variants): all setup info tokens are false. */
   falseTokenMode?: boolean;
+  /** Mission 59: Nano line navigation state. */
+  mission59Nano?: Mission59NanoState;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────

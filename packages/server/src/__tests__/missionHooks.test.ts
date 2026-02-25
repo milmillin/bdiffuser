@@ -385,6 +385,41 @@ describe("missionHooks dispatcher", () => {
       expect(setupLog).toBeDefined();
     });
 
+    it("mission 59: initializes all Number cards faceup and Nano starting state", () => {
+      const state = makeGameState({
+        mission: 59,
+        players: [makePlayer({
+          id: "player-1",
+          hand: [makeTile({ id: "m59-t1", gameValue: 1 }), makeTile({ id: "m59-t12", gameValue: 12 })],
+        })],
+        log: [],
+      });
+
+      dispatchHooks(59, { point: "setup", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards!.visible).toHaveLength(12);
+      expect(numberCards!.visible.every((card) => card.faceUp)).toBe(true);
+      expect(numberCards!.deck).toHaveLength(0);
+      expect(numberCards!.discard).toHaveLength(0);
+
+      const visibleValues = [...new Set(numberCards!.visible.map((card) => card.value))].sort(
+        (a, b) => a - b,
+      );
+      expect(visibleValues).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      const mission59Nano = state.campaign?.mission59Nano;
+      expect(mission59Nano).toBeDefined();
+      const sevenIndex = numberCards!.visible.findIndex((card) => card.value === 7);
+      expect(mission59Nano?.position).toBe(sevenIndex);
+      if (mission59Nano) {
+        const leftCount = Math.max(0, sevenIndex);
+        const rightCount = Math.max(0, numberCards!.visible.length - sevenIndex - 1);
+        expect(mission59Nano.facing).toBe(rightCount > leftCount ? 1 : -1);
+      }
+    });
+
     it("mission 35: marks one blue X wire at far right of each stand", () => {
       const captain = makePlayer({
         id: "captain",
@@ -867,6 +902,76 @@ describe("missionHooks dispatcher", () => {
       const secondCard = state.campaign?.numberCards?.visible?.find((card) => card.id === "m26-visible-2");
       expect(firstCard?.faceUp).toBe(false);
       expect(secondCard?.faceUp).toBe(true);
+    });
+
+    it("mission 59: moves Nano to cut card and flips matching Number card at 4 cuts", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [
+          makeTile({ id: "actor-5-a", gameValue: 5, cut: false }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "team-5-a", gameValue: 5, cut: true }),
+          makeTile({ id: "team-5-b", gameValue: 5, cut: true }),
+        ],
+      });
+      const witness = makePlayer({
+        id: "witness",
+        hand: [
+          makeTile({ id: "wit-5-a", gameValue: 5, cut: true }),
+          makeTile({ id: "wit-6", gameValue: 6, cut: false }),
+        ],
+      });
+
+      const state = makeGameState({
+        mission: 59,
+        players: [actor, teammate, witness],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-visible-1", value: 1, faceUp: true },
+              { id: "m59-visible-2", value: 2, faceUp: true },
+              { id: "m59-visible-3", value: 3, faceUp: true },
+              { id: "m59-visible-4", value: 4, faceUp: true },
+              { id: "m59-visible-5", value: 5, faceUp: true },
+              { id: "m59-visible-6", value: 6, faceUp: true },
+              { id: "m59-visible-7", value: 7, faceUp: true },
+              { id: "m59-visible-8", value: 8, faceUp: true },
+              { id: "m59-visible-9", value: 9, faceUp: true },
+              { id: "m59-visible-10", value: 10, faceUp: true },
+              { id: "m59-visible-11", value: 11, faceUp: true },
+              { id: "m59-visible-12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+      });
+
+      dispatchHooks(59, {
+        point: "resolve",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "actor",
+          value: 5,
+          tilesCut: 1,
+        },
+        cutValue: 5,
+        cutSuccess: true,
+      });
+
+      const numberCard = state.campaign?.numberCards?.visible.find((card) => card.value === 5);
+      expect(numberCard?.faceUp).toBe(false);
+      expect(state.campaign?.mission59Nano?.position).toBe(4);
     });
 
     it("mission 47: discards two Number cards when a valid cut action resolves", () => {
@@ -1638,6 +1743,63 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 59: auto-skips a player with no Nano-forward legal cut and rotates Nano", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", gameValue: 1, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [p1, p2],
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: true },
+              { id: "m59-v2", value: 2, faceUp: true },
+              { id: "m59-v3", value: 3, faceUp: true },
+              { id: "m59-v4", value: 4, faceUp: true },
+              { id: "m59-v5", value: 5, faceUp: true },
+              { id: "m59-v6", value: 6, faceUp: true },
+              { id: "m59-v7", value: 7, faceUp: true },
+              { id: "m59-v8", value: 8, faceUp: true },
+              { id: "m59-v9", value: 9, faceUp: true },
+              { id: "m59-v10", value: 10, faceUp: true },
+              { id: "m59-v11", value: 11, faceUp: true },
+              { id: "m59-v12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(59, { point: "endTurn", state, previousPlayerId: "p2" });
+
+      expect(state.currentPlayerIndex).toBe(0);
+      expect(state.turnNumber).toBe(7);
+      expect(state.board.detonatorPosition).toBe(3);
+      expect(state.campaign?.mission59Nano?.facing).toBe(-1);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission_59:auto_skip|player=p1|detonator=2",
+      );
+      expect(skipLog).toBeDefined();
+    });
+
     it("mission 47: auto-skips a stuck player and advances detonator", () => {
       const p1 = makePlayer({
         id: "p1",
@@ -2134,6 +2296,66 @@ describe("missionHooks dispatcher", () => {
 
       expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
       expect(blocked.validationError).toContain("must skip");
+    });
+
+    it("mission 59: allows cuts only when cut value is on Nano-facing line segment", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "a10", gameValue: 10, cut: false }), makeTile({ id: "a1", gameValue: 1, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 59,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: true },
+              { id: "m59-v2", value: 2, faceUp: true },
+              { id: "m59-v3", value: 3, faceUp: true },
+              { id: "m59-v4", value: 4, faceUp: true },
+              { id: "m59-v5", value: 5, faceUp: true },
+              { id: "m59-v6", value: 6, faceUp: true },
+              { id: "m59-v7", value: 7, faceUp: true },
+              { id: "m59-v8", value: 8, faceUp: true },
+              { id: "m59-v9", value: 9, faceUp: true },
+              { id: "m59-v10", value: 10, faceUp: true },
+              { id: "m59-v11", value: 11, faceUp: true },
+              { id: "m59-v12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 10,
+        },
+      });
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("Nano");
+
+      const allowed = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 1,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
     });
 
     it("mission 26: blocks revealReds even when a matching visible number exists", () => {
