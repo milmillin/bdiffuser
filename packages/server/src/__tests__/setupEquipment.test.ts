@@ -49,6 +49,36 @@ describe("setupGame character assignment", () => {
     expect(players.every((player) => MISSION_BASE_CHARACTERS.has(player.character!))).toBe(true);
   });
 
+  it("resets characterUsed when assigning base characters for missions below Rule Sticker B", () => {
+    const players = [
+      makePlayer({
+        id: "a",
+        name: "A",
+        isCaptain: true,
+        character: "character_e1",
+        characterUsed: true,
+      }),
+      makePlayer({
+        id: "b",
+        name: "B",
+        isCaptain: false,
+        character: "character_e2",
+        characterUsed: true,
+      }),
+      makePlayer({
+        id: "c",
+        name: "C",
+        isCaptain: false,
+        character: "character_e3",
+        characterUsed: true,
+      }),
+    ];
+
+    assignCharactersForGameStart(players as any, 30);
+
+    expect(players.every((player) => player.characterUsed)).toBe(false);
+  });
+
   it("keeps non-captain preselected characters for missions with Rule Sticker B", () => {
     const players = [
       makePlayer({
@@ -85,6 +115,40 @@ describe("setupGame character assignment", () => {
     expect(players[2].character).toBe("character_2");
     expect(players[1].character).not.toBeNull();
     expect(MISSION_BASE_CHARACTERS.has(players[1].character!)).toBe(true);
+  });
+
+  it("resets characterUsed when preserving preselected non-captain characters", () => {
+    const players = [
+      makePlayer({
+        id: "captain",
+        name: "Captain",
+        isCaptain: true,
+        character: "character_e1",
+        characterUsed: true,
+      }),
+      makePlayer({
+        id: "member",
+        name: "Member",
+        isCaptain: false,
+        character: "character_2",
+        characterUsed: true,
+      }),
+      makePlayer({
+        id: "helper",
+        name: "Helper",
+        isCaptain: false,
+        character: null,
+        characterUsed: true,
+      }),
+    ];
+
+    assignCharactersForGameStart(players as any, 31);
+
+    expect(players[0].character).toBe("double_detector");
+    expect(players[0].characterUsed).toBe(false);
+    expect(players[1].character).toBe("character_2");
+    expect(players[1].characterUsed).toBe(false);
+    expect(players[2].characterUsed).toBe(false);
   });
 
   it("replaces duplicate captain-card selections so captain remains Double Detector", () => {

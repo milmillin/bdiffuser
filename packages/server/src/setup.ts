@@ -280,6 +280,7 @@ export function assignCharactersForGameStart(players: Player[], mission: Mission
   if (mission < 31) {
     for (let i = 0; i < players.length; i++) {
       players[i].character = deck[i];
+      players[i].characterUsed = false;
     }
     return;
   }
@@ -301,6 +302,7 @@ export function assignCharactersForGameStart(players: Player[], mission: Mission
         !usedCharacters.has(player.character)
       ) {
         usedCharacters.add(player.character);
+        player.characterUsed = false;
         continue;
       }
     }
