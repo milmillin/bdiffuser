@@ -64,10 +64,8 @@ describe("Mission 22 token pass helper", () => {
       isYellow: false,
       position: -2,
     });
-    expect(state.campaign?.mission22TokenPassBoard).toEqual({
-      numericTokens: [],
-      yellowTokens: 0,
-    });
+    expect(state.campaign?.mission22TokenPassBoard?.numericTokens).not.toContain(4);
+    expect(state.campaign?.mission22TokenPassBoard?.yellowTokens).toBe(0);
   });
 
   it("rejects passing a token value not present on the board", () => {
@@ -105,7 +103,7 @@ describe("Mission 22 token pass helper", () => {
     if (!forced || forced.kind !== "mission22TokenPass") {
       throw new Error("Expected mission22 forced action to be set");
     }
-    const result = applyMission22TokenPassChoice(state, forced, 12);
+    const result = applyMission22TokenPassChoice(state, forced, 13);
 
     expect(result).toEqual({ ok: false, message: "Token value is not available on the board" });
     expect(chooser.infoTokens).toHaveLength(1);
@@ -164,10 +162,10 @@ describe("Mission 22 token pass helper", () => {
       recipientIndex: 1,
       updatedRecipientToken: { value: 1, isYellow: false, position: -2 },
     });
-    expect(state.campaign?.mission22TokenPassBoard).toEqual({
-      numericTokens: [1, 2, 2, 3, 3, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12],
-      yellowTokens: 2,
-    });
+    expect(
+      state.campaign?.mission22TokenPassBoard?.numericTokens.filter((value) => value === 1),
+    ).toHaveLength(1);
+    expect(state.campaign?.mission22TokenPassBoard?.yellowTokens).toBe(2);
   });
 
   it("prevents a passed token from being reused when it cannot be placed", () => {
@@ -226,10 +224,8 @@ describe("Mission 22 token pass helper", () => {
       isYellow: false,
       position: -2,
     });
-    expect(state.campaign?.mission22TokenPassBoard).toEqual({
-      numericTokens: [],
-      yellowTokens: 0,
-    });
+    expect(state.campaign?.mission22TokenPassBoard?.numericTokens).not.toContain(4);
+    expect(state.campaign?.mission22TokenPassBoard?.yellowTokens).toBe(0);
 
     const secondForced = {
       ...firstForced,
@@ -243,10 +239,8 @@ describe("Mission 22 token pass helper", () => {
       ok: false,
       message: "Token value is not available on the board",
     });
-    expect(state.campaign?.mission22TokenPassBoard).toEqual({
-      numericTokens: [],
-      yellowTokens: 0,
-    });
+    expect(state.campaign?.mission22TokenPassBoard?.numericTokens).not.toContain(4);
+    expect(state.campaign?.mission22TokenPassBoard?.yellowTokens).toBe(0);
   });
 
   it("derives one remaining numeric copy from setup declarations when board state is absent", () => {
@@ -343,6 +337,37 @@ describe("Mission 22 token pass helper", () => {
 
     expect(board.numericTokens).not.toContain(4);
     expect(board).not.toBeNull();
+    expect(board.yellowTokens).toBe(2);
+  });
+
+  it("refreshes cached mission22 token pool state when missing values and no forced pass is active", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", gameValue: 1 })],
+      infoTokens: [{ value: 4, position: -1, isYellow: false }],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p1", gameValue: 2 })],
+    });
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [chooser, partner],
+      campaign: {
+        mission22TokenPassBoard: {
+          numericTokens: [],
+          yellowTokens: 0,
+        },
+      },
+    });
+
+    const board = getMission22TokenPassBoardState(state);
+
+    expect(
+      board.numericTokens.filter((value) => value === 4),
+    ).toHaveLength(1);
     expect(board.yellowTokens).toBe(2);
   });
 

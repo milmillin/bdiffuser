@@ -74,12 +74,38 @@ function boardHasExtraCopies(
   return false;
 }
 
+function boardHasMissingCopies(
+  cached: { numericTokens: number[]; yellowTokens: number },
+  derived: { numericTokens: number[]; yellowTokens: number },
+): boolean {
+  if (cached.yellowTokens < derived.yellowTokens) {
+    return true;
+  }
+
+  const cachedCounts = countNumericTokensByValue(cached.numericTokens);
+  const derivedCounts = countNumericTokensByValue(derived.numericTokens);
+
+  const allValues = new Set<number>([
+    ...cachedCounts.keys(),
+    ...derivedCounts.keys(),
+  ]);
+
+  for (const value of allValues) {
+    if ((cachedCounts.get(value) ?? 0) < (derivedCounts.get(value) ?? 0)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function getMission22TokenPassBoardState(
   state: GameState,
 ): { numericTokens: number[]; yellowTokens: number } {
   state.campaign ??= {};
   const existingBoard = state.campaign.mission22TokenPassBoard;
   const board = collectMission22TokenPassBoardFromPlayers(state);
+  const isActiveTokenPass = state.pendingForcedAction?.kind === "mission22TokenPass";
   if (
     state.phase !== "setup_info_tokens"
     && existingBoard
@@ -88,6 +114,7 @@ export function getMission22TokenPassBoardState(
     && Number.isInteger(existingBoard.yellowTokens)
     && existingBoard.yellowTokens >= 0
     && !boardHasExtraCopies(existingBoard, board)
+    && (isActiveTokenPass || !boardHasMissingCopies(existingBoard, board))
   ) {
     return existingBoard;
   }
