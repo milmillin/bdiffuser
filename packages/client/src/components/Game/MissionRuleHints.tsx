@@ -78,18 +78,24 @@ function CampaignCardThumbnail({
   rotateCcw90?: boolean;
   onClick: () => void;
 }) {
-  return (
+  const effectiveLandscape = landscape || rotateCcw90;
+  const width = effectiveLandscape ? "w-14" : "w-10";
+  const aspectRatio = effectiveLandscape ? "1037/736" : "739/1040";
+
+  const button = (
     <button
       type="button"
       onClick={onClick}
-      className={`relative overflow-hidden rounded-md border-2 ${borderColor} ${landscape ? "w-14" : "w-10"} shrink-0`}
-      style={{ aspectRatio: landscape ? "1037/736" : "739/1040" }}
+      className={`relative overflow-hidden rounded-md border-2 ${borderColor} ${width} shrink-0`}
+      style={{
+        aspectRatio,
+        ...(rotateCcw90 ? { transform: "rotate(-90deg)" } : {}),
+      }}
     >
       <img
         src={`/images/${image}`}
         alt=""
         className="h-full w-full object-cover"
-        style={rotateCcw90 ? { transform: "rotate(-90deg) scale(1.41)" } : undefined}
       />
       {dimmed && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -100,6 +106,18 @@ function CampaignCardThumbnail({
       )}
     </button>
   );
+
+  if (rotateCcw90) {
+    return (
+      <div className="relative w-10 shrink-0" style={{ aspectRatio: "739/1040" }}>
+        <div className="absolute inset-0 flex items-center justify-center">
+          {button}
+        </div>
+      </div>
+    );
+  }
+
+  return button;
 }
 
 function SequencePriorityHint({ gameState }: { gameState: ClientGameState }) {

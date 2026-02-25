@@ -356,7 +356,10 @@ function resolveForcedAction(state: GameState): boolean {
     for (const player of state.players) {
       for (let i = 0; i < player.hand.length; i++) {
         const tile = player.hand[i];
-        if (tile.cut || tile.gameValue !== 7) continue;
+        const isSeven = tile.color === "yellow"
+          ? Math.abs(tile.sortValue - 7.1) < 0.01
+          : tile.gameValue === 7;
+        if (tile.cut || !isSeven) continue;
         targets.push({ playerId: player.id, tileIndex: i });
       }
     }
