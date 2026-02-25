@@ -462,6 +462,48 @@ describe("constraint enforcement validation", () => {
     ).toBe(false);
   });
 
+  it("auto-flips Constraint K when active value constraints make no legal dual-cut guess", () => {
+    const state = stateWithConstraint("K", {
+      actorHandValues: [2, 3],
+      targetHandValues: [4],
+    });
+    state.campaign!.constraints!.global = [
+      makeConstraintCard({ id: "A", name: "Constraint A", active: true }),
+      makeConstraintCard({ id: "B", name: "Constraint B", active: true }),
+      makeConstraintCard({ id: "K", name: "Constraint K", active: true }),
+    ];
+
+    validateDualCut(state, 3);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
+    ).toBe(true);
+    expect(state.campaign?.constraints?.global.find((c) => c.id === "K")?.active).toBe(false);
+  });
+
+  it("auto-flips Constraint K when all remaining dual-cut targets are blocked by Constraint H", () => {
+    const state = stateWithConstraint("K", {
+      actorHandValues: [11],
+      targetHandValues: [2],
+    });
+    state.campaign!.constraints!.global = [
+      makeConstraintCard({ id: "H", name: "Constraint H", active: true }),
+      makeConstraintCard({ id: "K", name: "Constraint K", active: true }),
+    ];
+    state.players[1].infoTokens.push({
+      value: 2,
+      position: 0,
+      isYellow: false,
+    });
+
+    const result = validateDualCut(state, 2);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
+    ).toBe(true);
+    expect(
+      state.campaign?.constraints?.global.find((constraint) => constraint.id === "K")?.active,
+    ).toBe(false);
+  });
+
   it("Mission 57 initializes number cards and pairs them with constraint cards", () => {
     const state = stateWithMission57();
 

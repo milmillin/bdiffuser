@@ -34,6 +34,7 @@ import type {
   ActionLegalityCode,
   ConstraintCard,
   GameState,
+  Player,
   MissionId,
   NumberCardState,
   Mission57ConstraintPerValidatedValueRuleDef,
@@ -2859,26 +2860,98 @@ function valuePassesConstraint(value: number, constraintId: string): boolean {
 }
 
 /**
+ * Check whether at least one announced value can satisfy all active value
+ * constraints (A-F).
+ */
+function hasAnyAllowedDualCutValue(activeConstraintIds: string[]): boolean {
+  const numericConstraints = activeConstraintIds.filter((id) => id >= "A" && id <= "F");
+  if (numericConstraints.length === 0) return true;
+
+  for (let value = 1; value <= 12; value++) {
+    if (numericConstraints.every((id) => valuePassesConstraint(value, id))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Validate a target tile against active constraints that can make a dual-cut
+ * target illegal before the action is attempted (H/I/J).
+ */
+function isDualCutTargetTileAllowed(
+  targetPlayer: Readonly<Player>,
+  targetTileIndex: number,
+  activeConstraintIds: string[],
+): boolean {
+  if (activeConstraintIds.includes("H")) {
+    const hasInfoToken = targetPlayer.infoTokens.some(
+      (token) => token.position === targetTileIndex || token.positionB === targetTileIndex,
+    );
+    if (hasInfoToken) return false;
+  }
+
+  if (!activeConstraintIds.includes("I") && !activeConstraintIds.includes("J")) {
+    return true;
+  }
+
+  const targetStandIndex = hookFlatIndexToStandIndex(targetPlayer, targetTileIndex);
+  if (targetStandIndex == null) return false;
+
+  const targetStandRange = resolveHookStandRange(targetPlayer, targetStandIndex);
+  if (!targetStandRange) return false;
+
+  const uncutStandIndices = targetPlayer.hand
+    .map((_, i) => i)
+    .filter(
+      (i) =>
+        i >= targetStandRange.start &&
+        i < targetStandRange.endExclusive &&
+        !targetPlayer.hand[i].cut,
+    );
+
+  if (uncutStandIndices.length === 0) return false;
+
+  const farLeft = Math.min(...uncutStandIndices);
+  const farRight = Math.max(...uncutStandIndices);
+
+  if (activeConstraintIds.includes("I") && targetTileIndex === farRight) return false;
+  if (activeConstraintIds.includes("J") && targetTileIndex === farLeft) return false;
+
+  return true;
+}
+
+/**
  * Check if a player has ANY legally declared dual-cut target across all other stands.
  * Dual-cut actions are legal when:
- * - the actor has an uncut numeric wire (any value can be declared, including
- *   an intentionally incorrect one), or
- * - the actor has an uncut yellow wire and a teammate also has yellow.
+ * - the actor has any uncut wire (any legal declared value can be wrong),
+ * - at least one declared value remains legal under active numeric constraints, and
+ * - a teammate target wire is uncut and not blocked by active edge/info constraints.
  */
 function hasAnyDualCutTarget(state: Readonly<GameState>, playerId: string): boolean {
   const actor = state.players.find((p) => p.id === playerId);
   if (!actor) return false;
 
-  const actorHasUncutTile = actor.hand.some(
-    (tile) => !tile.cut,
-  );
+  const actorHasUncutTile = actor.hand.some((tile) => !tile.cut);
   if (!actorHasUncutTile) return false;
 
-  const hasUncutTarget = state.players.some((player) =>
-    player.id !== actor.id && player.hand.some((tile) => !tile.cut),
-  );
+  const activeConstraintIds = getActiveConstraints(state, playerId);
+  if (!hasAnyAllowedDualCutValue(activeConstraintIds)) return false;
 
-  return hasUncutTarget;
+  const hasValidTarget = state.players.some((player) => {
+    if (player.id === actor.id) return false;
+
+    return player.hand.some(
+      (tile, tileIndex) => !tile.cut && isDualCutTargetTileAllowed(
+        player,
+        tileIndex,
+        activeConstraintIds,
+      ),
+    );
+  });
+
+  return hasValidTarget;
 }
 
 /**
