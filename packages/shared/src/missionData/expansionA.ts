@@ -122,6 +122,8 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3), yellow: exact(3) } },
     behaviorHooks: ["mission_48_simultaneous_three_yellow"],
-    hookRules: [{ kind: "simultaneous_multi_cut", color: "yellow", count: 3 }],
+    hookRules: [
+      { kind: "simultaneous_multi_cut", color: "yellow", count: 3 },
+    ],
   });
 }

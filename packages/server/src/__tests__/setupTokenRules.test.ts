@@ -317,6 +317,28 @@ describe("setupTokenRules", () => {
       expect(p3.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
     });
 
+    it("mission 48 does not auto-place random setup tokens", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+      });
+      const partner = makePlayer({
+        id: "partner",
+      });
+      const state = makeGameState({
+        phase: "setup_info_tokens",
+        mission: 48,
+        players: [captain, partner],
+      });
+      dispatchHooks(48, { point: "setup", state });
+
+      const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
+
+      expect(placements).toEqual([]);
+      expect(captain.infoTokens).toEqual([]);
+      expect(partner.infoTokens).toEqual([]);
+    });
+
     it("mission 43 (2p): auto-places a random setup token for captain only", () => {
       const captain = makePlayer({
         id: "captain",
