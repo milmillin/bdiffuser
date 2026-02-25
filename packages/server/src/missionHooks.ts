@@ -49,6 +49,7 @@ import {
 import { pushGameLog } from "./gameLog.js";
 import { getMission22TokenPassBoardState } from "./mission22TokenPass.js";
 import { isMission46SevenTile } from "./mission46.js";
+import { isMission41PlayerSkippingTurn } from "./missionGuards.js";
 
 // ── Hook Point ─────────────────────────────────────────────
 
@@ -324,22 +325,10 @@ function actionTargetsUncutYellowWire(
   }
 }
 
-function hasOnlyUncutTripwireAndRedWires(
-  player: Readonly<import("@bomb-busters/shared").Player>,
-): boolean {
-  const uncutTiles = player.hand.filter((tile) => !tile.cut);
-  if (uncutTiles.length === 0) return false;
-
-  const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
-  if (uncutYellowCount !== 1) return false;
-
-  return uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red");
-}
-
 function canCurrentPlayerKeepPlayingMission41(state: Readonly<GameState>): boolean {
   const currentPlayer = state.players[state.currentPlayerIndex];
   if (!currentPlayer) return false;
-  return !hasOnlyUncutTripwireAndRedWires(currentPlayer);
+  return !isMission41PlayerSkippingTurn(state, currentPlayer);
 }
 
 function findNextUncutPlayerIndex(
@@ -5574,7 +5563,7 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
   validate(_rule: IberianYellowModeRuleDef, ctx: ValidateHookContext): HookResult | void {
     if (ctx.state.mission === 41) {
       const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
-      if (actor && hasOnlyUncutTripwireAndRedWires(actor)) {
+      if (actor && isMission41PlayerSkippingTurn(ctx.state, actor)) {
         return {
           validationCode: "MISSION_RULE_VIOLATION",
           validationError: "Mission 41: player must skip their turn",

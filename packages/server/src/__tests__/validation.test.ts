@@ -24,6 +24,7 @@ import {
   validateDualCutDoubleDetectorWithHooks,
   validateSoloCutWithHooks,
   validateSoloCutLegality,
+  isMission41PlayerSkippingTurn,
 } from "../validation";
 
 function withStandSizes<T extends ReturnType<typeof makePlayer>>(
@@ -991,6 +992,24 @@ describe("mission 41 Iberian yellow mode validation", () => {
     });
 
     expect(error).toBeNull();
+  });
+
+  it("matches mission 41 skip detection helper", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "r1", gameValue: "RED", color: "red", sortValue: 2.5 }),
+      ],
+    });
+    const other = makePlayer({ id: "other", hand: [makeTile({ id: "o1", gameValue: 4 })] });
+    const state = makeGameState({
+      mission: 41,
+      players: [actor, other],
+      currentPlayerIndex: 0,
+    });
+
+    expect(isMission41PlayerSkippingTurn(state, actor)).toBe(true);
   });
 
   it("blocks any mission 41 action from players who should skip", () => {

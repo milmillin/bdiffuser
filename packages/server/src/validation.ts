@@ -11,6 +11,7 @@ import {
   getBlueAsRedValue,
   hasActiveConstraint,
 } from "./missionHooks.js";
+import { isMission41PlayerSkippingTurn } from "./missionGuards.js";
 
 function isValidDualCutGuessValue(value: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= 12;
@@ -194,20 +195,8 @@ export function isRevealRedsForced(
  * In mission 41, a player must skip their turn when their uncut hand is
  * exactly their own tripwire plus any amount of red wires (or only the tripwire).
  */
-export function isMission41PlayerSkippingTurn(
-  state: Readonly<GameState>,
-  player: Readonly<Player>,
-): boolean {
-  if (state.mission !== 41) return false;
-
-  const uncutTiles = getUncutTiles(player);
-  if (uncutTiles.length === 0) return false;
-
-  const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
-  if (uncutYellowCount !== 1) return false;
-
-  return uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red");
-}
+// Re-export for compatibility with prior callers that import from validation.
+export { isMission41PlayerSkippingTurn };
 
 /** Check if a dual cut action is valid (base rules only). */
 export function validateDualCutLegality(
