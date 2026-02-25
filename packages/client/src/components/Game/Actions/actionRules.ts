@@ -395,6 +395,10 @@ export function canRevealReds(
     return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
   }
 
+  if (state.mission === 26) {
+    return false;
+  }
+
   if (state.mission === 59) {
     return false;
   }
@@ -426,6 +430,10 @@ export function isRevealRedsForced(
     const hiddenBlueAsRedValue = getMission11BlueAsRedValue(state);
     if (hiddenBlueAsRedValue == null) return false;
     return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
+  }
+
+  if (state.mission === 26) {
+    return false;
   }
 
   return uncutTiles.every((t) => t.color === "red");
