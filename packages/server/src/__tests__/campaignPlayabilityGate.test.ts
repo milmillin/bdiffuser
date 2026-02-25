@@ -304,7 +304,7 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
   // Fallback path: intentionally incorrect guesses are legal in some dual-cut missions.
   // In those cases, try all numeric guesses against all actor-owned numeric wires.
   const actorTileIndexes = [...new Set(actorValueToTileIndex.values())];
-  const shouldTryAllNumericGuesses = [44, 46, 49, 54, 63].includes(state.mission);
+  const shouldTryAllNumericGuesses = [35, 44, 46, 47, 49, 54, 63].includes(state.mission);
   const fallbackGuessValues: Array<number | "YELLOW"> = shouldTryAllNumericGuesses
     ? Array.from({ length: 12 }, (_, i) => i + 1)
     : [...actorValueToTileIndex.keys()].filter((value): value is number => typeof value === "number");
