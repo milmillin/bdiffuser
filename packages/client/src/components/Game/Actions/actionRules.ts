@@ -206,6 +206,9 @@ export function getSoloCutValues(
 
   const myUncut = me.hand.filter((t) => !t.cut);
   const values: (number | "YELLOW")[] = [];
+  const mission59ForwardValues = state.mission === 59
+    ? new Set(getMission59ForwardValues(state))
+    : null;
   const mission35HasUncutYellowWires =
     state.mission === 35 &&
     state.players.some((player) =>
@@ -252,7 +255,7 @@ export function getSoloCutValues(
   for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
-      if (state.mission === 59 && !isMission59CutValueVisible(state, value)) {
+      if (state.mission === 59 && !mission59ForwardValues?.has(value)) {
         continue;
       }
       if (!isMission26CutValueVisible(state, value)) continue;
@@ -323,21 +326,18 @@ export function isMission26CutValueVisible(
   ).has(value);
 }
 
-export function isMission59CutValueVisible(
-  state: ClientGameState,
-  value: unknown,
-): value is number {
-  if (typeof value !== "number") return false;
-  if (state.mission !== 59) return true;
+export function getMission59ForwardValues(state: ClientGameState): number[] {
+  if (state.mission !== 59) return [];
 
   const mission59Nano = state.campaign?.mission59Nano;
-  if (!mission59Nano) return false;
-  if (!Number.isInteger(mission59Nano.position)) return false;
-  if (mission59Nano.facing !== 1 && mission59Nano.facing !== -1) return false;
+  if (!mission59Nano) return [];
+  if (!Number.isInteger(mission59Nano.position)) return [];
+  if (mission59Nano.facing !== 1 && mission59Nano.facing !== -1) return [];
 
   const line = state.campaign?.numberCards?.visible ?? [];
-  if (line.length === 0) return false;
+  if (line.length === 0) return [];
 
+  const values: number[] = [];
   for (
     let index = mission59Nano.position;
     index >= 0 && index < line.length;
@@ -345,10 +345,21 @@ export function isMission59CutValueVisible(
   ) {
     const card = line[index];
     if (!card?.faceUp) continue;
-    if (card.value === value) return true;
+    values.push(card.value);
   }
 
-  return false;
+  return values;
+}
+
+export function isMission59CutValueVisible(
+  state: ClientGameState,
+  value: unknown,
+): value is number {
+  if (typeof value !== "number") return false;
+  if (state.mission !== 59) return true;
+
+  const visibleValues = new Set(getMission59ForwardValues(state));
+  return visibleValues.has(value);
 }
 
 export function canRevealReds(

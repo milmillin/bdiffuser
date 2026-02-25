@@ -61,6 +61,7 @@ import {
   isRevealRedsForced,
   isMission26CutValueVisible,
   isMission59CutValueVisible,
+  getMission59ForwardValues,
   getImmediateEquipmentPayload,
   getInitialEquipmentMode,
   getSoloCutValues,
@@ -583,6 +584,7 @@ export function GameBoard({
 
   const soloValues = me ? getSoloCutValues(gameState, playerId) : [];
   const soloValueSet = new Set<number | "YELLOW">(soloValues);
+  const mission59ForwardValues = getMission59ForwardValues(gameState);
   const mission9Gate = getMission9SequenceGate(gameState);
   const mission9ActiveValue = mission9Gate?.activeValue;
   const mission9RequiredCuts = mission9Gate?.requiredCuts ?? 2;
@@ -1897,6 +1899,7 @@ export function GameBoard({
                   mission9PendingDualBlocked || mission9SelectedGuessBlocked
                 }
                 mission9HasYellowSoloValue={mission9HasYellowSoloValue}
+                mission59ForwardValues={mission59ForwardValues}
                 forceRevealReds={forceRevealReds}
               />
             </div>
@@ -1941,6 +1944,7 @@ export function GameBoard({
                   mission9PendingDualBlocked || mission9SelectedGuessBlocked
                 }
                 mission9HasYellowSoloValue={mission9HasYellowSoloValue}
+                mission59ForwardValues={mission59ForwardValues}
                 forceRevealReds={forceRevealReds}
               />
             }
@@ -2552,6 +2556,7 @@ function ActionMissionHints({
   mission9ActiveProgress,
   mission9DualGuessBlocked,
   mission9HasYellowSoloValue,
+  mission59ForwardValues,
   forceRevealReds,
 }: {
   mission: number;
@@ -2562,6 +2567,7 @@ function ActionMissionHints({
   mission9ActiveProgress?: number;
   mission9DualGuessBlocked: boolean;
   mission9HasYellowSoloValue: boolean;
+  mission59ForwardValues: number[];
   forceRevealReds: boolean;
 }) {
   if (!isMyTurn && mission !== 9) return null;
@@ -2599,6 +2605,23 @@ function ActionMissionHints({
               Yellow solo cuts are not restricted by sequence priority.
             </div>
           )}
+        </div>
+      )}
+
+      {mission === 59 && (
+        <div
+          className="rounded-lg border border-cyan-500/50 bg-cyan-950/25 px-3 py-2 text-xs text-cyan-100 space-y-1"
+          data-testid="mission59-forward-hint"
+        >
+          <div className="font-bold uppercase tracking-wide text-cyan-200">
+            Mission 59
+          </div>
+          <div>
+            Visible Number values in Nano&apos;s current direction:&nbsp;
+            {mission59ForwardValues.length > 0
+              ? mission59ForwardValues.join(", ")
+              : "None"}
+          </div>
         </div>
       )}
 
