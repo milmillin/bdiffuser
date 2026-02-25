@@ -578,9 +578,9 @@ function CampaignObjectsHint({
         {gameState.mission >= 9 && (
           <div className="rounded-md bg-black/30 px-2 py-1.5 space-y-1.5">
             <div className="text-[10px] uppercase text-gray-400">Rule Stickers</div>
-            {gameState.mission >= 9 && <img src={`/images/${RULE_STICKER_IMAGES.a}`} alt="Rule Sticker A" className="w-full rounded" />}
-            {gameState.mission >= 31 && <img src={`/images/${RULE_STICKER_IMAGES.b}`} alt="Rule Sticker B" className="w-full rounded" />}
-            {gameState.mission >= 55 && <img src={`/images/${RULE_STICKER_IMAGES.c}`} alt="Rule Sticker C" className="w-full rounded" />}
+            {gameState.mission >= 9 && <img src={`/images/${RULE_STICKER_IMAGES.a}`} alt="Rule Sticker A" className="w-1/2 rounded" />}
+            {gameState.mission >= 31 && <img src={`/images/${RULE_STICKER_IMAGES.b}`} alt="Rule Sticker B" className="w-1/2 rounded" />}
+            {gameState.mission >= 55 && <img src={`/images/${RULE_STICKER_IMAGES.c}`} alt="Rule Sticker C" className="w-1/2 rounded" />}
           </div>
         )}
       </div>

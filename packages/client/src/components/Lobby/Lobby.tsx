@@ -206,8 +206,9 @@ export function Lobby({
                 className="w-full rounded-[1.15rem]"
               />
 
-              <RuleStickerBanner mission={previewMission} />
             </div>
+
+            <RuleStickerBanner mission={previewMission} />
 
             {/* Actions */}
             {missionInvalid && (
@@ -460,7 +461,7 @@ function RuleStickerBanner({ mission }: { mission: MissionId }) {
   if (stickers.length === 0) return null;
 
   return (
-    <div className="space-y-1.5">
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl p-4 space-y-1.5">
       <div className="text-[10px] font-bold uppercase text-gray-400">Active Rule Stickers</div>
       {stickers.map((s) => (
         <img key={s.key} src={`/images/${s.image}`} alt={s.label} title={s.label} className="w-full rounded-md" />
