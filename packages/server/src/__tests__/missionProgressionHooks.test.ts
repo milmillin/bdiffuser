@@ -441,6 +441,30 @@ describe("mission progression hooks", () => {
     expect(result.validationError).toContain("insufficient oxygen");
   });
 
+  it("mission 54 validate does not use reserve oxygen to pay cut cost", () => {
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 54 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 0;
+    state.campaign.oxygen.pool = 2;
+
+    const result = dispatchHooks(54, {
+      point: "validate",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+    });
+
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toContain("insufficient oxygen");
+  });
+
   it("mission 54 resolve consumes oxygen on cut based on wire depth", () => {
     const state = makeGameState({
       mission: 54,
@@ -458,6 +482,37 @@ describe("mission progression hooks", () => {
     });
 
     expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(7);
+  });
+
+  it("mission 54 resolve does not spend reserve oxygen when actor is empty", () => {
+    const state = makeGameState({
+      mission: 54,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+      board: makeBoardState({ detonatorMax: 3 }),
+    });
+    dispatchHooks(54, { point: "setup", state });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 54 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 0;
+    state.campaign.oxygen.playerOxygen.p2 = 0;
+    state.campaign.oxygen.pool = 2;
+
+    dispatchHooks(54, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign.oxygen.playerOxygen.p1).toBe(0);
+    expect(state.campaign.oxygen.pool).toBe(2);
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
   });
 
   it("mission 54 endTurn does not consume oxygen", () => {

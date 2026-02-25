@@ -847,7 +847,7 @@ function actorCanAffordAnyMission44Cut(
   const allRemainingRed = actorUncut.every((tile) => tile.gameValue === "RED");
   if (allRemainingRed) return true;
 
-  const available = state.mission === 63
+  const available = state.mission === 63 || state.mission === 49 || state.mission === 54
     ? Math.max(0, Math.floor(state.campaign?.oxygen?.playerOxygen[actor.id] ?? 0))
     : getAvailableOxygen(state, actor.id);
   if (available <= 0) return false;
@@ -1677,7 +1677,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     const oxygen = ctx.state.campaign?.oxygen;
     if (!oxygen) return;
     if (requiredCost <= 0) return;
-    const available = ctx.state.mission === 63 || ctx.state.mission === 49
+    const available = ctx.state.mission === 63 || ctx.state.mission === 49 || ctx.state.mission === 54
       ? Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0))
       : getAvailableOxygen(ctx.state, actorId);
     if (available < requiredCost) {
@@ -1896,6 +1896,39 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     if (requiredCost <= 0) return;
     const oxygen = ctx.state.campaign?.oxygen;
     if (!oxygen) return;
+
+    if (ctx.state.mission === 54) {
+      const owned = Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0));
+      const movedToPool = Math.min(owned, requiredCost);
+      oxygen.playerOxygen[actorId] = owned - movedToPool;
+      oxygen.pool += movedToPool;
+
+      const deficit = requiredCost - movedToPool;
+      if (deficit > 0) {
+        ctx.state.board.detonatorPosition += 1;
+        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+          ctx.state.result = "loss_detonator";
+          ctx.state.phase = "finished";
+          emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+        }
+      }
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail: [
+          "oxygen_progression:mode=mission54_cut",
+          `cost=${requiredCost}`,
+          `cut=${ctx.cutValue}`,
+          `moved=${movedToPool}`,
+          `deficit=${deficit}`,
+          `pool=${oxygen.pool}`,
+        ].join("|"),
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     if (ctx.state.mission === 63) {
       const owned = Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0));
