@@ -51,7 +51,10 @@ export function getOpponentTileSelectableFilter(
     case "x_or_y_ray":
       return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "grappling_hook":
-      return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
+      return (tile) =>
+        !tile.cut &&
+        !((mission === 41 || mission === 48) && tile.color === "yellow") &&
+        !(hasXRestriction && tile.isXMarked);
     default:
       return () => false;
   }

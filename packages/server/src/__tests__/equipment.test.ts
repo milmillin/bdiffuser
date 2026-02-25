@@ -1006,6 +1006,35 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it.each([41, 48] as const)("mission %i: rejects Grappling Hook when targeting a tripwire", (mission) => {
+    const state = stateWithEquipment(
+      [
+        makePlayer({
+          id: "actor",
+          hand: [makeTile({ id: "a1", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "teammate",
+          hand: [makeYellowTile({ id: "t1-yellow", gameValue: 6 })],
+        }),
+      ],
+      unlockedEquipmentCard("grappling_hook", "Grappling Hook", 4),
+    );
+    state.mission = mission;
+
+    const error = validateUseEquipment(state, "actor", "grappling_hook", {
+      kind: "grappling_hook",
+      targetPlayerId: "teammate",
+      targetTileIndex: 0,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe(
+      "Tripwire targets must be handled via the mission special action",
+    );
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {

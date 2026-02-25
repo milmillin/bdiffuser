@@ -892,6 +892,12 @@ export function validateUseEquipment(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Cannot take a cut wire");
+      if (isMission41Or48YellowTarget(state, tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Tripwire targets must be handled via the mission special action",
+        );
+      }
       if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
         return legalityError(
           "MISSION_RULE_VIOLATION",

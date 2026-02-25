@@ -196,6 +196,20 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
   });
 
+  it.each([41, 48] as const)(
+    "grappling_hook: blocks mission %i tripwire targets",
+    (mission) => {
+      const mode: EquipmentMode = {
+        kind: "grappling_hook",
+        targetPlayerId: "opp1",
+        targetTileIndex: null,
+      };
+      const filter = getOpponentTileSelectableFilter(mode, "opp1", mission)!;
+      expect(filter(tile({ color: "blue", gameValue: 6 }), 0)).toBe(true);
+      expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
+    },
+  );
+
   it("post_it: returns a function that always returns false", () => {
     const mode: EquipmentMode = { kind: "post_it" };
     const filter = getOpponentTileSelectableFilter(mode, "opp1")!;
