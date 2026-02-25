@@ -46,12 +46,20 @@ describe("equipment pool resolution", () => {
 
     expect(ids).toEqual(["stabilizer", "talkies_walkies", "general_radar"]);
   });
+
+  it("mission 52 keeps label equipment in setup pool while still forbidding redraw to board", () => {
+    const { setup } = resolveMissionSetup(52, 4);
+    const ids = resolveEquipmentPoolIds(setup.equipment);
+
+    expect(ids).toContain("label_neq");
+    expect(ids).toContain("label_eq");
+  });
 });
 
 describe("setupGame equipmentReserve", () => {
   it("deals player-count equipment cards and keeps the rest in reserve", () => {
     const playerCount = 4;
-    const mission = 10; // mission 9+ with yellow wires → Sticker A adds False Bottom to the pool
+    const mission = 9; // mission 9+ with yellow wires → Sticker A adds False Bottom to the pool
     const { setup } = resolveMissionSetup(mission, playerCount);
     const players = Array.from({ length: playerCount }, (_, i) => ({
       id: `player-${i + 1}`,
@@ -143,6 +151,49 @@ describe("setupGame equipmentReserve", () => {
     try {
       const { board } = setupGame(players as any, mission);
       expect(board.equipment.some((eq) => eq.id === "disintegrator")).toBe(false);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  it("mission 52 setup redraws label cards to board reserve instead of dealing them", () => {
+    const playerCount = 4;
+    const mission = 52;
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+    const setup = resolveMissionSetup(mission, playerCount).setup;
+    const poolIds = resolveEquipmentPoolIds(setup.equipment);
+    const poolSize = poolIds.length;
+    const forbiddenIndices = [
+      poolIds.indexOf("label_neq"),
+      poolIds.indexOf("label_eq"),
+    ];
+    for (const index of forbiddenIndices) {
+      expect(index).toBeGreaterThan(0);
+    }
+
+    const originalRandom = Math.random;
+    const randomValues: number[] = [];
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(forbiddenIndices.includes(i) ? 0 : i / (i + 1));
+    }
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(i / (i + 1));
+    }
+    let randomIdx = 0;
+    Math.random = () => (randomValues[randomIdx++] ?? 0.5);
+
+    try {
+      const { board } = setupGame(players as any, mission);
+      expect(board.equipment.some((eq) => eq.id === "label_neq")).toBe(false);
+      expect(board.equipment.some((eq) => eq.id === "label_eq")).toBe(false);
     } finally {
       Math.random = originalRandom;
     }

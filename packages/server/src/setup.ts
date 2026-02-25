@@ -196,11 +196,6 @@ function resolveEquipmentPool(spec: MissionEquipmentSpec): (typeof EQUIPMENT_DEF
     );
   }
 
-  if (spec.excludedUnlockValues?.length) {
-    const excluded = new Set(spec.excludedUnlockValues);
-    candidateDefs = candidateDefs.filter((def) => !excluded.has(def.unlockValue));
-  }
-
   if (spec.excludedEquipmentIds?.length) {
     const excluded = new Set(spec.excludedEquipmentIds);
     candidateDefs = candidateDefs.filter((def) => !excluded.has(def.id));
@@ -244,6 +239,50 @@ function resolveSetupEquipmentPool(
   return Array.from(byId.values());
 }
 
+const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
+  Partial<Record<MissionId, readonly string[]>>
+> = {
+  41: ["false_bottom"],
+  10: ["coffee_mug"],
+  44: ["x_or_y_ray"],
+  46: ["emergency_batteries"],
+  45: ["x_or_y_ray", "coffee_mug"],
+  47: ["x_or_y_ray"],
+  57: ["disintegrator"],
+  58: ["post_it", "emergency_batteries"],
+  54: ["x_or_y_ray"],
+  59: ["x_or_y_ray"],
+  63: ["x_or_y_ray"],
+  65: ["x_or_y_ray"],
+} as const;
+
+function resolveRedrawForbiddenEquipmentIds(
+  mission: MissionId,
+  spec: MissionEquipmentSpec,
+  candidateDefs: (typeof EQUIPMENT_DEFS)[number][],
+): Set<string> {
+  const redrawForbiddenIds = new Set<string>();
+  const idByUnlockValue = new Map<number, string>();
+
+  for (const def of candidateDefs) {
+    if (typeof def.unlockValue === "number") {
+      idByUnlockValue.set(def.unlockValue, def.id);
+    }
+  }
+
+  for (const unlockValue of spec.excludedUnlockValues ?? []) {
+    if (typeof unlockValue !== "number") continue;
+    const forbiddenId = idByUnlockValue.get(unlockValue);
+    if (forbiddenId) redrawForbiddenIds.add(forbiddenId);
+  }
+
+  for (const id of MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS[mission] ?? []) {
+    redrawForbiddenIds.add(id);
+  }
+
+  return redrawForbiddenIds;
+}
+
 function defToCard(def: (typeof EQUIPMENT_DEFS)[number]): EquipmentCard {
   return {
     id: def.id,
@@ -260,35 +299,14 @@ function createEquipmentCards(
   count: number,
   candidateDefs: (typeof EQUIPMENT_DEFS)[number][],
   shuffleBeforeDeal = true,
-  mission: MissionId,
+  redrawForbiddenIds: ReadonlySet<string> = new Set<string>(),
 ): { dealt: EquipmentCard[]; reserve: EquipmentCard[] } {
   const pool = [...candidateDefs];
   if (shuffleBeforeDeal) {
     shuffle(pool);
   }
 
-  const redrawForbiddenIds =
-    mission === 41
-      ? new Set(["false_bottom"])
-      : mission === 10
-        ? new Set(["coffee_mug"])
-      : mission === 44
-        ? new Set(["x_or_y_ray"])
-      : mission === 46
-        ? new Set(["emergency_batteries"])
-      : mission === 45
-        ? new Set(["x_or_y_ray", "coffee_mug"])
-      : mission === 47
-        ? new Set(["x_or_y_ray"])
-      : mission === 57
-        ? new Set(["disintegrator"])
-        : mission === 58
-          ? new Set(["post_it", "emergency_batteries"])
-          : mission === 54 || mission === 59 || mission === 63 || mission === 65
-            ? new Set(["x_or_y_ray"])
-            : null;
-
-  if (redrawForbiddenIds) {
+  if (redrawForbiddenIds.size > 0) {
     const dealt: typeof pool = [];
     let cursor = 0;
     while (dealt.length < count && cursor < pool.length) {
@@ -579,11 +597,16 @@ export function setupGame(
     setup.equipment,
     setup.yellow,
   );
+  const redrawForbiddenIds = resolveRedrawForbiddenEquipmentIds(
+    mission,
+    setup.equipment,
+    equipmentPool,
+  );
   const { dealt: equipment, reserve: equipmentReserve } = createEquipmentCards(
     config.equipmentCount,
     equipmentPool,
     setup.equipment.mode !== "fixed_pool",
-    mission,
+    redrawForbiddenIds,
   );
 
   const board: BoardState = {

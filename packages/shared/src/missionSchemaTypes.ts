@@ -38,6 +38,10 @@ export interface MissionEquipmentSpec {
   mode: "none" | "default" | "fixed_pool";
   /** Include campaign-only equipment cards (22/33/99/10-10/11-11/yellow) in the draw pool. */
   includeCampaignEquipment?: boolean;
+  /**
+   * Equipment by unlock value that is allowed in the setup pool but should be
+   * skipped when dealt to the board, triggering an immediate redraw.
+   */
   excludedUnlockValues?: readonly EquipmentUnlockValue[];
   /** Exclude specific equipment cards by ID (used when unlock values are not unique). */
   excludedEquipmentIds?: readonly string[];
