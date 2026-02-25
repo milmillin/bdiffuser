@@ -883,35 +883,47 @@ function getMission49OxygenRecipientId(
   state: GameState,
   action: ValidateHookContext["action"],
 ): string | undefined {
+  const actorId = action.actorId;
+  const requestedRecipientId = getMission49RecipientIdFromAction(action);
+  if (
+    requestedRecipientId != null &&
+    requestedRecipientId !== actorId &&
+    state.players.some((player) => player.id === requestedRecipientId)
+  ) {
+    return requestedRecipientId;
+  }
+
+  const actorIndex = state.players.findIndex((player) =>
+    player.id === actorId,
+  );
+  if (actorIndex < 0 || state.players.length === 0) return undefined;
+  return state.players[(actorIndex + 1) % state.players.length]?.id;
+}
+
+function getMission49RecipientIdFromAction(
+  action: ValidateHookContext["action"],
+): string | undefined {
+  if (
+    action.type !== "soloCut" &&
+    action.type !== "dualCut" &&
+    action.type !== "dualCutDoubleDetector"
+  ) {
+    return undefined;
+  }
+
   if (action.type === "soloCut") {
-    const actorId = action.actorId;
-    const requestedRecipientId = typeof action.targetPlayerId === "string"
-      ? action.targetPlayerId
-      : undefined;
-    if (
-      requestedRecipientId != null &&
-      requestedRecipientId !== actorId &&
-      state.players.some((player) => player.id === requestedRecipientId)
-    ) {
-      return requestedRecipientId;
+    if (typeof action.oxygenRecipientPlayerId === "string") {
+      return action.oxygenRecipientPlayerId;
+    }
+    const targetPlayerId = action.targetPlayerId;
+    if (typeof targetPlayerId === "string") {
+      return targetPlayerId;
     }
   }
 
-  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
-    return typeof action.targetPlayerId === "string" ? action.targetPlayerId : undefined;
-  }
-
-  if (action.type === "soloCut") {
-    const actorIndex = state.players.findIndex((player) =>
-      player.id === action.actorId,
-    );
-    if (actorIndex >= 0 && state.players.length > 0) {
-      const leftPlayer = state.players[(actorIndex + 1) % state.players.length];
-      return leftPlayer?.id;
-    }
-  }
-
-  return undefined;
+  return typeof action.oxygenRecipientPlayerId === "string"
+    ? action.oxygenRecipientPlayerId
+    : undefined;
 }
 
 function advanceToNextPlayerWithUncutTiles(
@@ -1699,16 +1711,18 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     if (typeof cutValue !== "number") return;
     if (
       ctx.state.mission === 49 &&
-      ctx.action.type === "soloCut" &&
-      typeof ctx.action.targetPlayerId === "string"
+      (ctx.action.type === "soloCut" ||
+        ctx.action.type === "dualCut" ||
+        ctx.action.type === "dualCutDoubleDetector")
     ) {
-      const targetPlayerId = ctx.action.targetPlayerId;
+      const requestedRecipientId = getMission49RecipientIdFromAction(ctx.action);
       if (
-        targetPlayerId === actorId ||
-        !ctx.state.players.some((player) => player.id === targetPlayerId)
+        requestedRecipientId != null &&
+        (requestedRecipientId === actorId ||
+          !ctx.state.players.some((player) => player.id === requestedRecipientId))
       ) {
         return {
-          validationError: `Mission 49: solo-cut oxygen recipient must be a teammate`,
+          validationError: `Mission 49: oxygen recipient must be a teammate`,
           validationCode: "MISSION_RULE_VIOLATION",
         };
       }

@@ -828,6 +828,7 @@ export type ValidatableAction =
       targetPlayerId: string;
       targetTileIndex: number;
       guessValue: number | "YELLOW";
+      oxygenRecipientPlayerId?: string;
     }
   | {
       type: "dualCutDoubleDetector";
@@ -836,6 +837,7 @@ export type ValidatableAction =
       tileIndex1: number;
       tileIndex2: number;
       guessValue: number;
+      oxygenRecipientPlayerId?: string;
     }
   | {
       type: "simultaneousCut";
@@ -1004,6 +1006,7 @@ export function validateDualCutWithHooks(
   targetPlayerId: string,
   targetTileIndex: number,
   guessValue: number | "YELLOW",
+  oxygenRecipientPlayerId?: string,
 ): ActionLegalityError | null {
   return validateActionWithHooks(state, {
     type: "dualCut",
@@ -1011,6 +1014,7 @@ export function validateDualCutWithHooks(
     targetPlayerId,
     targetTileIndex,
     guessValue,
+    oxygenRecipientPlayerId,
   });
 }
 
@@ -1042,6 +1046,7 @@ export function validateDualCutDoubleDetectorWithHooks(
   tileIndex1: number,
   tileIndex2: number,
   guessValue: number,
+  oxygenRecipientPlayerId?: string,
 ): ActionLegalityError | null {
   return validateActionWithHooks(state, {
     type: "dualCutDoubleDetector",
@@ -1050,6 +1055,7 @@ export function validateDualCutDoubleDetectorWithHooks(
     tileIndex1,
     tileIndex2,
     guessValue,
+    oxygenRecipientPlayerId,
   });
 }
 

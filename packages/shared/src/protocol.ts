@@ -25,9 +25,18 @@ export type ClientMessage =
       targetPlayerId: string;
       targetTileIndex: number;
       guessValue: number | "YELLOW";
+      oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
     }
-  | { type: "dualCutDoubleDetector"; targetPlayerId: string; tileIndex1: number; tileIndex2: number; guessValue: number; actorTileIndex?: number }
+  | {
+      type: "dualCutDoubleDetector";
+      targetPlayerId: string;
+      tileIndex1: number;
+      tileIndex2: number;
+      guessValue: number;
+      oxygenRecipientPlayerId?: string;
+      actorTileIndex?: number;
+    }
   | { type: "soloCut"; value: number | "YELLOW"; targetPlayerId?: string }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }

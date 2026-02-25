@@ -420,6 +420,8 @@ export type ForcedAction =
       originalTileIndex1?: number;
       /** Double Detector: second designated tile index. */
       originalTileIndex2?: number;
+      /** Oxygen recipient player ID selected by the actor (for Mission 49 rules). */
+      oxygenRecipientPlayerId?: string;
       /** Triple Detector: the 3 originally targeted tile indices. */
       originalTargetTileIndices?: number[];
       /** Actor's tile index to cut on resolution. */

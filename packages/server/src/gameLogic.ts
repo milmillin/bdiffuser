@@ -390,6 +390,7 @@ export function executeDualCut(
   guessValue: number | "YELLOW",
   actorTileIndex?: number,
   guessLabel?: string,
+  oxygenRecipientPlayerId?: string,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -415,7 +416,14 @@ export function executeDualCut(
     const resolveResult = dispatchHooks(state.mission, {
       point: "resolve",
       state,
-      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex, guessValue },
+      action: {
+        type: "dualCut",
+        actorId,
+        targetPlayerId,
+        targetTileIndex,
+        guessValue,
+        oxygenRecipientPlayerId,
+      },
       cutValue: guessValue,
       cutSuccess: true,
     });
@@ -509,7 +517,14 @@ export function executeDualCut(
     dispatchHooks(state.mission, {
       point: "resolve",
       state,
-      action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex, guessValue },
+      action: {
+        type: "dualCut",
+        actorId,
+        targetPlayerId,
+        targetTileIndex,
+        guessValue,
+        oxygenRecipientPlayerId,
+      },
       cutValue: guessValue,
       cutSuccess: false,
     });
@@ -735,6 +750,7 @@ export function executeDualCutDoubleDetector(
   tileIndex2: number,
   guessValue: number,
   actorTileIndex?: number,
+  oxygenRecipientPlayerId?: string,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -770,6 +786,7 @@ export function executeDualCutDoubleDetector(
     source: "doubleDetector",
     originalTileIndex1: tileIndex1,
     originalTileIndex2: tileIndex2,
+    oxygenRecipientPlayerId,
     actorTileIndex,
   };
 
@@ -1273,7 +1290,13 @@ export function resolveDetectorTileChoice(
   const forced = state.pendingForcedAction as Extract<ForcedAction, { kind: "detectorTileChoice" }>;
   state.pendingForcedAction = undefined;
 
-  const { actorId, targetPlayerId, guessValue, source } = forced;
+  const {
+    actorId,
+    targetPlayerId,
+    guessValue,
+    source,
+    oxygenRecipientPlayerId,
+  } = forced;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
   const actorUncut = getUncutTiles(actor);
@@ -1320,7 +1343,16 @@ export function resolveDetectorTileChoice(
             return t && !t.cut && t.color !== "red" && !isHiddenRedLike(t);
           }) ?? origIndices[0] ?? 0;
     addLog(state, actorId, "useEquipment", `${target.name} confirmed detector result`);
-    return executeDualCut(state, actorId, targetPlayerId, fallbackTile, guessValue);
+    return executeDualCut(
+      state,
+      actorId,
+      targetPlayerId,
+      fallbackTile,
+      guessValue,
+      undefined,
+      undefined,
+      oxygenRecipientPlayerId,
+    );
   }
 
   // ── 1 match: auto-select the single matching tile ────────
@@ -1339,7 +1371,14 @@ export function resolveDetectorTileChoice(
   const resolveResult = dispatchHooks(state.mission, {
     point: "resolve",
     state,
-    action: { type: "dualCut", actorId, targetPlayerId, targetTileIndex: effectiveTileIndex, guessValue },
+    action: {
+      type: "dualCut",
+      actorId,
+      targetPlayerId,
+      targetTileIndex: effectiveTileIndex,
+      guessValue,
+      oxygenRecipientPlayerId: forced.oxygenRecipientPlayerId,
+    },
     cutValue: guessValue,
     cutSuccess: true,
   });

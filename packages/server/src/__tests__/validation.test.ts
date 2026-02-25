@@ -17,6 +17,7 @@ import {
   validateActionWithHooks,
   validateDualCut,
   validateDualCutDoubleDetectorLegality,
+  validateDualCutWithHooks,
   validateDualCutLegality,
   validateRevealRedsLegality,
   validateSimultaneousCutLegality,
@@ -770,6 +771,62 @@ describe("mission 49 oxygen recipient validation helper", () => {
     });
 
     const error = validateSoloCutWithHooks(state, "actor", 4, "teammate");
+
+    expect(error).toBeNull();
+  });
+
+  it("rejects dualCut when recipient is the acting player", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 49,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutWithHooks(
+      state,
+      "actor",
+      "teammate",
+      0,
+      4,
+      "actor",
+    );
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("recipient must be a teammate");
+  });
+
+  it("accepts dualCut with valid teammate recipient", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4 })],
+    });
+    const state = makeGameState({
+      mission: 49,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutWithHooks(
+      state,
+      "actor",
+      "teammate",
+      0,
+      4,
+      "teammate",
+    );
 
     expect(error).toBeNull();
   });

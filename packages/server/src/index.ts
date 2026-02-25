@@ -316,10 +316,25 @@ export class BombBustersServer extends Server<Env> {
         this.handlePlaceInfoToken(connection, msg.value, msg.tileIndex);
         break;
       case "dualCut":
-        this.handleDualCut(connection, msg.targetPlayerId, msg.targetTileIndex, msg.guessValue, msg.actorTileIndex);
+        this.handleDualCut(
+          connection,
+          msg.targetPlayerId,
+          msg.targetTileIndex,
+          msg.guessValue,
+          msg.oxygenRecipientPlayerId,
+          msg.actorTileIndex,
+        );
         break;
       case "dualCutDoubleDetector":
-        this.handleDualCutDoubleDetector(connection, msg.targetPlayerId, msg.tileIndex1, msg.tileIndex2, msg.guessValue, msg.actorTileIndex);
+        this.handleDualCutDoubleDetector(
+          connection,
+          msg.targetPlayerId,
+          msg.tileIndex1,
+          msg.tileIndex2,
+          msg.guessValue,
+          msg.oxygenRecipientPlayerId,
+          msg.actorTileIndex,
+        );
         break;
       case "soloCut":
         this.handleSoloCut(connection, msg.value, msg.targetPlayerId);
@@ -426,6 +441,9 @@ export class BombBustersServer extends Server<Env> {
           }
           if (gs.pendingForcedAction.actorId === oldId) {
             gs.pendingForcedAction.actorId = newId;
+          }
+          if (gs.pendingForcedAction.oxygenRecipientPlayerId === oldId) {
+            gs.pendingForcedAction.oxygenRecipientPlayerId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "talkiesWalkiesTileChoice") {
           if (gs.pendingForcedAction.targetPlayerId === oldId) {
@@ -767,6 +785,7 @@ export class BombBustersServer extends Server<Env> {
     targetPlayerId: string,
     targetTileIndex: number,
     guessValue: number | "YELLOW",
+    oxygenRecipientPlayerId?: string,
     actorTileIndex?: number,
   ) {
     const state = this.room.gameState;
@@ -778,6 +797,7 @@ export class BombBustersServer extends Server<Env> {
       targetPlayerId,
       targetTileIndex,
       guessValue,
+      oxygenRecipientPlayerId,
     );
     if (error) {
       this.sendMsg(conn, {
@@ -789,7 +809,16 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeDualCut(state, conn.id, targetPlayerId, targetTileIndex, guessValue, actorTileIndex);
+    const action = executeDualCut(
+      state,
+      conn.id,
+      targetPlayerId,
+      targetTileIndex,
+      guessValue,
+      actorTileIndex,
+      undefined,
+      oxygenRecipientPlayerId,
+    );
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
@@ -804,6 +833,7 @@ export class BombBustersServer extends Server<Env> {
     tileIndex1: number,
     tileIndex2: number,
     guessValue: number,
+    oxygenRecipientPlayerId?: string,
     actorTileIndex?: number,
   ) {
     const state = this.room.gameState;
@@ -816,6 +846,7 @@ export class BombBustersServer extends Server<Env> {
       tileIndex1,
       tileIndex2,
       guessValue,
+      oxygenRecipientPlayerId,
     );
     if (error) {
       this.sendMsg(conn, {
@@ -835,6 +866,7 @@ export class BombBustersServer extends Server<Env> {
       tileIndex2,
       guessValue,
       actorTileIndex,
+      oxygenRecipientPlayerId,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 

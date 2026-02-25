@@ -148,6 +148,7 @@ type PendingAction =
       actorTileIndex: number;
       targetPlayerId: string;
       targetTileIndex: number;
+      oxygenRecipientPlayerId?: string;
     }
   | {
       kind: "solo_cut";
@@ -1025,6 +1026,9 @@ export function GameBoard({
           targetTileIndex: pendingAction.targetTileIndex,
           guessValue: pendingAction.guessValue,
           actorTileIndex: pendingAction.actorTileIndex,
+          ...(pendingAction.oxygenRecipientPlayerId
+            ? { oxygenRecipientPlayerId: pendingAction.oxygenRecipientPlayerId }
+            : {}),
         });
         break;
       }
@@ -1127,12 +1131,13 @@ export function GameBoard({
                                 const oppTile = opp.hand[tileIndex];
                                 if (!oppTile || oppTile.cut) return;
                                 if (!isDualCutTargetAllowed(gameState, oppTile.color)) return;
-                                setPendingAction({
-                                  ...pendingAction,
-                                  targetPlayerId: opp.id,
-                                  targetTileIndex: tileIndex,
-                                });
-                              }
+                              setPendingAction({
+                                ...pendingAction,
+                                targetPlayerId: opp.id,
+                                targetTileIndex: tileIndex,
+                                oxygenRecipientPlayerId: mission49DefaultRecipientId,
+                              });
+                            }
                                 : playingInteractionEnabled &&
                                     isMyTurn &&
                                     selectedGuessTile != null &&
@@ -1460,10 +1465,20 @@ export function GameBoard({
                     onMission11RevealAttempt={stageMission11RevealAttempt}
                     onConfirmSoloFromDraft={confirmSoloFromDraft}
                     onMission49RecipientChange={(targetPlayerId) => {
-                      if (pendingAction?.kind !== "solo_cut") return;
+                      if (pendingAction?.kind !== "solo_cut" &&
+                        pendingAction?.kind !== "dual_cut") {
+                        return;
+                      }
+                      if (pendingAction?.kind === "solo_cut") {
+                        setPendingAction({
+                          ...pendingAction,
+                          targetPlayerId,
+                        });
+                        return;
+                      }
                       setPendingAction({
                         ...pendingAction,
-                        targetPlayerId,
+                        oxygenRecipientPlayerId: targetPlayerId,
                       });
                     }}
                     onCancel={cancelPendingAction}
@@ -2204,15 +2219,27 @@ function PendingActionStrip({
     pendingAction.kind === "solo_cut" &&
     mission49Recipients.some((player) => player.id === pendingAction.targetPlayerId)
       ? pendingAction.targetPlayerId
+      : pendingAction.kind === "dual_cut" &&
+          mission49Recipients.some((player) =>
+            player.id === pendingAction.oxygenRecipientPlayerId
+          )
+        ? pendingAction.oxygenRecipientPlayerId
       : mission49Recipients[0]?.id;
   switch (pendingAction.kind) {
     case "dual_cut": {
       const targetName =
         players.find((player) => player.id === pendingAction.targetPlayerId)?.name ??
         pendingAction.targetPlayerId;
+      const mission49RecipientName =
+        mission === 49
+          ? players.find(
+              (player) => player.id === selectedMission49RecipientId,
+            )?.name ?? selectedMission49RecipientId ?? "unknown"
+          : null;
       summary = `Dual Cut: ${wireLabel(pendingAction.actorTileIndex)} (${String(
         pendingAction.guessValue,
-      )}) -> ${targetName} ${wireLabel(pendingAction.targetTileIndex)}`;
+      )}) -> ${targetName} ${wireLabel(pendingAction.targetTileIndex)}` +
+        (mission === 49 ? ` (give oxygen to ${mission49RecipientName})` : "");
       confirmLabel = `Confirm Dual Cut (${String(pendingAction.guessValue)})`;
       break;
     }
@@ -2249,7 +2276,7 @@ function PendingActionStrip({
       </div>
       <div className={PANEL_TEXT_CLASS}>{summary}</div>
       <div className="flex items-center gap-2">
-        {pendingAction?.kind === "solo_cut" &&
+        {(pendingAction?.kind === "solo_cut" || pendingAction?.kind === "dual_cut") &&
           mission === 49 &&
           players.length > 1 && (
             <label className="flex items-center gap-2">
