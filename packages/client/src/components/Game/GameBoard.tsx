@@ -1462,6 +1462,10 @@ export function GameBoard({
                     isSetup && isMyTurn
                       ? requiresSetupToken
                         ? (tileIndex) => {
+                            if (useFalseSetupTokenMode && me?.hand[tileIndex]?.color === "red") {
+                              return;
+                            }
+
                             if (selectedInfoTile === tileIndex) {
                               setSelectedInfoTile(null);
                               setSelectedInfoTokenValue(null);
