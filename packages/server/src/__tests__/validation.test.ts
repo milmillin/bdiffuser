@@ -5,6 +5,7 @@ import {
   makePlayer,
   makeGameState,
   makeRedTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import {
   areFlatIndicesAdjacentWithinStand,
@@ -152,6 +153,26 @@ describe("validateDualCut", () => {
     expect(error).not.toBeNull();
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
     expect(error!.message).toContain("YELLOW");
+  });
+
+  it("rejects dual cut on a yellow wire without actor yellow wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeYellowTile({ id: "t1", gameValue: "YELLOW", color: "yellow" })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, "YELLOW");
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("NO_MATCHING_WIRES_IN_HAND");
+    expect(error!.message).toContain("yellow");
   });
 
   it("rejects dual cut on red wire in mission 13", () => {
