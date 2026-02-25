@@ -15,7 +15,7 @@ function toClientGameState(state: GameState, playerId: string): ClientGameState 
   } as unknown as ClientGameState;
 }
 
-function makeMission22ForcedState(playerId: string): ClientGameState {
+  function makeMission22ForcedState(playerId: string): ClientGameState {
   const state = makeGameState({
     mission: 22,
     phase: "playing",
@@ -25,6 +25,7 @@ function makeMission22ForcedState(playerId: string): ClientGameState {
         name: "Captain",
         isCaptain: true,
         hand: [makeTile({ id: "c1", gameValue: 2 })],
+        infoTokens: [{ value: 0, position: -1, isYellow: true }],
       }),
       makePlayer({
         id: "p2",
