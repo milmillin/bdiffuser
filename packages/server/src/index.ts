@@ -1002,7 +1002,20 @@ export class BombBustersServer extends Server<Env> {
     targets: Array<{ playerId: string; tileIndex: number }>,
   ) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot perform Simultaneous Red Cut: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Simultaneous Red Cut is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const error = validateSimultaneousRedCutWithHooks(state, conn.id, targets);
     if (error) {
@@ -1029,7 +1042,20 @@ export class BombBustersServer extends Server<Env> {
     targets: Array<{ playerId: string; tileIndex: number }>,
   ) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot perform Simultaneous Four Cut: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Simultaneous Four Cut is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const error = validateSimultaneousFourCutWithHooks(state, conn.id, targets);
     if (error) {
@@ -1057,7 +1083,20 @@ export class BombBustersServer extends Server<Env> {
     payload: UseEquipmentPayload,
   ) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot use Equipment: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Using Equipment is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const error = validateUseEquipment(state, conn.id, equipmentId, payload);
     if (error) {
@@ -1084,7 +1123,20 @@ export class BombBustersServer extends Server<Env> {
     payload: UseEquipmentPayload,
   ) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot use Character Ability: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Character Ability is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const error = validateCharacterAbility(state, conn.id, payload);
     if (error) {
@@ -1108,7 +1160,20 @@ export class BombBustersServer extends Server<Env> {
 
   handleChooseNextPlayer(conn: Connection, targetPlayerId: string) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose next player: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Choose Next Player is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const forced = state.pendingForcedAction;
     if (!forced || forced.kind !== "chooseNextPlayer") {
@@ -1155,7 +1220,20 @@ export class BombBustersServer extends Server<Env> {
 
   handleDesignateCutter(conn: Connection, targetPlayerId: string) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot designate next cutter: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Designate Cutter is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const forced = state.pendingForcedAction;
     if (!forced || forced.kind !== "designateCutter") {
@@ -1221,7 +1299,20 @@ export class BombBustersServer extends Server<Env> {
 
   handleMission22TokenPassChoice(conn: Connection, value: number) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot perform Mission 22 token pass: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 22 token pass is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const forced = state.pendingForcedAction;
     if (!forced || forced.kind !== "mission22TokenPass") {
@@ -1325,7 +1416,20 @@ export class BombBustersServer extends Server<Env> {
 
   handleDetectorTileChoice(conn: Connection, tileIndex?: number, infoTokenTileIndex?: number) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose detector tile: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Detector tile choice is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const forced = state.pendingForcedAction;
     if (!forced || forced.kind !== "detectorTileChoice") {
@@ -1377,7 +1481,20 @@ export class BombBustersServer extends Server<Env> {
 
   handleTalkiesWalkiesChoice(conn: Connection, tileIndex: number) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Walkie-Talkies tile: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Walkie-Talkies tile choice is only allowed during the playing phase.",
+      });
+      return;
+    }
 
     const forced = state.pendingForcedAction;
     if (!forced || forced.kind !== "talkiesWalkiesTileChoice") {
