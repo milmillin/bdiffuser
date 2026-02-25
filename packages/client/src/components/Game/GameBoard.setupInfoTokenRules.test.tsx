@@ -545,4 +545,42 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).toContain("<option value=\"2\"");
     expect(html).toContain("<option value=\"5\"");
   });
+
+  it("disables wire selection during mission 22 setup because tile targeting is not required", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "c2", color: "yellow", gameValue: "YELLOW", sortValue: 4.5 }),
+      ],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 7, sortValue: 7 })],
+    });
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    const blueButtonStart = html.lastIndexOf(
+      "<button",
+      html.indexOf("data-testid=\"wire-tile-captain-0\""),
+    );
+    const blueButton = html.slice(blueButtonStart, blueButtonStart + 170);
+    expect(blueButton).toContain("disabled");
+
+    const yellowButtonStart = html.lastIndexOf(
+      "<button",
+      html.indexOf("data-testid=\"wire-tile-captain-1\""),
+    );
+    const yellowButton = html.slice(yellowButtonStart, yellowButtonStart + 170);
+    expect(yellowButton).toContain("disabled");
+  });
 });

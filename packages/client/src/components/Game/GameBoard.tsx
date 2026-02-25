@@ -1924,6 +1924,7 @@ export function GameBoard({
                       ? requiresSetupToken
                         ? (tile: VisibleTile, idx: number) => {
                             if (tile.cut) return false;
+                            if (gameState.mission === 22) return false;
                             if (
                               me.infoTokens.some(
                                 (token) =>
