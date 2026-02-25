@@ -272,6 +272,16 @@ export interface ConstraintEnforcementRuleDef {
 }
 
 /**
+ * Mission 57: constrain valid cut actions to the constraint attached to the most
+ * recently validated number card.
+ */
+export interface Mission57ConstraintPerValidatedValueRuleDef {
+  kind: "mission_57_constraint_per_validated_value";
+  /** Which constraint card IDs can be paired to number cards. */
+  constraintIds: readonly string[];
+}
+
+/**
  * Missions 19, 30, 42: Audio prompt required.
  * Players must use a mobile device/app for sound effects.
  */
@@ -500,6 +510,7 @@ export type MissionHookRuleDef =
   | SimultaneousFourCutRuleDef
   | YellowTriggerTokenPassRuleDef
   | ConstraintEnforcementRuleDef
+  | Mission57ConstraintPerValidatedValueRuleDef
   | AudioPromptRuleDef
   | NoSpokenNumbersRuleDef
   | NoMarkersMemoryModeRuleDef

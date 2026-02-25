@@ -32,9 +32,11 @@
 
 import type {
   ActionLegalityCode,
+  ConstraintCard,
   GameState,
   MissionId,
   NumberCardState,
+  Mission57ConstraintPerValidatedValueRuleDef,
   WireTile,
 } from "@bomb-busters/shared";
 import {
@@ -1000,6 +1002,10 @@ function getCutCountForValue(state: Readonly<GameState>, value: number): number 
     }
   }
   return count;
+}
+
+function getValidationTrackCount(state: Readonly<GameState>, value: number): number {
+  return Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
 }
 
 function getProjectedCutCountForResolve(
@@ -2919,6 +2925,78 @@ function autoFlipStuckConstraints(state: GameState, playerId: string): void {
 }
 
 /**
+ * Build the per-number paired constraint cards used by Mission 57.
+ */
+function buildMission57ConstraintCards(
+  constraintIds: readonly string[],
+): ConstraintCard[] {
+  const constraints = constraintIds
+    .map((id) => {
+      const def = CONSTRAINT_CARD_DEFS.find((card) => card.id === id);
+      return def
+        ? {
+            id: def.id,
+            name: def.name,
+            description: def.description,
+            active: false,
+          }
+        : null;
+    })
+    .filter((c): c is ConstraintCard => c != null);
+
+  if (constraints.length === 0) return [];
+
+  const pool = [...constraints];
+  shuffle(pool);
+  let poolIndex = 0;
+
+  return MISSION_NUMBER_VALUES.map(() => {
+    if (poolIndex >= pool.length) {
+      shuffle(pool);
+      poolIndex = 0;
+    }
+    const card = pool[poolIndex++];
+    return { ...card, active: false };
+  });
+}
+
+/**
+ * Mission 57 pairing helper: each number card is paired with one constraint card.
+ */
+function getMission57ConstraintForValue(
+  state: Readonly<GameState>,
+  value: number,
+): ConstraintCard | undefined {
+  const numberCards = state.campaign?.numberCards?.visible ?? [];
+  const constraints = state.campaign?.constraints?.global ?? [];
+  const index = numberCards.findIndex((card) => card.value === value);
+  return index < 0 ? undefined : constraints[index];
+}
+
+function getMission57AnyActiveConstraint(
+  state: Readonly<GameState>,
+): ConstraintCard | undefined {
+  return state.campaign?.constraints?.global.find((constraint) => constraint.active);
+}
+
+function getMission57ConstraintError(constraintId: string): string | undefined {
+  switch (constraintId) {
+    case "A":
+      return "Constraint A: You must cut only even wires";
+    case "B":
+      return "Constraint B: You must cut only odd wires";
+    case "C":
+      return "Constraint C: You must cut only wires 1 to 6";
+    case "D":
+      return "Constraint D: You must cut only wires 7 to 12";
+    case "E":
+      return "Constraint E: You must cut only wires 4 to 9";
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Constraint enforcement for campaign missions.
  *
  * Setup: Initializes constraints from rule definition.
@@ -3270,6 +3348,104 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
     }
   },
 });
+
+/**
+ * Mission 57: constraints are linked to number cards.
+ *
+ * Setup:
+ * - Place all number cards face-up and shuffle them.
+ * - Pair each number card with one constraint card from the configured list.
+ * - Keep all constraint cards inactive until a value is fully validated.
+ *
+ * Resolve:
+ * - When a value is successfully validated (4 cuts), activate its paired
+ *   constraint and deactivate all others.
+ *
+ * Validate:
+ * - Enforce only the single currently active constraint across all actions.
+ */
+registerHookHandler<"mission_57_constraint_per_validated_value">(
+  "mission_57_constraint_per_validated_value",
+  {
+    setup(rule: Mission57ConstraintPerValidatedValueRuleDef, ctx: SetupHookContext): void {
+      const numberValues = shuffle([...MISSION_NUMBER_VALUES]);
+      const pairedConstraints = buildMission57ConstraintCards(rule.constraintIds);
+
+      ctx.state.campaign ??= {};
+      ctx.state.campaign.numberCards = {
+        deck: [],
+        discard: [],
+        visible: numberValues.map((value, index) => ({
+          id: `mission57-number-${index}-${value}`,
+          value,
+          faceUp: true,
+        })),
+        playerHands: {},
+      };
+      ctx.state.campaign.constraints = {
+        global: pairedConstraints,
+        perPlayer: {},
+      };
+
+      pushGameLog(ctx.state, {
+        turn: 0,
+        playerId: "system",
+        action: "hookSetup",
+        detail: `mission57:constraint_per_validated_value|cards=${pairedConstraints.length}`,
+        timestamp: Date.now(),
+      });
+    },
+
+    validate(_rule: Mission57ConstraintPerValidatedValueRuleDef, ctx: ValidateHookContext): HookResult | void {
+      const activeConstraint = getMission57AnyActiveConstraint(ctx.state);
+      if (!activeConstraint) return;
+
+      const cutValue = extractCutValue(ctx.action);
+      if (typeof cutValue !== "number") return;
+
+      const constraintError = getMission57ConstraintError(activeConstraint.id);
+      if (!constraintError) return;
+
+      if (!valuePassesConstraint(cutValue, activeConstraint.id)) {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: constraintError,
+        };
+      }
+    },
+
+    resolve(
+      _rule: Mission57ConstraintPerValidatedValueRuleDef,
+      ctx: ResolveHookContext,
+    ): HookResult | void {
+      if (!ctx.cutSuccess) return;
+      if (typeof ctx.cutValue !== "number") return;
+
+      const previousCount = getValidationTrackCount(ctx.state, ctx.cutValue);
+      if (previousCount >= 4) return;
+
+      const projectedCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+      if (projectedCount < 4) return;
+
+      const nextConstraint = getMission57ConstraintForValue(ctx.state, ctx.cutValue);
+      const constraints = ctx.state.campaign?.constraints;
+      if (!nextConstraint || !constraints) return;
+
+      for (const constraint of constraints.global) {
+        constraint.active = false;
+      }
+      nextConstraint.active = true;
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: ctx.state.players[ctx.state.currentPlayerIndex]?.id ?? "system",
+        action: "hookEffect",
+        detail: `mission57:active_constraint:${nextConstraint.id}|value=${ctx.cutValue}`,
+        timestamp: Date.now(),
+      });
+    },
+  },
+);
 
 // ── Simple informational hooks (missions 19/25/30/42/50) ──────────
 

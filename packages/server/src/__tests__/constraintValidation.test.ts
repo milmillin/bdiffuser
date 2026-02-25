@@ -11,6 +11,7 @@ import { dispatchHooks } from "../missionHooks";
 import {
   executeDualCut,
   executeDualCutDoubleDetector,
+  executeSoloCut,
   resolveDetectorTileChoice,
 } from "../gameLogic";
 
@@ -102,6 +103,73 @@ function validateSoloCut(
       value,
     },
   });
+}
+
+interface Mission57StateOptions {
+  actorHandValues?: number[];
+  targetHandValues?: number[];
+}
+
+function stateWithMission57(constraintOptions?: Mission57StateOptions) {
+  const actorHandValues = constraintOptions?.actorHandValues ?? [4, 4, 4, 4, 2];
+  const targetHandValues = constraintOptions?.targetHandValues ?? [1, 3];
+
+  const state = makeGameState({
+    mission: 57,
+    players: [
+      makePlayer({
+        id: "player-1",
+        hand: actorHandValues.map((value, index) =>
+          makeTile({ id: `p1-${index}`, gameValue: value }),
+        ),
+      }),
+      makePlayer({
+        id: "player-2",
+        name: "Bob",
+        hand: targetHandValues.map((value, index) =>
+          makeTile({ id: `p2-${index}`, gameValue: value }),
+        ),
+      }),
+    ],
+    currentPlayerIndex: 0,
+  });
+
+  dispatchHooks(state.mission, {
+    point: "setup",
+    state,
+  });
+
+  return state;
+}
+
+function mission57ConstraintPairForValue(
+  state: ReturnType<typeof stateWithMission57>,
+  value: number,
+): string | undefined {
+  const valueIndex = (state.campaign?.numberCards?.visible ?? []).findIndex(
+    (card) => card.value === value,
+  );
+  if (valueIndex < 0) return undefined;
+  return state.campaign?.constraints?.global?.[valueIndex]?.id;
+}
+
+function mission57BlockedAndAllowedValues(constraintId: string): [number, number] {
+  if (constraintId === "A") return [1, 2];
+  if (constraintId === "B") return [2, 1];
+  if (constraintId === "C") return [10, 4];
+  if (constraintId === "D") return [2, 8];
+  if (constraintId === "E") return [3, 5];
+  return [1, 1];
+}
+
+function mission57ConstraintError(constraintId: string): string {
+  return {
+    A: "Constraint A: You must cut only even wires",
+    B: "Constraint B: You must cut only odd wires",
+    C: "Constraint C: You must cut only wires 1 to 6",
+    D: "Constraint D: You must cut only wires 7 to 12",
+    E: "Constraint E: You must cut only wires 4 to 9",
+  }[constraintId] ?? "";
 }
 
 describe("constraint enforcement validation", () => {
@@ -364,5 +432,61 @@ describe("constraint enforcement validation", () => {
     expect(
       state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:A:stuck"),
     ).toBe(true);
+  });
+
+  it("Mission 57 initializes number cards and pairs them with constraint cards", () => {
+    const state = stateWithMission57();
+
+    expect(state.campaign?.numberCards?.visible).toHaveLength(12);
+    expect(state.campaign?.constraints?.global).toHaveLength(12);
+    expect(
+      state.campaign?.numberCards?.visible.every((card) => card.faceUp),
+    ).toBe(true);
+    expect(
+      state.campaign?.constraints?.global.every((constraint) => !constraint.active),
+    ).toBe(true);
+  });
+
+  it("Mission 57 activates the matching constraint when a value is validated", () => {
+    const state = stateWithMission57({
+      actorHandValues: [4, 4, 4, 4, 2],
+      targetHandValues: [1, 3],
+    });
+
+    const result = executeSoloCut(state, "player-1", 4);
+    expect(result.type).toBe("soloCutResult");
+
+    const activeConstraint = state.campaign?.constraints?.global.find(
+      (constraint) => constraint.active,
+    );
+    expect(activeConstraint).toBeDefined();
+    expect(activeConstraint?.id).toBe(mission57ConstraintPairForValue(state, 4));
+  });
+
+  it("Mission 57 enforces the currently active constraint on subsequent validation", () => {
+    const state = stateWithMission57({
+      actorHandValues: [4, 4, 4, 4, 2],
+      targetHandValues: [1, 3],
+    });
+
+    const setupCut = executeSoloCut(state, "player-1", 4);
+    expect(setupCut.type).toBe("soloCutResult");
+
+    const activeConstraint = state.campaign?.constraints?.global.find(
+      (constraint) => constraint.active,
+    );
+    const activeConstraintId = activeConstraint?.id;
+    if (!activeConstraintId) return;
+
+    const [blockedValue, allowedValue] = mission57BlockedAndAllowedValues(
+      activeConstraintId,
+    );
+
+    const blocked = validateDualCut(state, blockedValue, 0);
+    expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(blocked.validationError).toBe(mission57ConstraintError(activeConstraintId));
+
+    const allowed = validateDualCut(state, allowedValue, 0);
+    expect(allowed.validationError).toBeUndefined();
   });
 });

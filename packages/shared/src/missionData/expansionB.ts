@@ -162,6 +162,6 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_57_constraint_per_validated_value"],
-    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E"], scope: "per_player" }],
+    hookRules: [{ kind: "mission_57_constraint_per_validated_value", constraintIds: ["A", "B", "C", "D", "E"] }],
   });
 }
