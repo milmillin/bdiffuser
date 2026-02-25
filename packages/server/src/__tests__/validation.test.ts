@@ -242,6 +242,31 @@ describe("mission 35 X-wire cut lock", () => {
     expect(error).toBeNull();
   });
 
+  it("rejects dual cut when actor only has X-marked matching wires while yellow wires remain", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "x5", color: "blue", gameValue: 5, isXMarked: true })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 5 })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeYellowTile({ id: "y1" })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutLegality(state, "actor", "target", 0, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 35");
+  });
+
   it("rejects solo cut that includes an X-marked wire while yellow wires remain uncut", () => {
     const actor = makePlayer({
       id: "actor",
@@ -2030,6 +2055,36 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
     expect(error).not.toBeNull();
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 35: Double Detector cannot be resolved when actor only has matching X-marked wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      characterUsed: false,
+      hand: [makeTile({ id: "x5", color: "blue", gameValue: 5, isXMarked: true })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", gameValue: 3 }),
+        makeTile({ id: "t2", gameValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeYellowTile({ id: "y1" })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("Mission 35");
   });
 
   it("mission 13: Double Detector cannot target non-blue wires", () => {

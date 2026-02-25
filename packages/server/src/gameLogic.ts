@@ -280,6 +280,31 @@ function addLog(
   });
 }
 
+function isMission35XWireCutLocked(state: Readonly<GameState>): boolean {
+  return state.mission === 35 && state.players.some((player) =>
+    player.hand.some((tile) => !tile.cut && tile.color === "yellow")
+  );
+}
+
+function actorHasAllowedDualCutValue(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+  guessValue: number | "YELLOW",
+): boolean {
+  if (typeof guessValue === "string") {
+    return actor.hand.some(
+      (tile) => !tile.cut && tile.gameValue === guessValue,
+    );
+  }
+
+  return actor.hand.some(
+    (tile) =>
+      !tile.cut &&
+      tile.gameValue === guessValue &&
+      !(isMission35XWireCutLocked(state) && tile.isXMarked),
+  );
+}
+
 function resolveActorDualCutTile(
   state: GameState,
   actor: Player,
@@ -287,17 +312,11 @@ function resolveActorDualCutTile(
   actorTileIndex?: number,
 ): WireTile | undefined {
   const actorUncut = getUncutTiles(actor);
-  const matchingActorTiles = actorUncut.filter((tile) => tile.gameValue === guessValue);
-  const mission35XWireCutLocked = state.mission === 35
-    && state.players.some((player) =>
-      player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
-    );
-  const shouldPreferNonXWire = mission35XWireCutLocked
-    && matchingActorTiles.some((tile) => !tile.isXMarked);
+  const mission35XWireCutLocked = isMission35XWireCutLocked(state);
 
   const canUseActorTile = (tile: WireTile): boolean =>
     tile.gameValue === guessValue
-    && (!shouldPreferNonXWire || !tile.isXMarked);
+    && !(mission35XWireCutLocked && tile.isXMarked);
 
   if (actorTileIndex != null) {
     const candidate = getTileByFlatIndex(actor, actorTileIndex);
@@ -315,12 +334,10 @@ function resolveActorDualCutFallbackTile(
   actorTileIndex?: number,
 ): WireTile | undefined {
   const actorUncut = getUncutTiles(actor);
-  const mission35XWireCutLocked = state.mission === 35;
-  const shouldPreferNonXWire = mission35XWireCutLocked
-    && actorUncut.some((tile) => !tile.isXMarked);
+  const mission35XWireCutLocked = isMission35XWireCutLocked(state);
 
   const canUseActorTile = (tile: WireTile): boolean =>
-    !shouldPreferNonXWire || !tile.isXMarked;
+    !(mission35XWireCutLocked && tile.isXMarked);
 
   if (actorTileIndex != null) {
     const candidate = getTileByFlatIndex(actor, actorTileIndex);
@@ -360,9 +377,7 @@ export function executeDualCut(
   const displayGuess = guessLabel ?? String(guessValue);
 
   const isCorrect = targetTile.gameValue === guessValue;
-  const actorHasMatchingGuess = actor.hand.some(
-    (tile) => !tile.cut && tile.gameValue === guessValue,
-  );
+  const actorHasMatchingGuess = actorHasAllowedDualCutValue(state, actor, guessValue);
   const dualCutSuccess = isCorrect && actorHasMatchingGuess;
 
   if (dualCutSuccess) {
@@ -1229,6 +1244,7 @@ export function resolveDetectorTileChoice(
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
   const actorUncut = getUncutTiles(actor);
+  const mission35XWireCutLocked = isMission35XWireCutLocked(state);
   const availableMatches = forced.matchingTileIndices.filter((idx) => {
     const tile = getTileByFlatIndex(target, idx);
     return !!tile &&
@@ -1238,9 +1254,11 @@ export function resolveDetectorTileChoice(
       tile.gameValue === guessValue;
   });
   const matchCount = availableMatches.length;
-  const actorHasMatchingGuess = actorUncut.some(
-    (tile) => tile.color === "blue" && tile.gameValue === guessValue,
-  );
+  const actorCanUseTile = (tile: WireTile): boolean =>
+    tile.color === "blue" &&
+    tile.gameValue === guessValue &&
+    !(mission35XWireCutLocked && tile.isXMarked);
+  const actorHasMatchingGuess = actorUncut.some(actorCanUseTile);
 
   // ── 0 matches: failure path ──────────────────────────────
   if (matchCount === 0 || (source === "doubleDetector" && !actorHasMatchingGuess)) {
@@ -1335,14 +1353,12 @@ export function resolveDetectorTileChoice(
   let actorTile: WireTile | undefined;
   if (forced.actorTileIndex != null) {
     const candidate = getTileByFlatIndex(actor, forced.actorTileIndex);
-    if (candidate && !candidate.cut && candidate.gameValue === guessValue) {
+    if (candidate && !candidate.cut && actorCanUseTile(candidate)) {
       actorTile = candidate;
     }
   }
   if (!actorTile) {
-    actorTile = actorUncut.find(
-      (t) => t.color === "blue" && t.gameValue === guessValue,
-    );
+    actorTile = actorUncut.find(actorCanUseTile);
   }
   if (actorTile) actorTile.cut = true;
 

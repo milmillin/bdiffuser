@@ -16,6 +16,18 @@ function isValidDualCutGuessValue(value: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= 12;
 }
 
+function actorHasOnlyXMarkedMatchingDualCutValues(
+  actor: Readonly<Player>,
+  guessValue: number | "YELLOW",
+): boolean {
+  if (typeof guessValue === "string") return false;
+
+  const matchingTiles = actor.hand.filter(
+    (tile) => !tile.cut && tile.gameValue === guessValue,
+  );
+  return matchingTiles.length > 0 && matchingTiles.every((tile) => tile.isXMarked);
+}
+
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
   return player.hand.filter((t) => !t.cut);
@@ -214,6 +226,15 @@ export function validateDualCutLegality(
   }
 
   if (targetTile.isXMarked && mission35HasUncutYellowWires(state)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
+    );
+  }
+  if (
+    mission35HasUncutYellowWires(state) &&
+    actorHasOnlyXMarkedMatchingDualCutValues(actor, guessValue)
+  ) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
@@ -426,6 +447,15 @@ export function validateDualCutDoubleDetectorLegality(
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "X-marked wires cannot be targeted by personal equipment in this mission",
+    );
+  }
+  if (
+    mission35HasUncutYellowWires(state) &&
+    actorHasOnlyXMarkedMatchingDualCutValues(actor, guessValue)
+  ) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
     );
   }
 

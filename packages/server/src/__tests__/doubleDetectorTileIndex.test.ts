@@ -4,6 +4,7 @@ import {
   makeGameState,
   makePlayer,
   makeTile,
+  makeYellowTile,
   makeRedTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCutDoubleDetector, resolveDetectorTileChoice } from "../gameLogic";
@@ -234,6 +235,51 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(target.infoTokens).toHaveLength(1);
     expect(state.result).toBeNull();
     expect(state.phase).toBe("playing");
+  });
+
+  it("mission 35: ignores actor X-marked matching wires during Double Detector resolution", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [makeTile({ id: "x5", color: "blue", gameValue: 5, isXMarked: true })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 3 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeYellowTile({ id: "y1" })],
+    });
+    const state = makeGameState({
+      mission: 35,
+      players: [actor, target, teammate],
+      currentPlayerIndex: 0,
+    });
+    const detonatorBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 5);
+
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBe(0);
+      expect(resolveAction.explosion).toBeUndefined();
+    }
+    expect(state.board.detonatorPosition).toBe(detonatorBefore + 1);
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.hand[1].cut).toBe(false);
+    expect(actor.hand[0].cut).toBe(false);
   });
 
   it("falls back gracefully when actorTileIndex points to an already-cut tile", () => {
