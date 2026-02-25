@@ -71,8 +71,14 @@ describe("setupGame character assignment", () => {
         characterUsed: false,
       }),
     ];
+    const originalRandom = Math.random;
+    Math.random = () => 0;
 
-    assignCharactersForGameStart(players as any, 31);
+    try {
+      assignCharactersForGameStart(players as any, 31);
+    } finally {
+      Math.random = originalRandom;
+    }
 
     expect(players[0].character).toBe("double_detector");
     expect(players[2].character).toBe("character_2");
@@ -112,6 +118,43 @@ describe("setupGame character assignment", () => {
     expect(MISSION_BASE_CHARACTERS.has(players[2].character!)).toBe(true);
     expect(players[2].character).not.toBe("character_2");
   });
+
+  it.each([44, 45, 47, 49, 51, 54, 59, 63, 65])(
+    "replaces mission %i preselected character_e4 for non-captains",
+    (mission) => {
+      const players = [
+        makePlayer({
+          id: "captain",
+          name: "Captain",
+          isCaptain: true,
+          character: "double_detector",
+          characterUsed: false,
+        }),
+        makePlayer({
+          id: "member",
+          name: "Member",
+          isCaptain: false,
+          character: "character_e4",
+          characterUsed: false,
+        }),
+        makePlayer({
+          id: "helper",
+          name: "Helper",
+          isCaptain: false,
+          character: "character_2",
+          characterUsed: false,
+        }),
+      ];
+
+      assignCharactersForGameStart(players as any, mission as any);
+
+      expect(players[0].character).toBe("double_detector");
+      for (const player of players.slice(1)) {
+        expect(player.character).not.toBe("character_e4");
+        expect(MISSION_BASE_CHARACTERS.has(player.character!)).toBe(true);
+      }
+    },
+  );
 });
 
 describe("equipment pool resolution", () => {
