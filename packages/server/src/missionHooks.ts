@@ -228,6 +228,61 @@ export interface ValidateHookContext {
   };
 }
 
+function mission41TargetIsYellowWire(
+  state: Readonly<GameState>,
+  action: ValidateHookContext["action"],
+): boolean {
+  if (state.mission !== 41) return false;
+
+  const hasYellowTarget = (
+    playerId: unknown,
+    tileIndex: unknown,
+  ): boolean => {
+    if (typeof playerId !== "string" || typeof tileIndex !== "number") return false;
+    const player = state.players.find((p) => p.id === playerId);
+    if (!player) return false;
+    const tile = player.hand[tileIndex];
+    return tile != null && !tile.cut && tile.color === "yellow";
+  };
+
+  switch (action.type) {
+    case "dualCut": {
+      return hasYellowTarget(action.targetPlayerId, action.targetTileIndex);
+    }
+    case "dualCutDoubleDetector": {
+      return (
+        hasYellowTarget(action.targetPlayerId, action.tileIndex1) ||
+        hasYellowTarget(action.targetPlayerId, action.tileIndex2)
+      );
+    }
+    case "simultaneousCut": {
+      return Array.isArray(action.cuts) && action.cuts.some((cut) => {
+        if (!cut || typeof cut !== "object") return false;
+        const cutRecord = cut as {
+          targetPlayerId?: unknown;
+          targetTileIndex?: unknown;
+        };
+        return hasYellowTarget(
+          cutRecord.targetPlayerId,
+          cutRecord.targetTileIndex,
+        );
+      });
+    }
+    case "simultaneousFourCut": {
+      return Array.isArray(action.targets) && action.targets.some((target) => {
+        if (!target || typeof target !== "object") return false;
+        const targetRecord = target as {
+          playerId?: unknown;
+          tileIndex?: unknown;
+        };
+        return hasYellowTarget(targetRecord.playerId, targetRecord.tileIndex);
+      });
+    }
+    default:
+      return false;
+  }
+}
+
 export interface ResolveHookContext {
   point: "resolve";
   state: GameState;
@@ -3916,5 +3971,26 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
       detail: "iberian_yellow_mode:active",
       timestamp: Date.now(),
     });
+  },
+
+  validate(_rule: IberianYellowModeRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.action.type === "revealReds") return;
+
+    if (
+      ctx.action.type === "soloCut" &&
+      ctx.action.value === "YELLOW"
+    ) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 41: yellow wires are only cut with the mission special action",
+      };
+    }
+
+    if (mission41TargetIsYellowWire(ctx.state, ctx.action)) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 41: yellow wires are only cut with the mission special action",
+      };
+    }
   },
 });
