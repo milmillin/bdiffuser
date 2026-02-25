@@ -431,6 +431,78 @@ describe("Character E1-E4 abilities", () => {
       );
     });
 
+    it("rejects tripwire targets in mission 41", () => {
+      const state = makeGameState({
+        mission: 41,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e4",
+            characterUsed: false,
+            hand: [
+              makeTile({ id: "a1", gameValue: 3 }),
+              makeTile({ id: "a2", gameValue: 7 }),
+            ],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeYellowTile({ id: "b1", gameValue: 6 })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "x_or_y_ray",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+        guessValueA: 3,
+        guessValueB: 7,
+      });
+
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe(
+        "Tripwire targets must be handled via the mission special action",
+      );
+    });
+
+    it("rejects tripwire targets in mission 48", () => {
+      const state = makeGameState({
+        mission: 48,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e4",
+            characterUsed: false,
+            hand: [
+              makeTile({ id: "a1", gameValue: 3 }),
+              makeTile({ id: "a2", gameValue: 7 }),
+            ],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [makeYellowTile({ id: "b1", gameValue: 6 })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "x_or_y_ray",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+        guessValueA: 3,
+        guessValueB: 7,
+      });
+
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+      expect(error?.message).toBe(
+        "Tripwire targets must be handled via the mission special action",
+      );
+    });
+
     it("executes a dual cut path and marks character as used", () => {
       const state = makeGameState({
         players: [
