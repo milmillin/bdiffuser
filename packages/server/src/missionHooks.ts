@@ -4491,29 +4491,44 @@ function getCurrentPlayerHasUncutCards(state: Readonly<GameState>): boolean {
 function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: string): boolean {
   const actor = state.players.find((player) => player.id === actorId);
   if (!actor) return false;
+  const actorUncutValues = actor.hand.filter((tile) => !tile.cut);
+  if (actorUncutValues.length === 0) return false;
 
-  const hasUncutNonRed = actor.hand.some((tile) => !tile.cut && tile.gameValue !== "RED");
-  if (!hasUncutNonRed) return true;
-
-  const possibleTargets = getMission47PossibleTargets(
-    state.campaign?.numberCards?.visible ?? [],
-  );
+  const possibleTargets = getMission47PossibleTargets(state.campaign?.numberCards?.visible ?? []);
   if (possibleTargets.length === 0) return false;
 
   const legalTargets = new Set(possibleTargets);
-  for (const player of state.players) {
-    for (const tile of player.hand) {
-      if (
-        !tile.cut &&
-        typeof tile.gameValue === "number" &&
-        legalTargets.has(tile.gameValue)
-      ) {
-        return true;
-      }
-    }
-  }
+  const hasValidSoloCut = actorUncutValues.some((tile) => {
+    return (
+      typeof tile.gameValue === "number" &&
+      legalTargets.has(tile.gameValue) &&
+      canCurrentPlayerSoloCutMission47(state, actor, tile.gameValue)
+    );
+  });
+  if (hasValidSoloCut) return true;
 
-  return false;
+  return state.players.some(
+    (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+  );
+}
+
+function canCurrentPlayerSoloCutMission47(
+  state: Readonly<GameState>,
+  actor: Player,
+  value: number,
+): boolean {
+  const actorMatching = actor.hand.filter(
+    (tile) => !tile.cut && tile.gameValue === value,
+  );
+  if (actorMatching.length !== 2 && actorMatching.length !== 4) return false;
+
+  const totalRemaining = state.players.reduce(
+    (count, player) =>
+      count
+      + player.hand.filter((tile) => !tile.cut && tile.gameValue === value).length,
+    0,
+  );
+  return totalRemaining === actorMatching.length;
 }
 
 function getMission47AttemptedValues(
