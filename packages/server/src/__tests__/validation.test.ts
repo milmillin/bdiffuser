@@ -1983,6 +1983,57 @@ describe("forced reveal reds state", () => {
     expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
   });
 
+  it("allows mission 59 dual cuts while all remaining wires are red", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 59,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m59-v1", value: 1, faceUp: true },
+            { id: "m59-v2", value: 2, faceUp: true },
+            { id: "m59-v3", value: 3, faceUp: true },
+            { id: "m59-v4", value: 4, faceUp: true },
+            { id: "m59-v5", value: 5, faceUp: true },
+            { id: "m59-v6", value: 6, faceUp: true },
+            { id: "m59-v7", value: 7, faceUp: true },
+            { id: "m59-v8", value: 8, faceUp: true },
+            { id: "m59-v9", value: 9, faceUp: true },
+            { id: "m59-v10", value: 10, faceUp: true },
+            { id: "m59-v11", value: 11, faceUp: true },
+            { id: "m59-v12", value: 12, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 6,
+          facing: 1,
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).toBeNull();
+  });
+
   it("allows revealReds while in forced reveal state", () => {
     const actor = makePlayer({
       id: "actor",

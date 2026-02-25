@@ -436,6 +436,10 @@ export function isRevealRedsForced(
     return false;
   }
 
+  if (state.mission === 59) {
+    return false;
+  }
+
   return uncutTiles.every((t) => t.color === "red");
 }
 
