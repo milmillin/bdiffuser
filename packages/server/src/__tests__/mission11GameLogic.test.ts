@@ -449,7 +449,7 @@ describe("mission 11 game logic", () => {
       expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(10);
     });
 
-    it("grants one reserve oxygen to every player when mission 63 places a validation token", () => {
+    it("does not grant reserve oxygen when mission 63 places a validation token", () => {
       const captain = makePlayer({
         id: "captain",
         isCaptain: true,
@@ -476,9 +476,9 @@ describe("mission 11 game logic", () => {
       if (action.type !== "soloCutResult") return;
 
       expect(state.board.validationTrack[5]).toBe(4);
-      expect(state.campaign?.oxygen?.pool).toBe(3);
+      expect(state.campaign?.oxygen?.pool).toBe(5);
       expect(state.campaign?.oxygen?.playerOxygen.captain).toBe(0);
-      expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(11);
+      expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(9);
     });
   });
 });
