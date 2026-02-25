@@ -14,29 +14,30 @@ import {
 } from "../simultaneousFourCutTargets";
 
 describe("simultaneousFourCutTargets", () => {
-  it("mission 46 uses fixed target value 7 without requiring a visible Number card", () => {
+  it("mission 46 targets all fixed setup sevens without requiring a visible Number card", () => {
     const state = makeGameState({
       mission: 46,
       players: [
         makePlayer({
           id: "p1",
           hand: [
-            makeYellowTile({ id: "p1-7a", sortValue: 7.1 }),
+            makeYellowTile({ id: "p1-5", sortValue: 5.1 }),
             makeYellowTile({ id: "p1-4", sortValue: 4.1 }),
           ],
         }),
         makePlayer({
           id: "p2",
           hand: [
-            makeYellowTile({ id: "p2-7", sortValue: 7.1 }),
-            makeYellowTile({ id: "p2-5", sortValue: 5.1 }),
+            makeYellowTile({ id: "p2-6", sortValue: 6.1 }),
+            makeYellowTile({ id: "p2-4", sortValue: 4.1 }),
           ],
         }),
         makePlayer({
           id: "p3",
           hand: [
-            makeYellowTile({ id: "p3-7a", sortValue: 7.1 }),
-            makeYellowTile({ id: "p3-7b", sortValue: 7.1 }),
+            makeYellowTile({ id: "p3-7", sortValue: 7.1 }),
+            makeYellowTile({ id: "p3-4", sortValue: 4.1 }),
+            makeYellowTile({ id: "p3-8", sortValue: 8.1 }),
           ],
         }),
       ],
@@ -55,7 +56,7 @@ describe("simultaneousFourCutTargets", () => {
       { playerId: "p1", tileIndex: 0 },
       { playerId: "p2", tileIndex: 0 },
       { playerId: "p3", tileIndex: 0 },
-      { playerId: "p3", tileIndex: 1 },
+      { playerId: "p3", tileIndex: 2 },
     ]);
   });
 

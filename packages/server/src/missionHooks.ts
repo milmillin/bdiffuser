@@ -44,6 +44,7 @@ import {
   type MissionHookRuleDef,
 } from "@bomb-busters/shared";
 import { pushGameLog } from "./gameLog.js";
+import { isMission46SevenTile } from "./mission46.js";
 
 // ── Hook Point ─────────────────────────────────────────────
 
@@ -3698,16 +3699,12 @@ type SimultaneousCutGuess = {
   guessValue?: number | "YELLOW";
 };
 
-const MISSION_46_SEVEN_SORT_VALUE = 7.1;
-const MISSION_46_SEVEN_MATCH_EPSILON = 0.01;
-
-function isMission46SevenTile(
+function isMission46SevenTileForMission(
   state: Readonly<GameState>,
   tile: WireTile,
 ): boolean {
   if (state.mission !== 46) return false;
-  if (tile.color !== "yellow") return false;
-  return Math.abs(tile.sortValue - MISSION_46_SEVEN_SORT_VALUE) < MISSION_46_SEVEN_MATCH_EPSILON;
+  return isMission46SevenTile(tile, state.players.length);
 }
 
 function actionAttemptsSevenCut(
@@ -3723,7 +3720,7 @@ function actionAttemptsSevenCut(
     if (typedAction.guessValue === "YELLOW") {
       const targetPlayer = state.players.find((player) => player.id === typedAction.targetPlayerId);
       const targetTile = targetPlayer?.hand[typedAction.targetTileIndex];
-      return !!targetTile && isMission46SevenTile(state, targetTile);
+      return !!targetTile && isMission46SevenTileForMission(state, targetTile);
     }
 
     return typedAction.guessValue === 7;
@@ -3738,7 +3735,7 @@ function actionAttemptsSevenCut(
     if (typedAction.guessValue === "YELLOW") {
       const targetPlayer = state.players.find((player) => player.id === typedAction.targetPlayerId);
       const targetTile = targetPlayer?.hand[typedAction.tileIndex1];
-      return !!targetTile && isMission46SevenTile(state, targetTile);
+      return !!targetTile && isMission46SevenTileForMission(state, targetTile);
     }
 
     return typedAction.guessValue === 7;
@@ -3765,7 +3762,7 @@ function actorHasUncutNonSevenCuttableWire(
 
   return actor.hand.some((tile) =>
     !tile.cut && (state.mission === 46
-      ? !isMission46SevenTile(state, tile)
+      ? !isMission46SevenTileForMission(state, tile)
       : tile.gameValue !== 7),
   );
 }
@@ -3781,7 +3778,7 @@ function playerHasOnlySevenCuttableWires(
   const uncutTiles = player.hand.filter((tile) => !tile.cut);
   if (uncutTiles.length === 0) return false;
 
-  return uncutTiles.every((tile) => isMission46SevenTile(state, tile));
+  return uncutTiles.every((tile) => isMission46SevenTileForMission(state, tile));
 }
 
 function updateMission46SevensPendingAction(state: GameState): void {

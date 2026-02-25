@@ -648,12 +648,12 @@ describe("executeSimultaneousFourCut", () => {
     const state = makeGameState({
       mission: 46,
       players: [
-        makePlayer({ id: "p1", hand: [makeYellowTile({ id: "p1-1", sortValue: 7.1 })] }),
+        makePlayer({ id: "p1", hand: [makeYellowTile({ id: "p1-1", sortValue: 5.1 })] }),
         makePlayer({ id: "p2", hand: [
-          makeYellowTile({ id: "p2-1", sortValue: 7.1 }),
+          makeYellowTile({ id: "p2-1", sortValue: 6.1 }),
           makeYellowTile({ id: "p2-2", sortValue: 7.1 }),
-          makeYellowTile({ id: "p2-3", sortValue: 7.1 }),
-          makeYellowTile({ id: "p2-4", sortValue: 5.1 }),
+          makeYellowTile({ id: "p2-3", sortValue: 8.1 }),
+          makeTile({ id: "p2-4", gameValue: 4 }),
         ] }),
       ],
       currentPlayerIndex: 0,

@@ -24,6 +24,7 @@ import {
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequired } from "./equipmentUnlockRules.js";
+import { isMission46SevenTile } from "./mission46.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -882,21 +883,13 @@ export function executeSimultaneousRedCut(
 }
 
 /** Execute simultaneous four-of-value cut action (mission 23). */
-const MISSION_46_SEVEN_SORT_VALUE = 7.1;
-const MISSION_46_SEVEN_MATCH_EPSILON = 0.01;
-
-function isMission46SevenWire(tile: WireTile): boolean {
-  return tile.color === "yellow"
-    && Math.abs(tile.sortValue - MISSION_46_SEVEN_SORT_VALUE) < MISSION_46_SEVEN_MATCH_EPSILON;
-}
-
 function isSimultaneousFourCutTargetMatch(
-  isMission46: boolean,
+  state: GameState,
   tile: WireTile,
   targetValue: number,
 ): boolean {
-  if (isMission46) {
-    return isMission46SevenWire(tile);
+  if (state.mission === 46) {
+    return isMission46SevenTile(tile, state.players.length);
   }
 
   return tile.gameValue === targetValue;
@@ -929,7 +922,7 @@ export function executeSimultaneousFourCut(
   for (const target of targets) {
     const player = state.players.find((p) => p.id === target.playerId)!;
     const tile = getTileByFlatIndex(player, target.tileIndex)!;
-    if (!isSimultaneousFourCutTargetMatch(isMission46, tile, targetValue)) {
+    if (!isSimultaneousFourCutTargetMatch(state, tile, targetValue)) {
       allMatch = false;
       break;
     }

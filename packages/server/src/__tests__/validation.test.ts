@@ -1074,7 +1074,7 @@ describe("mission 46 sevens-last validation", () => {
       id: "actor",
       hand: [
         makeYellowTile({ id: "a1", sortValue: 7.1 }),
-        makeYellowTile({ id: "a2", sortValue: 6.1 }),
+        makeYellowTile({ id: "a2", sortValue: 4.1 }),
       ],
     });
     const target = makePlayer({
@@ -1169,7 +1169,7 @@ describe("mission 46 sevens-last validation", () => {
     });
     const target = makePlayer({
       id: "target",
-      hand: [makeYellowTile({ id: "t1", sortValue: 6.1 })],
+      hand: [makeYellowTile({ id: "t1", sortValue: 4.1 })],
     });
     const state = makeGameState({
       mission: 46,
