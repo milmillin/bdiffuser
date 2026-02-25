@@ -104,7 +104,7 @@ function isUnorderedListItem(line: string): boolean {
 }
 
 function isOrderedListItem(line: string): boolean {
-  return /^\d+\.\s/.test(line);
+  return /^\s*\d+\.\s/.test(line);
 }
 
 function listItemIndent(line: string): number {
@@ -113,7 +113,7 @@ function listItemIndent(line: string): number {
 }
 
 function listItemText(line: string): string {
-  return line.replace(/^\s*-\s+/, "").replace(/^\d+\.\s+/, "");
+  return line.replace(/^\s*-\s+/, "").replace(/^\s*\d+\.\s+/, "");
 }
 
 // ── List item parser (handles nesting) ─────────────────────────────
@@ -221,7 +221,8 @@ function parseBody(lines: string[]): BodyNode[] {
 
     // Ordered list
     if (isOrderedListItem(line)) {
-      const { items, consumed } = parseListItems(lines, i, 0);
+      const indent = listItemIndent(line);
+      const { items, consumed } = parseListItems(lines, i, indent);
       nodes.push({ kind: "ordered-list", items });
       i += consumed;
       continue;
