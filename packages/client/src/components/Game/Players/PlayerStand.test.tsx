@@ -5,6 +5,51 @@ import { makePlayer, makeTile } from "@bomb-busters/shared/testing";
 import { PlayerStand } from "./PlayerStand.js";
 
 describe("PlayerStand", () => {
+  it("renders character avatar using card aspect ratio", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3 })],
+      character: "double_detector",
+      characterUsed: false,
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("aspect-[739/1040]");
+    expect(html).toContain("/images/character_1.png");
+  });
+
+  it("renders character back avatar when skill is used", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3 })],
+      character: "double_detector",
+      characterUsed: true,
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("/images/character_back.png");
+  });
+
   it("renders parity tokens with even/odd images", () => {
     const player = makePlayer({
       id: "p1",

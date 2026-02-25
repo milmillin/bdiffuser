@@ -60,13 +60,13 @@ export function PlayerStand({
           <button
             type="button"
             onClick={onCharacterClick}
-            className="rounded hover:ring-2 hover:ring-yellow-400 transition-all cursor-pointer flex-shrink-0"
+            className="overflow-hidden rounded-[0.35rem] hover:ring-2 hover:ring-yellow-400 transition-all cursor-pointer flex-shrink-0"
             data-testid={`character-thumb-${player.id}`}
           >
             <img
-              src={`/images/${CHARACTER_IMAGES[player.character]}`}
+              src={`/images/${player.characterUsed ? "character_back.png" : CHARACTER_IMAGES[player.character]}`}
               alt={player.character}
-              className="w-6 h-6 rounded object-cover"
+              className="w-6 aspect-[739/1040] object-cover"
             />
           </button>
         )}

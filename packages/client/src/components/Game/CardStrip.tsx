@@ -8,8 +8,10 @@ import {
   type CharacterId,
 } from "@bomb-busters/shared";
 import { ScrollableRow } from "./Board/BoardArea.js";
+import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 
 const EQUIPMENT_DEFS_BY_ID = new Map(EQUIPMENT_DEFS.map((def) => [def.id, def]));
+const MULTIPLICATION_SIGN = "\u00D7";
 
 const FOUR_CUT_EQUIPMENT_IDS = new Set<string>([
   "single_wire_label",
@@ -27,22 +29,16 @@ function formatLockRequirement(value: string | number, cuts: number): string {
   return `${value}${MULTIPLICATION_SIGN}${cuts}`;
 }
 
-type StackCard = {
+type StackCard = CardPreviewCard & {
   kind: "character" | "equipment";
   id: string;
-  name: string;
   image: string | null;
-  previewImage: string | null;
   isUsed: boolean;
   isLocked: boolean;
   statusLabel: string;
   showLockIcon: boolean;
   statusClassName: string;
   frameClassName: string;
-  detailSubtitle?: string;
-  detailTiming?: string;
-  detailEffect?: string;
-  detailReminders?: string[];
   canUse: boolean;
   onUse?: () => boolean;
 };
@@ -119,7 +115,7 @@ export function CardStrip({
   onSelectEquipmentAction?: (equipmentId: string) => boolean;
   onSelectPersonalSkill?: () => boolean;
 }) {
-  const [previewCard, setPreviewCard] = useState<StackCard | null>(null);
+  const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
 
   const cards = useMemo<StackCard[]>(() => {
     const builtCards: StackCard[] = [];
@@ -288,83 +284,11 @@ export function CardStrip({
       </ScrollableRow>
 
       {previewCard && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-          onClick={() => setPreviewCard(null)}
-        >
-          <div
-            className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden rounded-2xl border border-gray-600 bg-[var(--color-bomb-surface)] p-3"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setPreviewCard(null)}
-              className="absolute right-3 top-3 rounded bg-black/70 px-2 py-0.5 text-xs font-bold text-white"
-            >
-              Close
-            </button>
-            <div className="min-h-0 grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="shrink-0 w-full aspect-[739/1040] max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900">
-                {previewCard.previewImage ? (
-                  <img
-                    src={`/images/${previewCard.previewImage}`}
-                    alt={previewCard.name}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-slate-900" />
-                )}
-              </div>
-              <div className="space-y-4 pr-2 text-white min-h-0 max-h-[40dvh] sm:max-h-none overflow-y-auto overscroll-none">
-                <div className="text-base font-bold leading-tight">
-                  {previewCard.name}
-                </div>
-                {previewCard.detailSubtitle && (
-                  <div className="text-sm leading-relaxed text-gray-300">
-                    {previewCard.detailSubtitle}
-                  </div>
-                )}
-                {previewCard.detailTiming && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-bold uppercase tracking-wide text-cyan-300">
-                      Timing
-                    </div>
-                    <div className="text-sm leading-relaxed text-gray-100">
-                      {previewCard.detailTiming}
-                    </div>
-                  </div>
-                )}
-                {previewCard.detailEffect && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-bold uppercase tracking-wide text-amber-300">
-                      Effect
-                    </div>
-                    <div className="text-sm leading-relaxed text-gray-100">
-                      {previewCard.detailEffect}
-                    </div>
-                  </div>
-                )}
-                {previewCard.detailReminders &&
-                  previewCard.detailReminders.length > 0 && (
-                    <div className="space-y-1.5">
-                      <div className="text-xs font-bold uppercase tracking-wide text-fuchsia-300">
-                        Reminder
-                      </div>
-                      <ul className="space-y-2">
-                        {previewCard.detailReminders.map((reminder) => (
-                          <li key={reminder} className="text-sm leading-relaxed text-gray-200">
-                            - {reminder}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <CardPreviewModal
+          card={previewCard}
+          onClose={() => setPreviewCard(null)}
+        />
       )}
     </div>
   );
 }
-const MULTIPLICATION_SIGN = "\u00D7";

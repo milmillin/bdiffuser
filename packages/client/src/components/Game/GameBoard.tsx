@@ -4,12 +4,13 @@ import type {
   ClientGameState,
   ClientMessage,
   ChatMessage,
-  CharacterId,
   UseEquipmentPayload,
   VisibleTile,
 } from "@bomb-busters/shared";
 import {
   BLUE_COPIES_PER_VALUE,
+  CHARACTER_CARD_TEXT,
+  CHARACTER_IMAGES,
   DOUBLE_DETECTOR_CHARACTERS,
   EQUIPMENT_DEFS,
   requiredSetupInfoTokenCountForMission,
@@ -18,7 +19,6 @@ import {
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
-import { CharacterCardOverlay } from "./Players/CharacterCardOverlay.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import {
@@ -50,6 +50,7 @@ import {
 import { stopMissionAudio } from "../../audio/audio.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { CardStrip } from "./CardStrip.js";
+import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 import {
   canRevealReds,
   getImmediateEquipmentPayload,
@@ -207,11 +208,7 @@ export function GameBoard({
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
 
-  // Character card overlay state
-  const [viewingCharacter, setViewingCharacter] = useState<{
-    playerId: string;
-    characterId: CharacterId;
-  } | null>(null);
+  const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
 
   // Unified equipment mode state
   const [equipmentMode, setEquipmentMode] = useState<EquipmentMode | null>(
@@ -746,6 +743,22 @@ export function GameBoard({
     return true;
   };
 
+  const openCharacterPreview = useCallback(
+    (player: ClientGameState["players"][number]) => {
+      if (!player.character) return;
+      const card = CHARACTER_CARD_TEXT[player.character];
+      setPreviewCard({
+        name: card.name,
+        previewImage: CHARACTER_IMAGES[player.character] ?? null,
+        detailSubtitle: card.abilityName,
+        detailTiming: card.timing,
+        detailEffect: card.effect,
+        detailReminders: [...card.reminders],
+      });
+    },
+    [],
+  );
+
   const cancelPendingAction = () => {
     setPendingAction(null);
     setSelectedGuessTile(null);
@@ -936,11 +949,7 @@ export function GameBoard({
                       turnOrder={turnOrder}
                       onCharacterClick={
                         opp.character
-                          ? () =>
-                              setViewingCharacter({
-                                playerId: opp.id,
-                                characterId: opp.character!,
-                              })
+                          ? () => openCharacterPreview(opp)
                           : undefined
                       }
                       onTileClick={
@@ -1342,11 +1351,7 @@ export function GameBoard({
                   )}
                   onCharacterClick={
                     me.character
-                      ? () =>
-                          setViewingCharacter({
-                            playerId: me.id,
-                            characterId: me.character!,
-                          })
+                      ? () => openCharacterPreview(me)
                       : undefined
                   }
                   onTileClick={
@@ -1590,15 +1595,8 @@ export function GameBoard({
         gameState={gameState}
       />
 
-      {viewingCharacter && (
-        <CharacterCardOverlay
-          characterId={viewingCharacter.characterId}
-          characterUsed={
-            gameState.players.find((p) => p.id === viewingCharacter.playerId)
-              ?.characterUsed ?? false
-          }
-          onClose={() => setViewingCharacter(null)}
-        />
+      {previewCard && (
+        <CardPreviewModal card={previewCard} onClose={() => setPreviewCard(null)} />
       )}
 
       <MobileTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
