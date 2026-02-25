@@ -283,6 +283,43 @@ function mission41TargetIsYellowWire(
   }
 }
 
+function actionTargetsUncutYellowWire(
+  state: Readonly<GameState>,
+  action: ValidateHookContext["action"],
+): boolean {
+  const hasYellowTarget = (
+    playerId: unknown,
+    tileIndex: unknown,
+  ): boolean => {
+    if (typeof playerId !== "string" || typeof tileIndex !== "number") return false;
+    const player = state.players.find((p) => p.id === playerId);
+    if (!player) return false;
+    const tile = player.hand[tileIndex];
+    return tile != null && !tile.cut && tile.color === "yellow";
+  };
+
+  switch (action.type) {
+    case "dualCut": {
+      return hasYellowTarget(action.targetPlayerId, action.targetTileIndex);
+    }
+    case "dualCutDoubleDetector": {
+      return (
+        hasYellowTarget(action.targetPlayerId, action.tileIndex1) ||
+        hasYellowTarget(action.targetPlayerId, action.tileIndex2)
+      );
+    }
+    case "simultaneousCut": {
+      return Array.isArray(action.cuts) && action.cuts.some((cut) => {
+        if (!cut || typeof cut !== "object") return false;
+        const asTarget = cut as { targetPlayerId?: unknown; targetTileIndex?: unknown };
+        return hasYellowTarget(asTarget.targetPlayerId, asTarget.targetTileIndex);
+      });
+    }
+    default:
+      return false;
+  }
+}
+
 function hasOnlyUncutTripwireAndRedWires(
   player: Readonly<import("@bomb-busters/shared").Player>,
 ): boolean {
@@ -3761,8 +3798,16 @@ registerHookHandler<"simultaneous_multi_cut">("simultaneous_multi_cut", {
     if (ctx.state.mission !== 48) return;
     if (rule.color !== "yellow" || rule.count !== 3) return;
 
-    const cutValue = extractCutValue(ctx.action);
-    if (cutValue !== "YELLOW") return;
+    if (
+      ctx.action.type === "soloCut"
+      && ctx.action.value === "YELLOW"
+    ) return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError:
+        "Mission 48: yellow wires can only be cut using the simultaneous 3-yellow special action",
+    };
+
+    if (!actionTargetsUncutYellowWire(ctx.state, ctx.action)) return;
 
     return {
       validationCode: "MISSION_RULE_VIOLATION",

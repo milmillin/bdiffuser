@@ -522,6 +522,34 @@ describe("mission 48 simultaneous yellow validation", () => {
     expect(error!.message).toContain("simultaneous 3-yellow");
   });
 
+  it("rejects numeric dual cut guesses against yellow wires", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 4 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 4,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous 3-yellow");
+  });
+
   it("rejects yellow solo cuts", () => {
     const actor = makePlayer({
       id: "actor",
