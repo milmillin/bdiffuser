@@ -367,20 +367,24 @@ export function GameBoard({
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const revealRedsForced = isMyTurn && (me != null && isRevealRedsForced(gameState, playerId));
   const missionSupportsSimultaneousThreeCut =
-    gameState.mission === 13 || gameState.mission === 48;
+    gameState.mission === 13 || gameState.mission === 48 || gameState.mission === 41;
   const missionSpecialRequiredColor =
     gameState.mission === 13
       ? "red"
       : gameState.mission === 48
         ? "yellow"
+        : gameState.mission === 41
+          ? "yellow"
         : null;
+  const missionSpecialTargetCount = gameState.mission === 41 ? 1 : 3;
   const missionSpecialAnyTargetColorAvailable =
     missionSpecialRequiredColor != null &&
-    gameState.players.some((player) =>
-      player.hand.some(
+    gameState.players.some((player) => {
+      if (gameState.mission === 41 && player.id === playerId) return false;
+      return player.hand.some(
         (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
-      ),
-    );
+      );
+    });
   const missionSpecialActorHasRequiredColor =
     missionSpecialRequiredColor != null &&
     !!me &&
@@ -389,7 +393,7 @@ export function GameBoard({
     );
   const missionSpecialActorEligible =
     missionSpecialRequiredColor != null &&
-    (gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
+    (gameState.mission === 41 || gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
   const missionSpecialCanBypassForcedReveal =
     revealRedsForced &&
     missionSupportsSimultaneousThreeCut &&
@@ -803,7 +807,8 @@ export function GameBoard({
 
   const toggleMissionSpecialTarget = useCallback(
     (targetPlayerId: string, tileIndex: number) => {
-      setMissionSpecialTargets((current) => {
+      if (gameState.mission === 41 && targetPlayerId === playerId) return;
+    setMissionSpecialTargets((current) => {
         const existingIndex = current.findIndex(
           (target) =>
             target.playerId === targetPlayerId && target.tileIndex === tileIndex,
@@ -811,13 +816,13 @@ export function GameBoard({
         if (existingIndex >= 0) {
           return current.filter((_, index) => index !== existingIndex);
         }
-        if (current.length >= 3) {
+        if (current.length >= missionSpecialTargetCount) {
           return current;
         }
         return [...current, { playerId: targetPlayerId, tileIndex }];
       });
     },
-    [],
+    [gameState.mission, missionSpecialTargetCount, playerId],
   );
 
   const clearMission46Targets = useCallback(() => {
@@ -844,14 +849,14 @@ export function GameBoard({
   }, []);
 
   const confirmMissionSpecialCut = useCallback(() => {
-    if (!missionSpecialMode || missionSpecialTargets.length !== 3) return;
+    if (!missionSpecialMode || missionSpecialTargets.length !== missionSpecialTargetCount) return;
     send({ type: "simultaneousRedCut", targets: missionSpecialTargets });
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
     setPendingAction(null);
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
-  }, [missionSpecialMode, missionSpecialTargets, send]);
+  }, [missionSpecialMode, missionSpecialTargets, send, missionSpecialTargetCount]);
 
   const confirmMission46SevensCut = useCallback(() => {
     if (!mission46ForcedForMe || mission46Targets.length !== 4) return;
@@ -1204,14 +1209,16 @@ export function GameBoard({
                       <div className="text-red-100">
                         {gameState.mission === 13
                           ? "Cut the 3 red wires at the same time."
-                          : "Cut the 3 yellow wires at the same time."}
+                          : gameState.mission === 48
+                            ? "Cut the 3 yellow wires at the same time."
+                            : "Cut 1 tripwire."}
                       </div>
                       <button
                         type="button"
                         onClick={startMissionSpecialCut}
                         className="px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white font-black transition-colors"
                       >
-                        Select 3 Wires
+                        {gameState.mission === 41 ? "Select 1 Wire" : "Select 3 Wires"}
                       </button>
                     </div>
                   )}
@@ -1220,6 +1227,7 @@ export function GameBoard({
                   <MissionSpecialThreeCutPanel
                     mission={gameState.mission}
                     selectedCount={missionSpecialTargets.length}
+                    requiredCount={missionSpecialTargetCount}
                     onClear={clearMissionSpecialTargets}
                     onCancel={cancelMissionSpecialCut}
                     onConfirm={confirmMissionSpecialCut}
@@ -1844,17 +1852,19 @@ function Mission46SevensCutPanel({
 function MissionSpecialThreeCutPanel({
   mission,
   selectedCount,
+  requiredCount,
   onClear,
   onCancel,
   onConfirm,
 }: {
   mission: number;
   selectedCount: number;
+  requiredCount: number;
   onClear: () => void;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const canConfirm = selectedCount === 3;
+  const canConfirm = selectedCount === requiredCount;
   const label = mission === 48 ? "yellow" : "red";
 
   return (
@@ -1866,9 +1876,13 @@ function MissionSpecialThreeCutPanel({
         Mission {mission} Special Action
       </div>
       <div className="text-red-100">
-        Select exactly 3 uncut wires to attempt the simultaneous {label} cut.
+        {mission === 41
+          ? "Select exactly 1 uncut teammate tripwire to attempt the special tripwire cut."
+          : `Select exactly ${requiredCount} uncut ${label} wires to attempt the simultaneous ${label} cut.`}
       </div>
-      <div className="text-red-200/90">{selectedCount}/3 wires selected</div>
+      <div className="text-red-200/90">
+        {selectedCount}/{requiredCount} {requiredCount === 1 ? "wire" : "wires"} selected
+      </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -1894,7 +1908,7 @@ function MissionSpecialThreeCutPanel({
               : "bg-gray-700 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Confirm 3-Wire Cut
+          {requiredCount === 1 ? "Confirm Wire Cut" : "Confirm 3-Wire Cut"}
         </button>
       </div>
     </div>

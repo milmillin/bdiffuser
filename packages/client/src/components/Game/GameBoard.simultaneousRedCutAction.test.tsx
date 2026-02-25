@@ -118,6 +118,37 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
     expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
   });
 
+  it("shows the mission 41 special-action launcher on the active player's turn", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", gameValue: 2, color: "blue", sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: "YELLOW", sortValue: 2.1 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "blue", gameValue: 5, sortValue: 5.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+    expect(html).toContain("Mission 41 Special Action");
+    expect(html).toContain("Cut 1 tripwire.");
+    expect(html).toContain("Select 1 Wire");
+  });
+
   it("hides the mission 13 launcher with 3 players when actor has no uncut red wire", () => {
     const state = makeGameState({
       mission: 13,
@@ -165,6 +196,75 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
           id: "p3",
           name: "P3",
           hand: [makeTile({ id: "p3-1", color: "yellow", gameValue: "YELLOW", sortValue: 3.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
+  it("shows the mission 41 launcher when actor has no uncut yellow wire", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: "YELLOW", sortValue: 3.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
+  it("hides the mission 41 launcher when only actor has an uncut tripwire", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "yellow", gameValue: "YELLOW", sortValue: 2.1 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
+  it("hides the mission 41 launcher when no uncut tripwire exists", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4.1 })],
         }),
       ],
       currentPlayerIndex: 0,
