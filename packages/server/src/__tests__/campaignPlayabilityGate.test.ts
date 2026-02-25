@@ -11,6 +11,7 @@ import { makeGameState, makePlayer, makeTile, withSeededRandom } from "@bomb-bus
 import {
   executeDualCut,
   executeRevealReds,
+  advanceTurn,
   executeSimultaneousFourCut,
   executeSimultaneousRedCut,
   executeSoloCut,
@@ -82,6 +83,41 @@ function createPlayers(count: PlayerCount): Player[] {
       connected: true,
     }),
   );
+}
+
+function getMission44DepthCost(value: number): number {
+  if (value <= 4) return 1;
+  if (value <= 8) return 2;
+  return 3;
+}
+
+function getMission44AvailableOxygen(state: GameState, playerId: string): number {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return 0;
+  const owned = Math.max(0, Math.floor(oxygen.playerOxygen[playerId] ?? 0));
+  const reserve = Math.max(0, Math.floor(oxygen.pool));
+  return Math.max(0, owned + reserve);
+}
+
+function canActorAffordAnyMission44Cut(state: GameState, actor: Player): boolean {
+  const availableOxygen = getMission44AvailableOxygen(state, actor.id);
+  if (availableOxygen <= 0) return false;
+
+  const availableValues = new Set<number>();
+  for (const tile of actor.hand) {
+    if (tile.cut || tile.gameValue === "RED" || tile.gameValue === "YELLOW") continue;
+    if (typeof tile.gameValue === "number") {
+      availableValues.add(tile.gameValue);
+    }
+  }
+
+  for (const value of availableValues) {
+    if (getMission44DepthCost(Math.floor(value)) <= availableOxygen) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function advanceSetupTurnAndMaybeStart(state: GameState): void {
@@ -507,6 +543,16 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
           state.phase = "finished";
           state.result = "loss_detonator";
           break;
+        }
+        if (missionId === 44 && !canActorAffordAnyMission44Cut(state, actor)) {
+          state.board.detonatorPosition += 1;
+          if (state.board.detonatorPosition >= state.board.detonatorMax) {
+            state.result = "loss_detonator";
+            state.phase = "finished";
+            break;
+          }
+          advanceTurn(state);
+          continue;
         }
         throw new Error(
           `Mission ${missionId}: no legal action for ${actor.id} at turn ${state.turnNumber}. ` +

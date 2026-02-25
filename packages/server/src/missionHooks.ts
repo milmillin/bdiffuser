@@ -785,6 +785,26 @@ function spendOxygenForTurn(
   return { paid, deficit: remaining };
 }
 
+function getOxygenCostForCut(rule: OxygenProgressionRuleDef, cutValue: number): number {
+  if (rule.cutCostMode === "value") return Math.max(0, Math.floor(cutValue));
+  if (rule.cutCostMode === "depth") {
+    const value = Math.max(1, Math.min(12, Math.floor(cutValue)));
+    if (value <= 4) return 1;
+    if (value <= 8) return 2;
+    return 3;
+  }
+
+  return Math.max(0, Math.floor(rule.perTurnCost));
+}
+
+function getAvailableOxygen(state: Readonly<GameState>, playerId: string): number {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return 0;
+  const owned = Math.max(0, Math.floor(oxygen.playerOxygen[playerId] ?? 0));
+  const reserve = Math.max(0, Math.floor(oxygen.pool));
+  return Math.max(0, owned + reserve);
+}
+
 function buildChallengeDeck(totalCount: number) {
   const count = Math.max(1, Math.floor(totalCount));
   const values = [...MISSION_NUMBER_VALUES];
@@ -1522,7 +1542,27 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     });
   },
 
+  validate(rule: OxygenProgressionRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (!rule.consumeOnCut) return;
+    const actorId = ctx.action.actorId;
+    const cutValue = extractCutValue(ctx.action);
+    if (typeof cutValue !== "number") return;
+
+    const requiredCost = getOxygenCostForCut(rule, cutValue);
+    const oxygen = ctx.state.campaign?.oxygen;
+    if (!oxygen || requiredCost <= 0) return;
+
+    const available = getAvailableOxygen(ctx.state, actorId);
+    if (available < requiredCost) {
+      return {
+        validationError: `Mission ${ctx.state.mission}: insufficient oxygen to cut ${cutValue} (need ${requiredCost}, available ${available})`,
+        validationCode: "MISSION_RULE_VIOLATION",
+      };
+    }
+  },
+
   endTurn(rule: OxygenProgressionRuleDef, ctx: EndTurnHookContext): void {
+    if (rule.consumeOnCut) return;
     if (ctx.state.phase === "finished") return;
     const oxygen = ctx.state.campaign?.oxygen;
     if (!oxygen) return;
@@ -1549,9 +1589,49 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
       playerId: actorId,
       action: "hookEffect",
       detail: [
-        `oxygen_progression:cost=${perTurnCost}`,
+        `oxygen_progression:mode=endTurn`,
+        `cost=${perTurnCost}`,
         `paid=${paid}`,
         `deficit=${deficit}`,
+        `pool=${oxygen.pool}`,
+      ].join("|"),
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(rule: OxygenProgressionRuleDef, ctx: ResolveHookContext): void {
+    if (!rule.consumeOnCut) return;
+    if (ctx.state.phase === "finished") return;
+
+    const actorId = ctx.action.actorId;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const requiredCost = getOxygenCostForCut(rule, ctx.cutValue);
+    if (requiredCost <= 0) return;
+    const oxygen = ctx.state.campaign?.oxygen;
+    if (!oxygen) return;
+
+    const { paid, deficit } = spendOxygenForTurn(ctx.state, requiredCost, actorId);
+    if (deficit > 0) {
+      ctx.state.board.detonatorPosition += 1;
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+      }
+    }
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail: [
+        "oxygen_progression:mode=cut",
+        `cost=${requiredCost}`,
+        `cut=${ctx.cutValue}`,
+        `paid=${paid}`,
+        `deficit=${deficit}`,
+        `oxygen_progression:cost=${requiredCost}`,
         `pool=${oxygen.pool}`,
       ].join("|"),
       timestamp: Date.now(),

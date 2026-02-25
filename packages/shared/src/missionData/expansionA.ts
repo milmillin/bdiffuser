@@ -64,6 +64,8 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
         kind: "oxygen_progression",
         initialPool: 4,
         perTurnCost: 1,
+        consumeOnCut: true,
+        cutCostMode: "depth",
         initialPoolByPlayerCount: {
           2: 4,
           3: 6,

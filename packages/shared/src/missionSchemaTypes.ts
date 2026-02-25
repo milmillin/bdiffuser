@@ -150,6 +150,15 @@ export interface OxygenProgressionRuleDef {
   initialPoolByPlayerCount?: Partial<Record<PlayerCount, number>>;
   /** Oxygen spent at each end-turn hook execution. */
   perTurnCost: number;
+  /** Spend oxygen on each cut action instead of end-turn drain. */
+  consumeOnCut?: boolean;
+  /**
+   * Optional cost mode when `consumeOnCut` is true.
+   *
+   * - `depth`: values 1-4 cost 1, 5-8 cost 2, 9-12 cost 3.
+   * - `value`: cost equals the wire value being cut.
+   */
+  cutCostMode?: "depth" | "value";
   /** Optional per-player oxygen stock at setup time. */
   initialPlayerOxygen?: number;
   /** Optional mission-specific per-player stock setup overrides by player count. */
