@@ -3366,6 +3366,16 @@ registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
       };
     }
 
+    const isCutAction = ctx.action.type === "dualCut"
+      || ctx.action.type === "dualCutDoubleDetector"
+      || ctx.action.type === "soloCut";
+    if (!isCutAction) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 26: you must cut a wire matching a visible Number card value",
+      };
+    }
+
     const attemptedValues = getMission26AttemptedValues(ctx.action);
     if (attemptedValues.length === 0) return;
 
@@ -3391,11 +3401,21 @@ registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
   },
 
   resolve(_rule: VisibleNumberCardGateRuleDef, ctx: ResolveHookContext): void {
-    if (ctx.state.mission !== 26 || ctx.state.phase === "finished" || !ctx.cutSuccess) return;
-    if (typeof ctx.cutValue !== "number") return;
-
     const numberCards = ctx.state.campaign?.numberCards;
     if (!numberCards) return;
+    if (ctx.state.mission !== 26 || ctx.state.phase === "finished") return;
+
+    const attemptedValues = getMission26AttemptedValues(ctx.action);
+    for (const attemptedValue of attemptedValues) {
+      if (typeof attemptedValue !== "number") continue;
+      const matchingCard = numberCards.visible.find(
+        (card) => card.value === attemptedValue && card.faceUp,
+      );
+      if (matchingCard) matchingCard.faceUp = false;
+    }
+
+    if (!ctx.cutSuccess) return;
+    if (typeof ctx.cutValue !== "number") return;
 
     const matchingCard = numberCards.visible.find((card) => card.value === ctx.cutValue);
     if (!matchingCard) return;

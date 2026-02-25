@@ -786,6 +786,52 @@ describe("missionHooks dispatcher", () => {
       expect(completedLog).toBeDefined();
     });
 
+    it("mission 26: flips selected Number card after a failed matching cut attempt", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 1, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "t2", gameValue: 2, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 26,
+        players: [actor, teammate],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m26-visible-1", value: 1, faceUp: true },
+              { id: "m26-visible-2", value: 2, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(26, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 1,
+        },
+        cutValue: 1,
+        cutSuccess: false,
+      });
+
+      const firstCard = state.campaign?.numberCards?.visible?.find((card) => card.id === "m26-visible-1");
+      const secondCard = state.campaign?.numberCards?.visible?.find((card) => card.id === "m26-visible-2");
+      expect(firstCard?.faceUp).toBe(false);
+      expect(secondCard?.faceUp).toBe(true);
+    });
+
     it("mission 11: does not trigger loss for non-matching blue value", () => {
       const state = makeGameState({
         mission: 11,
@@ -1754,6 +1800,37 @@ describe("missionHooks dispatcher", () => {
 
       expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
       expect(blocked.validationError).toContain("must skip");
+    });
+
+    it("mission 26: blocks revealReds even when a matching visible number exists", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "r1", color: "blue", gameValue: 1, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 26,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [{ id: "m26-visible-1", value: 1, faceUp: true }],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(26, {
+        point: "validate",
+        state,
+        action: {
+          type: "revealReds",
+          actorId: "p1",
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("must cut a wire");
     });
 
     it("mission 41: blocks actions for players with only their tripwire", () => {
