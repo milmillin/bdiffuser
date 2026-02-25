@@ -77,6 +77,8 @@ import { validateMission18DesignatedCutterTarget } from "./mission18.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
+/** Delay before purging storage for stale rooms with no actions (2 hours). */
+const STALE_ROOM_CLEANUP_DELAY_MS = 2 * 60 * 60 * 1000;
 
 type MissionAudioControlCommand = Extract<
   ClientMessage,
@@ -119,15 +121,19 @@ export class BombBustersServer extends Server<Env> {
     } catch (e) {
       console.error("Failed to load room state from storage:", e);
     }
+
+    this.scheduleNextAlarm();
   }
 
   async saveState() {
     try {
+      this.room.lastActivityAt = Date.now();
       await this.ctx.storage.put("room", this.room);
       // Schedule storage cleanup when a game finishes for the first time
       if (this.room.gameState?.phase === "finished" && !this.room.finishedAt) {
         this.scheduleFinishedCleanup();
       }
+      this.scheduleNextAlarm();
     } catch (e) {
       console.error("Failed to save room state to storage:", e);
     }
@@ -136,14 +142,46 @@ export class BombBustersServer extends Server<Env> {
   /** Record finish timestamp and schedule a cleanup alarm to purge storage. */
   private scheduleFinishedCleanup() {
     this.room.finishedAt = Date.now();
+    const cleanupDeadline = this.getFinishedCleanupDeadline();
+    if (cleanupDeadline == null) return;
     // setAlarm replaces any pending alarm (bot-turn / timer), so no separate deleteAlarm needed.
-    this.ctx.storage.setAlarm(Date.now() + FINISHED_ROOM_CLEANUP_DELAY_MS).catch((e) => {
+    this.ctx.storage.setAlarm(cleanupDeadline).catch((e) => {
       console.error("Failed to schedule finished-room cleanup alarm:", e);
     });
     // Persist the finishedAt timestamp (fire-and-forget; saveState() already wrote the room once).
     this.ctx.storage.put("room", this.room).catch((e) => {
       console.error("Failed to persist finishedAt:", e);
     });
+  }
+
+  private getFinishedCleanupDeadline(): number | null {
+    if (this.room.finishedAt == null) return null;
+    return this.room.finishedAt + FINISHED_ROOM_CLEANUP_DELAY_MS;
+  }
+
+  private getStaleCleanupDeadline(): number | null {
+    if (this.room.lastActivityAt == null) return null;
+    return this.room.lastActivityAt + STALE_ROOM_CLEANUP_DELAY_MS;
+  }
+
+  private pickEarlierAlarm(nextAlarmMs: number | null, candidateMs: number | null): number | null {
+    if (candidateMs == null) return nextAlarmMs;
+    if (nextAlarmMs == null) return candidateMs;
+    return candidateMs < nextAlarmMs ? candidateMs : nextAlarmMs;
+  }
+
+  private resetRoomState() {
+    this.room = {
+      gameState: null,
+      players: [],
+      mission: 1,
+      hostId: null,
+      captainMode: "random",
+      selectedCaptainId: null,
+      botCount: 0,
+      botLastActionTurn: {},
+      failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
+    };
   }
 
   private maybeRecordMissionFailure(previousResult: GameResult | null, state: GameState): void {
@@ -1441,62 +1479,61 @@ export class BombBustersServer extends Server<Env> {
     this.advanceSetupTurnAndMaybeStart(state);
   }
 
-  /** Schedule the next alarm: picks the earliest of bot turn and timer deadline. */
+  /** Schedule the next alarm: picks the earliest of cleanup, bot turn, and timer deadlines. */
   scheduleNextAlarm() {
     const state = this.room.gameState;
-    if (!state || state.phase === "finished" || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) return;
-
     let nextAlarmMs: number | null = null;
+    nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, this.getFinishedCleanupDeadline());
+    nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, this.getStaleCleanupDeadline());
 
-    // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only)
-    if (state.phase === "playing") {
+    // Bot and timer alarms only apply during active game phases.
+    if (
+      state &&
+      state.phase !== "finished" &&
+      (state.phase === "playing" || state.phase === "setup_info_tokens")
+    ) {
       const forced = state.pendingForcedAction;
 
-      // For choose/designate forced actions, currentPlayer remains the decider.
-      if (
-        !forced
-        || forced.kind === "chooseNextPlayer"
-        || forced.kind === "designateCutter"
-      ) {
-        const currentPlayer = state.players[state.currentPlayerIndex];
-        if (currentPlayer?.isBot) {
-          nextAlarmMs = Date.now() + 1500;
+      // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only)
+      if (state.phase === "playing") {
+        // For choose/designate forced actions, currentPlayer remains the decider.
+        if (
+          !forced
+          || forced.kind === "chooseNextPlayer"
+          || forced.kind === "designateCutter"
+        ) {
+          const currentPlayer = state.players[state.currentPlayerIndex];
+          if (currentPlayer?.isBot) {
+            const botMs = Date.now() + 1500;
+            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          }
+        }
+
+        // Mission 22 token pass: schedule alarm if current chooser is a bot
+        if (forced?.kind === "mission22TokenPass") {
+          const chooser = state.players.find((p) => p.id === forced.currentChooserId);
+          if (chooser?.isBot) {
+            const botMs = Date.now() + 1500;
+            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          }
+        } else if (forced?.kind === "detectorTileChoice") {
+          const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
+          if (chooser?.isBot) {
+            const botMs = Date.now() + 1500;
+            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          }
+        } else if (forced?.kind === "talkiesWalkiesTileChoice") {
+          const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
+          if (chooser?.isBot) {
+            const botMs = Date.now() + 1500;
+            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          }
         }
       }
 
-      // Mission 22 token pass: schedule alarm if current chooser is a bot
-      if (forced?.kind === "mission22TokenPass") {
-        const chooser = state.players.find((p) => p.id === forced.currentChooserId);
-        if (chooser?.isBot) {
-          const botMs = Date.now() + 1500;
-          if (nextAlarmMs === null || botMs < nextAlarmMs) {
-            nextAlarmMs = botMs;
-          }
-        }
-      } else if (forced?.kind === "detectorTileChoice") {
-        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
-        if (chooser?.isBot) {
-          const botMs = Date.now() + 1500;
-          if (nextAlarmMs === null || botMs < nextAlarmMs) {
-            nextAlarmMs = botMs;
-          }
-        }
-      } else if (forced?.kind === "talkiesWalkiesTileChoice") {
-        const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
-        if (chooser?.isBot) {
-          const botMs = Date.now() + 1500;
-          if (nextAlarmMs === null || botMs < nextAlarmMs) {
-            nextAlarmMs = botMs;
-          }
-        }
-      }
-    }
-
-    // Timer deadline alarm (mission 10) — active from setup through playing
-    if (state.timerDeadline != null) {
-      const timerMs = state.timerDeadline;
-      if (nextAlarmMs === null || timerMs < nextAlarmMs) {
-        nextAlarmMs = timerMs;
+      // Timer deadline alarm (mission 10) — active from setup through playing
+      if (state.timerDeadline != null) {
+        nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, state.timerDeadline);
       }
     }
 
@@ -1513,32 +1550,31 @@ export class BombBustersServer extends Server<Env> {
   }
 
   async onAlarm() {
-    const state = this.room.gameState;
+    const nowMs = Date.now();
 
-    // Finished-room cleanup: purge storage so the DO can be evicted.
-    if (!state || state.phase === "finished") {
-      if (this.room.finishedAt) {
-        await this.ctx.storage.deleteAll();
-        this.room = {
-          gameState: null,
-          players: [],
-          mission: 1,
-          hostId: null,
-          captainMode: "random",
-          selectedCaptainId: null,
-          botCount: 0,
-          botLastActionTurn: {},
-          failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
-        };
-      }
+    const finishedCleanupDeadline = this.getFinishedCleanupDeadline();
+    if (finishedCleanupDeadline != null && nowMs >= finishedCleanupDeadline) {
+      await this.ctx.storage.deleteAll();
+      this.resetRoomState();
       return;
     }
 
-    if (state.phase !== "playing" && state.phase !== "setup_info_tokens") return;
+    const staleCleanupDeadline = this.getStaleCleanupDeadline();
+    if (staleCleanupDeadline != null && nowMs >= staleCleanupDeadline) {
+      await this.ctx.storage.deleteAll();
+      this.resetRoomState();
+      return;
+    }
+
+    const state = this.room.gameState;
+    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) {
+      this.scheduleNextAlarm();
+      return;
+    }
 
     try {
       // Check timer expiry first (takes priority over bot turns)
-      if (state.timerDeadline != null && Date.now() >= state.timerDeadline) {
+      if (state.timerDeadline != null && nowMs >= state.timerDeadline) {
         const previousResult = state.result;
         state.result = "loss_timer";
         state.phase = "finished";
@@ -1564,6 +1600,8 @@ export class BombBustersServer extends Server<Env> {
     } catch (e) {
       console.error("Alarm handler failed:", e);
     }
+
+    this.scheduleNextAlarm();
   }
 
   async executeBotTurn() {

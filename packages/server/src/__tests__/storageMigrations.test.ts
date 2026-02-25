@@ -66,6 +66,19 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves cleanup timestamps from stored room data", () => {
+    const legacy = {
+      mission: 10,
+      players: [],
+      finishedAt: 1_730_000_000_000,
+      lastActivityAt: 1_730_000_500_000,
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-b3");
+    expect(normalized.finishedAt).toBe(1_730_000_000_000);
+    expect(normalized.lastActivityAt).toBe(1_730_000_500_000);
+  });
+
   it("normalizes legacy gameState shape with missing arrays and invalid index", () => {
     const legacy = {
       mission: 41,

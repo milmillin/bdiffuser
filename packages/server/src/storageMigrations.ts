@@ -34,6 +34,7 @@ export interface RoomStateSnapshot {
   botLastActionTurn: Record<string, number>;
   failureCounters: FailureCounters;
   finishedAt?: number;
+  lastActivityAt?: number;
 }
 
 const DEFAULT_ROOM_STATE: RoomStateSnapshot = {
@@ -663,6 +664,10 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
     typeof raw.finishedAt === "number" && Number.isFinite(raw.finishedAt)
       ? raw.finishedAt
       : undefined;
+  const lastActivityAt =
+    typeof raw.lastActivityAt === "number" && Number.isFinite(raw.lastActivityAt)
+      ? raw.lastActivityAt
+      : undefined;
 
   return {
     gameState,
@@ -675,5 +680,6 @@ export function normalizeRoomState(raw: unknown, roomId: string): RoomStateSnaps
     botLastActionTurn,
     failureCounters,
     ...(finishedAt !== undefined ? { finishedAt } : {}),
+    ...(lastActivityAt !== undefined ? { lastActivityAt } : {}),
   };
 }
