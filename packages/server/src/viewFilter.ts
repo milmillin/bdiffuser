@@ -24,7 +24,9 @@ export function filterStateForPlayer(
     phase: state.phase,
     roomId: state.roomId,
     playerId,
-    players: state.players.map((p) => filterPlayer(p, playerId)),
+    players: state.phase === "finished"
+      ? state.players.map(filterPlayerFullyVisible)
+      : state.players.map((p) => filterPlayer(p, playerId)),
     board: filterBoard(state.board),
     currentPlayerIndex: state.currentPlayerIndex,
     turnNumber: state.turnNumber,
