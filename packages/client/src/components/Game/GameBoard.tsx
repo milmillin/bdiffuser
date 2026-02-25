@@ -377,14 +377,43 @@ export function GameBoard({
           ? "yellow"
         : null;
   const missionSpecialTargetCount = gameState.mission === 41 ? 1 : 3;
+  const missionSpecialActorHasRequiredColor =
+    missionSpecialRequiredColor != null &&
+    !!me &&
+    me.hand.some(
+      (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
+    );
+  const opponentTilesFullyVisibleForPlayer = gameState.players.every((player) =>
+    player.id === playerId
+      ? true
+      : player.hand.every((tile) => tile.cut || tile.color != null),
+  );
   const missionSpecialAnyTargetColorAvailable =
     missionSpecialRequiredColor != null &&
-    gameState.players.some((player) => {
-      if (gameState.mission === 41 && player.id === playerId) return false;
-      return player.hand.some(
-        (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
-      );
-    });
+    (() => {
+      if (gameState.mission === 41) {
+        const teammateHasKnownTripwire = gameState.players.some(
+          (player) =>
+            player.id !== playerId &&
+            player.hand.some(
+              (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
+            ),
+        );
+
+        if (opponentTilesFullyVisibleForPlayer) {
+          return teammateHasKnownTripwire;
+        }
+
+        return gameState.players.some(
+          (player) =>
+            player.id !== playerId &&
+            player.hand.some((tile) => !tile.cut),
+        );
+      }
+
+      if (gameState.players.length >= 4) return true;
+      return missionSpecialActorHasRequiredColor;
+    })();
   const mission41SkipIfNeeded =
     gameState.mission === 41 && me != null
       ? (() => {
@@ -398,12 +427,6 @@ export function GameBoard({
         );
       })()
       : false;
-  const missionSpecialActorHasRequiredColor =
-    missionSpecialRequiredColor != null &&
-    !!me &&
-    me.hand.some(
-      (tile) => !tile.cut && tile.color === missionSpecialRequiredColor,
-    );
   const missionSpecialActorEligible =
     missionSpecialRequiredColor != null &&
     (gameState.mission === 41 ? !mission41SkipIfNeeded : gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);

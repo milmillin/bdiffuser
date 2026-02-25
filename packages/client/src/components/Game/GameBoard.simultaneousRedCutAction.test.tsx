@@ -21,6 +21,26 @@ function renderBoard(state: ClientGameState, playerId: string): string {
   );
 }
 
+function redactOpponentTiles(state: ClientGameState, playerId: string): ClientGameState {
+  return {
+    ...state,
+    players: state.players.map((player) =>
+      player.id === playerId
+        ? player
+        : {
+            ...player,
+            hand: player.hand.map((tile) => ({
+              ...tile,
+              color: undefined,
+              gameValue: undefined,
+              sortValue: undefined,
+              image: undefined,
+            })),
+          },
+    ),
+  };
+}
+
 describe("GameBoard simultaneous 3-wire mission action", () => {
   it("shows the mission 13 special-action launcher on the active player's turn", () => {
     const state = makeGameState({
@@ -321,5 +341,106 @@ describe("GameBoard simultaneous 3-wire mission action", () => {
 
     const html = renderBoard(toClientGameState(state, "me"), "me");
     expect(html).not.toContain("data-testid=\"mission-special-three-cut-launch\"");
+  });
+
+  it("shows the mission 13 launcher when opponent colors are hidden in a 4-player game", () => {
+    const state = makeGameState({
+      mission: 13,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "yellow", gameValue: 8, sortValue: 8.1 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "blue", gameValue: 6, sortValue: 6.1 })],
+        }),
+        makePlayer({
+          id: "p4",
+          name: "P4",
+          hand: [makeTile({ id: "p4-1", color: "red", gameValue: "RED", sortValue: 9.5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(
+      redactOpponentTiles(toClientGameState(state, "me"), "me"),
+      "me",
+    );
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+    expect(html).toContain("Mission 13 Special Action");
+  });
+
+  it("shows the mission 48 launcher when opponent colors are hidden in a 4-player game", () => {
+    const state = makeGameState({
+      mission: 48,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4.1 })],
+        }),
+        makePlayer({
+          id: "p3",
+          name: "P3",
+          hand: [makeTile({ id: "p3-1", color: "blue", gameValue: 5, sortValue: 5.1 })],
+        }),
+        makePlayer({
+          id: "p4",
+          name: "P4",
+          hand: [makeTile({ id: "p4-1", color: "red", gameValue: "RED", sortValue: 10.5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(
+      redactOpponentTiles(toClientGameState(state, "me"), "me"),
+      "me",
+    );
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+    expect(html).toContain("Mission 48 Special Action");
+  });
+
+  it("shows the mission 41 launcher when opponent colors are hidden", () => {
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", color: "blue", gameValue: 2, sortValue: 2 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 4, sortValue: 4.1 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(
+      redactOpponentTiles(toClientGameState(state, "me"), "me"),
+      "me",
+    );
+    expect(html).toContain("data-testid=\"mission-special-three-cut-launch\"");
+    expect(html).toContain("Mission 41 Special Action");
   });
 });
