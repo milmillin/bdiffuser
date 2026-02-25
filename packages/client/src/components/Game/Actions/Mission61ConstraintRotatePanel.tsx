@@ -21,6 +21,14 @@ export function Mission61ConstraintRotatePanel({
   if (forced.captainId !== playerId) return null;
 
   const clockwiseSelected = forced.direction === "clockwise";
+  const counterClockwiseSelected = forced.direction === "counter_clockwise";
+  const skipSelected = forced.direction === "skip";
+
+  const decisionText = skipSelected
+    ? "no rotation this round"
+    : clockwiseSelected
+      ? "clockwise"
+      : "counter-clockwise";
 
   return (
     <div
@@ -30,8 +38,7 @@ export function Mission61ConstraintRotatePanel({
       <div className={PANEL_TITLE_CLASS}>Mission 61 — Rotate Constraints</div>
       <p className={PANEL_TEXT_CLASS}>Choose how to rotate the global constraints.</p>
       <p className={PANEL_SUBTEXT_CLASS}>
-        Current rotation choice is set to{" "}
-        {clockwiseSelected ? "clockwise" : "counter-clockwise"}.
+        Current decision: {decisionText}.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -50,11 +57,21 @@ export function Mission61ConstraintRotatePanel({
             send({ type: "mission61ConstraintRotate", direction: "counter_clockwise" })
           }
           className={`${BUTTON_PRIMARY_CLASS} ${
-            !clockwiseSelected ? "ring-2 ring-emerald-300" : ""
+            counterClockwiseSelected ? "ring-2 ring-emerald-300" : ""
           }`}
           data-testid="mission61-constraint-rotate-counter-clockwise"
         >
           Rotate Counter-Clockwise
+        </button>
+        <button
+          type="button"
+          onClick={() => send({ type: "mission61ConstraintRotate", direction: "skip" })}
+          className={`${BUTTON_PRIMARY_CLASS} ${
+            skipSelected ? "ring-2 ring-emerald-300" : ""
+          }`}
+          data-testid="mission61-constraint-rotate-skip"
+        >
+          Do Not Rotate This Round
         </button>
       </div>
     </div>

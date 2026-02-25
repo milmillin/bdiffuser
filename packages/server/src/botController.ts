@@ -211,7 +211,7 @@ export type BotAction =
     }
   | { action: "chooseNextPlayer"; targetPlayerId: string }
   | { action: "designateCutter"; targetPlayerId: string }
-  | { action: "mission61ConstraintRotate"; direction: "clockwise" | "counter_clockwise" };
+  | { action: "mission61ConstraintRotate"; direction: "clockwise" | "counter_clockwise" | "skip" };
 
 export interface BotActionResult {
   action: BotAction;
@@ -408,7 +408,11 @@ function parseLLMAction(
 
   if (action === "mission61ConstraintRotate") {
     const direction = result.direction as string;
-    if (direction !== "clockwise" && direction !== "counter_clockwise") return null;
+    if (
+      direction !== "clockwise" &&
+      direction !== "counter_clockwise" &&
+      direction !== "skip"
+    ) return null;
     return { action: "mission61ConstraintRotate", direction };
   }
 
@@ -577,7 +581,7 @@ function getForcedMission61ConstraintRotateAction(
   if (forced.captainId !== botId) return null;
 
   const direction =
-    forced.direction === "clockwise" || forced.direction === "counter_clockwise"
+    forced.direction === "counter_clockwise"
       ? forced.direction
       : "clockwise";
   return { action: "mission61ConstraintRotate", direction };

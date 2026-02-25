@@ -565,6 +565,8 @@ function normalizeGameState(
         direction:
           obj.pendingForcedAction.direction === "counter_clockwise"
             ? "counter_clockwise"
+            : obj.pendingForcedAction.direction === "skip"
+              ? "skip"
             : "clockwise",
         ...(typeof obj.pendingForcedAction.previousPlayerId === "string"
           && obj.pendingForcedAction.previousPlayerId

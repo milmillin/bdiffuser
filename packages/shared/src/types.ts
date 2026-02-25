@@ -456,7 +456,7 @@ export type ForcedAction =
       /** The captain who must resolve the rotation choice. */
       captainId: string;
       /** Direction the team chooses for the rotation. */
-      direction: "clockwise" | "counter_clockwise";
+      direction: Mission61ConstraintRotationDirection;
       /** The player who acted immediately before this round started. */
       previousPlayerId?: string;
     };
@@ -649,3 +649,7 @@ export interface LobbyPlayer {
   connected: boolean;
   isBot: boolean;
 }
+export type Mission61ConstraintRotationDirection =
+  | "clockwise"
+  | "counter_clockwise"
+  | "skip";

@@ -3,6 +3,7 @@ import type {
   AnyEquipmentId,
   BaseEquipmentId,
   CaptainMode,
+  Mission61ConstraintRotationDirection,
   CharacterId,
   ChatMessage,
   ClientGameState,
@@ -57,7 +58,7 @@ export type ClientMessage =
   | { type: "talkiesWalkiesChoice"; tileIndex: number }
   | {
       type: "mission61ConstraintRotate";
-      direction: "clockwise" | "counter_clockwise";
+      direction: Mission61ConstraintRotationDirection;
     }
   | {
       type: "missionAudioControl";

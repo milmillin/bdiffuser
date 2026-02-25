@@ -17,7 +17,7 @@ function toClientState(state: Parameters<typeof makeGameState>[0], playerId: str
 }
 
 describe("Mission61ConstraintRotatePanel", () => {
-  it("renders captain controls for clockwise/counter-clockwise rotation", () => {
+  it("renders captain controls for all rotation choices", () => {
     const state = toClientState(
       {
         mission: 61,
@@ -53,6 +53,7 @@ describe("Mission61ConstraintRotatePanel", () => {
     expect(html).toContain("data-testid=\"mission61-constraint-rotate-panel\"");
     expect(html).toContain("data-testid=\"mission61-constraint-rotate-clockwise\"");
     expect(html).toContain("data-testid=\"mission61-constraint-rotate-counter-clockwise\"");
+    expect(html).toContain("data-testid=\"mission61-constraint-rotate-skip\"");
   });
 
   it("does not render for non-captains", () => {

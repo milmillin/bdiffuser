@@ -1450,7 +1450,7 @@ export class BombBustersServer extends Server<Env> {
 
   handleMission61ConstraintRotate(
     conn: Connection,
-    direction: "clockwise" | "counter_clockwise",
+    direction: "clockwise" | "counter_clockwise" | "skip",
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1484,29 +1484,40 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    const applied = rotateMission61Constraint(state, direction);
-    if (!applied) {
-      this.sendMsg(conn, {
-        type: "error",
-        message: "Constraint rotation could not be completed.",
-      });
-      return;
-    }
-
     const captain = state.players.find((p) => p.id === forced.captainId);
-    pushGameLog(state, {
-      turn: state.turnNumber,
-      playerId: forced.captainId,
-      action: "hookEffect",
-      detail: `mission61:constraints_rotated|direction=${direction}|captain=${captain?.name ?? forced.captainId}`,
-      timestamp: Date.now(),
-    });
+    if (direction === "skip") {
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: forced.captainId,
+        action: "hookEffect",
+        detail: `mission61:constraints_not_rotated|captain=${captain?.name ?? forced.captainId}`,
+        timestamp: Date.now(),
+      });
+    } else {
+      const applied = rotateMission61Constraint(state, direction);
+      if (!applied) {
+        this.sendMsg(conn, {
+          type: "error",
+          message: "Constraint rotation could not be completed.",
+        });
+        return;
+      }
+
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: forced.captainId,
+        action: "hookEffect",
+        detail: `mission61:constraints_rotated|direction=${direction}|captain=${captain?.name ?? forced.captainId}`,
+        timestamp: Date.now(),
+      });
+    }
 
     state.pendingForcedAction = undefined;
     resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
     this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
+    return;
   }
 
   private executeMission22TokenPass(
@@ -2259,25 +2270,38 @@ export class BombBustersServer extends Server<Env> {
           return;
         }
 
-        const applied = rotateMission61Constraint(state, botAction.direction);
-        if (!applied) {
-          console.log(`Bot ${botId} mission61ConstraintRotate rejected: constraint rotation failed`);
-          state.pendingForcedAction = undefined;
-          resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
-          this.saveState();
-          this.broadcastGameState();
-          this.scheduleBotTurnIfNeeded();
-          return;
-        }
+        if (botAction.direction === "skip") {
+          const captain = state.players.find((p) => p.id === forced.captainId);
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: forced.captainId,
+            action: "hookEffect",
+            detail: `mission61:constraints_not_rotated|captain=${captain?.name ?? forced.captainId}`,
+            timestamp: Date.now(),
+          });
+        } else {
+          const applied = rotateMission61Constraint(state, botAction.direction);
+          if (!applied) {
+            console.log(
+              `Bot ${botId} mission61ConstraintRotate rejected: constraint rotation failed`,
+            );
+            state.pendingForcedAction = undefined;
+            resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+            this.saveState();
+            this.broadcastGameState();
+            this.scheduleBotTurnIfNeeded();
+            return;
+          }
 
-        const captain = state.players.find((p) => p.id === forced.captainId);
-        pushGameLog(state, {
-          turn: state.turnNumber,
-          playerId: forced.captainId,
-          action: "hookEffect",
-          detail: `mission61:constraints_rotated|direction=${botAction.direction}|captain=${captain?.name ?? forced.captainId}`,
-          timestamp: Date.now(),
-        });
+          const captain = state.players.find((p) => p.id === forced.captainId);
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: forced.captainId,
+            action: "hookEffect",
+            detail: `mission61:constraints_rotated|direction=${botAction.direction}|captain=${captain?.name ?? forced.captainId}`,
+            timestamp: Date.now(),
+          });
+        }
 
         state.pendingForcedAction = undefined;
         resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
