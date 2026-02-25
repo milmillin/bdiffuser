@@ -49,4 +49,13 @@ describe("hook coverage", () => {
       `missions with hookRules but no behaviorHooks: ${orphaned.join(", ")}`,
     ).toEqual([]);
   });
+
+  it("mission 35 marks X-marked wire setup redraw to exclude Talkies-Walkies", () => {
+    const hasFlag = MISSION_SCHEMAS[35]?.hookRules?.some(
+      (rule) =>
+        rule.kind === "x_marked_wire" && rule.excludeWalkieTalkies === true,
+    );
+
+    expect(hasFlag).toBe(true);
+  });
 });

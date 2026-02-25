@@ -5,6 +5,7 @@ import {
   YELLOW_WIRE_SORT_VALUES,
   PLAYER_COUNT_CONFIG,
   EQUIPMENT_DEFS,
+  MISSION_SCHEMAS,
   getWireImage,
   resolveMissionSetup,
   isNonCaptainCharacterForbidden,
@@ -259,6 +260,15 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
   65: ["x_or_y_ray"],
 } as const;
 
+function shouldExcludeWalkieTalkiesForSetupRedraw(mission: MissionId): boolean {
+  const hookRules = MISSION_SCHEMAS[mission]?.hookRules;
+  return hookRules?.some(
+    (rule) =>
+      rule.kind === "x_marked_wire" &&
+      rule.excludeWalkieTalkies === true,
+  ) ?? false;
+}
+
 const STARTUP_BASE_CHARACTERS = [
   "double_detector",
   "character_2",
@@ -336,6 +346,10 @@ function resolveRedrawForbiddenEquipmentIds(
     if (typeof unlockValue !== "number") continue;
     const forbiddenId = idByUnlockValue.get(unlockValue);
     if (forbiddenId) redrawForbiddenIds.add(forbiddenId);
+  }
+
+  if (shouldExcludeWalkieTalkiesForSetupRedraw(mission)) {
+    redrawForbiddenIds.add("talkies_walkies");
   }
 
   for (const id of MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS[mission] ?? []) {

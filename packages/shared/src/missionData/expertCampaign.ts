@@ -39,7 +39,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       2: { red: exact(3), yellow: exact(4) },
     },
     behaviorHooks: ["mission_35_x_marked_blue_wires"],
-    hookRules: [{ kind: "x_marked_wire" }],
+    hookRules: [{ kind: "x_marked_wire", excludeWalkieTalkies: true }],
   });
 
   setMission(36, {
