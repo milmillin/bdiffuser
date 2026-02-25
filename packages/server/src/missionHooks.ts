@@ -849,6 +849,12 @@ function actorCanAffordAnyMission44Cut(
   const allRemainingRed = actorUncut.every((tile) => tile.gameValue === "RED");
   if (allRemainingRed) return true;
 
+  const actorHasYellow = actorUncut.some((tile) => tile.gameValue === "YELLOW");
+  const hasYellowTarget = actorHasYellow && state.players.some((player) =>
+    player.id !== actor.id && player.hand.some((tile) => !tile.cut && tile.gameValue === "YELLOW"),
+  );
+  if (hasYellowTarget) return true;
+
   const available = state.mission === 63 || state.mission === 49 || state.mission === 54
     ? Math.max(0, Math.floor(state.campaign?.oxygen?.playerOxygen[actor.id] ?? 0))
     : getAvailableOxygen(state, actor.id);
