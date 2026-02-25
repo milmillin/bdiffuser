@@ -143,14 +143,20 @@ export function applyMissionInfoTokenVariant(
   return token;
 }
 
+/** Value-class tokens convey a value about one wire (numeric, yellow, parity, count).
+ *  Structural tokens (relation, singleWire) are intentionally additive. */
+function isValueClassToken(t: Readonly<InfoToken>): boolean {
+  return t.relation == null && !t.singleWire;
+}
+
 /**
- * Push an info token onto a player, replacing any existing count token at the
- * same position to prevent stacking (relevant for missions 24 / 40).
+ * Push an info token onto a player, replacing any existing value-class token at
+ * the same wire position to prevent stacking.
  */
 export function pushInfoToken(player: Player, token: InfoToken): void {
-  if (token.countHint != null && token.position >= 0) {
+  if (isValueClassToken(token) && token.position >= 0) {
     player.infoTokens = player.infoTokens.filter(
-      (t) => !(t.countHint != null && t.position === token.position),
+      (t) => !(isValueClassToken(t) && t.position === token.position),
     );
   }
   player.infoTokens.push(token);
