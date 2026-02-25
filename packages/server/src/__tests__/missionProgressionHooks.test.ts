@@ -8,7 +8,12 @@ import {
   makePlayer,
 } from "@bomb-busters/shared/testing";
 import { dispatchHooks } from "../missionHooks";
-import { executeDualCut, executeSoloCut } from "../gameLogic";
+import {
+  executeDualCut,
+  executeDualCutDoubleDetector,
+  executeSoloCut,
+  resolveDetectorTileChoice,
+} from "../gameLogic";
 
 // Side-effect import registers built-in handlers.
 import "../missionHooks";
@@ -497,6 +502,53 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(3);
     expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(4);
     expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(5);
+  });
+
+  it("mission 49 double-detector defaults oxygen transfer to the next player when no recipient is specified", () => {
+    const state = makeGameState({
+      mission: 49,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          character: "double_detector",
+          hand: [makeTile({ id: "p1-4", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-4", gameValue: 4 }),
+            makeTile({ id: "p2-5", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "p3",
+          hand: [makeTile({ id: "p3-1", gameValue: 1 })],
+        }),
+      ],
+    });
+
+    dispatchHooks(49, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 49 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 7;
+    state.campaign.oxygen.playerOxygen.p2 = 4;
+    state.campaign.oxygen.playerOxygen.p3 = 1;
+
+    executeDualCutDoubleDetector(
+      state,
+      "p1",
+      "p2",
+      0,
+      1,
+      4,
+    );
+    const resolveAction = resolveDetectorTileChoice(state, 0);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(3);
+    expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(8);
+    expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(1);
   });
 
   it("mission 49 dual-cut defaults oxygen transfer to the next player when no recipient is specified", () => {
