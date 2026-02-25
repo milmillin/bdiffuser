@@ -473,6 +473,18 @@ export function GameBoard({
   const mission9ActiveProgress = mission9Gate?.activeProgress;
   const isMission9BlockedValue = (value: number | "YELLOW"): boolean =>
     isMission9BlockedCutValue(gameState, value);
+  const mission26VisibleValues = useMemo(() => {
+    if (gameState.mission !== 26) return new Set<number>();
+    return new Set(
+      (gameState.campaign?.numberCards?.visible ?? [])
+        .filter((card) => card.faceUp)
+        .map((card) => card.value),
+    );
+  }, [gameState.mission, gameState.campaign?.numberCards?.visible]);
+  const isMission26CutValueVisible = (value: unknown): value is number => {
+    if (gameState.mission !== 26) return typeof value === "number";
+    return typeof value === "number" && mission26VisibleValues.has(value);
+  };
   const selectedGuessValue =
     selectedGuessTile != null ? me?.hand[selectedGuessTile]?.gameValue : null;
   const mission9SelectedGuessBlocked =
@@ -1027,19 +1039,20 @@ export function GameBoard({
                                     !revealRedsForced &&
                                     !pendingAction
                               ? (tileIndex) => {
-                                  const guessValue = me?.hand[selectedGuessTile]?.gameValue;
-                                  if (
-                                    guessValue == null ||
-                                    guessValue === "RED" ||
-                                    typeof guessValue === "undefined"
-                                  ) {
-                                    return;
-                                  }
-                                  setPendingAction({
-                                    kind: "dual_cut",
-                                    actorTileIndex: selectedGuessTile,
-                                    guessValue,
-                                    targetPlayerId: opp.id,
+                              const guessValue = me?.hand[selectedGuessTile]?.gameValue;
+                              if (
+                                guessValue == null ||
+                                guessValue === "RED" ||
+                                typeof guessValue === "undefined"
+                              ) {
+                                return;
+                              }
+                              if (!isMission26CutValueVisible(guessValue)) return;
+                              setPendingAction({
+                                kind: "dual_cut",
+                                actorTileIndex: selectedGuessTile,
+                                guessValue,
+                                targetPlayerId: opp.id,
                                     targetTileIndex: tileIndex,
                                   });
                                 }
@@ -1486,6 +1499,7 @@ export function GameBoard({
                                 return;
                               }
                               if (tile.color === "red") return;
+                              if (!isMission26CutValueVisible(tile.gameValue)) return;
 
                               if (selectedGuessTile == null) {
                                 setSelectedGuessTile(tileIndex);
@@ -1536,11 +1550,11 @@ export function GameBoard({
                         : detectorForcedForMe && me
                           ? (_tile: VisibleTile, idx: number) =>
                               detectorSelectableIndices.includes(idx)
-                        : gameState.pendingForcedAction?.kind ===
-                              FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
-                            gameState.pendingForcedAction.targetPlayerId ===
-                              playerId &&
-                            me
+                  : gameState.pendingForcedAction?.kind ===
+                          FORCED_ACTION_TALKIES_WALKIES_CHOICE &&
+                        gameState.pendingForcedAction.targetPlayerId ===
+                          playerId &&
+                        me
                           ? (tile: VisibleTile) =>
                               !tile.cut &&
                               !(hasXWireEquipmentRestriction && tile.isXMarked)
@@ -1557,6 +1571,7 @@ export function GameBoard({
                               if (pendingAction) return false;
                               if (tile.cut) return false;
                               if (forceRevealReds) return gameState.mission === 11 || tile.color === "red";
+                              if (gameState.mission === 26 && !isMission26CutValueVisible(tile.gameValue)) return false;
                               return tile.color !== "red";
                             }
                           : undefined

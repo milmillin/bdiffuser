@@ -132,6 +132,15 @@ export function getSoloCutValues(
       player.hand.some((tile) => !tile.cut && tile.color === "yellow"),
     );
 
+  const mission26VisibleValues = (() => {
+    if (state.mission !== 26) return null;
+    return new Set(
+      (state.campaign?.numberCards?.visible ?? [])
+        .filter((card) => card.faceUp)
+        .map((card) => card.value),
+    );
+  })();
+
   const hasMission46NonSevenUncutWire = (() => {
     if (state.mission !== 46) return false;
     return me.hand.some(
@@ -172,6 +181,7 @@ export function getSoloCutValues(
   for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
+      if (mission26VisibleValues && !mission26VisibleValues.has(value)) continue;
       if (value === protectedSimultaneousFourValue) {
         continue;
       }

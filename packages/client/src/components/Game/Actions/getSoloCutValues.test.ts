@@ -389,6 +389,70 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
     expect(values).not.toContain(7);
   });
+
+  it("only offers solo cut values currently visible in mission 26 number cards", () => {
+    const state = makeGameState({
+      mission: 26,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 5 }),
+            makeTile({ id: "m2", gameValue: 5 }),
+          ],
+        }),
+        makePlayer({
+          id: "opponent",
+          hand: [makeTile({ id: "o1", gameValue: 7 })],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n5", value: 5, faceUp: true },
+            { id: "n7", value: 7, faceUp: false },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(5);
+    expect(values).not.toContain(7);
+  });
+
+  it("does not offer mission 26 solo values when no visible numbers exist", () => {
+    const state = makeGameState({
+      mission: 26,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 5 }),
+            makeTile({ id: "m2", gameValue: 5 }),
+          ],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n5", value: 5, faceUp: false },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toEqual([]);
+  });
 });
 
 describe("canRevealReds mission rules", () => {
