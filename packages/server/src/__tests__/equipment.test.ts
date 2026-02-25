@@ -1915,7 +1915,7 @@ describe("equipment execution", () => {
     expect(state.phase).toBe("playing");
     expect(state.result).toBeNull();
     expect(state.board.detonatorPosition).toBe(0);
-    expect(target.hand[0].cut).toBe(true);
+    expect(target.hand[0].cut).toBe(false); // Red wire should NOT be revealed
     expect(target.infoTokens).toEqual([]);
   });
 

@@ -109,6 +109,8 @@ describe("equipment post-usage effects", () => {
       expect(action.detonatorAdvanced).toBe(false);
       expect(action.explosion).toBe(false);
     }
+    // Red wire should NOT be revealed
+    expect(target.hand[0].cut).toBe(false);
     // Game should NOT be over
     expect(state.phase).toBe("playing");
     expect(state.result).toBeNull();

@@ -413,11 +413,6 @@ export function executeDualCut(
 
     if (targetTile.color === "red" || isHiddenRedLikeTarget) {
       if (stabilizerActive) {
-        if (targetTile.color === "red") {
-          targetTile.cut = true;
-          updateMarkerConfirmations(state);
-        }
-
         addLog(
           state,
           actorId,
