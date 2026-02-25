@@ -25,6 +25,6 @@
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["BombBustersServer"] },
-    { "tag": "v2", "new_classes": ["StatsServer"] }
+    { "tag": "v2", "new_sqlite_classes": ["StatsServer"] }
   ]
 }
