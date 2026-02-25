@@ -590,22 +590,27 @@ export function validateRevealReds(
   return validateRevealRedsLegality(state, actorId)?.message ?? null;
 }
 
-/** Check if a simultaneous 3-wire special cut action is valid (missions 13/48). */
+/** Check if a simultaneous special cut action is valid (missions 13/48/41). */
 export function validateSimultaneousRedCutLegality(
   state: GameState,
   actorId: string,
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): ActionLegalityError | null {
-  const requiredColor = state.mission === 13
+  const mission = state.mission;
+  const isMission41 = mission === 41;
+  const requiredColor = mission === 13
     ? "red"
-    : state.mission === 48
+    : (mission === 48 || isMission41)
       ? "yellow"
       : null;
+  const requiredTargetCount = state.mission === 41
+    ? 1
+    : 3;
 
   if (requiredColor == null) {
     return legalityError(
       "SIMULTANEOUS_RED_CUT_WRONG_MISSION",
-      "Simultaneous 3-wire special cut is only available in mission 13 or 48",
+      "Simultaneous special cut is only available in mission 13, 41, or 48",
     );
   }
 
@@ -636,22 +641,26 @@ export function validateSimultaneousRedCutLegality(
   // In 4-5 player games, an actor may perform the simultaneous action even
   // with no matching-color wire in hand. For 2-3 players, they must have one.
   const isLargeTeam = state.players.length >= 4;
-  const actorHasMatchingColor = actor.hand.some(
-    (tile) => !tile.cut && tile.color === requiredColor,
-  );
-  if (!isLargeTeam && !actorHasMatchingColor) {
-    return legalityError(
-      "MISSION_RULE_VIOLATION",
-      requiredColor === "red"
-        ? "Mission 13: with 2-3 players, only a player with an uncut red wire can perform the simultaneous red cut"
-        : "Mission 48: with 2-3 players, only a player with an uncut yellow wire can perform the simultaneous yellow cut",
+  if (state.mission !== 41) {
+    const actorHasMatchingColor = actor.hand.some(
+      (tile) => !tile.cut && tile.color === requiredColor,
     );
+    if (!isLargeTeam && !actorHasMatchingColor) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        requiredColor === "red"
+          ? "Mission 13: with 2-3 players, only a player with an uncut red wire can perform the simultaneous red cut"
+          : "Mission 48: with 2-3 players, only a player with an uncut yellow wire can perform the simultaneous yellow cut",
+      );
+    }
   }
 
-  if (targets.length !== 3) {
+  if (targets.length !== requiredTargetCount) {
     return legalityError(
       "SIMULTANEOUS_RED_CUT_INVALID_TARGETS",
-      "Must designate exactly 3 wires",
+      requiredTargetCount === 1
+        ? "Must designate exactly 1 wire"
+        : "Must designate exactly 3 wires",
     );
   }
 
@@ -671,9 +680,15 @@ export function validateSimultaneousRedCutLegality(
     }
     seenTargets.add(targetKey);
 
-    const tile = getTileByFlatIndex(player, target.tileIndex);
-    if (!tile) {
-      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      const tile = getTileByFlatIndex(player, target.tileIndex);
+      if (!tile) {
+        return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+      }
+      if (isMission41 && target.playerId === actorId) {
+        return legalityError(
+          "SIMULTANEOUS_RED_CUT_INVALID_TARGETS",
+          "Mission 41: the special action targets a teammate's tripwire",
+        );
     }
     if (tile.cut) {
       return legalityError("TILE_ALREADY_CUT", "Tile already cut");
