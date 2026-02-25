@@ -738,6 +738,47 @@ describe("missionHooks dispatcher", () => {
       expect(effectLog).toBeDefined();
     });
 
+    it("mission 9: advances sequence pointer from 2 to 3 when last card is completed", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a1", gameValue: 8, cut: false })],
+      });
+      const target = makePlayer({
+        id: "target",
+        hand: [makeTile({ id: "t1", gameValue: 8, cut: true })],
+      });
+      const state = makeGameState({
+        mission: 9,
+        players: [actor, target],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c1", value: 2, faceUp: true },
+              { id: "c2", value: 5, faceUp: true },
+              { id: "c3", value: 8, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 2 }],
+        },
+      });
+
+      dispatchHooks(9, {
+        point: "resolve",
+        state,
+        action: { type: "dualCut", actorId: "actor", targetPlayerId: "target", targetTileIndex: 0, guessValue: 8 },
+        cutValue: 8,
+        cutSuccess: true,
+      });
+
+      const marker = state.campaign?.specialMarkers?.find(
+        (m) => m.kind === "sequence_pointer",
+      );
+      expect(marker?.value).toBe(3);
+    });
+
     it("mission 15: disables default equipment unlock when visible number is not completed", () => {
       const actor = makePlayer({
         id: "actor",
