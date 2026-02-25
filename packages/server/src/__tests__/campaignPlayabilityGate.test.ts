@@ -7,7 +7,7 @@ import type {
   WireValue,
 } from "@bomb-busters/shared";
 import { MISSION_SCHEMAS } from "@bomb-busters/shared";
-import { makePlayer, withSeededRandom } from "@bomb-busters/shared/testing";
+import { makePlayer, makeTile, withSeededRandom } from "@bomb-busters/shared/testing";
 import {
   executeDualCut,
   executeRevealReds,
@@ -135,11 +135,16 @@ function summarizeUncutByPlayer(state: Readonly<GameState>): string {
 
 function buildSimultaneousRedCutTargets(
   state: Readonly<GameState>,
+  actorId: string,
 ): Array<{ playerId: string; tileIndex: number }> | null {
-  const requiredColor = state.mission === 48 ? "yellow" : "red";
+  const requiredColor = state.mission === 48 || state.mission === 41
+    ? "yellow"
+    : "red";
+  const requiredTargetCount = state.mission === 41 ? 1 : 3;
   const targets: Array<{ playerId: string; tileIndex: number }> = [];
 
   for (const player of state.players) {
+    if (state.mission === 41 && player.id === actorId) continue;
     for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex++) {
       const tile = player.hand[tileIndex];
       if (!tile || tile.cut || tile.color !== requiredColor) continue;
@@ -147,7 +152,7 @@ function buildSimultaneousRedCutTargets(
     }
   }
 
-  return targets.length >= 3 ? targets.slice(0, 3) : null;
+  return targets.length >= requiredTargetCount ? targets.slice(0, requiredTargetCount) : null;
 }
 
 function pickAction(state: GameState, actor: Player): ChosenAction | null {
@@ -265,7 +270,7 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
     return { kind: "revealReds", actorId: actor.id };
   }
 
-  const simultaneousRedTargets = buildSimultaneousRedCutTargets(state);
+  const simultaneousRedTargets = buildSimultaneousRedCutTargets(state, actor.id);
   if (simultaneousRedTargets) {
     const simultaneousRedError = validateActionWithHooks(state, {
       type: "simultaneousRedCut",
@@ -530,6 +535,52 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
     return state;
   });
 }
+
+describe("buildSimultaneousRedCutTargets", () => {
+  it("returns exactly one uncut teammate tripwire for mission 41", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", color: "blue", gameValue: 4 }),
+        makeTile({ id: "a2", color: "yellow", gameValue: "YELLOW" }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [
+        makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "t2", color: "yellow", gameValue: "YELLOW", cut: true }),
+      ],
+    });
+
+    const targets = buildSimultaneousRedCutTargets({
+      mission: 41,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    } as GameState, "actor");
+
+    expect(targets).toEqual([{ playerId: "teammate", tileIndex: 0 }]);
+  });
+
+  it("does not select actor tripwires for mission 41 targets", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a2", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 4 })],
+    });
+
+    const targets = buildSimultaneousRedCutTargets({
+      mission: 41,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    } as GameState, "actor");
+
+    expect(targets).toBeNull();
+  });
+});
 
 describe("campaign end-to-end playability gate", () => {
   for (const missionId of CAMPAIGN_MISSIONS) {
