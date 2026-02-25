@@ -940,7 +940,7 @@ function updateValidationTrack(state: GameState, value: number): void {
   }
   const previousCount = Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
   state.board.validationTrack[value] = cutCount;
-  if (state.mission === 54 && previousCount < 4 && cutCount >= 4) {
+  if ((state.mission === 54 || state.mission === 63) && previousCount < 4 && cutCount >= 4) {
     awardMission54ValidationOxygenBonus(state);
   }
 }

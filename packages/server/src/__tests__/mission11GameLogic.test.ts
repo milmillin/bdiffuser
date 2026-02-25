@@ -444,9 +444,41 @@ describe("mission 11 game logic", () => {
       if (action.type !== "soloCutResult") return;
 
       expect(state.board.validationTrack[5]).toBe(4);
-      expect(state.campaign?.oxygen?.pool).toBe(5);
+      expect(state.campaign?.oxygen?.pool).toBe(7);
       expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(8);
       expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(10);
+    });
+
+    it("grants one reserve oxygen to every player when mission 63 places a validation token", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [
+          makeTile({ id: "captain-5a", gameValue: 5 }),
+          makeTile({ id: "captain-5b", gameValue: 5 }),
+          makeTile({ id: "captain-5c", gameValue: 5 }),
+          makeTile({ id: "captain-5d", gameValue: 5 }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6 })],
+      });
+      const state = makeGameState({
+        mission: 63,
+        players: [captain, teammate],
+        currentPlayerIndex: 0,
+      });
+
+      dispatchHooks(63, { point: "setup", state });
+      const action = executeSoloCut(state, "captain", 5);
+      expect(action.type).toBe("soloCutResult");
+      if (action.type !== "soloCutResult") return;
+
+      expect(state.board.validationTrack[5]).toBe(4);
+      expect(state.campaign?.oxygen?.pool).toBe(3);
+      expect(state.campaign?.oxygen?.playerOxygen.captain).toBe(0);
+      expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(11);
     });
   });
 });
