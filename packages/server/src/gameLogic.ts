@@ -1228,6 +1228,7 @@ export function resolveDetectorTileChoice(
   const { actorId, targetPlayerId, guessValue, source } = forced;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
+  const actorUncut = getUncutTiles(actor);
   const availableMatches = forced.matchingTileIndices.filter((idx) => {
     const tile = getTileByFlatIndex(target, idx);
     return !!tile &&
@@ -1237,9 +1238,12 @@ export function resolveDetectorTileChoice(
       tile.gameValue === guessValue;
   });
   const matchCount = availableMatches.length;
+  const actorHasMatchingGuess = actorUncut.some(
+    (tile) => tile.color === "blue" && tile.gameValue === guessValue,
+  );
 
   // ── 0 matches: failure path ──────────────────────────────
-  if (matchCount === 0) {
+  if (matchCount === 0 || (source === "doubleDetector" && !actorHasMatchingGuess)) {
     if (source === "doubleDetector") {
       return resolveDoubleDetectorNoMatch(state, forced, actor, target, infoTokenTileIndexOverride);
     }
@@ -1328,7 +1332,6 @@ export function resolveDetectorTileChoice(
   }
 
   // Cut actor's matching tile
-  const actorUncut = getUncutTiles(actor);
   let actorTile: WireTile | undefined;
   if (forced.actorTileIndex != null) {
     const candidate = getTileByFlatIndex(actor, forced.actorTileIndex);

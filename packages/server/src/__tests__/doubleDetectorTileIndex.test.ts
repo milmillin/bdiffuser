@@ -193,6 +193,49 @@ describe("executeDualCutDoubleDetector actorTileIndex", () => {
     expect(actor.hand[1].cut).toBe(false);
   });
 
+  it("treats a target match as no-match when actor lacks the announced value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [makeTile({ id: "b1", color: "blue", gameValue: 4 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 7 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 3 }),
+      ],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+    const detonatorBefore = state.board.detonatorPosition;
+
+    const action = executeDualCutDoubleDetector(state, "actor", "target", 0, 1, 7);
+    expect(action.type).toBe("dualCutDoubleDetectorResult");
+    if (action.type !== "dualCutDoubleDetectorResult") return;
+    expect(action.outcome).toBe("pending");
+    expect(state.pendingForcedAction).toBeDefined();
+
+    const resolveAction = resolveDetectorTileChoice(state);
+    expect(resolveAction.type).toBe("dualCutDoubleDetectorResult");
+    if (resolveAction.type === "dualCutDoubleDetectorResult") {
+      expect(resolveAction.outcome).toBe("no_match");
+      expect(resolveAction.explosion).toBeUndefined();
+      expect(resolveAction.detonatorAdvanced).toBe(true);
+      expect(resolveAction.infoTokenPlacedIndex).toBe(0);
+    }
+
+    expect(state.board.detonatorPosition).toBe(detonatorBefore + 1);
+    expect(target.hand[0].cut).toBe(false);
+    expect(target.hand[1].cut).toBe(false);
+    expect(actor.hand[0].cut).toBe(false);
+    expect(target.infoTokens).toHaveLength(1);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+  });
+
   it("falls back gracefully when actorTileIndex points to an already-cut tile", () => {
     const actor = makePlayer({
       id: "actor",

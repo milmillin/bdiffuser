@@ -1848,6 +1848,14 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error).toBeNull();
   });
 
+  it("allows Double Detector when actor does not hold the announced value", () => {
+    const { state } = baseDDSetup("double_detector");
+    state.players[0].hand = [makeTile({ id: "a1", color: "blue", gameValue: 4 })];
+
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
+    expect(error).toBeNull();
+  });
+
   it("allows character_3 to use Double Detector", () => {
     const { state } = baseDDSetup("character_3");
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);

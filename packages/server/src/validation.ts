@@ -434,18 +434,6 @@ export function validateDualCutDoubleDetectorLegality(
     );
   }
 
-  // Actor must have an uncut blue tile with the guessed value
-  const actorUncut = getUncutTiles(actor);
-  const actorHasValue = actorUncut.some(
-    (t) => t.color === "blue" && t.gameValue === guessValue,
-  );
-  if (!actorHasValue) {
-    return legalityError(
-      "GUESS_VALUE_NOT_IN_HAND",
-      "You don't have an uncut blue wire with that value",
-    );
-  }
-
   return null;
 }
 
