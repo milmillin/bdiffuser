@@ -71,7 +71,8 @@ export type ClientMessage =
   | { type: "selectCaptain"; playerId: string }
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
-  | { type: "chat"; text: string };
+  | { type: "chat"; text: string }
+  | { type: "playAgain" };
 
 // ── Server → Client Messages ───────────────────────────────
 

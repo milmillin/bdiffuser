@@ -410,6 +410,9 @@ export class BombBustersServer extends Server<Env> {
       case "chat":
         this.handleChat(connection, msg.text);
         break;
+      case "playAgain":
+        this.handlePlayAgain(connection);
+        break;
       default:
         this.sendMsg(connection, { type: "error", message: "Unknown message type" });
     }
@@ -1497,6 +1500,28 @@ export class BombBustersServer extends Server<Env> {
       this.broadcastGameState();
     }
     this.saveState();
+  }
+
+  handlePlayAgain(_conn: Connection) {
+    if (!this.room.gameState || this.room.gameState.phase !== "finished") return;
+
+    // Clear game state
+    this.room.gameState = null;
+    this.room.finishedAt = undefined;
+    this.room.botLastActionTurn = {};
+
+    // Reset each player's game-specific state back to lobby defaults
+    for (const player of this.room.players) {
+      player.hand = [];
+      player.standSizes = [0];
+      player.infoTokens = [];
+      player.isCaptain = false;
+      player.characterUsed = false;
+      player.character = null;
+    }
+
+    this.saveState();
+    this.broadcastLobby();
   }
 
   broadcastChat(chatMsg: ChatMessage) {

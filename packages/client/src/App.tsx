@@ -350,7 +350,7 @@ function GameRoom({
       {gameState && gameState.phase === "finished" && (
         <>
           <GameBoard gameState={gameState} send={send} playerId={gameState.playerId} chatMessages={chatMessages} />
-          <EndScreen gameState={gameState} onPlayAgain={onLeave} />
+          <EndScreen gameState={gameState} onPlayAgain={() => send({ type: "playAgain" })} />
         </>
       )}
 
