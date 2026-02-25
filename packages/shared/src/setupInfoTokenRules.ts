@@ -14,16 +14,7 @@ type Mission22HandTile = {
 function countMission22AbsentValues(
   hand: readonly Mission22HandTile[],
 ): number {
-  const present = new Set<number | "YELLOW">();
-  for (const tile of hand) {
-    if (tile.cut) continue;
-    if (tile.gameValue === "YELLOW") {
-      present.add("YELLOW");
-    } else if (typeof tile.gameValue === "number") {
-      present.add(tile.gameValue);
-    }
-  }
-  return MISSION_22_POSSIBLE_VALUES - present.size;
+  return MISSION_22_POSSIBLE_VALUES - getMission22PresentValues(hand).size;
 }
 
 export function requiredSetupInfoTokenCountForMission(
@@ -59,6 +50,21 @@ export function requiredSetupInfoTokenCountForMission(
   }
 
   return 1;
+}
+
+export function getMission22PresentValues(
+  hand: readonly Mission22HandTile[],
+): Set<number | "YELLOW"> {
+  const present = new Set<number | "YELLOW">();
+  for (const tile of hand) {
+    if (tile.cut) continue;
+    if (tile.gameValue === "YELLOW") {
+      present.add("YELLOW");
+    } else if (typeof tile.gameValue === "number") {
+      present.add(tile.gameValue);
+    }
+  }
+  return present;
 }
 
 export function requiresSetupInfoTokenForMission(

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   requiredSetupInfoTokenCountForMission,
   requiredSetupInfoTokenCountForMissionAndHand,
+  getMission22PresentValues,
   requiresSetupInfoTokenForMission,
 } from "../setupInfoTokenRules.js";
 
@@ -91,5 +92,18 @@ describe("setupInfoTokenRules", () => {
         mixedHand,
       ),
     ).toBe(2);
+  });
+
+  it("uses only uncut yellow and numeric values for mission 22 present-value tracking", () => {
+    const present = getMission22PresentValues([
+      { gameValue: 4, cut: false },
+      { gameValue: 4, cut: true },
+      { gameValue: "YELLOW" as const, cut: true },
+      { gameValue: "YELLOW" as const, cut: false },
+    ]);
+
+    expect(present.has(4)).toBe(true);
+    expect(present.has("YELLOW")).toBe(true);
+    expect(present.size).toBe(2);
   });
 });

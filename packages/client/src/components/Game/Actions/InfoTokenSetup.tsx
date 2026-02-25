@@ -1,4 +1,8 @@
-import type { ClientMessage, ClientPlayer } from "@bomb-busters/shared";
+import {
+  getMission22PresentValues,
+  type ClientMessage,
+  type ClientPlayer,
+} from "@bomb-busters/shared";
 import {
   BUTTON_PRIMARY_CLASS,
   PANEL_CLASS,
@@ -13,15 +17,7 @@ function getFalseTokenValueOptions(
   requiresTileTarget = true,
 ): number[] {
   if (!requiresTileTarget && allowMissingValue) {
-    const presentValues = new Set<number | "YELLOW">();
-    for (const handTile of hand) {
-      if (handTile.cut) continue;
-      if (handTile.gameValue === "YELLOW") {
-        presentValues.add("YELLOW");
-      } else if (typeof handTile.gameValue === "number") {
-        presentValues.add(handTile.gameValue);
-      }
-    }
+    const presentValues = getMission22PresentValues(hand);
 
     const values: number[] = [];
     if (!presentValues.has("YELLOW")) {

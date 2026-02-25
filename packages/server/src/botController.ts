@@ -1,4 +1,8 @@
-import type { GameState, Player } from "@bomb-busters/shared";
+import {
+  getMission22PresentValues,
+  type GameState,
+  type Player,
+} from "@bomb-busters/shared";
 import { filterStateForPlayer } from "./viewFilter.js";
 import { buildSystemPrompt, buildUserMessage } from "./botPrompt.js";
 import { callLLM } from "./llmClient.js";
@@ -76,12 +80,7 @@ export function botPlaceInfoToken(state: GameState, botId: string): void {
 
   // Mission 22: absent-value tokens placed next to stand (tileIndex -1).
   if (state.phase === "setup_info_tokens" && state.mission === 22) {
-    const presentValues = new Set<number | "YELLOW">();
-    for (const tile of bot.hand) {
-      if (tile.cut) continue;
-      if (tile.gameValue === "YELLOW") presentValues.add("YELLOW");
-      else if (typeof tile.gameValue === "number") presentValues.add(tile.gameValue);
-    }
+    const presentValues = getMission22PresentValues(bot.hand);
     const placedAbsent = new Set(
       bot.infoTokens
         .filter((t) => t.position === -1)
