@@ -3,6 +3,7 @@ import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeGameState,
+  makeConstraintCard,
   makeTile,
   makeYellowTile,
   makePlayer,
@@ -1162,6 +1163,146 @@ describe("mission progression hooks", () => {
       p1: 0,
       p3: 4,
     });
+  });
+
+  it("mission 37 rotates constraint when a value reaches 4 successful cuts", () => {
+    const state = makeGameState({
+      mission: 37,
+      log: [],
+      board: makeBoardState({ detonatorMax: 4 }),
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 4 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-1", gameValue: 4 })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-1", gameValue: 4 })] }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", name: "A", description: "A" })],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "B", name: "B", description: "B" })],
+        },
+      },
+    });
+    state.campaign!.constraints!.global[0]!.active = true;
+    state.board.validationTrack[4] = 4;
+
+    dispatchHooks(37, {
+      point: "resolve",
+      state,
+      action: {
+        type: "dualCut",
+        actorId: "p1",
+        targetPlayerId: "p2",
+        targetTileIndex: 0,
+        guessValue: 4,
+      },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.constraints?.global[0]?.id).toBe("B");
+    expect(state.log.some(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "mission37:constraint_rotated|value=4",
+    )).toBe(true);
+  });
+
+  it("mission 37 auto-skips an entire locked round and replaces the constraint", () => {
+    const state = makeGameState({
+      mission: 37,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 10,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 2 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-1", gameValue: 4 })] }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-1", gameValue: 6 })] }),
+      ],
+      campaign: {
+        constraints: {
+          global: [
+            makeConstraintCard({ id: "I", name: "I", description: "I", active: true }),
+            makeConstraintCard({ id: "J", name: "J", description: "J", active: true }),
+            makeConstraintCard({ id: "K", name: "K", description: "K", active: true }),
+          ],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "A", name: "A", description: "A", active: false })],
+        },
+      },
+    });
+
+    dispatchHooks(37, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p3",
+    });
+
+    expect(state.board.detonatorPosition).toBe(2);
+    expect(state.turnNumber).toBe(13);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.campaign?.constraints?.global[0]?.id).toBe("A");
+    expect(
+      state.log.filter(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission37:auto_skip|player="),
+      ).length,
+    ).toBe(3);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission37:round_stalled|detonator=2",
+      ),
+    ).toBe(true);
+  });
+
+  it("mission 37 does not auto-skip a player who can only reveal all-red wires", () => {
+    const state = makeGameState({
+      mission: 37,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 4,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 5 }),
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "p1-1", gameValue: "RED", color: "red" })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-1", gameValue: "RED", color: "red" })],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [
+            makeConstraintCard({ id: "K", name: "K", description: "K", active: true }),
+          ],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "A", name: "A", description: "A" })],
+        },
+      },
+    });
+
+    dispatchHooks(37, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.turnNumber).toBe(4);
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission37:auto_skip|player="),
+      ),
+    ).toBe(false);
   });
 
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {

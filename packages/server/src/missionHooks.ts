@@ -2876,6 +2876,31 @@ function hasAnyAllowedDualCutValue(activeConstraintIds: string[]): boolean {
   return false;
 }
 
+function canPlayerPlayMission37SoloCut(
+  player: Readonly<Player>,
+  activeConstraintIds: readonly string[],
+): boolean {
+  if (activeConstraintIds.includes("K")) return false;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const hasAllowedSolo = uncutTiles.some((tile) => {
+    if (tile.gameValue === "RED") return false;
+    if (tile.gameValue === "YELLOW") return true;
+    if (typeof tile.gameValue !== "number") return false;
+    const gameValue = tile.gameValue;
+
+    return activeConstraintIds.every((id) =>
+      ["A", "B", "C", "D", "E", "F"].includes(id)
+        ? valuePassesConstraint(gameValue, id)
+        : true,
+    );
+  });
+
+  return hasAllowedSolo;
+}
+
 /**
  * Validate a target tile against active constraints that can make a dual-cut
  * target illegal before the action is attempted (H/I/J).
@@ -3078,6 +3103,57 @@ function getMission57ConstraintError(constraintId: string): string | undefined {
     default:
       return undefined;
   }
+}
+
+function rotateMission37Constraint(state: GameState): boolean {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return false;
+
+  const activeIndex = constraints.global.findIndex((constraint) => constraint.active);
+  if (activeIndex < 0) return false;
+
+  const deck = constraints.deck;
+  const fromConstraint = constraints.global[activeIndex];
+  if (!deck || deck.length === 0) {
+    fromConstraint.active = false;
+    return true;
+  }
+
+  const nextConstraint = deck.shift();
+  if (!nextConstraint) {
+    fromConstraint.active = false;
+    return true;
+  }
+
+  fromConstraint.active = false;
+  constraints.global[activeIndex] = {
+    ...nextConstraint,
+    active: true,
+  };
+
+  return true;
+}
+
+function canPlayerPlayMission37(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  if (state.mission !== 37) return true;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const activeConstraintIds = getActiveConstraints(state, player.id);
+  const hasOnlyUncutReds = uncutTiles.every((tile) => tile.gameValue === "RED");
+  if (hasOnlyUncutReds) {
+    return true;
+  }
+
+  if (canPlayerPlayMission37SoloCut(player, activeConstraintIds)) {
+    return true;
+  }
+
+  return hasAnyDualCutTarget(state, player.id);
 }
 
 /**
@@ -3406,6 +3482,23 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
 
   resolve(_rule: ConstraintEnforcementRuleDef, ctx: ResolveHookContext): HookResult | void {
     if (ctx.action.type !== "dualCut") return;
+    if (ctx.state.mission === 37 &&
+      typeof ctx.cutValue === "number" &&
+      ctx.cutSuccess
+    ) {
+      const validationCount = getValidationTrackCount(ctx.state, ctx.cutValue);
+      if (validationCount === 4) {
+        rotateMission37Constraint(ctx.state);
+        pushGameLog(ctx.state, {
+          turn: ctx.state.turnNumber,
+          playerId: ctx.action.actorId,
+          action: "hookEffect",
+          detail: `mission37:constraint_rotated|value=${ctx.cutValue}`,
+          timestamp: Date.now(),
+        });
+      }
+    }
+
     if (ctx.cutSuccess) return;
 
     const actorId = ctx.action.actorId;
@@ -3428,6 +3521,62 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         ctx.state.result = "loss_detonator";
         ctx.state.phase = "finished";
         emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+      }
+    }
+  },
+
+  endTurn(_rule: ConstraintEnforcementRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.mission !== 37 || ctx.state.phase === "finished") return;
+
+    const playerCount = ctx.state.players.length;
+    const activePlayerCount = ctx.state.players.filter((player) =>
+      player.hand.some((tile) => !tile.cut)
+    ).length;
+    if (playerCount === 0 || activePlayerCount === 0) return;
+
+    const skippedPlayers = new Set<number>();
+    while (skippedPlayers.size < activePlayerCount) {
+      const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!currentPlayer) return;
+
+      if (canPlayerPlayMission37(ctx.state, currentPlayer)) {
+        return;
+      }
+
+      skippedPlayers.add(ctx.state.currentPlayerIndex);
+
+      ctx.state.turnNumber += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: currentPlayer.id,
+        action: "hookEffect",
+        detail: `mission37:auto_skip|player=${currentPlayer.id}`,
+        timestamp: Date.now(),
+      });
+
+      const nextPlayerIndex = findNextUncutPlayerIndex(ctx.state, ctx.state.currentPlayerIndex);
+      if (nextPlayerIndex == null) break;
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+    }
+
+    if (skippedPlayers.size >= activePlayerCount) {
+      const previousPlayerId = ctx.previousPlayerId;
+      ctx.state.board.detonatorPosition += 1;
+      rotateMission37Constraint(ctx.state);
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: previousPlayerId ?? "system",
+        action: "hookEffect",
+        detail: `mission37:round_stalled|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
       }
     }
   },
