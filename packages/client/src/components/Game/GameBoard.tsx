@@ -13,8 +13,10 @@ import {
   CHARACTER_CARD_TEXT,
   CHARACTER_IMAGES,
   DOUBLE_DETECTOR_CHARACTERS,
+  INFO_TOKEN_VALUES,
   EQUIPMENT_DEFS,
   requiredSetupInfoTokenCountForMissionAndHand,
+  YELLOW_INFO_TOKENS,
   wireLabel,
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
@@ -371,6 +373,38 @@ export function GameBoard({
     !gameState.pendingForcedAction &&
     !equipmentMode &&
     !!me;
+
+  const mission22SetupBoardValues = useMemo(() => {
+    if (!isSetup || gameState.mission !== 22) return undefined;
+
+    const board = gameState.campaign?.mission22TokenPassBoard;
+    if (board) {
+      const values = [...board.numericTokens];
+      if (board.yellowTokens > 0) values.push(0);
+      return values;
+    }
+
+    const usedNumericValues = new Set<number>();
+    let usedYellowTokens = 0;
+    for (const player of gameState.players) {
+      for (const token of player.infoTokens) {
+        if (token.position !== -1) continue;
+        if (token.isYellow) {
+          usedYellowTokens += 1;
+        } else {
+          usedNumericValues.add(token.value);
+        }
+      }
+    }
+
+    const numericValues = INFO_TOKEN_VALUES.filter(
+      (value) => !usedNumericValues.has(value),
+    );
+    const yellowValues = Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens) > 0
+      ? [0]
+      : [];
+    return [...numericValues, ...yellowValues];
+  }, [gameState.mission, isSetup, gameState.players, gameState.campaign?.mission22TokenPassBoard]);
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const revealRedsForced = isMyTurn && (me != null && isRevealRedsForced(gameState, playerId));
@@ -1383,6 +1417,7 @@ export function GameBoard({
                     totalTokens={totalSetupTokens}
                     requiresTileTarget={gameState.mission !== 22}
                     useFalseTokenMode={useFalseSetupTokenMode}
+                    mission22BoardValues={mission22SetupBoardValues}
                     send={send}
                     onPlaced={() => {
                       setSelectedInfoTile(null);

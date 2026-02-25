@@ -15,20 +15,33 @@ function getFalseTokenValueOptions(
   hand: ClientPlayer["hand"],
   allowMissingValue = false,
   requiresTileTarget = true,
+  mission22BoardValues?: number[],
 ): number[] {
   if (!requiresTileTarget && allowMissingValue) {
     const presentValues = getMission22PresentValues(hand);
 
     const values: number[] = [];
-    if (!presentValues.has("YELLOW")) {
-      values.push(0);
-    }
-    for (let value = 1; value <= 12; value++) {
-      if (!presentValues.has(value)) {
-        values.push(value);
+    const availableValues = (mission22BoardValues ?? []).filter((value) =>
+      value >= 0 && value <= 12 && Number.isInteger(value),
+    );
+
+    const sourceValues =
+      mission22BoardValues == null
+        ? [0, ...Array.from({ length: 12 }, (_, i) => i + 1)]
+        : availableValues;
+
+    for (const value of sourceValues) {
+      if (value === 0 && presentValues.has("YELLOW")) {
+        continue;
       }
+      if (value !== 0 && presentValues.has(value)) {
+        continue;
+      }
+      values.push(value);
     }
-    return values;
+
+    const uniqueSorted = Array.from(new Set(values)).sort((a, b) => a - b);
+    return uniqueSorted;
   }
 
   const values: number[] = [];
@@ -53,6 +66,7 @@ export function InfoTokenSetup({
   totalTokens,
   useFalseTokenMode,
   requiresTileTarget,
+  mission22BoardValues,
   send,
   onPlaced,
   onSelectedTokenValueChange,
@@ -64,6 +78,7 @@ export function InfoTokenSetup({
   totalTokens: number;
   useFalseTokenMode: boolean;
   requiresTileTarget: boolean;
+  mission22BoardValues?: number[];
   send: (msg: ClientMessage) => void;
   onPlaced: () => void;
   onSelectedTokenValueChange: (value: number) => void;
@@ -76,6 +91,7 @@ export function InfoTokenSetup({
       player.hand,
       !requiresTileTarget,
       requiresTileTarget,
+      mission22BoardValues,
     )
     : [];
   const effectiveFalseTokenValue =
