@@ -450,6 +450,15 @@ export type ForcedAction =
       actorTileIndex: number;
       /** Whether this came from equipment card or personal character ability. */
       source: "equipment" | "characterAbility";
+    }
+  | {
+      kind: "mission61ConstraintRotate";
+      /** The captain who must resolve the rotation choice. */
+      captainId: string;
+      /** Direction the team chooses for the rotation. */
+      direction: "clockwise" | "counter_clockwise";
+      /** The player who acted immediately before this round started. */
+      previousPlayerId?: string;
     };
 
 export interface TurnEffects {

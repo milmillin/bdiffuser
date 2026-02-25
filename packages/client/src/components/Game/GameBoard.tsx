@@ -31,6 +31,7 @@ import {
   getMission11BlueAsRedValue as _getMission11BlueAsRedValue,
 } from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
+import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel, MissionCard } from "./RightPanel.js";
@@ -92,6 +93,7 @@ const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
 const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
+const FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE = "mission61ConstraintRotate";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
@@ -99,6 +101,7 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_MISSION22_TOKEN_PASS,
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
+  FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE,
 ]);
 
 function getUnknownForcedAction(
@@ -1528,6 +1531,19 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Playing phase: forced action (mission 61 constraint rotation) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE &&
+                  gameState.pendingForcedAction.captainId === playerId &&
+                  me && (
+                    <Mission61ConstraintRotatePanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {gameState.phase === "playing" && mission46ForcedForMe && (
                   <Mission46SevensCutPanel
                     selectedCount={mission46Targets.length}
@@ -2185,6 +2201,21 @@ function getStatusContent(
           {forcedActionCaptainName ?? "the target player"}
         </span>{" "}
         to choose a wire for Walkie-Talkies...
+      </span>
+    );
+  }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE &&
+    pendingForcedAction.captainId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the Captain"}
+        </span>{" "}
+        to rotate the constraints this round...
       </span>
     );
   }

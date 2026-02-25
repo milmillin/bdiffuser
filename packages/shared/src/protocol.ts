@@ -56,6 +56,10 @@ export type ClientMessage =
   | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
   | { type: "talkiesWalkiesChoice"; tileIndex: number }
   | {
+      type: "mission61ConstraintRotate";
+      direction: "clockwise" | "counter_clockwise";
+    }
+  | {
       type: "missionAudioControl";
       command: "play" | "pause";
       positionMs?: number;

@@ -45,6 +45,52 @@ function makeClientStateWithUnknownForcedAction(): ClientGameState {
   return clientState;
 }
 
+function makeClientStateWithMission61ForcedRotation(): ClientGameState {
+  const state = makeGameState({
+    mission: 61,
+    phase: "playing",
+    players: [
+      makePlayer({
+        id: "captain",
+        name: "Captain",
+        isCaptain: true,
+        hand: [makeTile({ id: "c1", gameValue: 2 })],
+      }),
+      makePlayer({
+        id: "p2",
+        name: "Bob",
+        hand: [makeTile({ id: "b1", gameValue: 5 })],
+      }),
+    ],
+    currentPlayerIndex: 0,
+  });
+
+  const clientState = {
+    ...state,
+    playerId: "captain",
+    players: state.players.map((player) => ({
+      ...player,
+      remainingTiles: player.hand.filter((tile) => !tile.cut).length,
+    })),
+  } as unknown as ClientGameState;
+
+  (
+    clientState as unknown as {
+      pendingForcedAction?: {
+        kind: string;
+        captainId: string;
+        direction?: "clockwise" | "counter_clockwise";
+      };
+    }
+  ).pendingForcedAction = {
+    kind: "mission61ConstraintRotate",
+    captainId: "captain",
+    direction: "clockwise",
+  };
+
+  return clientState;
+}
+
 function renderBoard(state: ClientGameState, playerId: string): string {
   return renderToStaticMarkup(
     <GameBoard
@@ -71,5 +117,13 @@ describe("GameBoard forced-action fallback", () => {
 
     expect(html).toContain("data-testid=\"waiting-forced-action\"");
     expect(html).toContain("for <span class=\"text-slate-200 font-bold\">Captain</span>");
+  });
+
+  it("renders mission61 constraint rotation panel for the captain instead of fallback", () => {
+    const state = makeClientStateWithMission61ForcedRotation();
+    const html = renderBoard(state, "captain");
+
+    expect(html).toContain("data-testid=\"mission61-constraint-rotate-panel\"");
+    expect(html).not.toContain("data-testid=\"forced-action-fallback-captain\"");
   });
 });
