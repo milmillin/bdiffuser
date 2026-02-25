@@ -194,7 +194,7 @@ The active player:
 
 - Selects a specific teammate wire.
 - States a value guess for that wire.
-- Must also have an identical wire in their own hand to complete a successful dual cut.
+- Must have at least one uncut wire of the announced value in their own hand.
 
 #### Success
 
@@ -217,7 +217,7 @@ Additional note:
 
 - The active player does not reveal where their intended matching wire was in their own hand on failure.
 
-> **FAQ:** You may intentionally announce an incorrect number during Dual Cut (e.g. to avoid pointing at a red wire or to signal information to teammates).
+> **FAQ:** You may intentionally announce an incorrect number during Dual Cut (e.g. to avoid pointing at a red wire or to signal information to teammates), but the announced value must still be one you currently have uncut in your own hand.
 
 ### Solo Cut Action
 
@@ -463,7 +463,9 @@ Allowed:
 
 #### Mistake (Wrong Value Announced)
 
-> **FAQ:** If a player mistakenly announces a value that is not in their hand during a Dual Cut, cut another wire the player does have, AND advance the detonator 1 notch.
+> **FAQ:** A wrong guess on the teammate's targeted wire is allowed, provided the announced value is one you have uncut in your own hand.
+>
+> **FAQ:** Announcing a value you do not have in hand is not a legal Dual Cut declaration.
 
 #### Info Token Shortage
 

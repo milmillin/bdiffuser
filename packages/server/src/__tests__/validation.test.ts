@@ -147,7 +147,7 @@ describe("validateDualCut", () => {
     );
   });
 
-  it("allows dual cut even when announced value is absent from actor hand", () => {
+  it("rejects dual cut when announced value is absent from actor hand", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", gameValue: 5 })],
@@ -161,7 +161,9 @@ describe("validateDualCut", () => {
       currentPlayerIndex: 0,
     });
 
-    expect(validateDualCut(state, "actor", "target", 0, 7)).toBeNull();
+    expect(validateDualCut(state, "actor", "target", 0, 7)).toBe(
+      "You don't have an uncut wire with that value to announce",
+    );
   });
 
   it("rejects dual cut with YELLOW when actor has no uncut yellow wire", () => {
@@ -1035,7 +1037,7 @@ describe("mission 41 Iberian yellow mode validation", () => {
       actorId: "actor",
       targetPlayerId: "teammate",
       targetTileIndex: 0,
-      guessValue: 7,
+      guessValue: "YELLOW",
     });
 
     expect(error).not.toBeNull();
@@ -1983,7 +1985,7 @@ describe("forced reveal reds state", () => {
     expect(error!.code).toBe("FORCED_REVEAL_REDS_REQUIRED");
   });
 
-  it("allows mission 59 dual cuts while all remaining wires are red", () => {
+  it("does not force revealReds checks in mission 59 when all remaining wires are red", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
@@ -2031,7 +2033,8 @@ describe("forced reveal reds state", () => {
       guessValue: 7,
     });
 
-    expect(error).toBeNull();
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("GUESS_VALUE_NOT_IN_HAND");
   });
 
   it("does not force revealReds checks in mission 26 when all remaining wires are red", () => {
@@ -2066,7 +2069,7 @@ describe("forced reveal reds state", () => {
     });
 
     expect(error).not.toBeNull();
-    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.code).toBe("GUESS_VALUE_NOT_IN_HAND");
   });
 
   it("allows revealReds while in forced reveal state", () => {
@@ -2281,12 +2284,15 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     expect(error).toBeNull();
   });
 
-  it("allows Double Detector when actor does not hold the announced value", () => {
+  it("rejects Double Detector when actor does not hold the announced value", () => {
     const { state } = baseDDSetup("double_detector");
     state.players[0].hand = [makeTile({ id: "a1", color: "blue", gameValue: 4 })];
 
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
-    expect(error).toBeNull();
+    expect(error?.code).toBe("GUESS_VALUE_NOT_IN_HAND");
+    expect(error?.message).toBe(
+      "You don't have an uncut wire with that value to announce",
+    );
   });
 
   it("allows character_3 to use Double Detector", () => {

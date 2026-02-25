@@ -41,7 +41,7 @@ function makeDualCutDraftState(): ClientGameState {
 }
 
 describe("GameBoard PendingActionStrip", () => {
-  it("shows active custom dual-cut guess value before targeting", () => {
+  it("shows selected dual-cut value before targeting", () => {
     const state = makeDualCutDraftState();
 
     const html = renderToStaticMarkup(
@@ -52,7 +52,6 @@ describe("GameBoard PendingActionStrip", () => {
         pendingAction={null}
         selectedGuessTile={0}
         selectedGuessValue={3}
-        activeDualCutGuessValue={8}
         canConfirmSoloFromDraft={false}
         mission9SelectedGuessBlocked={false}
         mission11RevealAttemptAvailable={false}
@@ -62,9 +61,6 @@ describe("GameBoard PendingActionStrip", () => {
         }}
         onConfirmSoloFromDraft={() => {
           throw new Error("unexpected solo cut action");
-        }}
-        onDualCutGuessValueChange={() => {
-          throw new Error("unexpected dual-cut guess update");
         }}
         mission59RotateNano={false}
         onMission59RotateNanoChange={() => {
@@ -79,8 +75,7 @@ describe("GameBoard PendingActionStrip", () => {
       />,
     );
 
-    expect(html).toContain("value 8");
-    expect(html).toContain("data-testid=\"dual-cut-guess-select\"");
-    expect(html).toContain("Dual Cut announced value");
+    expect(html).toContain("value 3");
+    expect(html).not.toContain("data-testid=\"dual-cut-guess-select\"");
   });
 });

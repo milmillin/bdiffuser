@@ -32,6 +32,13 @@ function actorHasOnlyXMarkedMatchingDualCutValues(
   return matchingTiles.length > 0 && matchingTiles.every((tile) => tile.isXMarked);
 }
 
+function actorHasUncutAnnouncedDualCutValue(
+  actor: Readonly<Player>,
+  guessValue: number | "YELLOW",
+): boolean {
+  return actor.hand.some((tile) => !tile.cut && tile.gameValue === guessValue);
+}
+
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
   return player.hand.filter((t) => !t.cut);
@@ -259,19 +266,18 @@ export function validateDualCutLegality(
       "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
     );
   }
-  if (
-    guessValue === "YELLOW" &&
-    !actor.hand.some((tile) => !tile.cut && tile.gameValue === "YELLOW")
-  ) {
-    return legalityError(
-      "GUESS_VALUE_NOT_IN_HAND",
-      "You don't have an uncut YELLOW wire to announce",
-    );
-  }
   if (guessValue !== "YELLOW" && !isValidDualCutGuessValue(guessValue)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "Dual Cut guess value must be YELLOW or an integer from 1 to 12",
+    );
+  }
+  if (!actorHasUncutAnnouncedDualCutValue(actor, guessValue)) {
+    return legalityError(
+      "GUESS_VALUE_NOT_IN_HAND",
+      guessValue === "YELLOW"
+        ? "You don't have an uncut YELLOW wire to announce"
+        : "You don't have an uncut wire with that value to announce",
     );
   }
 
@@ -499,6 +505,12 @@ export function validateDualCutDoubleDetectorLegality(
     return legalityError(
       "DOUBLE_DETECTOR_GUESS_NOT_BLUE",
       "Double Detector guess value must be a number from 1 to 12",
+    );
+  }
+  if (!actorHasUncutAnnouncedDualCutValue(actor, guessValue)) {
+    return legalityError(
+      "GUESS_VALUE_NOT_IN_HAND",
+      "You don't have an uncut wire with that value to announce",
     );
   }
 
