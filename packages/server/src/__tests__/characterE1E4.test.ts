@@ -4,6 +4,7 @@ import {
   makeGameState,
   makePlayer,
   makeTile,
+  makeRedTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import {
@@ -46,6 +47,37 @@ describe("Character E1-E4 abilities", () => {
 
     expect(error).not.toBeNull();
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
+  it("mission 41: rejects character ability when actor must skip their turn", () => {
+    const state = makeGameState({
+      mission: 41,
+      players: [
+        makePlayer({
+          id: "p1",
+          character: "character_e1",
+          characterUsed: false,
+          hand: [
+            makeYellowTile({ id: "a1-yellow", gameValue: 6 }),
+            makeRedTile({ id: "a2-red", gameValue: 1 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "b1", gameValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateCharacterAbility(state, "p1", {
+      kind: "general_radar",
+      value: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe("Mission 41: player must skip their turn");
   });
 
   describe("E1 - General Radar", () => {

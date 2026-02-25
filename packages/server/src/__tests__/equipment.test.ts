@@ -1006,6 +1006,21 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("mission 41: rejects any equipment when actor must skip their turn", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 41;
+    state.players[0].hand = [
+      makeYellowTile({ id: "a1-yellow", gameValue: 6 }),
+      makeRedTile({ id: "a2-red", gameValue: 1 }),
+    ];
+
+    const error = validateUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe("Mission 41: player must skip their turn");
+  });
+
   it.each([41, 48] as const)("mission %i: rejects Grappling Hook when targeting a tripwire", (mission) => {
     const state = stateWithEquipment(
       [

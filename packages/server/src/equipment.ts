@@ -29,6 +29,7 @@ import {
   getTileByFlatIndex,
   getUncutTiles,
   getAllTiles,
+  isMission41PlayerSkippingTurn,
   isRevealRedsForced,
   isPlayersTurn,
   validateDualCutWithHooks,
@@ -356,6 +357,10 @@ export function validateUseEquipment(
       "MISSION_RULE_VIOLATION",
       MISSION_46_PENDING_SEVENS_MESSAGE,
     );
+  }
+
+  if (isMission41PlayerSkippingTurn(state, actor)) {
+    return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
   }
 
   if (isRevealRedsForced(state, actor)) {
@@ -1827,6 +1832,10 @@ export function validateCharacterAbility(
       "MISSION_RULE_VIOLATION",
       MISSION_46_PENDING_SEVENS_MESSAGE,
     );
+  }
+
+  if (isMission41PlayerSkippingTurn(state, actor)) {
+    return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
   }
 
   if (isRevealRedsForced(state, actor)) {
