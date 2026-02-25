@@ -846,6 +846,7 @@ export type ValidatableAction =
       type: "soloCut";
       actorId: string;
       value: number | "YELLOW";
+      targetPlayerId?: string;
     }
   | {
       type: "revealReds";
@@ -1017,8 +1018,14 @@ export function validateSoloCutWithHooks(
   state: GameState,
   actorId: string,
   value: number | "YELLOW",
+  targetPlayerId?: string,
 ): ActionLegalityError | null {
-  return validateActionWithHooks(state, { type: "soloCut", actorId, value });
+  return validateActionWithHooks(state, {
+    type: "soloCut",
+    actorId,
+    value,
+    targetPlayerId,
+  });
 }
 
 export function validateRevealRedsWithHooks(

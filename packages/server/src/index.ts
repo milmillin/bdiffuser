@@ -852,7 +852,12 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
 
-    const error = validateSoloCutWithHooks(state, conn.id, value);
+    const error = validateSoloCutWithHooks(
+      state,
+      conn.id,
+      value,
+      targetPlayerId,
+    );
     if (error) {
       this.sendMsg(conn, {
         type: "error",
