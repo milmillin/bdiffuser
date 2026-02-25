@@ -140,7 +140,7 @@ export default function App() {
       {content}
       <div
         data-testid="app-version"
-        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none lg:hidden"
+        className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
       >
         {`${APP_COMMIT_ID} | v${APP_VERSION}`}
       </div>
@@ -321,7 +321,7 @@ function GameRoom({
   return (
     <div className="flex flex-col h-full">
       {error && (
-        <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
           {error}
         </div>
       )}
