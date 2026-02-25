@@ -986,6 +986,26 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
+  it("mission 41: rejects Triple Detector when selected set includes a yellow wire", () => {
+    const state = buildStateForEquipmentMatrix("triple_detector");
+    state.mission = 41;
+    state.players[1].hand = [
+      makeTile({ id: "t1", gameValue: 4 }),
+      makeYellowTile({ id: "t2-yellow" }),
+      makeTile({ id: "t3", gameValue: 4 }),
+    ];
+
+    const error = validateUseEquipment(state, "actor", "triple_detector", {
+      kind: "triple_detector",
+      targetPlayerId: "teammate",
+      targetTileIndices: [0, 1, 2],
+      guessValue: 4,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it.each(BASE_EQUIPMENT_IDS)(
     "rejects %s when actor is missing from state",
     (equipmentId) => {

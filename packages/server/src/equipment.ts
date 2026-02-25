@@ -144,6 +144,13 @@ function isMission13NonBlueTarget(
   return state.mission === 13 && tile?.color !== "blue";
 }
 
+function isMission41Or48YellowTarget(
+  state: Readonly<GameState>,
+  tile: WireTile | undefined,
+): boolean {
+  return (state.mission === 41 || state.mission === 48) && tile?.color === "yellow";
+}
+
 type StandAwarePlayer = Player & {
   standSizes?: number[];
 };
@@ -169,6 +176,7 @@ function getDetectorEligibleIndicesForStand(
     const tile = getTileByFlatIndex(target, index);
     if (!tile || tile.cut) return false;
     if (isMission13NonBlueTarget(state, tile)) return false;
+    if (isMission41Or48YellowTarget(state, tile)) return false;
     if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) return false;
     return true;
   });
@@ -627,6 +635,12 @@ export function validateUseEquipment(
             "Detectors can only target blue wires in mission 13",
           );
         }
+        if (isMission41Or48YellowTarget(state, tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "Tripwire targets must be handled via the mission special action",
+          );
+        }
         if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
           return legalityError(
             "MISSION_RULE_VIOLATION",
@@ -738,6 +752,12 @@ export function validateUseEquipment(
       const tile = getTileByFlatIndex(target, payload.targetTileIndex);
       if (!tile) return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
       if (tile.cut) return legalityError("TILE_ALREADY_CUT", "Tile already cut");
+      if (isMission41Or48YellowTarget(state, tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Tripwire targets must be handled via the mission special action",
+        );
+      }
       if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
         return legalityError(
           "MISSION_RULE_VIOLATION",
@@ -1895,6 +1915,12 @@ export function validateCharacterAbility(
             "Detectors can only target blue wires in mission 13",
           );
         }
+        if (isMission41Or48YellowTarget(state, tile)) {
+          return legalityError(
+            "MISSION_RULE_VIOLATION",
+            "Tripwire targets must be handled via the mission special action",
+          );
+        }
         if (hasXWireEquipmentRestriction(state) && isXMarkedWire(tile)) {
           return legalityError(
             "MISSION_RULE_VIOLATION",
@@ -1923,6 +1949,12 @@ export function validateCharacterAbility(
         return legalityError(
           "MISSION_RULE_VIOLATION",
           "X-marked wires are ignored by equipment in this mission",
+        );
+      }
+      if (isMission41Or48YellowTarget(state, tile)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Tripwire targets must be handled via the mission special action",
         );
       }
       if (isMission13NonBlueTarget(state, tile)) {

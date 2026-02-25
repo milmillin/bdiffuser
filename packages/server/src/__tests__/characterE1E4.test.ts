@@ -4,6 +4,7 @@ import {
   makeGameState,
   makePlayer,
   makeTile,
+  makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import {
   executeCharacterAbility,
@@ -280,6 +281,40 @@ describe("Character E1-E4 abilities", () => {
       expect(error?.message).toBe(
         "X-marked wires are ignored by equipment in this mission",
       );
+    });
+
+    it("rejects mission 41 when selected targets include a yellow wire", () => {
+      const state = makeGameState({
+        mission: 41,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e3",
+            characterUsed: false,
+            hand: [makeTile({ id: "a1", gameValue: 4 })],
+          }),
+          makePlayer({
+            id: "p2",
+            name: "Bob",
+            hand: [
+              makeTile({ id: "b1", gameValue: 4 }),
+              makeYellowTile({ id: "b2", gameValue: 6 }),
+              makeTile({ id: "b3", gameValue: 4 }),
+            ],
+          }),
+        ],
+        currentPlayerIndex: 0,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "triple_detector",
+        targetPlayerId: "p2",
+        targetTileIndices: [0, 1, 2],
+        guessValue: 4,
+      });
+
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe("MISSION_RULE_VIOLATION");
     });
 
     it("executes a dual cut path and marks character as used", () => {
