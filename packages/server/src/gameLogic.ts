@@ -25,6 +25,7 @@ import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequired } from "./equipmentUnlockRules.js";
 import { isMission46SevenTile } from "./mission46.js";
+import { getSimultaneousFourCutTargetValue } from "./simultaneousFourCutTargets.js";
 
 /** Advance to next player with uncut tiles */
 export function advanceTurn(state: GameState): void {
@@ -1090,8 +1091,7 @@ export function executeSimultaneousFourCut(
   targets: Array<{ playerId: string; tileIndex: number }>,
 ): GameAction {
   const isMission46 = state.mission === 46;
-  const numberCardValue = state.campaign?.numberCards?.visible?.[0]?.value;
-  const targetValue = numberCardValue ?? (isMission46 ? 7 : undefined);
+  const targetValue = getSimultaneousFourCutTargetValue(state);
   if (targetValue == null) {
     // Should never happen if validation passed, but guard against it
     state.result = "loss_red_wire";

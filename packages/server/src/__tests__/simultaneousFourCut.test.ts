@@ -679,6 +679,50 @@ describe("executeSimultaneousFourCut", () => {
     expect(state.campaign?.mission23SpecialActionDone).not.toBe(true);
   });
 
+  it("mission 46 success ignores stale Number card and uses mission-fixed 7 target", () => {
+    const state = makeGameState({
+      mission: 46,
+      players: [
+        makePlayer({ id: "p1", hand: [
+          makeTile({ id: "p1-cut-3", gameValue: 3, cut: true }),
+          makeYellowTile({ id: "p1-1", sortValue: 5.1 }),
+          makeYellowTile({ id: "p1-2", sortValue: 6.1 }),
+        ] }),
+        makePlayer({ id: "p2", hand: [
+          makeYellowTile({ id: "p2-1", sortValue: 7.1 }),
+          makeYellowTile({ id: "p2-2", sortValue: 8.1 }),
+        ] }),
+        makePlayer({ id: "p3", hand: [
+          makeTile({ id: "p3-nope", gameValue: 3 }),
+        ] }),
+      ],
+      board: makeBoardState({}),
+      campaign: {
+        mission46PendingSevensPlayerId: "p1",
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "stale", value: 3, faceUp: true })],
+        }),
+      },
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    const action = executeSimultaneousFourCut(state, "p1", [
+      { playerId: "p1", tileIndex: 1 },
+      { playerId: "p2", tileIndex: 0 },
+      { playerId: "p2", tileIndex: 1 },
+      { playerId: "p1", tileIndex: 2 },
+    ]);
+
+    expect(action.type).toBe("simultaneousFourCutResult");
+    if (action.type === "simultaneousFourCutResult") {
+      expect(action.targetValue).toBe(7);
+    }
+
+    expect(state.board.validationTrack[3]).not.toBe(1);
+    expect(state.board.validationTrack[7]).toBe(0);
+  });
+
   it("failure: mismatch causes explosion", () => {
     const t2 = makeTile({ id: "t2", gameValue: 5 });
     const t3 = makeTile({ id: "t3", gameValue: 7 }); // mismatch!
