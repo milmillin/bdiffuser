@@ -1462,7 +1462,12 @@ export function GameBoard({
                     isSetup && isMyTurn
                       ? requiresSetupToken
                         ? (tileIndex) => {
-                            if (useFalseSetupTokenMode && me?.hand[tileIndex]?.color === "red") {
+                            if (
+                              useFalseSetupTokenMode &&
+                              gameState.mission === 17 &&
+                              me?.isCaptain &&
+                              me?.hand[tileIndex]?.color === "red"
+                            ) {
                               return;
                             }
 
