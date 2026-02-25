@@ -121,6 +121,21 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ cut: true }), 1)).toBe(false);
   });
 
+  it.each([20, 35] as const)(
+    "talkies_walkies: blocks mission %i X-marked opponent tile selection",
+    (mission) => {
+      const mode: EquipmentMode = {
+        kind: "talkies_walkies",
+        teammateId: null,
+        teammateTileIndex: null,
+        myTileIndex: null,
+      };
+      const filter = getOpponentTileSelectableFilter(mode, "opp1", mission)!;
+      expect(filter(tile({ isXMarked: true }), 0)).toBe(false);
+      expect(filter(tile({ isXMarked: false }), 1)).toBe(true);
+    },
+  );
+
   it("triple_detector: locks to first selected opponent", () => {
     const mode: EquipmentMode = {
       kind: "triple_detector",
@@ -399,6 +414,21 @@ describe("getOwnTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ cut: true }), 0)).toBe(false);
   });
+
+  it.each([20, 35] as const)(
+    "talkies_walkies: blocks mission %i X-marked own tile selection",
+    (mission) => {
+      const mode: EquipmentMode = {
+        kind: "talkies_walkies",
+        teammateId: null,
+        teammateTileIndex: null,
+        myTileIndex: null,
+      };
+      const filter = getOwnTileSelectableFilter(mode, player(), { mission })!;
+      expect(filter(tile({ isXMarked: true }), 0)).toBe(false);
+      expect(filter(tile({ isXMarked: false }), 1)).toBe(true);
+    },
+  );
 
   it("triple_detector: allows blue numeric tiles even before 3 targets selected", () => {
     const mode: EquipmentMode = {

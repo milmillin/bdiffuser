@@ -42,7 +42,7 @@ export function getOpponentTileSelectableFilter(
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "talkies_walkies":
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
     case "triple_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
       return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
@@ -66,6 +66,7 @@ export function getOwnTileSelectableFilter(
   gameState?: PostItMissionContext,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode || !me) return undefined;
+  const hasXRestriction = gameState?.mission === 20 || gameState?.mission === 35;
   switch (mode.kind) {
     case "post_it": {
       const allowCutTile = canPostItTargetCutWire(gameState);
@@ -100,7 +101,7 @@ export function getOwnTileSelectableFilter(
         return !(firstTile.cut && tile.cut);
       };
     case "talkies_walkies":
-      return (tile) => !tile.cut;
+      return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
     case "triple_detector":
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "super_detector":
