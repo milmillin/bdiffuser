@@ -3,6 +3,7 @@ import type { GameState, InfoToken, Player, WireValue } from "@bomb-busters/shar
 const EVEN_ODD_TOKEN_MISSIONS = new Set<number>([21, 33]);
 const COUNT_TOKEN_MISSIONS = new Set<number>([24, 40]);
 const ABSENT_VALUE_TOKEN_MISSIONS = new Set<number>([22]);
+const FALSE_TOKEN_MISSIONS = new Set<number>([52]);
 
 function isParityTokenMission(state: Readonly<GameState>): boolean {
   return EVEN_ODD_TOKEN_MISSIONS.has(state.mission);
@@ -46,6 +47,13 @@ function countValueCopies(owner: Readonly<Player>, value: WireValue): number {
 function toAbsentNumericValue(value: WireValue): number {
   if (typeof value !== "number") return 1;
   return value === 1 ? 2 : 1;
+}
+
+function isFalseTokenMission(state: Readonly<GameState>): boolean {
+  const campaign = state.campaign as
+    | ({ falseTokenMode?: boolean } & Record<string, unknown>)
+    | undefined;
+  return FALSE_TOKEN_MISSIONS.has(state.mission) || campaign?.falseTokenMode === true;
 }
 
 /**
@@ -104,6 +112,20 @@ export function applyMissionInfoTokenVariant(
       parity: tokenParity(token.value),
       countHint: undefined,
     };
+  }
+
+  if (isFalseTokenMission(state) && owner != null && token.position >= 0) {
+    const tile = owner.hand[token.position];
+    if (!tile || tile.color !== "blue" || typeof tile.gameValue !== "number") {
+      return token;
+    }
+
+    if (token.value === tile.gameValue) {
+      return {
+        ...token,
+        value: toAbsentNumericValue(tile.gameValue),
+      };
+    }
   }
 
   return token;
