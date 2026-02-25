@@ -1953,14 +1953,14 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
-    it("mission 59: does not auto-skip a player who can cut using only Nano's hidden current value", () => {
+    it("mission 59: does not auto-skip a player who can cut using only Nano's current value", () => {
       const actor = makePlayer({
         id: "p1",
         hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
       });
       const target = makePlayer({
         id: "p2",
-        hand: [makeTile({ id: "p2-10", gameValue: 10, cut: false })],
+        hand: [makeTile({ id: "p2-7", gameValue: 7, cut: false })],
       });
       const state = makeGameState({
         mission: 59,

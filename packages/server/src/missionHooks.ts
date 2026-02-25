@@ -842,6 +842,11 @@ function canPlayerPlayMission59(
     );
   }
 
+  const hasAnyUncutTarget = state.players.some(
+    (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
+  );
+  if (!hasAnyUncutTarget) return false;
+
   const canSoloCut = Array.from(actorValueCounts.entries()).some(([value, actorCount]) => {
     if (!legalValues.has(value)) return false;
     if (actorCount !== 2 && actorCount !== 4) return false;
@@ -849,16 +854,12 @@ function canPlayerPlayMission59(
   });
   if (canSoloCut) return true;
 
-  const hasAnyUncutTarget = state.players.some(
-    (player) => player.id !== actor.id && player.hand.some((tile) => !tile.cut),
-  );
-  if (!hasAnyUncutTarget) return false;
-
   if (typeof currentLineValue === "number") return true;
-  return actorUncutTiles.some(
-    (tile) =>
-      typeof tile.gameValue === "number" &&
-      legalValues.has(tile.gameValue),
+
+  return actorUncutTiles.some((tile): boolean =>
+    typeof tile.gameValue === "number" &&
+    tile.gameValue !== currentLineValue &&
+    legalValues.has(tile.gameValue)
   );
 }
 

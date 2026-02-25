@@ -309,6 +309,45 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
     ? Array.from({ length: 12 }, (_, i) => i + 1)
     : [...actorValueToTileIndex.keys()].filter((value): value is number => typeof value === "number");
 
+  if (state.mission === 59 && state.campaign?.mission59Nano) {
+    const currentLineValue = state.campaign.numberCards?.visible?.[
+      state.campaign.mission59Nano.position
+    ]?.value;
+    if (typeof currentLineValue === "number") {
+      const mission59ActorTileIndexes = actorTileIndexes.length > 0
+        ? actorTileIndexes
+        : actor.hand
+          .map((_, index) => index)
+          .filter((index) => !actor.hand[index].cut);
+      for (const actorTileIndex of mission59ActorTileIndexes) {
+        for (const target of state.players) {
+          if (target.id === actor.id) continue;
+          for (let targetTileIndex = 0; targetTileIndex < target.hand.length; targetTileIndex++) {
+            const targetTile = target.hand[targetTileIndex];
+            if (targetTile.cut) continue;
+            const mission59TileError = validateActionWithHooks(state, {
+              type: "dualCut",
+              actorId: actor.id,
+              targetPlayerId: target.id,
+              targetTileIndex,
+              guessValue: currentLineValue,
+            });
+            if (!mission59TileError) {
+              return {
+                kind: "dualCut",
+                actorId: actor.id,
+                targetPlayerId: target.id,
+                targetTileIndex,
+                guessValue: currentLineValue,
+                actorTileIndex,
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
   for (const guessValue of fallbackGuessValues) {
     for (const actorTileIndex of actorTileIndexes) {
       for (const target of state.players) {
