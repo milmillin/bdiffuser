@@ -1731,8 +1731,32 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     if (ctx.state.phase === "finished") return;
     if (ctx.state.campaign?.oxygen == null) return;
 
+    const oxygen = ctx.state.campaign.oxygen;
+    if (ctx.state.mission === 44) {
+      const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (currentPlayer?.isCaptain) {
+        let returned = 0;
+        for (const player of ctx.state.players) {
+          const amount = Math.max(0, Math.floor(oxygen.playerOxygen[player.id] ?? 0));
+          if (amount <= 0) continue;
+          returned += amount;
+          oxygen.playerOxygen[player.id] = 0;
+        }
+
+        oxygen.pool += returned;
+        if (returned > 0) {
+          pushGameLog(ctx.state, {
+            turn: ctx.state.turnNumber,
+            playerId: currentPlayer.id,
+            action: "hookEffect",
+            detail: `oxygen_progression:mission44_captain_reset|returned=${returned}`,
+            timestamp: Date.now(),
+          });
+        }
+      }
+    }
+
     if (ctx.state.mission === 63) {
-      const oxygen = ctx.state.campaign.oxygen;
       const players = ctx.state.players;
       const playerCount = players.length;
       if (playerCount <= 1) return;

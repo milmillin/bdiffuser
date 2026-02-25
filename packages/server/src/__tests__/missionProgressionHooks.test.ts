@@ -181,6 +181,51 @@ describe("mission progression hooks", () => {
     expect(autoSkipLog).toBeDefined();
   });
 
+  it("mission 44 endTurn returns all oxygen to reserve on captain turn", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "captain-2", gameValue: 2, cut: false })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "teammate-8", gameValue: 8, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 44,
+      log: [],
+      players: [teammate, captain],
+      currentPlayerIndex: 1,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+    });
+    dispatchHooks(44, { point: "setup", state });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 44 should initialize oxygen");
+    }
+    state.campaign.oxygen.pool = 2;
+    state.campaign.oxygen.playerOxygen.teammate = 3;
+    state.campaign.oxygen.playerOxygen.captain = 4;
+
+    dispatchHooks(44, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "teammate",
+    });
+
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.turnNumber).toBe(1);
+    expect(state.campaign.oxygen.playerOxygen.teammate).toBe(0);
+    expect(state.campaign.oxygen.playerOxygen.captain).toBe(0);
+    expect(state.campaign.oxygen.pool).toBe(9);
+    const resetLog = state.log.find(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "oxygen_progression:mission44_captain_reset|returned=7",
+    );
+    expect(resetLog).toBeDefined();
+  });
+
   it("mission 44 setup scales oxygen reserve by player count", () => {
     const cases: Array<{ playerCount: 2 | 3 | 4 | 5; expectedPool: number }> = [
       { playerCount: 2, expectedPool: 4 },
