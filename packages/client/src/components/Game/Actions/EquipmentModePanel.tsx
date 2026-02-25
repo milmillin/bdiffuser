@@ -785,7 +785,7 @@ export function EquipmentModePanel({
     }
 
     case "false_bottom": {
-      content = "Reveal a random equipment card from the reserve.";
+      content = "Draw 2 equipment cards from the reserve and put them into play.";
       confirmButton = (
         <button
           type="button"

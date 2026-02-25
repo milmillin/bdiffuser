@@ -587,7 +587,7 @@ describe("EquipmentModePanel — x_or_y_ray", () => {
 describe("EquipmentModePanel — false_bottom", () => {
   it("shows description and confirm button", () => {
     const html = renderMode({ kind: "false_bottom" });
-    expect(html).toContain("Reveal a random equipment card from the reserve");
+    expect(html).toContain("Draw 2 equipment cards from the reserve and put them into play");
     expect(html).toContain("Confirm False Bottom");
   });
 });
