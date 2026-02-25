@@ -838,6 +838,28 @@ function actorCanAffordAnyMission44Cut(
   return false;
 }
 
+function getMission49OxygenRecipientId(
+  state: GameState,
+  action: ValidateHookContext["action"],
+): string | undefined {
+  if (action.type === "dualCut" || action.type === "dualCutDoubleDetector") {
+    return typeof action.targetPlayerId === "string" ? action.targetPlayerId : undefined;
+  }
+
+  if (action.type === "soloCut") {
+    const actorIndex = state.players.findIndex((player) =>
+      player.id === action.actorId,
+    );
+    if (actorIndex >= 0 && state.players.length > 0) {
+      const leftPlayer = state.players[(actorIndex + 1) % state.players.length];
+      return leftPlayer?.id;
+    }
+    return undefined;
+  }
+
+  return undefined;
+}
+
 function advanceToNextPlayerWithUncutTiles(
   state: GameState,
   currentPlayerIndex: number,
@@ -1626,7 +1648,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
     const oxygen = ctx.state.campaign?.oxygen;
     if (!oxygen) return;
     if (requiredCost <= 0) return;
-    const available = ctx.state.mission === 63
+    const available = ctx.state.mission === 63 || ctx.state.mission === 49
       ? Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0))
       : getAvailableOxygen(ctx.state, actorId);
     if (available < requiredCost) {
@@ -1859,6 +1881,47 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
           `moved=${movedToPool}`,
           `deficit=${deficit}`,
           `pool=${oxygen.pool}`,
+        ].join("|"),
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (ctx.state.mission === 49 && rule.rotatePlayerOxygen) {
+      const actorOxygen = Math.max(0, Math.floor(oxygen.playerOxygen[actorId] ?? 0));
+      const movedToRecipient = Math.min(actorOxygen, requiredCost);
+      oxygen.playerOxygen[actorId] = actorOxygen - movedToRecipient;
+
+      const recipientId = getMission49OxygenRecipientId(ctx.state, ctx.action);
+      const deficit = requiredCost - movedToRecipient;
+      if (recipientId) {
+        const previousRecipientAmount = Math.max(
+          0,
+          Math.floor(oxygen.playerOxygen[recipientId] ?? 0),
+        );
+        oxygen.playerOxygen[recipientId] = previousRecipientAmount + movedToRecipient;
+      }
+
+      if (deficit > 0) {
+        ctx.state.board.detonatorPosition += 1;
+        if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+          ctx.state.result = "loss_detonator";
+          ctx.state.phase = "finished";
+          emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+        }
+      }
+
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail: [
+          "oxygen_progression:mode=mission49_cut",
+          `cost=${requiredCost}`,
+          `cut=${ctx.cutValue}`,
+          `moved=${movedToRecipient}`,
+          `deficit=${deficit}`,
+          `recipient=${recipientId ?? "none"}`,
         ].join("|"),
         timestamp: Date.now(),
       });

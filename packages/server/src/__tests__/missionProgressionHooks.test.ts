@@ -270,6 +270,64 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(3);
   });
 
+  it("mission 49 validate uses actor-only oxygen when validating cut costs", () => {
+    const state = makeGameState({
+      mission: 49,
+      log: [],
+      players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" })],
+    });
+    dispatchHooks(49, {
+      point: "setup",
+      state,
+    });
+
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 49 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 2;
+    state.campaign.oxygen.pool = 5;
+
+    const result = dispatchHooks(49, {
+      point: "validate",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+    });
+
+    expect(result.validationCode).toBe("MISSION_RULE_VIOLATION");
+    expect(result.validationError).toContain("insufficient oxygen");
+  });
+
+  it("mission 49 transfer cut cost to the next player as teammate oxygen", () => {
+    const state = makeGameState({
+      mission: 49,
+      log: [],
+      players: [
+        makePlayer({ id: "p1" }),
+        makePlayer({ id: "p2" }),
+        makePlayer({ id: "p3" }),
+      ],
+    });
+    dispatchHooks(49, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 49 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 7;
+    state.campaign.oxygen.playerOxygen.p2 = 4;
+    state.campaign.oxygen.playerOxygen.p3 = 1;
+
+    dispatchHooks(49, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 4 },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(3);
+    expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(8);
+    expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(1);
+  });
+
   it("mission 49 endTurn does not consume oxygen", () => {
     const state = makeGameState({
       mission: 49,
