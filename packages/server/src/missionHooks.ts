@@ -1848,12 +1848,24 @@ registerHookHandler<"nano_progression">("nano_progression", {
     const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
     if (!actor) return;
 
+    const isCutAction = ctx.action.type === "soloCut" ||
+      ctx.action.type === "dualCut" ||
+      ctx.action.type === "dualCutDoubleDetector";
+
     const attemptedValues = getMission59AttemptedValues(ctx.action);
     const legalValues = new Set(getMission59ForwardValues(ctx.state));
     if (legalValues.size === 0) {
       return {
         validationCode: "MISSION_RULE_VIOLATION",
         validationError: "Mission 59: you must skip your turn",
+      };
+    }
+
+    if (!isCutAction) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          "Mission 59: you must cut using a Number card value from Nano's current line",
       };
     }
 

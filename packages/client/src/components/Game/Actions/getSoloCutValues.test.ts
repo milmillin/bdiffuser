@@ -856,6 +856,20 @@ describe("canRevealReds mission rules", () => {
     expect(canRevealReds(state, "me")).toBe(false);
   });
 
+  it("returns false in mission 59 even when all remaining wires are red", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(canRevealReds(state, "me")).toBe(false);
+  });
+
   it("returns true outside mission 13 when all remaining wires are red", () => {
     const state = makeGameState({
       mission: 3,

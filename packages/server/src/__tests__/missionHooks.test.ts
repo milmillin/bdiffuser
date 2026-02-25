@@ -2492,6 +2492,54 @@ describe("missionHooks dispatcher", () => {
       expect(blocked.validationError).toContain("must cut a wire");
     });
 
+    it("mission 59: blocks revealReds when a cut action is required", () => {
+      const actor = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
+      });
+      const state = makeGameState({
+        mission: 59,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m59-v1", value: 1, faceUp: true },
+              { id: "m59-v2", value: 2, faceUp: true },
+              { id: "m59-v3", value: 3, faceUp: true },
+              { id: "m59-v4", value: 4, faceUp: true },
+              { id: "m59-v5", value: 5, faceUp: true },
+              { id: "m59-v6", value: 6, faceUp: true },
+              { id: "m59-v7", value: 7, faceUp: true },
+              { id: "m59-v8", value: 8, faceUp: true },
+              { id: "m59-v9", value: 9, faceUp: true },
+              { id: "m59-v10", value: 10, faceUp: true },
+              { id: "m59-v11", value: 11, faceUp: true },
+              { id: "m59-v12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          mission59Nano: {
+            position: 6,
+            facing: -1,
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(59, {
+        point: "validate",
+        state,
+        action: {
+          type: "revealReds",
+          actorId: "p1",
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("must cut using a Number card");
+    });
+
     it("mission 47: blocks cut actions that cannot be formed by adding or subtracting two cards", () => {
       const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 4, cut: false })] });
       const state = makeGameState({

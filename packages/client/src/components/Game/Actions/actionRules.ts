@@ -377,6 +377,10 @@ export function canRevealReds(
     return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
   }
 
+  if (state.mission === 59) {
+    return false;
+  }
+
   const allRed = uncutTiles.every((t) => t.color === "red");
   if (!allRed) return false;
 
