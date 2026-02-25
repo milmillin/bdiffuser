@@ -2034,6 +2034,41 @@ describe("forced reveal reds state", () => {
     expect(error).toBeNull();
   });
 
+  it("does not force revealReds checks in mission 26 when all remaining wires are red", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 26,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m26-visible-1", value: 1, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+
   it("allows revealReds while in forced reveal state", () => {
     const actor = makePlayer({
       id: "actor",

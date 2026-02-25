@@ -191,6 +191,10 @@ export function isRevealRedsForced(
     return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
   }
 
+  if (state.mission === 26) {
+    return false;
+  }
+
   if (state.mission === 59) {
     return false;
   }
