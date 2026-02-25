@@ -12,8 +12,10 @@ import type { EquipmentMode } from "./EquipmentModePanel.js";
 function renderMode(
   mode: EquipmentMode,
   overrides?: {
+    mission?: ClientGameState["mission"];
     playerId?: string;
     players?: ReturnType<typeof makePlayer>[];
+    send?: (message: unknown) => void;
   },
 ): string {
   const players = overrides?.players ?? [
@@ -32,13 +34,15 @@ function renderMode(
   const gs = makeGameState({
     players,
     currentPlayerIndex: 0,
+    ...(overrides?.mission != null ? { mission: overrides.mission } : {}),
   }) as unknown as ClientGameState;
+  const send = overrides?.send ?? vi.fn();
   return renderToStaticMarkup(
     <EquipmentModePanel
       mode={mode}
       gameState={gs}
       playerId={overrides?.playerId ?? "me"}
-      send={vi.fn()}
+      send={send}
       onCancel={vi.fn()}
       onClear={vi.fn()}
       onUpdateMode={vi.fn()}
@@ -204,6 +208,31 @@ describe("EquipmentModePanel — double_detector", () => {
     });
     expect(html).toContain("data-testid=\"dd-confirm\"");
     expect(html).toContain("Confirm Double Detector");
+  });
+
+  it("mission 49 shows oxygen recipient selection", () => {
+    const html = renderMode({
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0, 1],
+      guessTileIndex: 0,
+    }, {
+      mission: 49,
+    });
+    expect(html).toContain("data-testid=\"dd-oxygen-recipient-select\"");
+    expect(html).toContain("Give oxygen to:");
+  });
+
+  it("non-mission 49 does not show oxygen recipient selection", () => {
+    const html = renderMode({
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0, 1],
+      guessTileIndex: 0,
+    }, {
+      mission: 48,
+    });
+    expect(html).not.toContain("data-testid=\"dd-oxygen-recipient-select\"");
   });
 
   it("does not render Clear button", () => {

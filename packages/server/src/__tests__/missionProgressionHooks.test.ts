@@ -447,6 +447,58 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(5);
   });
 
+  it("mission 49 dual-detector transfer cost to the selected teammate", () => {
+    const state = makeGameState({
+      mission: 49,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "p1-4", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-1", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "p3",
+          hand: [makeTile({ id: "p3-1", gameValue: 4 })],
+        }),
+      ],
+    });
+    dispatchHooks(49, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 49 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen.p1 = 7;
+    state.campaign.oxygen.playerOxygen.p2 = 4;
+    state.campaign.oxygen.playerOxygen.p3 = 1;
+
+    dispatchHooks(49, {
+      point: "resolve",
+      state,
+      action: {
+        type: "dualCutDoubleDetector",
+        actorId: "p1",
+        targetPlayerId: "p2",
+        tileIndex1: 0,
+        tileIndex2: 1,
+        guessValue: 4,
+        oxygenRecipientPlayerId: "p3",
+      } as unknown as {
+        type: "dualCut" | "soloCut" | "revealReds";
+        actorId: string;
+        [key: string]: unknown;
+      },
+      cutValue: 4,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(3);
+    expect(state.campaign?.oxygen?.playerOxygen.p2).toBe(4);
+    expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(5);
+  });
+
   it("mission 49 dual-cut defaults oxygen transfer to the next player when no recipient is specified", () => {
     const state = makeGameState({
       mission: 49,

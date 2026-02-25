@@ -22,6 +22,7 @@ export type EquipmentMode =
       targetPlayerId: string | null;
       selectedTiles: number[];
       guessTileIndex: number | null;
+      oxygenRecipientPlayerId?: string;
     }
   | { kind: "general_radar"; selectedValue: number | null }
   | { kind: "label_eq"; firstTileIndex: number | null }
@@ -213,6 +214,12 @@ export function EquipmentModePanel({
 
     case "double_detector": {
       testId = "dd-mode-panel";
+      const mission49Recipients = gameState.mission === 49 ? opponents : [];
+      const selectedMission49RecipientId = mission49Recipients.some(
+        (player) => player.id === mode.oxygenRecipientPlayerId,
+      )
+        ? mode.oxygenRecipientPlayerId
+        : mission49Recipients[0]?.id;
       const ddAllComplete =
         mode.selectedTiles.length === 2 &&
         mode.targetPlayerId != null &&
@@ -227,6 +234,28 @@ export function EquipmentModePanel({
             Target: {targetName}&apos;s wires {wireLabel(mode.selectedTiles[0])}{" "}
             & {wireLabel(mode.selectedTiles[1])}. Guess:{" "}
             {String(guessValue)}.
+            {gameState.mission === 49 && mission49Recipients.length > 0 ? (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs text-red-200">Give oxygen to:</span>
+                <select
+                  data-testid="dd-oxygen-recipient-select"
+                  className="rounded bg-red-900/60 border border-red-400/60 text-red-100 px-2 py-1 text-xs"
+                  value={selectedMission49RecipientId ?? ""}
+                  onChange={(event) =>
+                    onUpdateMode({
+                      ...mode,
+                      oxygenRecipientPlayerId: event.target.value,
+                    })
+                  }
+                >
+                  {mission49Recipients.map((player) => (
+                    <option key={player.id} value={player.id}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </>
         );
         if (typeof guessValue === "number") {
@@ -242,6 +271,10 @@ export function EquipmentModePanel({
                   tileIndex2: mode.selectedTiles[1],
                   guessValue,
                   actorTileIndex: mode.guessTileIndex!,
+                  ...(gameState.mission === 49 &&
+                  selectedMission49RecipientId != null
+                    ? { oxygenRecipientPlayerId: selectedMission49RecipientId }
+                    : {}),
                 })
               }
               className={BUTTON_PRIMARY_CLASS}
