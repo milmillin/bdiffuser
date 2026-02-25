@@ -75,6 +75,13 @@ function legalityError(
   return { code, message };
 }
 
+function isValueClassInfoToken(token: {
+  relation?: "eq" | "neq" | null;
+  singleWire?: boolean;
+}): boolean {
+  return token.relation == null && !token.singleWire;
+}
+
 const MISSION_46_PENDING_SEVENS_MESSAGE =
   "Mission 46: when only 7-value wires remain, you must cut all 4 sevens simultaneously";
 
@@ -500,7 +507,7 @@ export function validateUseEquipment(
           "Post-it can only target your blue wires",
         );
       }
-      if (actor.infoTokens.some((t) => t.position === payload.tileIndex)) {
+      if (actor.infoTokens.some((t) => isValueClassInfoToken(t) && t.position === payload.tileIndex)) {
         return legalityError("EQUIPMENT_RULE_VIOLATION", "This wire already has an info token");
       }
       return null;

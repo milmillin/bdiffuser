@@ -290,7 +290,7 @@ describe("equipment validation", () => {
     ]);
   });
 
-  it("rejects post-it on a wire that already has an info token", () => {
+  it("rejects post-it on a wire that already has a value-class info token", () => {
     const actor = makePlayer({
       id: "actor",
       hand: [makeTile({ id: "a1", gameValue: 5 })],
@@ -308,6 +308,27 @@ describe("equipment validation", () => {
 
     expect(error).not.toBeNull();
     expect(error?.code).toBe("EQUIPMENT_RULE_VIOLATION");
+  });
+
+  it("allows post-it on a wire that only has a structural relation info token", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 7 })],
+      infoTokens: [
+        { value: 0, position: 0, positionB: 1, relation: "eq", isYellow: false },
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor],
+      unlockedEquipmentCard("post_it", "Post-it", 4),
+    );
+
+    const error = validateUseEquipment(state, "actor", "post_it", {
+      kind: "post_it",
+      tileIndex: 0,
+    });
+
+    expect(error).toBeNull();
   });
 
   it("rejects label = when selected wires are not adjacent", () => {
