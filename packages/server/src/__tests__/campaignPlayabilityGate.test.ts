@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   GameState,
   MissionId,
@@ -7,7 +7,7 @@ import type {
   WireValue,
 } from "@bomb-busters/shared";
 import { MISSION_SCHEMAS } from "@bomb-busters/shared";
-import { makePlayer, makeTile, withSeededRandom } from "@bomb-busters/shared/testing";
+import { makeGameState, makePlayer, makeTile, withSeededRandom } from "@bomb-busters/shared/testing";
 import {
   executeDualCut,
   executeRevealReds,
@@ -338,8 +338,8 @@ function resolveForcedAction(state: GameState): boolean {
     // Auto-resolve: each chooser passes a random numeric value
     const recipientIndex = (forced.currentChooserIndex + 1) % state.players.length;
     const recipient = state.players[recipientIndex];
-    const value = Math.floor(Math.random() * 12) + 1;
-    recipient.infoTokens.push({ value, position: -1, isYellow: false });
+    const value = Math.floor(Math.random() * 13);
+    recipient.infoTokens.push({ value, position: -1, isYellow: value === 0 });
 
     const nextCompleted = forced.completedCount + 1;
     if (nextCompleted >= forced.passingOrder.length) {
@@ -579,6 +579,49 @@ describe("buildSimultaneousRedCutTargets", () => {
     } as GameState, "actor");
 
     expect(targets).toBeNull();
+  });
+});
+
+describe("mission 22 token-pass auto-resolution", () => {
+  it("can pass a yellow token when random value is 0", () => {
+    const bot = makePlayer({
+      id: "bot",
+      name: "Bot",
+      isBot: true,
+      isCaptain: true,
+    });
+    const recipient = makePlayer({
+      id: "recipient",
+      name: "Recipient",
+      hand: [
+        makeTile({ id: "recipient-tile", color: "yellow", gameValue: "YELLOW", sortValue: 1.1 }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "playing",
+      players: [bot, recipient],
+      pendingForcedAction: {
+        kind: "mission22TokenPass",
+        currentChooserIndex: 0,
+        currentChooserId: "bot",
+        passingOrder: [0, 1],
+        completedCount: 0,
+      },
+    });
+
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    const resolved = resolveForcedAction(state);
+    randomSpy.mockRestore();
+
+    expect(resolved).toBe(true);
+    if (state.pendingForcedAction?.kind === "mission22TokenPass") {
+      expect(state.pendingForcedAction.currentChooserId).toBe("recipient");
+    }
+    expect(recipient.infoTokens).toEqual([
+      { value: 0, position: -1, isYellow: true },
+    ]);
   });
 });
 

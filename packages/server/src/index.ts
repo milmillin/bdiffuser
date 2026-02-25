@@ -1668,8 +1668,8 @@ export class BombBustersServer extends Server<Env> {
     if (m22Forced?.kind === "mission22TokenPass") {
       const chooser = state.players.find((p) => p.id === m22Forced.currentChooserId);
       if (chooser?.isBot) {
-        // Bot picks a random numeric value 1-12
-        const value = Math.floor(Math.random() * 12) + 1;
+        // Bot picks a random value 0-12
+        const value = Math.floor(Math.random() * 13);
         this.executeMission22TokenPass(state, m22Forced, value);
         return;
       }
