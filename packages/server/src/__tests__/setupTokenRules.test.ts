@@ -354,6 +354,7 @@ describe("setupTokenRules", () => {
         mission: 43,
         players: [captain, partner],
       });
+      dispatchHooks(43, { point: "setup", state });
 
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 
@@ -386,6 +387,7 @@ describe("setupTokenRules", () => {
         mission: 43,
         players: [captain, p2, p3],
       });
+      dispatchHooks(43, { point: "setup", state });
 
       const placements = autoPlaceMission13RandomSetupInfoTokens(state, () => 0);
 

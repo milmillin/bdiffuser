@@ -4259,9 +4259,18 @@ registerHookHandler<"no_info_unlimited_dd">("no_info_unlimited_dd", {
  * During setup, random info tokens are placed instead of player-chosen ones.
  */
 registerHookHandler<"random_setup_info_tokens">("random_setup_info_tokens", {
-  setup(_rule: RandomSetupInfoTokensRuleDef, ctx: SetupHookContext): void {
+  setup(rule: RandomSetupInfoTokensRuleDef, ctx: SetupHookContext): void {
     ctx.state.campaign ??= {};
-    (ctx.state.campaign as Record<string, unknown>).randomSetupInfoTokens = true;
+    const campaignState = ctx.state.campaign as Record<string, unknown>;
+
+    if (rule.captainOnly && ctx.state.players.length !== 2) {
+      return;
+    }
+
+    campaignState.randomSetupInfoTokens = true;
+    if (rule.captainOnly && ctx.state.players.length === 2) {
+      campaignState.randomSetupCaptainOnly = true;
+    }
 
     pushGameLog(ctx.state, {
       turn: 0,

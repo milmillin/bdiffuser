@@ -516,6 +516,25 @@ describe("missionHooks dispatcher", () => {
       expect(new Set(allValues).size).toBe(allValues.length);
     });
 
+    it("mission 43: marks random setup tokens as captain-only in 2-player games", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+      });
+      const partner = makePlayer({ id: "partner" });
+      const state = makeGameState({
+        mission: 43,
+        players: [captain, partner],
+        log: [],
+      });
+
+      dispatchHooks(43, { point: "setup", state });
+
+      const campaignState = state.campaign as Record<string, unknown>;
+      expect(campaignState.randomSetupInfoTokens).toBe(true);
+      expect(campaignState.randomSetupCaptainOnly).toBe(true);
+    });
+
     it("mission 38: flips exactly one captain wire and none for teammates", () => {
       const captain = makePlayer({
         id: "captain",

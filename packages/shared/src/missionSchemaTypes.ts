@@ -458,6 +458,8 @@ export interface NanoValueParityRuleDef {
  */
 export interface RandomSetupInfoTokensRuleDef {
   kind: "random_setup_info_tokens";
+  /** Restrict random setup info-token assignment to the captain. */
+  captainOnly?: boolean;
 }
 
 /**
