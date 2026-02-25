@@ -807,6 +807,34 @@ function getMission63CaptainOxygen(playerCount: number): number {
   return Math.max(0, Math.floor(captainOxygenByPlayerCount[playerCount] ?? 0));
 }
 
+function moveMission63TurnEndOxygenToLeft(state: GameState, actorId: string): void {
+  const oxygen = state.campaign?.oxygen;
+  if (!oxygen) return;
+
+  const playerCount = state.players.length;
+  if (playerCount <= 1) return;
+
+  const actorIndex = state.players.findIndex((player) => player.id === actorId);
+  if (actorIndex < 0) return;
+
+  const leftPlayerIndex = (actorIndex + 1) % playerCount;
+  const actor = state.players[actorIndex];
+  const leftPlayer = state.players[leftPlayerIndex];
+  if (!actor || !leftPlayer) return;
+
+  const remaining = Math.max(
+    0,
+    Math.floor(oxygen.playerOxygen[actor.id] ?? 0),
+  );
+  if (remaining <= 0) return;
+
+  oxygen.playerOxygen[leftPlayer.id] = Math.max(
+    0,
+    Math.floor(oxygen.playerOxygen[leftPlayer.id] ?? 0),
+  ) + remaining;
+  oxygen.playerOxygen[actor.id] = 0;
+}
+
 function actorCanAffordAnyMission44Cut(
   state: Readonly<GameState>,
   actor: { id: string; hand: ReadonlyArray<WireTile> },
@@ -832,7 +860,8 @@ function actorCanAffordAnyMission44Cut(
   }
 
   for (const value of affordableValues) {
-    if (getOxygenCostForCut(rule, value) <= available) return true;
+    const requiredCost = getOxygenCostForCut(rule, value);
+    if (requiredCost <= available) return true;
   }
 
   return false;
@@ -1712,21 +1741,9 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
         (player) => player.id === ctx.previousPlayerId,
       );
       if (previousPlayerIndex >= 0) {
-        const leftOfPreviousIndex = (previousPlayerIndex + 1) % playerCount;
         const previousPlayer = players[previousPlayerIndex];
-        const leftPlayer = players[leftOfPreviousIndex];
-        if (previousPlayer && leftPlayer) {
-          const remaining = Math.max(
-            0,
-            Math.floor(oxygen.playerOxygen[previousPlayer.id] ?? 0),
-          );
-          if (remaining > 0) {
-            oxygen.playerOxygen[leftPlayer.id] = Math.max(
-              0,
-              Math.floor(oxygen.playerOxygen[leftPlayer.id] ?? 0),
-            ) + remaining;
-            oxygen.playerOxygen[previousPlayer.id] = 0;
-          }
+        if (previousPlayer) {
+          moveMission63TurnEndOxygenToLeft(ctx.state, previousPlayer.id);
         }
       }
 
@@ -1763,6 +1780,8 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
 
         const hasUncutTiles = actor.hand.some((tile) => !tile.cut);
         if (!hasUncutTiles) return;
+
+        moveMission63TurnEndOxygenToLeft(ctx.state, actor.id);
 
         ctx.state.board.detonatorPosition += 1;
         pushGameLog(ctx.state, {

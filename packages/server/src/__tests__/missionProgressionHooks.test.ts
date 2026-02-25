@@ -4,6 +4,7 @@ import {
   makeBoardState,
   makeGameState,
   makeTile,
+  makeYellowTile,
   makePlayer,
 } from "@bomb-busters/shared/testing";
 import { dispatchHooks } from "../missionHooks";
@@ -556,7 +557,7 @@ describe("mission progression hooks", () => {
     state.campaign.oxygen.playerOxygen = {
       p1: 0,
       captain: 0,
-      p3: 2,
+      p3: 1,
     };
 
     dispatchHooks(63, {
@@ -568,6 +569,55 @@ describe("mission progression hooks", () => {
     expect(state.board.detonatorPosition).toBe(1);
     expect(state.currentPlayerIndex).toBe(2);
     expect(state.turnNumber).toBe(2);
+  });
+
+  it("mission 63 auto-skipped players also pass remaining oxygen to the left", () => {
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [makeTile({ id: "p1-1", gameValue: 5 })],
+        }),
+        makePlayer({
+          id: "captain",
+          isCaptain: true,
+          hand: [makeYellowTile({ id: "c-1" })],
+        }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-1", gameValue: 1 })] }),
+      ],
+      currentPlayerIndex: 1,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    expect(state.currentPlayerIndex).toBe(1);
+
+    state.campaign.oxygen.playerOxygen = {
+      captain: 3,
+      p1: 0,
+      p3: 1,
+    };
+
+    dispatchHooks(63, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p1",
+    });
+
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.currentPlayerIndex).toBe(2);
+    expect(state.turnNumber).toBe(2);
+
+    expect(state.campaign?.oxygen?.playerOxygen).toEqual({
+      captain: 0,
+      p1: 0,
+      p3: 4,
+    });
   });
 
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
