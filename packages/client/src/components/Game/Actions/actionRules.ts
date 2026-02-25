@@ -212,6 +212,29 @@ export function canRevealReds(
   return true;
 }
 
+export function isRevealRedsForced(
+  state: ClientGameState,
+  playerId: string,
+): boolean {
+  const me = state.players.find((p) => p.id === playerId);
+  if (!me) return false;
+
+  const uncutTiles = me.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  if (state.campaign?.mission18DesignatorIndex != null) {
+    return false;
+  }
+
+  if (state.mission === 11) {
+    const hiddenBlueAsRedValue = getMission11BlueAsRedValue(state);
+    if (hiddenBlueAsRedValue == null) return false;
+    return uncutTiles.every((t) => t.gameValue === hiddenBlueAsRedValue);
+  }
+
+  return uncutTiles.every((t) => t.color === "red");
+}
+
 function getMission11BlueAsRedValue(state: ClientGameState): number | null {
   if (state.mission !== 11) return null;
 

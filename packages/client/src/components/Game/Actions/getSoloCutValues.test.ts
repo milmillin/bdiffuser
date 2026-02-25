@@ -8,7 +8,11 @@ import {
   makeTile,
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
-import { canRevealReds, getSoloCutValues } from "./actionRules.js";
+import {
+  canRevealReds,
+  getSoloCutValues,
+  isRevealRedsForced,
+} from "./actionRules.js";
 
 // Mission 2 with 2 players has yellow: exact(2) in its schema.
 
@@ -389,5 +393,64 @@ describe("canRevealReds mission rules", () => {
     }) as unknown as ClientGameState;
 
     expect(canRevealReds(state, "me")).toBe(true);
+  });
+});
+
+describe("isRevealRedsForced", () => {
+  it("returns true in mission 11 when all remaining wires are the hidden red-like value", () => {
+    const state = makeGameState({
+      mission: 11,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "b1", color: "blue", gameValue: 7 }),
+            makeTile({ id: "b2", color: "blue", gameValue: 7 }),
+          ],
+        }),
+      ],
+      log: [
+        {
+          turn: 0,
+          playerId: "system",
+          action: "hookSetup",
+          detail: logText("blue_as_red:7"),
+          timestamp: 1000,
+        },
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(isRevealRedsForced(state, "me")).toBe(true);
+  });
+
+  it("returns true in mission 13 even when all remaining wires are red", () => {
+    const state = makeGameState({
+      mission: 13,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(isRevealRedsForced(state, "me")).toBe(true);
+  });
+
+  it("returns false in mission 18 when the mission18 designator is active", () => {
+    const state = makeGameState({
+      mission: 18,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+      campaign: {
+        mission18DesignatorIndex: 0,
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isRevealRedsForced(state, "me")).toBe(false);
   });
 });

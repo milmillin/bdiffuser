@@ -53,6 +53,7 @@ import { CardStrip } from "./CardStrip.js";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 import {
   canRevealReds,
+  isRevealRedsForced,
   getImmediateEquipmentPayload,
   getInitialEquipmentMode,
   getSoloCutValues,
@@ -364,6 +365,7 @@ export function GameBoard({
     !!me;
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
   const forceRevealReds = isMyTurn && revealRedsAvailable;
+  const revealRedsForced = isMyTurn && (me != null && isRevealRedsForced(gameState, playerId));
   const missionSupportsSimultaneousThreeCut =
     gameState.mission === 13 || gameState.mission === 48;
   const missionSpecialRequiredColor =
@@ -389,9 +391,8 @@ export function GameBoard({
     missionSpecialRequiredColor != null &&
     (gameState.players.length >= 4 || missionSpecialActorHasRequiredColor);
   const missionSpecialCanBypassForcedReveal =
-    gameState.mission === 48 &&
-    forceRevealReds &&
-    gameState.players.length >= 4 &&
+    revealRedsForced &&
+    missionSupportsSimultaneousThreeCut &&
     missionSpecialAnyTargetColorAvailable &&
     missionSpecialActorEligible;
   const canStartMissionSpecialCut =
@@ -404,7 +405,7 @@ export function GameBoard({
     !equipmentMode &&
     pendingAction == null &&
     !mission46ForcedForMe &&
-    (!forceRevealReds || missionSpecialCanBypassForcedReveal);
+    (!revealRedsForced || missionSpecialCanBypassForcedReveal);
   const mission11RevealBlockedHint =
     isMyTurn && gameState.mission === 11 && !revealRedsAvailable;
   const mission11RevealAttemptAvailable =
@@ -555,12 +556,12 @@ export function GameBoard({
   }, [gameState.turnNumber, gameState.phase]);
 
   useEffect(() => {
-    if (!forceRevealReds || missionSpecialCanBypassForcedReveal) return;
+    if (!revealRedsForced || missionSpecialCanBypassForcedReveal) return;
     setPendingAction((prev) =>
       prev?.kind === "reveal_reds" ? prev : null,
     );
     setSelectedGuessTile(null);
-  }, [forceRevealReds, missionSpecialCanBypassForcedReveal]);
+  }, [revealRedsForced, missionSpecialCanBypassForcedReveal]);
 
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
 
@@ -654,7 +655,7 @@ export function GameBoard({
       selectedGuessTile != null &&
       pendingAction == null &&
       playingInteractionEnabled &&
-      !forceRevealReds
+      !revealRedsForced
     ) {
       return soloCandidateIndices.length > 0 ? soloCandidateIndices : undefined;
     }
@@ -678,7 +679,7 @@ export function GameBoard({
     isMyTurn &&
     gameState.phase === "playing" &&
     !gameState.pendingForcedAction &&
-    !forceRevealReds &&
+    !revealRedsForced &&
     DOUBLE_DETECTOR_CHARACTERS.has(me.character);
 
   const stageEquipmentActionFromCardStrip = (equipmentId: string): boolean => {
@@ -707,7 +708,7 @@ export function GameBoard({
         : secondaryRequired;
     const secondaryLocked =
       secondaryValue !== undefined && secondaryProgress < secondaryRequired;
-    const blockedByForcedReveal = forceRevealReds && isMyTurn;
+    const blockedByForcedReveal = revealRedsForced && isMyTurn;
     if (!timingAllowsUse || secondaryLocked || blockedByForcedReveal)
       return false;
 
@@ -980,11 +981,11 @@ export function GameBoard({
                                   targetTileIndex: tileIndex,
                                 });
                               }
-                            : playingInteractionEnabled &&
-                                isMyTurn &&
-                                selectedGuessTile != null &&
-                                !forceRevealReds &&
-                                !pendingAction
+                                : playingInteractionEnabled &&
+                                    isMyTurn &&
+                                    selectedGuessTile != null &&
+                                    !revealRedsForced &&
+                                    !pendingAction
                               ? (tileIndex) => {
                                   const guessValue = me?.hand[selectedGuessTile]?.gameValue;
                                   if (
@@ -1022,7 +1023,7 @@ export function GameBoard({
                             : playingInteractionEnabled &&
                                 isMyTurn &&
                                 selectedGuessTile != null &&
-                                !forceRevealReds &&
+                                !revealRedsForced &&
                                 !pendingAction
                               ? (tile: VisibleTile) => !tile.cut
                               : undefined
