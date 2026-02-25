@@ -665,6 +665,37 @@ describe("mission 41 Iberian yellow mode validation", () => {
 
     expect(error).toBeNull();
   });
+
+  it("blocks any mission 41 action from players who should skip", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "r1", gameValue: "RED", color: "red", sortValue: 2.5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 41,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("skip");
+  });
 });
 
 describe("mission 18 designated cut value enforcement", () => {

@@ -283,6 +283,70 @@ function mission41TargetIsYellowWire(
   }
 }
 
+function hasOnlyUncutTripwireAndRedWires(
+  player: Readonly<import("@bomb-busters/shared").Player>,
+): boolean {
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length < 2) return false;
+
+  const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
+  if (uncutYellowCount !== 1) return false;
+
+  const hasRed = uncutTiles.some((tile) => tile.color === "red");
+  if (!hasRed) return false;
+
+  return uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red");
+}
+
+function canCurrentPlayerKeepPlayingMission41(state: Readonly<GameState>): boolean {
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return false;
+  return !hasOnlyUncutTripwireAndRedWires(currentPlayer);
+}
+
+function findNextUncutPlayerIndex(
+  state: Readonly<GameState>,
+  fromIndex: number,
+): number | null {
+  const playerCount = state.players.length;
+  for (let offset = 1; offset <= playerCount; offset++) {
+    const candidateIndex = (fromIndex + offset) % playerCount;
+    const candidate = state.players[candidateIndex];
+    if (candidate?.hand.some((tile) => !tile.cut)) {
+      return candidateIndex;
+    }
+  }
+  return null;
+}
+
+function skipMission41TripwireTurns(state: GameState): void {
+  if (state.mission !== 41 || state.phase === "finished") return;
+
+  const playerCount = state.players.length;
+  let skipCount = 0;
+
+  while (skipCount < playerCount) {
+    if (canCurrentPlayerKeepPlayingMission41(state)) return;
+
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer) return;
+    const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+    if (nextPlayerIndex == null) return;
+
+    state.currentPlayerIndex = nextPlayerIndex;
+    state.turnNumber += 1;
+    skipCount += 1;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: currentPlayer.id,
+      action: "hookEffect",
+      detail: `iberian_yellow_mode:auto_skip|player=${currentPlayer.id}`,
+      timestamp: Date.now(),
+    });
+  }
+}
+
 export interface ResolveHookContext {
   point: "resolve";
   state: GameState;
@@ -3985,6 +4049,7 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
     const campaignState = ctx.state.campaign as Record<string, unknown>;
     campaignState.iberianYellowMode = true;
     campaignState.randomSetupInfoTokens = true;
+    skipMission41TripwireTurns(ctx.state);
 
     pushGameLog(ctx.state, {
       turn: 0,
@@ -3996,6 +4061,16 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
   },
 
   validate(_rule: IberianYellowModeRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.mission === 41) {
+      const actor = ctx.state.players.find((p) => p.id === ctx.action.actorId);
+      if (actor && hasOnlyUncutTripwireAndRedWires(actor)) {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: "Mission 41: player must skip their turn",
+        };
+      }
+    }
+
     if (ctx.action.type === "revealReds") return;
 
     if (
@@ -4014,5 +4089,10 @@ registerHookHandler<"iberian_yellow_mode">("iberian_yellow_mode", {
         validationError: "Mission 41: yellow wires are only cut with the mission special action",
       };
     }
+  },
+
+  endTurn(_rule: IberianYellowModeRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    skipMission41TripwireTurns(ctx.state);
   },
 });
