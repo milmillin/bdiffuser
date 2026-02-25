@@ -23,6 +23,14 @@ export function requiredSetupInfoTokenCount(
   state: Readonly<GameState>,
   player: Readonly<Player>,
 ): number {
+  const randomSetupCaptainOnly =
+    state.campaign != null &&
+    state.players.length === 2 &&
+    (state.campaign as Record<string, unknown>).randomSetupCaptainOnly === true;
+  if (randomSetupCaptainOnly && !player.isCaptain) {
+    return 0;
+  }
+
   return requiredSetupInfoTokenCountForMissionAndHand(
     state.mission,
     state.players.length,

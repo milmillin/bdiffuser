@@ -88,6 +88,22 @@ describe("setupTokenRules", () => {
     expect(allSetupInfoTokensPlaced(state)).toBe(false);
   });
 
+  it("mission 43 (2p, captain-only random setup): partner requires 0 tokens", () => {
+    const captain = makePlayer({ id: "captain", isCaptain: true });
+    const partner = makePlayer({ id: "partner", isCaptain: false });
+    const state = makeGameState({
+      mission: 43,
+      players: [captain, partner],
+      campaign: {},
+      phase: "setup_info_tokens",
+    });
+
+    dispatchHooks(43, { point: "setup", state });
+
+    expect(requiredSetupInfoTokenCount(state, captain)).toBe(1);
+    expect(requiredSetupInfoTokenCount(state, partner)).toBe(0);
+  });
+
   it("uses campaign falseInfoTokenMode for captain-only false setup count", () => {
     const captain = makePlayer({ id: "captain", isCaptain: true, infoTokens: [] });
     const partner = makePlayer({ id: "partner", isCaptain: false, infoTokens: [] });
@@ -366,6 +382,7 @@ describe("setupTokenRules", () => {
       ]);
       expect(captain.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
       expect(partner.infoTokens).toEqual([]);
+      expect(allSetupInfoTokensPlaced(state)).toBe(true);
     });
 
     it("mission 43 (3p): does not auto-place random setup tokens", () => {
