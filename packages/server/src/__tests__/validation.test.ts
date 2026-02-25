@@ -550,6 +550,42 @@ describe("mission 48 simultaneous yellow validation", () => {
     expect(error!.message).toContain("simultaneous 3-yellow");
   });
 
+  it("rejects dual detector attempts when either wire is yellow", () => {
+    const actor = makePlayer({
+      id: "actor",
+      character: "double_detector",
+      hand: [
+        makeTile({ id: "a1", gameValue: 4 }),
+        makeTile({ id: "a2", gameValue: 4 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" }),
+        makeTile({ id: "t2", gameValue: 4 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 48,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCutDoubleDetector",
+      actorId: "actor",
+      targetPlayerId: "target",
+      tileIndex1: 0,
+      tileIndex2: 1,
+      guessValue: 4,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("simultaneous 3-yellow");
+  });
+
   it("rejects yellow solo cuts", () => {
     const actor = makePlayer({
       id: "actor",
