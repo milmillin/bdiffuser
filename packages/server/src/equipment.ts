@@ -1446,7 +1446,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
+        `used Triple Detector on ${target.name} (${payload.targetTileIndices.map(i => wireLabelOf(target, i)).join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
       return {
         type: "equipmentUsed",
@@ -2128,7 +2128,7 @@ export function executeCharacterAbility(
         state,
         actorId,
         "characterAbility",
-        `used Triple Detector on ${target.name} (${payload.targetTileIndices.join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
+        `used Triple Detector on ${target.name} (${payload.targetTileIndices.map(i => wireLabelOf(target, i)).join(",")}) guessing ${payload.guessValue} — Waiting for ${target.name} to confirm...`,
       );
       return {
         type: "equipmentUsed",

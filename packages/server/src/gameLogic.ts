@@ -1301,6 +1301,15 @@ export function resolveDetectorTileChoice(
   const forced = state.pendingForcedAction as Extract<ForcedAction, { kind: "detectorTileChoice" }>;
   state.pendingForcedAction = undefined;
 
+  // Strip "— Waiting for X to confirm..." suffix from the initial detector log entry
+  for (let i = state.log.length - 1; i >= 0; i--) {
+    const entry = state.log[i];
+    if (entry.detail.type === "text" && entry.detail.text.includes(" — Waiting for")) {
+      entry.detail.text = entry.detail.text.replace(/ — Waiting for .+ to confirm\.\.\.$/, "");
+      break;
+    }
+  }
+
   const {
     actorId,
     targetPlayerId,
