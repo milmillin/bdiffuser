@@ -1434,7 +1434,7 @@ function resolveDoubleDetectorNoMatch(
       tileIndex2,
       guessValue,
       outcome: "no_match" as const,
-      detonatorAdvanced: true,
+      detonatorAdvanced,
       explosion: true,
     };
   }
