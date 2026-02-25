@@ -60,6 +60,7 @@ import {
   canRevealReds,
   isRevealRedsForced,
   isMission26CutValueVisible,
+  isMission59CutValueVisible,
   getImmediateEquipmentPayload,
   getInitialEquipmentMode,
   getSoloCutValues,
@@ -588,7 +589,10 @@ export function GameBoard({
   const mission9ActiveProgress = mission9Gate?.activeProgress;
   const isMission9BlockedValue = (value: number | "YELLOW"): boolean =>
     isMission9BlockedCutValue(gameState, value);
-  const isVisibleMission26CutValue = (value: unknown): value is number => {
+  const isVisibleMissionCutValue = (value: unknown): value is number => {
+    if (gameState.mission === 59) {
+      return isMission59CutValueVisible(gameState, value);
+    }
     return isMission26CutValueVisible(gameState, value);
   };
   const selectedGuessValue =
@@ -1248,7 +1252,7 @@ export function GameBoard({
                               if (guessValue == null) {
                                 return;
                               }
-                              if (!isVisibleMission26CutValue(guessValue)) return;
+                              if (!isVisibleMissionCutValue(guessValue)) return;
                               setPendingAction({
                                 kind: "dual_cut",
                                 actorTileIndex: selectedGuessTile,
@@ -1756,7 +1760,7 @@ export function GameBoard({
                                     tileIndex,
                                     preserveCustomGuess:
                                       selectedDualCutGuessValueIsCustom,
-                                    isValueVisible: isVisibleMission26CutValue,
+                                    isValueVisible: isVisibleMissionCutValue,
                                   });
                                 if (!nextAction) return;
 
@@ -1786,7 +1790,7 @@ export function GameBoard({
                                 return;
                               }
                               if (tile.color === "red") return;
-                              if (!isVisibleMission26CutValue(tile.gameValue)) return;
+                              if (!isVisibleMissionCutValue(tile.gameValue)) return;
 
                               if (selectedGuessTile == null) {
                                 setSelectedGuessTile(tileIndex);
@@ -1868,7 +1872,7 @@ export function GameBoard({
                               if (pendingAction) return false;
                               if (tile.cut) return false;
                               if (forceRevealReds) return gameState.mission === 11 || tile.color === "red";
-                              if (!isVisibleMission26CutValue(tile.gameValue)) return false;
+                              if (!isVisibleMissionCutValue(tile.gameValue)) return false;
                               return tile.color !== "red";
                             }
                           : undefined

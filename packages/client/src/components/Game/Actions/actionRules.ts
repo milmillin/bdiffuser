@@ -252,6 +252,9 @@ export function getSoloCutValues(
   for (const [key, myCount] of valueCounts) {
     const value = key === "YELLOW" ? "YELLOW" : Number(key);
     if (typeof value === "number") {
+      if (state.mission === 59 && !isMission59CutValueVisible(state, value)) {
+        continue;
+      }
       if (!isMission26CutValueVisible(state, value)) continue;
       if (value === protectedSimultaneousFourValue) {
         continue;
@@ -270,6 +273,9 @@ export function getSoloCutValues(
         values.push(value);
       }
     } else {
+      if (state.mission === 59) {
+        continue;
+      }
       if (state.mission === 48 || state.mission === 41) {
         // Missions 48 and 41 use special actions for yellow wires and forbid normal solo cuts.
         continue;
@@ -315,6 +321,34 @@ export function isMission26CutValueVisible(
       .filter((card) => card.faceUp)
       .map((card) => card.value),
   ).has(value);
+}
+
+export function isMission59CutValueVisible(
+  state: ClientGameState,
+  value: unknown,
+): value is number {
+  if (typeof value !== "number") return false;
+  if (state.mission !== 59) return true;
+
+  const mission59Nano = state.campaign?.mission59Nano;
+  if (!mission59Nano) return false;
+  if (!Number.isInteger(mission59Nano.position)) return false;
+  if (mission59Nano.facing !== 1 && mission59Nano.facing !== -1) return false;
+
+  const line = state.campaign?.numberCards?.visible ?? [];
+  if (line.length === 0) return false;
+
+  for (
+    let index = mission59Nano.position;
+    index >= 0 && index < line.length;
+    index += mission59Nano.facing
+  ) {
+    const card = line[index];
+    if (!card?.faceUp) continue;
+    if (card.value === value) return true;
+  }
+
+  return false;
 }
 
 export function canRevealReds(

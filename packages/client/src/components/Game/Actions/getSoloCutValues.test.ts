@@ -13,6 +13,7 @@ import {
   canRevealReds,
   getSoloCutValues,
   isMission26CutValueVisible,
+  isMission59CutValueVisible,
   isRevealRedsForced,
 } from "./actionRules.js";
 
@@ -519,6 +520,86 @@ describe("getSoloCutValues yellow logic", () => {
     const values = getSoloCutValues(state, "me");
 
     expect(values).toEqual([]);
+  });
+
+  it("offers only legal mission 59 forward-segment values from Nano", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", gameValue: 2 }),
+            makeTile({ id: "m2", gameValue: 2 }),
+            makeTile({ id: "m3", gameValue: 9 }),
+            makeTile({ id: "m4", gameValue: 9 }),
+            makeTile({ id: "m5", gameValue: 7 }),
+            makeTile({ id: "m6", gameValue: 7 }),
+            makeYellowTile({ id: "y1" }),
+          ],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n11", value: 11, faceUp: true },
+            { id: "n5", value: 5, faceUp: true },
+            { id: "n2", value: 2, faceUp: true },
+            { id: "n9", value: 9, faceUp: true },
+            { id: "n4", value: 4, faceUp: true },
+            { id: "n7", value: 7, faceUp: false },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 2,
+          facing: 1,
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    const values = getSoloCutValues(state, "me");
+
+    expect(values).toContain(2);
+    expect(values).toContain(9);
+    expect(values).not.toContain(5);
+    expect(values).not.toContain("YELLOW");
+    expect(values).not.toContain(4);
+  });
+
+  it("checks mission 59 forward visibility from Nano-facing direction", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeTile({ id: "m1", gameValue: 3 })],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n3", value: 3, faceUp: true },
+            { id: "n1", value: 1, faceUp: false },
+            { id: "n8", value: 8, faceUp: true },
+            { id: "n9", value: 9, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 2,
+          facing: -1,
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isMission59CutValueVisible(state, 8)).toBe(true);
+    expect(isMission59CutValueVisible(state, 9)).toBe(false);
+    expect(isMission59CutValueVisible(state, 1)).toBe(false);
   });
 
   it("filters out mission 54 solo cut values that exceed depth-based oxygen availability", () => {
