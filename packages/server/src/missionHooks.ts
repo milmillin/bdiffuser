@@ -3730,6 +3730,7 @@ registerHookHandler<"no_markers_memory_mode">("no_markers_memory_mode", {
     }
     // Set a flag that gameLogic will check when placing info tokens on failure.
     (ctx.state.campaign as Record<string, unknown>).noMarkersMemoryMode = true;
+    ctx.state.board.markers = [];
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "",

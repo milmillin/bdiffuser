@@ -659,6 +659,24 @@ describe("missionHooks dispatcher", () => {
       );
       expect(sequencePointer).toEqual({ kind: "sequence_pointer", value: 0 });
     });
+
+    it("mission 50: removes preexisting validation markers during setup", () => {
+      const state = makeGameState({
+        mission: 50,
+        board: makeBoardState({
+          markers: [
+            { value: 3, color: "red" },
+            { value: 5, color: "yellow", possible: true },
+          ],
+        }),
+        log: [],
+      });
+
+      dispatchHooks(50, { point: "setup", state });
+
+      expect(state.board.markers).toHaveLength(0);
+      expect((state.campaign as Record<string, unknown>).noMarkersMemoryMode).toBe(true);
+    });
   });
 
   describe("resolve hooks", () => {
