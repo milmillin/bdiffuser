@@ -18,6 +18,7 @@ import {
   setupGame,
   shuffle,
   assignCharactersForGameStart,
+  isNonCaptainCharacterForbidden,
 } from "./setup.js";
 import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
 import {
@@ -555,6 +556,13 @@ export class BombBustersServer extends Server<Env> {
 
     const player = this.room.players.find((p) => p.id === conn.id);
     if (!player) return;
+    if (isNonCaptainCharacterForbidden(this.room.mission, characterId)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: `Character selection rejected: forbidden on mission ${this.room.mission}`,
+      });
+      return;
+    }
 
     player.character = characterId;
     this.saveState();

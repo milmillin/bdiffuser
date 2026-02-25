@@ -258,7 +258,7 @@ const MISSION_REDRAW_FORBIDDEN_EQUIPMENT_IDS: Readonly<
   65: ["x_or_y_ray"],
 } as const;
 
-const MISSION_FORBIDDEN_NON_CAPTAIN_CHARACTERS: Readonly<
+export const MISSION_FORBIDDEN_NON_CAPTAIN_CHARACTERS: Readonly<
   Partial<Record<MissionId, readonly CharacterId[]>>
 > = {
   44: ["character_e4"],
@@ -272,7 +272,7 @@ const MISSION_FORBIDDEN_NON_CAPTAIN_CHARACTERS: Readonly<
   65: ["character_e4"],
 } as const;
 
-function isNonCaptainCharacterForbidden(
+export function isNonCaptainCharacterForbidden(
   mission: MissionId,
   characterId: CharacterId,
 ): boolean {

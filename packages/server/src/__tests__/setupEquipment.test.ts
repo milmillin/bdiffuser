@@ -5,6 +5,7 @@ import {
   resolveEquipmentPoolIds,
   setupGame,
   assignCharactersForGameStart,
+  isNonCaptainCharacterForbidden,
 } from "../setup";
 
 const MISSION_BASE_CHARACTERS = new Set([
@@ -153,6 +154,14 @@ describe("setupGame character assignment", () => {
         expect(player.character).not.toBe("character_e4");
         expect(MISSION_BASE_CHARACTERS.has(player.character!)).toBe(true);
       }
+    },
+  );
+
+  it.each([44, 45, 47, 49, 51, 54, 59, 63, 65] as const)(
+    "forbids mission %i non-captain character_e4 during setup selection",
+    (mission) => {
+      expect(isNonCaptainCharacterForbidden(mission, "character_e4")).toBe(true);
+      expect(isNonCaptainCharacterForbidden(mission, "character_e1")).toBe(false);
     },
   );
 });
