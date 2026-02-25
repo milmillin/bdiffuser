@@ -22,13 +22,13 @@ describe("equipment pool resolution", () => {
     expect(ids).toContain("false_bottom");
   });
 
-  it("mission 57 excludes only campaign disintegrator (not base X/Y Ray)", () => {
+  it("mission 57 includes campaign disintegrator in the setup pool", () => {
     const { setup } = resolveMissionSetup(57, 4);
     const ids = resolveEquipmentPoolIds(setup.equipment);
 
     expect(ids).toContain("x_or_y_ray");
     expect(ids).toContain("false_bottom");
-    expect(ids).not.toContain("disintegrator");
+    expect(ids).toContain("disintegrator");
   });
 
   it("mission 18 fixed_pool only exposes General Radar", () => {
@@ -106,6 +106,43 @@ describe("setupGame equipmentReserve", () => {
     try {
       const { board } = setupGame(players as any, mission);
       expect(board.equipment.some((eq) => eq.id === "false_bottom")).toBe(false);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  it("mission 57 setup avoids dealing disintegrator to board", () => {
+    const playerCount = 4;
+    const mission = 57;
+    const players = Array.from({ length: playerCount }, (_, i) => ({
+      id: `player-${i + 1}`,
+      name: `Player ${i + 1}`,
+      hand: [],
+      standSizes: [],
+      isCaptain: i === 0,
+      character: `character_${i + 1}`,
+      characterUsed: false,
+    }));
+    const setup = resolveMissionSetup(mission, playerCount).setup;
+    const poolIds = resolveEquipmentPoolIds(setup.equipment);
+    const poolSize = poolIds.length;
+    const disintegratorIndex = poolIds.indexOf("disintegrator");
+    expect(disintegratorIndex).toBeGreaterThan(0);
+
+    const originalRandom = Math.random;
+    const randomValues: number[] = [];
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(i === disintegratorIndex ? 0 : i / (i + 1));
+    }
+    for (let i = poolSize - 1; i >= 1; i--) {
+      randomValues.push(i / (i + 1));
+    }
+    let randomIdx = 0;
+    Math.random = () => (randomValues[randomIdx++] ?? 0.5);
+
+    try {
+      const { board } = setupGame(players as any, mission);
+      expect(board.equipment.some((eq) => eq.id === "disintegrator")).toBe(false);
     } finally {
       Math.random = originalRandom;
     }

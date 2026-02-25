@@ -157,7 +157,6 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
       equipment: {
         mode: "default",
         includeCampaignEquipment: true,
-        excludedEquipmentIds: ["disintegrator"],
       },
     },
     overrides: { 2: { red: exact(2) } },
