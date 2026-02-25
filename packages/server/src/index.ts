@@ -737,7 +737,20 @@ export class BombBustersServer extends Server<Env> {
 
   handlePlaceInfoToken(conn: Connection, value: number, tileIndex: number) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "setup_info_tokens") return;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot place setup info token: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "setup_info_tokens") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Info token placement is only allowed during the setup phase.",
+      });
+      return;
+    }
 
     // Enforce turn order during setup
     if (state.players[state.currentPlayerIndex].id !== conn.id) {
@@ -746,7 +759,10 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const player = state.players.find((p) => p.id === conn.id);
-    if (!player) return;
+    if (!player) {
+      this.sendMsg(conn, { type: "error", message: "Player not found in game" });
+      return;
+    }
 
     const requiredTokenCount = requiredSetupInfoTokenCount(state, player);
     if (requiredTokenCount === 0) {
