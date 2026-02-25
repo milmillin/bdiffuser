@@ -44,6 +44,8 @@ export function EndScreen({
     ? "radial-gradient(ellipse at 50% 40%, #d4e157 0%, #9ccc65 35%, #558b2f 70%, #33691e 100%)"
     : "radial-gradient(ellipse at 50% 40%, #fb7185 0%, #e11d48 35%, #9f1239 65%, #4c0519 100%)";
 
+  const canRestartMission = !gameState.isSpectator;
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center"
@@ -96,13 +98,15 @@ export function EndScreen({
           >
             {isWin ? "MVP Board" : "Who Blew It?"}
           </button>
-          <button
-            onClick={onPlayAgain}
-            data-testid="play-again"
-            className={`${btnBase} ${isWin ? "bg-yellow-400 border-yellow-600 text-green-950 shadow-[0_4px_15px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:shadow-[0_6px_20px_rgba(250,204,21,0.6)]" : "bg-amber-500 border-amber-800 text-gray-900 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:bg-amber-400 hover:shadow-[0_6px_20px_rgba(245,158,11,0.6)]"}`}
-          >
-            Play Again
-          </button>
+          {canRestartMission && (
+            <button
+              onClick={onPlayAgain}
+              data-testid="play-again"
+              className={`${btnBase} ${isWin ? "bg-yellow-400 border-yellow-600 text-green-950 shadow-[0_4px_15px_rgba(250,204,21,0.5)] hover:bg-yellow-300 hover:shadow-[0_6px_20px_rgba(250,204,21,0.6)]" : "bg-amber-500 border-amber-800 text-gray-900 shadow-[0_4px_15px_rgba(245,158,11,0.5)] hover:bg-amber-400 hover:shadow-[0_6px_20px_rgba(245,158,11,0.6)]"}`}
+            >
+              Play Again
+            </button>
+          )}
         </div>
       </div>
     </div>
