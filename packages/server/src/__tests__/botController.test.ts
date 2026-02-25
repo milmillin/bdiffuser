@@ -244,6 +244,38 @@ describe("getBotAction fallback", () => {
     }
   });
 
+  it("mission 41: fallback selects exactly one teammate tripwire for special action", async () => {
+    const bot = makePlayer({
+      id: "bot",
+      isBot: true,
+      hand: [
+        makeYellowTile({ id: "bot-y1" }),
+        makeTile({ id: "bot-b1", color: "blue", gameValue: 5, sortValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      isBot: true,
+      hand: [
+        makeYellowTile({ id: "teammate-y1" }),
+        makeYellowTile({ id: "teammate-y2" }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 41,
+      phase: "playing",
+      players: [bot, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const result = await getBotAction(state, "bot", "", "");
+    expect(result.action.action).toBe("simultaneousRedCut");
+    if (result.action.action === "simultaneousRedCut") {
+      expect(result.action.targets).toEqual([{ playerId: "teammate", tileIndex: 0 }]);
+    }
+  });
+
   it("returns chooseNextPlayer forced action for mission-10 captain bot without calling LLM", async () => {
     const bot = makePlayer({
       id: "bot",

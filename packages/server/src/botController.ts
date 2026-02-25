@@ -572,17 +572,21 @@ function pickGuessValueFromParity(
 
 function buildSimultaneousRedCutValidationTargets(
   state: GameState,
+  actorId: string,
 ): Array<{ playerId: string; tileIndex: number }> | null {
-  const requiredColor = state.mission === 48
+  const requiredColor = state.mission === 41 || state.mission === 48
     ? "yellow"
     : state.mission === 13
       ? "red"
       : null;
+  const requiredTargetCount = state.mission === 41 ? 1 : 3;
   if (!requiredColor) return null;
 
   const targets: Array<{ playerId: string; tileIndex: number }> = [];
 
   for (const player of state.players) {
+    if (state.mission === 41 && player.id === actorId) continue;
+
     for (let i = 0; i < player.hand.length; i++) {
       const tile = player.hand[i];
       if (tile.cut || tile.color !== requiredColor) continue;
@@ -590,7 +594,7 @@ function buildSimultaneousRedCutValidationTargets(
     }
   }
 
-  return targets.length >= 3 ? targets.slice(0, 3) : null;
+  return targets.length >= requiredTargetCount ? targets.slice(0, requiredTargetCount) : null;
 }
 
 function validateSimultaneousFourCutForBot(
@@ -630,7 +634,7 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   }
 
   // 1b. simultaneousRedCut when legal (mission 13/48 special action).
-  const simultaneousRedTargets = buildSimultaneousRedCutValidationTargets(state);
+  const simultaneousRedTargets = buildSimultaneousRedCutValidationTargets(state, botId);
   if (
     simultaneousRedTargets &&
     !validateSimultaneousRedCutWithHooks(state, botId, simultaneousRedTargets)
