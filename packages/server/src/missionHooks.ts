@@ -2869,22 +2869,16 @@ function hasAnyDualCutTarget(state: Readonly<GameState>, playerId: string): bool
   const actor = state.players.find((p) => p.id === playerId);
   if (!actor) return false;
 
-  const actorHasNumericUncut = actor.hand.some(
-    (tile) => !tile.cut && typeof tile.gameValue === "number",
+  const actorHasUncutTile = actor.hand.some(
+    (tile) => !tile.cut,
   );
-  const actorHasYellowUncut = actor.hand.some(
-    (tile) => !tile.cut && tile.gameValue === "YELLOW",
+  if (!actorHasUncutTile) return false;
+
+  const hasUncutTarget = state.players.some((player) =>
+    player.id !== actor.id && player.hand.some((tile) => !tile.cut),
   );
 
-  const hasNonYellowTarget = state.players.some((player) =>
-    player.id !== actor.id && player.hand.some((tile) => !tile.cut && tile.gameValue !== "YELLOW"),
-  );
-  const hasYellowTarget = actorHasYellowUncut
-    && state.players.some((player) =>
-      player.id !== actor.id && player.hand.some((tile) => !tile.cut && tile.gameValue === "YELLOW"),
-    );
-  if (actorHasNumericUncut) return hasNonYellowTarget;
-  return hasYellowTarget;
+  return hasUncutTarget;
 }
 
 /**

@@ -22,8 +22,8 @@ type Scope = "global" | "perPlayer";
 
 interface StateWithConstraintOptions {
   scope?: Scope;
-  actorHandValues?: number[];
-  targetHandValues?: number[];
+  actorHandValues?: Array<number | "YELLOW">;
+  targetHandValues?: Array<number | "YELLOW">;
 }
 
 // Mission 32 has the full A-L constraint_enforcement hook rule (global scope).
@@ -438,6 +438,20 @@ describe("constraint enforcement validation", () => {
     const state = stateWithConstraint("K", {
       actorHandValues: [11],
       targetHandValues: [2],
+    });
+
+    const result = validateDualCut(state, 2);
+    expect(result.validationError).toBeUndefined();
+    expect(state.campaign?.constraints?.global?.[0]?.active).toBe(true);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
+    ).toBe(false);
+  });
+
+  it("does not auto-flip Constraint K when only yellow target tiles remain", () => {
+    const state = stateWithConstraint("K", {
+      actorHandValues: [11],
+      targetHandValues: ["YELLOW", "YELLOW"],
     });
 
     const result = validateDualCut(state, 2);
