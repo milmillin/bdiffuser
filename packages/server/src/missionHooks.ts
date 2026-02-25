@@ -3524,6 +3524,28 @@ function canPlayerPlayMission57(
 }
 
 /**
+ * Mission 61 uses a single global constraint. Reveal Reds is still allowed only
+ * when all remaining wires are red.
+ */
+function canPlayerPlayMission61(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  if (state.mission !== 61) return true;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const allRemainingRed = uncutTiles.every((tile) => tile.gameValue === "RED");
+  if (allRemainingRed) return true;
+
+  const activeConstraintIds = getActiveConstraints(state, player.id);
+  if (canPlayerPlayMission37SoloCut(player, activeConstraintIds)) return true;
+
+  return hasAnyDualCutTarget(state, player.id);
+}
+
+/**
  * Constraint enforcement for campaign missions.
  *
  * Setup: Initializes constraints from rule definition.
@@ -3892,6 +3914,55 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   },
 
   endTurn(_rule: ConstraintEnforcementRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.mission === 61 && ctx.state.phase !== "finished") {
+      const playerCount = ctx.state.players.length;
+      const activePlayerCount = ctx.state.players.filter((player) =>
+        player.hand.some((tile) => !tile.cut)
+      ).length;
+      if (playerCount === 0 || activePlayerCount === 0) return;
+
+      const skippedPlayers = new Set<number>();
+      while (skippedPlayers.size < activePlayerCount) {
+        const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+        if (!currentPlayer) return;
+
+        if (canPlayerPlayMission61(ctx.state, currentPlayer)) {
+          return;
+        }
+
+        skippedPlayers.add(ctx.state.currentPlayerIndex);
+        ctx.state.turnNumber += 1;
+        pushGameLog(ctx.state, {
+          turn: ctx.state.turnNumber,
+          playerId: currentPlayer.id,
+          action: "hookEffect",
+          detail: `mission61:auto_skip|player=${currentPlayer.id}`,
+          timestamp: Date.now(),
+        });
+
+        const nextPlayerIndex = findNextUncutPlayerIndex(ctx.state, ctx.state.currentPlayerIndex);
+        if (nextPlayerIndex == null) break;
+
+        ctx.state.currentPlayerIndex = nextPlayerIndex;
+      }
+
+      if (skippedPlayers.size >= activePlayerCount) {
+        const previousPlayerId = ctx.previousPlayerId;
+        pushGameLog(ctx.state, {
+          turn: ctx.state.turnNumber,
+          playerId: previousPlayerId ?? "system",
+          action: "hookEffect",
+          detail: `mission61:round_stalled|detonator=${ctx.state.board.detonatorPosition}`,
+          timestamp: Date.now(),
+        });
+        ctx.state.result = "loss_detonator";
+        ctx.state.phase = "finished";
+        emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
+      }
+
+      return;
+    }
+
     if (ctx.state.mission !== 37 || ctx.state.phase === "finished") return;
 
     const playerCount = ctx.state.players.length;
