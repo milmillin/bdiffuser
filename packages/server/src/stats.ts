@@ -1,3 +1,5 @@
+import { DurableObject } from "cloudflare:workers";
+
 interface RoomEntry {
   players: number;
   updatedAt: number;
@@ -11,7 +13,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-export class StatsServer {
+export class StatsServer extends DurableObject {
   private rooms = new Map<string, RoomEntry>();
 
   async fetch(request: Request): Promise<Response> {

@@ -2590,8 +2590,6 @@ export class BombBustersServer extends Server<Env> {
   }
 }
 
-export { StatsServer } from "./stats.js";
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
