@@ -105,6 +105,44 @@ describe("validateDualCut", () => {
     expect(validateDualCut(state, "actor", "target", 0, 5)).toBeNull();
   });
 
+  it("rejects dual cut with non-integer guess value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    expect(validateDualCut(state, "actor", "target", 0, 4.5)).toBe(
+      "Dual Cut guess value must be YELLOW or an integer from 1 to 12",
+    );
+  });
+
+  it("rejects dual cut with out-of-range numeric guess value", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    expect(validateDualCut(state, "actor", "target", 0, 13)).toBe(
+      "Dual Cut guess value must be YELLOW or an integer from 1 to 12",
+    );
+  });
+
   it("allows dual cut even when announced value is absent from actor hand", () => {
     const actor = makePlayer({
       id: "actor",
@@ -1878,6 +1916,24 @@ describe("validateDualCutDoubleDetectorLegality", () => {
     const { state } = baseDDSetup("double_detector");
     const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 5);
     expect(error).toBeNull();
+  });
+
+  it("rejects Double Detector with non-integer guess value", () => {
+    const { state } = baseDDSetup("double_detector");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 4.5);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("DOUBLE_DETECTOR_GUESS_NOT_BLUE");
+    expect(error!.message).toBe("Double Detector guess value must be a number from 1 to 12");
+  });
+
+  it("rejects Double Detector with out-of-range guess value", () => {
+    const { state } = baseDDSetup("double_detector");
+    const error = validateDualCutDoubleDetectorLegality(state, "actor", "target", 0, 1, 13);
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("DOUBLE_DETECTOR_GUESS_NOT_BLUE");
+    expect(error!.message).toBe("Double Detector guess value must be a number from 1 to 12");
   });
 
   it("blocks Double Detector when Constraint G is active", () => {

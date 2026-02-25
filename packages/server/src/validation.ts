@@ -12,6 +12,10 @@ import {
   hasActiveConstraint,
 } from "./missionHooks.js";
 
+function isValidDualCutGuessValue(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= 12;
+}
+
 /** Get all uncut tiles in a player's hand */
 export function getUncutTiles(player: Player): WireTile[] {
   return player.hand.filter((t) => !t.cut);
@@ -213,6 +217,12 @@ export function validateDualCutLegality(
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
+    );
+  }
+  if (guessValue !== "YELLOW" && !isValidDualCutGuessValue(guessValue)) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Dual Cut guess value must be YELLOW or an integer from 1 to 12",
     );
   }
 
@@ -427,10 +437,10 @@ export function validateDualCutDoubleDetectorLegality(
     );
   }
 
-  if (typeof guessValue !== "number") {
+  if (typeof guessValue !== "number" || !isValidDualCutGuessValue(guessValue)) {
     return legalityError(
       "DOUBLE_DETECTOR_GUESS_NOT_BLUE",
-      "Guess value must be a number (not yellow)",
+      "Double Detector guess value must be a number from 1 to 12",
     );
   }
 
