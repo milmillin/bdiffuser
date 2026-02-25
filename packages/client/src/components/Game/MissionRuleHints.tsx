@@ -65,6 +65,7 @@ function CampaignCardThumbnail({
   landscape,
   dimmed,
   overlayLabel,
+  rotateCcw90,
   onClick,
 }: {
   image: string;
@@ -72,6 +73,7 @@ function CampaignCardThumbnail({
   landscape?: boolean;
   dimmed?: boolean;
   overlayLabel?: string;
+  rotateCcw90?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -85,6 +87,7 @@ function CampaignCardThumbnail({
         src={`/images/${image}`}
         alt=""
         className="h-full w-full object-cover"
+        style={rotateCcw90 ? { transform: "rotate(-90deg) scale(1.41)" } : undefined}
       />
       {dimmed && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -273,10 +276,12 @@ function CampaignObjectsHint({
                 <CampaignCardThumbnail
                   image={cutterImage}
                   borderColor="border-emerald-400"
+                  rotateCcw90
                   onClick={() =>
                     setPreviewCard({
                       name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
                       previewImage: cutterImage,
+                      previewRotateCcw90: true,
                     })
                   }
                 />

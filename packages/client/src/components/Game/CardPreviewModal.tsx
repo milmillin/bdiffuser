@@ -5,6 +5,8 @@ export type CardPreviewCard = {
   previewImage: string | null;
   /** Override the default portrait aspect ratio (e.g. "1037/736" for landscape). */
   previewAspectRatio?: string;
+  /** Rotate the preview image counter-clockwise 90 degrees. */
+  previewRotateCcw90?: boolean;
   detailSubtitle?: string;
   detailTiming?: string;
   detailEffect?: string;
@@ -52,6 +54,7 @@ export function CardPreviewModal({
                 src={`/images/${card.previewImage}`}
                 alt={card.name}
                 className="h-full w-full object-contain"
+                style={card.previewRotateCcw90 ? { transform: "rotate(-90deg)" } : undefined}
               />
             ) : (
               <div className="h-full w-full bg-slate-900" />
