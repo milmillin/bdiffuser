@@ -598,19 +598,43 @@ describe("setupTokenRules", () => {
         ],
       });
 
-      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 3, -1);
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 3, 0);
       expect(error).toBeNull();
     });
 
-    it("mission 50: rejects stand placement for values not on an uncut blue wire", () => {
+    it("mission 50: rejects values that do not match the targeted blue wire", () => {
       const player = makePlayer({
         hand: [makeTile({ id: "b-3", gameValue: 3, sortValue: 3, color: "blue" })],
       });
 
-      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 7, -1);
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 7, 0);
       expect(error).toEqual({
         code: "MISSION_RULE_VIOLATION",
-        message: "Setup info token value must match an uncut blue wire",
+        message: "Setup info token value must match the targeted blue wire",
+      });
+    });
+
+    it("mission 50: rejects cut wire targets", () => {
+      const player = makePlayer({
+        hand: [makeTile({ id: "b-2", gameValue: 2, sortValue: 2, color: "blue", cut: true })],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 2, 0);
+      expect(error).toEqual({
+        code: "TILE_ALREADY_CUT",
+        message: "Cannot place token on a cut wire",
+      });
+    });
+
+    it("mission 50: rejects non-blue targets", () => {
+      const player = makePlayer({
+        hand: [makeRedTile()],
+      });
+
+      const error = validateSetupInfoTokenPlacement(stateFor(50, player), player, 5, 0);
+      expect(error).toEqual({
+        code: "MISSION_RULE_VIOLATION",
+        message: "Setup info token value must match the targeted blue wire",
       });
     });
 

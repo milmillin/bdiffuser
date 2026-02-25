@@ -240,13 +240,28 @@ export function validateSetupInfoTokenPlacement(
 
   // Mission 50: setup tokens are placed beside the stand, but must still match a blue wire in hand.
   if (state.mission === 50) {
-    if (!Number.isInteger(tileIndex) || tileIndex < -1) {
+    if (!Number.isInteger(tileIndex) || tileIndex < 0 || tileIndex >= player.hand.length) {
       return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
     }
+    const tile = player.hand[tileIndex];
+    if (!tile || tile.cut) {
+      return legalityError("TILE_ALREADY_CUT", "Cannot place token on a cut wire");
+    }
+
     if (!Number.isInteger(value) || value < 1 || value > 12) {
       return legalityError(
         "MISSION_RULE_VIOLATION",
         "Setup info token value must be an integer between 1 and 12",
+      );
+    }
+    if (
+      tile.color !== "blue" ||
+      typeof tile.gameValue !== "number" ||
+      tile.gameValue !== value
+    ) {
+      return legalityError(
+        "MISSION_RULE_VIOLATION",
+        "Setup info token value must match the targeted blue wire",
       );
     }
 
