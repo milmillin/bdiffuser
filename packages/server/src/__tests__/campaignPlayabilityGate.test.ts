@@ -16,6 +16,10 @@ import {
   executeSoloCut,
 } from "../gameLogic";
 import { applyMissionInfoTokenVariant } from "../infoTokenRules";
+import {
+  applyMission22TokenPassChoice,
+  getMission22TokenPassAvailableValues,
+} from "../mission22TokenPass";
 import { dispatchHooks } from "../missionHooks";
 import { buildSimultaneousFourCutTargets } from "../simultaneousFourCutTargets";
 import { setupGame } from "../setup";
@@ -335,11 +339,15 @@ function resolveForcedAction(state: GameState): boolean {
   }
 
   if (forced.kind === "mission22TokenPass") {
-    // Auto-resolve: each chooser passes a random numeric value
-    const recipientIndex = (forced.currentChooserIndex + 1) % state.players.length;
-    const recipient = state.players[recipientIndex];
-    const value = Math.floor(Math.random() * 13);
-    recipient.infoTokens.push({ value, position: -1, isYellow: value === 0 });
+    // Auto-resolve: each chooser passes a random available board value.
+    const availableValues = getMission22TokenPassAvailableValues(state);
+    if (availableValues.length === 0) {
+      return false;
+    }
+
+    const value = availableValues[Math.floor(Math.random() * availableValues.length)];
+    const applyResult = applyMission22TokenPassChoice(state, forced, value);
+    if (!applyResult.ok) return false;
 
     const nextCompleted = forced.completedCount + 1;
     if (nextCompleted >= forced.passingOrder.length) {
@@ -620,7 +628,7 @@ describe("mission 22 token-pass auto-resolution", () => {
       expect(state.pendingForcedAction.currentChooserId).toBe("recipient");
     }
     expect(recipient.infoTokens).toEqual([
-      { value: 0, position: -1, isYellow: true },
+      { value: 0, position: 0, isYellow: true },
     ]);
   });
 });
