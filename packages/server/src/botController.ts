@@ -253,7 +253,7 @@ export async function getBotAction(
 
       // Some models return an array — unwrap to find the action object
       const actionObj = extractActionObject(result);
-      const parsed = parseLLMAction(state, actionObj);
+      const parsed = parseLLMAction(state, actionObj, botId);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
         if (!error) return { action: parsed, reasoning: lastReasoning };
@@ -291,6 +291,7 @@ function extractActionObject(
 function parseLLMAction(
   state: GameState,
   result: Record<string, unknown>,
+  actorId: string,
 ): BotAction | null {
   const action = result.action as string;
 
@@ -342,7 +343,8 @@ function parseLLMAction(
           }))
         : null;
 
-    const targets = parsedTargets ?? buildSimultaneousRedCutValidationTargets(state);
+    const targets =
+      parsedTargets ?? buildSimultaneousRedCutValidationTargets(state, actorId);
     if (!targets) return null;
     return { action: "simultaneousRedCut", targets };
   }

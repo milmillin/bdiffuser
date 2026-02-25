@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
-# Version bump + build validation — runs before every commit.
+set -e
+# Version bump, type-check + build validation — runs before every commit.
 # Installed automatically via `pnpm install` (see "prepare" script).
 
 sh scripts/bump-version.sh
+pnpm typecheck
 pnpm build

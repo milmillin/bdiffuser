@@ -648,16 +648,18 @@ describe("executeSimultaneousRedCut", () => {
   it("mission 41: on successful tripwire cut, sets one wire cut and moves detonator back by 1", () => {
     const state = makeGameState({
       mission: 41,
-      board: {
-        detonatorPosition: 4,
-        detonatorMax: 12,
-      },
+      board: makeBoardState({ detonatorPosition: 4, detonatorMax: 12 }),
       players: [
         makePlayer({
           id: "p1",
           hand: [makeTile({ id: "b1", gameValue: 3 })],
         }),
-        makePlayer({ id: "p2", hand: [makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" })] }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "y2", color: "yellow", gameValue: "YELLOW" }),
+          ],
+        }),
       ],
       currentPlayerIndex: 0,
     });
@@ -680,16 +682,19 @@ describe("executeSimultaneousRedCut", () => {
   it("mission 41: mismatch on non-yellow wire places one token and advances detonator", () => {
     const state = makeGameState({
       mission: 41,
-      board: {
+      board: makeBoardState({
         detonatorPosition: 0,
         detonatorMax: 12,
-      },
+      }),
       players: [
         makePlayer({
           id: "p1",
           hand: [makeTile({ id: "b1", gameValue: 3 })],
         }),
-        makePlayer({ id: "p2", hand: [makeTile({ id: "b2", gameValue: 4 })] }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "b2", gameValue: 4 })],
+        }),
       ],
       currentPlayerIndex: 0,
       turnNumber: 1,

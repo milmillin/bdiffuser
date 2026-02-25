@@ -97,6 +97,18 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ color: "blue", gameValue: 7, cut: true }), 3)).toBe(false);
   });
 
+  it("double_detector: restricts mission 41 targets to non-yellow wires", () => {
+    const mode: EquipmentMode = {
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [0],
+      guessTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 41)!;
+    expect(filter(tile({ color: "blue", gameValue: 7 }), 0)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
+  });
+
   it("talkies_walkies: allows uncut opponent tile selection", () => {
     const mode: EquipmentMode = {
       kind: "talkies_walkies",

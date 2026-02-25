@@ -21,7 +21,7 @@ function isMissionRestrictedDetectorTarget(
     return tile.color !== "blue";
   }
 
-  if (mission === 48) {
+  if (mission === 41 || mission === 48) {
     return tile.color === "yellow";
   }
 
