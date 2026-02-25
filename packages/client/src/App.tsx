@@ -167,6 +167,21 @@ export default function App() {
 
 function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void }) {
   const [room, setRoom] = useState("");
+  const [stats, setStats] = useState<{ rooms: number; players: number } | null>(null);
+
+  useEffect(() => {
+    const protocol = PARTYKIT_HOST.startsWith("localhost") ? "http" : "https";
+    const url = `${protocol}://${PARTYKIT_HOST}/stats`;
+    const fetchStats = () => {
+      fetch(url)
+        .then((r) => r.json())
+        .then((data) => setStats(data as { rooms: number; players: number }))
+        .catch(() => {});
+    };
+    fetchStats();
+    const id = setInterval(fetchStats, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleCreate = () => {
     const newRoom = Math.random().toString(36).substring(2, 8);
@@ -186,6 +201,11 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
             BOMB<span className="text-red-500">BUSTERS</span>
           </h1>
           <p className="mt-2 text-gray-400">Cooperative wire-cutting game</p>
+          {stats && (
+            <p className="mt-1 text-xs text-gray-500">
+              {stats.players} {stats.players === 1 ? "player" : "players"} in {stats.rooms} {stats.rooms === 1 ? "room" : "rooms"}
+            </p>
+          )}
         </div>
 
         <div className="bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4">

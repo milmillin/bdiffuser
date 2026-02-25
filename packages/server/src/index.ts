@@ -130,6 +130,7 @@ type MissionAudioControlCommand = Extract<
 interface Env {
   [key: string]: unknown;
   BombBustersServer: DurableObjectNamespace;
+  StatsServer: DurableObjectNamespace;
   ZHIPU_API_KEY: string;
 }
 
@@ -226,6 +227,17 @@ export class BombBustersServer extends Server<Env> {
     };
   }
 
+  private reportStats() {
+    const connectedCount = this.room.players.filter((p) => p.connected).length;
+    const id = this.env.StatsServer.idFromName("global");
+    const stub = this.env.StatsServer.get(id);
+    stub.fetch("https://stats/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: this.name, players: connectedCount }),
+    }).catch(() => {});
+  }
+
   private maybeRecordMissionFailure(previousResult: GameResult | null, state: GameState): void {
     if (isFailureReason(previousResult)) return;
     if (!isFailureReason(state.result)) return;
@@ -297,6 +309,7 @@ export class BombBustersServer extends Server<Env> {
       // In lobby
       this.broadcastLobby();
     }
+    this.reportStats();
   }
 
   onClose(connection: Connection, _code: number, _reason: string, _wasClean: boolean) {
@@ -309,6 +322,7 @@ export class BombBustersServer extends Server<Env> {
         this.broadcastLobby();
       }
     }
+    this.reportStats();
   }
 
   onMessage(connection: Connection, message: string | ArrayBuffer) {
@@ -586,6 +600,7 @@ export class BombBustersServer extends Server<Env> {
 
     this.saveState();
     this.broadcastLobby();
+    this.reportStats();
   }
 
   handleSelectCharacter(conn: Connection, characterId: CharacterId) {
@@ -2031,6 +2046,7 @@ export class BombBustersServer extends Server<Env> {
     if (finishedCleanupDeadline != null && nowMs >= finishedCleanupDeadline) {
       await this.ctx.storage.deleteAll();
       this.resetRoomState();
+      this.reportStats();
       return;
     }
 
@@ -2038,6 +2054,7 @@ export class BombBustersServer extends Server<Env> {
     if (staleCleanupDeadline != null && nowMs >= staleCleanupDeadline) {
       await this.ctx.storage.deleteAll();
       this.resetRoomState();
+      this.reportStats();
       return;
     }
 
@@ -2573,8 +2590,17 @@ export class BombBustersServer extends Server<Env> {
   }
 }
 
+export { StatsServer } from "./stats.js";
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/stats") {
+      const id = env.StatsServer.idFromName("global");
+      const stub = env.StatsServer.get(id);
+      return stub.fetch(request);
+    }
+
     return (
       (await routePartykitRequest(request, env)) ??
       new Response("Not found", { status: 404 })
