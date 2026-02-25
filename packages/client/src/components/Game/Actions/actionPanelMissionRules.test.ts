@@ -116,6 +116,51 @@ describe("actionPanelMissionRules", () => {
     expect(isDualCutTargetAllowed(mission48, "blue")).toBe(true);
   });
 
+  it("disallows dual-cut targeting X-marked wires in Mission 35 until all yellow wires are cut", () => {
+    const withUncutYellow = makeGameState({
+      mission: 35,
+      players: [
+        makePlayer({
+          id: "player-1",
+          hand: [makeTile({ id: "mine", color: "blue", gameValue: 5 })],
+        }),
+        makePlayer({
+          id: "player-2",
+          hand: [
+            makeTile({ id: "target-yellow", color: "yellow", gameValue: "YELLOW", cut: false }),
+            makeTile({
+              id: "target-blue-x",
+              color: "blue",
+              gameValue: 5,
+              isXMarked: true,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    expect(isDualCutTargetAllowed(withUncutYellow, "blue", true)).toBe(false);
+    expect(isDualCutTargetAllowed(withUncutYellow, "blue", false)).toBe(true);
+  });
+
+  it("allows dual-cut targeting X-marked wires in Mission 35 after all yellow wires are cut", () => {
+    const afterYellowCut = makeGameState({
+      mission: 35,
+      players: [
+        makePlayer({
+          id: "player-1",
+          hand: [makeTile({ id: "mine", color: "blue", gameValue: 5 })],
+        }),
+        makePlayer({
+          id: "player-2",
+          hand: [makeTile({ id: "target-yellow", color: "yellow", gameValue: "YELLOW", cut: true })],
+        }),
+      ],
+    });
+
+    expect(isDualCutTargetAllowed(afterYellowCut, "blue", true)).toBe(true);
+  });
+
   it("allows mission-specific special target colors only", () => {
     const mission13 = makeGameState({ mission: 13, players: [makePlayer({ id: "p1" })] });
     const mission41 = makeGameState({ mission: 41, players: [makePlayer({ id: "p1" })] });

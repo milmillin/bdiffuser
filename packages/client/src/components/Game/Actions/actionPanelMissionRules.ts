@@ -94,8 +94,14 @@ export function isMission9BlockedCutValue(
 }
 
 export function isDualCutTargetAllowed(
-  state: { mission: number },
+  state: {
+    mission: number;
+    players?: Array<{
+      hand?: Array<{ cut?: boolean; color?: string }>;
+    }>;
+  },
   targetColor: "red" | "yellow" | "blue" | undefined,
+  targetIsXMarked = false,
 ): boolean {
   if (targetColor === "red" && state.mission === 13) {
     return false;
@@ -105,6 +111,15 @@ export function isDualCutTargetAllowed(
     targetColor === "yellow" && (state.mission === 41 || state.mission === 48)
   ) {
     return false;
+  }
+
+  if (state.mission === 35 && targetIsXMarked) {
+    const hasUncutYellowWires = (state.players ?? []).some((player) =>
+      player.hand?.some((tile) => !tile.cut && tile.color === "yellow") ?? false,
+    );
+    if (hasUncutYellowWires) {
+      return false;
+    }
   }
 
   return true;

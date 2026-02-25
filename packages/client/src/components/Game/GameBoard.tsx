@@ -1199,7 +1199,13 @@ export function GameBoard({
                           ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
                                 if (!oppTile || oppTile.cut) return;
-                                if (!isDualCutTargetAllowed(gameState, oppTile.color)) return;
+                                if (
+                                  !isDualCutTargetAllowed(
+                                    gameState,
+                                    oppTile.color,
+                                    oppTile.isXMarked,
+                                  )
+                                ) return;
                               setPendingAction({
                                 ...pendingAction,
                                 targetPlayerId: opp.id,
@@ -1242,15 +1248,25 @@ export function GameBoard({
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
-                            ? (tile: VisibleTile) =>
-                                !tile.cut && isDualCutTargetAllowed(gameState, tile.color)
+                                ? (tile: VisibleTile) =>
+                                !tile.cut &&
+                                isDualCutTargetAllowed(
+                                  gameState,
+                                  tile.color,
+                                  tile.isXMarked,
+                                )
                             : playingInteractionEnabled &&
                                 isMyTurn &&
                                 selectedGuessTile != null &&
                                 !revealRedsForced &&
                                 !pendingAction
-                              ? (tile: VisibleTile) =>
-                                  !tile.cut && isDualCutTargetAllowed(gameState, tile.color)
+                                ? (tile: VisibleTile) =>
+                                  !tile.cut &&
+                                  isDualCutTargetAllowed(
+                                    gameState,
+                                    tile.color,
+                                    tile.isXMarked,
+                                  )
                               : undefined
                       }
                     />
