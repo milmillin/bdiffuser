@@ -362,6 +362,24 @@ export function isMission59CutValueVisible(
   return visibleValues.has(value);
 }
 
+export function isMission59DualCutActorTileValueAllowed(
+  state: ClientGameState,
+  value: unknown,
+): value is number {
+  if (state.mission !== 59) return isMission26CutValueVisible(state, value);
+  if (typeof value !== "number") return false;
+
+  const mission59Nano = state.campaign?.mission59Nano;
+  if (!mission59Nano || !Number.isInteger(mission59Nano.position)) return false;
+  const line = state.campaign?.numberCards?.visible;
+  if (!line) return false;
+
+  const currentLineValue = line[mission59Nano.position]?.value;
+  if (currentLineValue === value) return true;
+
+  return isMission59CutValueVisible(state, value);
+}
+
 export function canRevealReds(
   state: ClientGameState,
   playerId: string,

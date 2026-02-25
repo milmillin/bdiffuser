@@ -13,6 +13,7 @@ import {
   canRevealReds,
   getSoloCutValues,
   getMission59ForwardValues,
+  isMission59DualCutActorTileValueAllowed,
   isMission26CutValueVisible,
   isMission59CutValueVisible,
   isRevealRedsForced,
@@ -601,6 +602,66 @@ describe("getSoloCutValues yellow logic", () => {
     expect(isMission59CutValueVisible(state, 8)).toBe(true);
     expect(isMission59CutValueVisible(state, 9)).toBe(false);
     expect(isMission59CutValueVisible(state, 1)).toBe(false);
+  });
+
+  it("allows selecting current Nano value as a dual-cut guess even if it is face-down", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeTile({ id: "m1", gameValue: 4 })],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n4", value: 4, faceUp: false },
+            { id: "n1", value: 1, faceUp: true },
+            { id: "n9", value: 9, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isMission59DualCutActorTileValueAllowed(state, 4)).toBe(true);
+  });
+
+  it("disallows non-forward mission 59 dual-cut guesses", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeTile({ id: "m1", gameValue: 4 })],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "n4", value: 4, faceUp: false },
+            { id: "n1", value: 1, faceUp: true },
+            { id: "n9", value: 9, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        mission59Nano: {
+          position: 0,
+          facing: 1,
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isMission59DualCutActorTileValueAllowed(state, 12)).toBe(false);
   });
 
   it("extracts visible Mission 59 Number values from Nano direction", () => {
