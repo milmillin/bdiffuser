@@ -239,4 +239,34 @@ describe("GameBoard setup info token mission rules", () => {
     expect(html).not.toContain("<option value=\"5\"");
     expect(html).not.toContain("<option value=\"0\"");
   });
+
+  it("keeps a mission 22 absent value available when one copy remains and board state is absent", () => {
+    const captain = makePlayer({
+      id: "captain",
+      name: "Captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c1", color: "blue", gameValue: 4, sortValue: 4 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      name: "Partner",
+      hand: [makeTile({ id: "p1", color: "blue", gameValue: 6, sortValue: 6 })],
+      infoTokens: [{ value: 7, position: -1, isYellow: false }],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 2, sortValue: 2 })],
+    });
+
+    const state = makeGameState({
+      mission: 22,
+      phase: "setup_info_tokens",
+      players: [captain, partner, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "captain"), "captain");
+    expect(html).toContain("<option value=\"7\"");
+  });
 });

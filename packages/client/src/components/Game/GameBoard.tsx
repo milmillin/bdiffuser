@@ -16,6 +16,7 @@ import {
   INFO_TOKEN_VALUES,
   EQUIPMENT_DEFS,
   requiredSetupInfoTokenCountForMissionAndHand,
+  TOTAL_INFO_TOKENS,
   YELLOW_INFO_TOKENS,
   wireLabel,
 } from "@bomb-busters/shared";
@@ -384,7 +385,9 @@ export function GameBoard({
       return values;
     }
 
-    const usedNumericValues = new Set<number>();
+    const numericTokenCopiesPerValue =
+      (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
+    const usedNumericCounts = new Map<number, number>();
     let usedYellowTokens = 0;
     for (const player of gameState.players) {
       for (const token of player.infoTokens) {
@@ -392,17 +395,27 @@ export function GameBoard({
         if (token.isYellow) {
           usedYellowTokens += 1;
         } else {
-          usedNumericValues.add(token.value);
+          const numericValue = token.value;
+          if (!Number.isInteger(numericValue) || numericValue < 1 || numericValue > 12) {
+            continue;
+          }
+          usedNumericCounts.set(
+            numericValue,
+            (usedNumericCounts.get(numericValue) ?? 0) + 1,
+          );
         }
       }
     }
 
-    const numericValues = INFO_TOKEN_VALUES.filter(
-      (value) => !usedNumericValues.has(value),
-    );
-    const yellowValues = Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens) > 0
-      ? [0]
-      : [];
+    const numericValues = INFO_TOKEN_VALUES.flatMap((value) => {
+      const usedCount = usedNumericCounts.get(value) ?? 0;
+      const availableCount = Math.max(0, numericTokenCopiesPerValue - usedCount);
+      return Array.from({ length: availableCount }, () => value);
+    });
+    const yellowValues = new Array<number>();
+    if (Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens) > 0) {
+      yellowValues.push(0);
+    }
     return [...numericValues, ...yellowValues];
   }, [gameState.mission, isSetup, gameState.players, gameState.campaign?.mission22TokenPassBoard]);
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
