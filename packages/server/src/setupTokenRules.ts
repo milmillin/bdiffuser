@@ -7,6 +7,7 @@ import type {
 import {
   requiredSetupInfoTokenCountForMissionAndHand,
 } from "@bomb-busters/shared";
+import { getMission22TokenPassBoardState } from "./mission22TokenPass.js";
 
 function legalityError(
   code: ActionLegalityCode,
@@ -153,6 +154,7 @@ export function validateSetupInfoTokenPlacement(
   // Mission 22: absent-value tokens placed "next to stand" (position -1).
   // Value 0 = yellow absent, 1-12 = numeric absent.
   if (state.mission === 22) {
+    const mission22Board = getMission22TokenPassBoardState(state);
     if (tileIndex !== -1) {
       return legalityError(
         "MISSION_RULE_VIOLATION",
@@ -170,6 +172,12 @@ export function validateSetupInfoTokenPlacement(
     // Check the value is actually absent from player's uncut hand
     const isYellowAbsent = value === 0;
     if (isYellowAbsent) {
+      if (mission22Board.yellowTokens <= 0) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Token value is not available on the board",
+        );
+      }
       const hasYellow = player.hand.some(
         (t) => !t.cut && t.gameValue === "YELLOW",
       );
@@ -180,6 +188,12 @@ export function validateSetupInfoTokenPlacement(
         );
       }
     } else {
+      if (!mission22Board.numericTokens.includes(value)) {
+        return legalityError(
+          "MISSION_RULE_VIOLATION",
+          "Token value is not available on the board",
+        );
+      }
       const hasValue = player.hand.some(
         (t) => !t.cut && t.gameValue === value,
       );
