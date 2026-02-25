@@ -1847,7 +1847,9 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
 
       const captainIndex = players.findIndex((player) => player.isCaptain);
       const captain = captainIndex >= 0 ? players[captainIndex] : null;
-      if (captain && captainIndex === ctx.state.currentPlayerIndex) {
+      const collectCaptainReserve = (): void => {
+        if (!captain || captainIndex !== ctx.state.currentPlayerIndex) return;
+
         const reserve = Math.max(0, Math.floor(oxygen.pool));
         if (reserve > 0) {
           oxygen.playerOxygen[captain.id] = Math.max(
@@ -1864,7 +1866,9 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
             timestamp: Date.now(),
           });
         }
-      }
+      };
+
+      collectCaptainReserve();
 
       const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
       for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
@@ -1873,6 +1877,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
         const actor = ctx.state.players[ctx.state.currentPlayerIndex];
         if (!actor) return;
 
+        collectCaptainReserve();
         const actorCanAct = actorCanAffordAnyMission44Cut(ctx.state, actor, rule);
         if (actorCanAct) return;
 

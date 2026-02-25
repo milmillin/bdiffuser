@@ -923,6 +923,61 @@ describe("mission progression hooks", () => {
     expect(autoSkipLog).toBeUndefined();
   });
 
+  it("mission 63 captain collects reserve when becoming active in an auto-skip chain", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
+    });
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c-1", gameValue: 4, cut: false })],
+    });
+    const p3 = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "p3-1", gameValue: 12, cut: false })],
+    });
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [captain, p1, p3],
+      currentPlayerIndex: 1,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+
+    state.campaign.oxygen.playerOxygen = {
+      captain: 0,
+      p1: 0,
+      p3: 0,
+    };
+    state.campaign.oxygen.pool = 1;
+
+    dispatchHooks(63, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "captain",
+    });
+
+    expect(state.campaign?.oxygen?.playerOxygen.captain).toBe(1);
+    expect(state.campaign?.oxygen?.playerOxygen.p1).toBe(0);
+    expect(state.campaign?.oxygen?.playerOxygen.p3).toBe(0);
+    expect(state.campaign?.oxygen?.pool).toBe(0);
+    expect(state.board.detonatorPosition).toBe(2);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.turnNumber).toBe(3);
+    const captainAutoSkipLog = state.log.find(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "oxygen_progression:auto_skip|player=captain|detonator=3",
+    );
+    expect(captainAutoSkipLog).toBeUndefined();
+  });
+
   it("mission 63 setup gives captain oxygen and starts reserve at zero", () => {
     const players = [
       makePlayer({ id: "p1" }),
