@@ -160,6 +160,25 @@ describe("validateDualCut", () => {
     expect(validateDualCut(state, "actor", "target", 0, 7)).toBeNull();
   });
 
+  it("rejects dual cut with YELLOW when actor has no uncut yellow wire", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 5 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", color: "yellow", gameValue: "YELLOW" })],
+    });
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+    });
+
+    expect(validateDualCut(state, "actor", "target", 0, "YELLOW")).toBe(
+      "You don't have an uncut YELLOW wire to announce",
+    );
+  });
+
   it("rejects when actor targets themselves", () => {
     const actor = makePlayer({
       id: "actor",

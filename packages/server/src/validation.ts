@@ -240,6 +240,15 @@ export function validateDualCutLegality(
       "Mission 35: X-marked wires can only be cut after all yellow wires are cut",
     );
   }
+  if (
+    guessValue === "YELLOW" &&
+    !actor.hand.some((tile) => !tile.cut && tile.gameValue === "YELLOW")
+  ) {
+    return legalityError(
+      "GUESS_VALUE_NOT_IN_HAND",
+      "You don't have an uncut YELLOW wire to announce",
+    );
+  }
   if (guessValue !== "YELLOW" && !isValidDualCutGuessValue(guessValue)) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
