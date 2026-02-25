@@ -1171,9 +1171,22 @@ describe("mission progression hooks", () => {
       log: [],
       board: makeBoardState({ detonatorMax: 4 }),
       players: [
-        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-1", gameValue: 4 })] }),
-        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-1", gameValue: 4 })] }),
-        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-1", gameValue: 4 })] }),
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-4a", gameValue: 4, sortValue: 4 }),
+            makeTile({ id: "p1-6", gameValue: 6, sortValue: 6 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-4a", gameValue: 4, cut: true, sortValue: 4 }),
+            makeTile({ id: "p2-4b", gameValue: 4, cut: true, sortValue: 4 }),
+            makeTile({ id: "p2-4c", gameValue: 4, sortValue: 4 }),
+          ],
+        }),
+        makePlayer({ id: "p3", hand: [makeTile({ id: "p3-6", gameValue: 6 })] }),
       ],
       campaign: {
         constraints: {
@@ -1184,22 +1197,54 @@ describe("mission progression hooks", () => {
       },
     });
     state.campaign!.constraints!.global[0]!.active = true;
-    state.board.validationTrack[4] = 4;
+    state.board.validationTrack[4] = 3;
 
-    dispatchHooks(37, {
-      point: "resolve",
-      state,
-      action: {
-        type: "dualCut",
-        actorId: "p1",
-        targetPlayerId: "p2",
-        targetTileIndex: 0,
-        guessValue: 4,
+    executeDualCut(state, "p1", "p2", 2, 4);
+
+    expect(state.campaign?.constraints?.global[0]?.id).toBe("B");
+    expect(state.log.some(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "mission37:constraint_rotated|value=4",
+    )).toBe(true);
+  });
+
+  it("mission 37 rotates constraint when a solo cut brings a value to 4", () => {
+    const state = makeGameState({
+      mission: 37,
+      log: [],
+      currentPlayerIndex: 0,
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-4a", gameValue: 4, sortValue: 4 }),
+            makeTile({ id: "p1-4b", gameValue: 4, sortValue: 4, cut: true }),
+            makeTile({ id: "p1-6", gameValue: 6, sortValue: 6 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [
+            makeTile({ id: "p2-4a", gameValue: 4, sortValue: 4, cut: true }),
+            makeTile({ id: "p2-4b", gameValue: 4, sortValue: 4, cut: true }),
+            makeTile({ id: "p2-1", gameValue: 1, sortValue: 1 }),
+          ],
+        }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", name: "A", description: "A", active: true })],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "B", name: "B", description: "B" })],
+        },
       },
-      cutValue: 4,
-      cutSuccess: true,
     });
+    state.board.validationTrack[4] = 3;
 
+    executeSoloCut(state, "p1", 4);
+
+    expect(state.board.validationTrack[4]).toBe(4);
     expect(state.campaign?.constraints?.global[0]?.id).toBe("B");
     expect(state.log.some(
       (entry) =>

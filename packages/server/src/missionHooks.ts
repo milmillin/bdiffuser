@@ -3481,13 +3481,10 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   },
 
   resolve(_rule: ConstraintEnforcementRuleDef, ctx: ResolveHookContext): HookResult | void {
-    if (ctx.action.type !== "dualCut") return;
-    if (ctx.state.mission === 37 &&
-      typeof ctx.cutValue === "number" &&
-      ctx.cutSuccess
-    ) {
+    if (ctx.state.mission === 37 && typeof ctx.cutValue === "number" && ctx.cutSuccess) {
       const validationCount = getValidationTrackCount(ctx.state, ctx.cutValue);
-      if (validationCount === 4) {
+      const projectedValidationCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+      if (validationCount < 4 && projectedValidationCount >= 4) {
         rotateMission37Constraint(ctx.state);
         pushGameLog(ctx.state, {
           turn: ctx.state.turnNumber,
@@ -3498,6 +3495,8 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         });
       }
     }
+
+    if (ctx.action.type !== "dualCut") return;
 
     if (ctx.cutSuccess) return;
 
