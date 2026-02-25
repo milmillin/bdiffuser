@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import type {
   AnyEquipmentId,
   ClientGameState,
+  ClientPlayer,
   ClientMessage,
   ChatMessage,
   UseEquipmentPayload,
@@ -122,7 +123,20 @@ const MODES_NEEDING_OPPONENT_CLICK = new Set<EquipmentMode["kind"]>([
 ]);
 
 function usesFalseSetupTokenMode(mission: number, isCaptain: boolean): boolean {
-  return mission === 52 || (mission === 17 && isCaptain);
+  return mission === 22 || mission === 52 || (mission === 17 && isCaptain);
+}
+
+function mission22RequiredSetupTokenCount(handSize: ClientPlayer["hand"]) {
+  const present = new Set<number | "YELLOW">();
+  for (const tile of handSize) {
+    if (tile.cut) continue;
+    if (tile.gameValue === "YELLOW") {
+      present.add("YELLOW");
+    } else if (typeof tile.gameValue === "number") {
+      present.add(tile.gameValue);
+    }
+  }
+  return Math.min(2, 13 - present.size);
 }
 
 function getDefaultFalseSetupTokenValue(
@@ -267,10 +281,23 @@ export function GameBoard({
   }, [gameState.pendingForcedAction, playerId]);
 
   const isSetup = gameState.phase === "setup_info_tokens";
+  const isMission22Setup = gameState.mission === 22;
+  const requiredMission22SetupTokens = me ? mission22RequiredSetupTokenCount(me.hand) : 0;
   const requiresSetupToken =
     !isSetup || !me
       ? true
-      : requiresSetupInfoTokenForMission(
+      : isMission22Setup
+        ? requiredMission22SetupTokens > 0
+        : requiresSetupInfoTokenForMission(
+            gameState.mission,
+            gameState.players.length,
+            me.isCaptain,
+          );
+  const totalSetupTokens = !isSetup || !me
+    ? 1
+    : isMission22Setup
+      ? requiredMission22SetupTokens
+      : requiredSetupInfoTokenCountForMission(
           gameState.mission,
           gameState.players.length,
           me.isCaptain,
@@ -1373,7 +1400,8 @@ export function GameBoard({
                     selectedTileIndex={selectedInfoTile}
                     selectedTokenValue={selectedInfoTokenValue}
                     requiresToken={requiresSetupToken}
-                    totalTokens={requiredSetupInfoTokenCountForMission(gameState.mission, gameState.players.length, me.isCaptain)}
+                    totalTokens={totalSetupTokens}
+                    requiresTileTarget={gameState.mission !== 22}
                     useFalseTokenMode={useFalseSetupTokenMode}
                     send={send}
                     onPlaced={() => {

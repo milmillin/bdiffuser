@@ -8,8 +8,12 @@ import {
 
 function getFalseTokenValueOptions(
   tile: ClientPlayer["hand"][number] | undefined,
+  allowMissingValue = false,
 ): number[] {
   const values: number[] = [];
+  if (allowMissingValue) {
+    values.push(0);
+  }
   for (let value = 1; value <= 12; value++) {
     if (
       tile?.color === "blue" &&
@@ -30,6 +34,7 @@ export function InfoTokenSetup({
   requiresToken,
   totalTokens,
   useFalseTokenMode,
+  requiresTileTarget,
   send,
   onPlaced,
   onSelectedTokenValueChange,
@@ -40,6 +45,7 @@ export function InfoTokenSetup({
   requiresToken: boolean;
   totalTokens: number;
   useFalseTokenMode: boolean;
+  requiresTileTarget: boolean;
   send: (msg: ClientMessage) => void;
   onPlaced: () => void;
   onSelectedTokenValueChange: (value: number) => void;
@@ -47,7 +53,7 @@ export function InfoTokenSetup({
   const selectedTile =
     selectedTileIndex == null ? undefined : player.hand[selectedTileIndex];
   const falseTokenOptions = useFalseTokenMode
-    ? getFalseTokenValueOptions(selectedTile)
+    ? getFalseTokenValueOptions(selectedTile, !requiresTileTarget)
     : [];
   const effectiveFalseTokenValue =
     selectedTokenValue != null && falseTokenOptions.includes(selectedTokenValue)
@@ -68,11 +74,15 @@ export function InfoTokenSetup({
   }
 
   const handlePlace = () => {
-    if (selectedTileIndex == null || !selectedTile || selectedTile.cut) return;
+    if (
+      requiresTileTarget &&
+      (selectedTileIndex == null || !selectedTile || selectedTile.cut)
+    ) return;
     let value: number | null = null;
     if (useFalseTokenMode) {
       value = effectiveFalseTokenValue;
     } else if (
+      selectedTile != null &&
       selectedTile.color === "blue" &&
       typeof selectedTile.gameValue === "number"
     ) {
@@ -82,7 +92,7 @@ export function InfoTokenSetup({
     send({
       type: "placeInfoToken",
       value,
-      tileIndex: selectedTileIndex,
+      tileIndex: requiresTileTarget ? (selectedTileIndex as number) : -1,
     });
     onPlaced();
   };
@@ -94,10 +104,12 @@ export function InfoTokenSetup({
       </div>
       <div className={PANEL_TEXT_CLASS}>
         {useFalseTokenMode
-          ? "Select an allowed wire tile on your stand to place a false info token."
+          ? requiresTileTarget
+            ? "Select an allowed wire tile on your stand to place a false info token."
+            : "Choose a value that is not in your hand, then place it beside your stand."
           : "Select a blue wire tile on your stand to place an info token."}
       </div>
-      {selectedTileIndex != null && (
+      {(requiresTileTarget ? selectedTileIndex != null : true) && (
         <div className="flex items-center gap-2">
           {useFalseTokenMode && (
             <>
