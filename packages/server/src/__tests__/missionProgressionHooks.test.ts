@@ -1509,6 +1509,61 @@ describe("mission progression hooks", () => {
     ).toBe(false);
   });
 
+  it("mission 57 does not auto-skip a player who can only Reveal Your Red Wires", () => {
+    const state = makeGameState({
+      mission: 57,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 7,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-1", gameValue: "RED", color: "red" }),
+            makeTile({ id: "p1-2", gameValue: "RED", color: "red" }),
+          ],
+        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-1", gameValue: 3 })] }),
+      ],
+      campaign: {
+        constraints: {
+          global: [makeConstraintCard({ id: "A", name: "A", description: "A", active: true })],
+          perPlayer: {},
+          deck: [
+            makeConstraintCard({ id: "B", name: "B", description: "B", active: false }),
+          ],
+        },
+      },
+    });
+
+    dispatchHooks(57, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.turnNumber).toBe(7);
+    expect(state.board.detonatorPosition).toBe(0);
+    expect(state.currentPlayerIndex).toBe(0);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
+    expect(
+      state.log.filter(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail).startsWith("mission57:auto_skip|player="),
+      ).length,
+    ).toBe(0);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission57:round_stalled|detonator=0",
+      ),
+    ).toBe(false);
+  });
+
   it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
     const state = makeGameState({
       mission: 55,

@@ -3513,6 +3513,9 @@ function canPlayerPlayMission57(
   const uncutTiles = player.hand.filter((tile) => !tile.cut);
   if (uncutTiles.length === 0) return false;
 
+  const allRemainingRed = uncutTiles.every((tile) => tile.gameValue === "RED");
+  if (allRemainingRed) return true;
+
   const activeConstraintIds = getActiveConstraints(state, player.id);
   if (canPlayerPlayMission37SoloCut(player, activeConstraintIds)) return true;
 
