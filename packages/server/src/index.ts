@@ -913,7 +913,14 @@ export class BombBustersServer extends Server<Env> {
     mission59RotateNano?: boolean,
   ) {
     const state = this.room.gameState;
-    if (!state || state.phase !== "playing") return;
+    if (!state) {
+      this.sendMsg(conn, { type: "error", message: "Cannot perform Solo Cut: no active game in progress." });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, { type: "error", message: "Solo Cut is only allowed during the playing phase." });
+      return;
+    }
 
     const error = validateSoloCutWithHooks(
       state,
