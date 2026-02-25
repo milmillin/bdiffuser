@@ -4493,6 +4493,8 @@ function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: stri
   if (!actor) return false;
   const actorUncutValues = actor.hand.filter((tile) => !tile.cut);
   if (actorUncutValues.length === 0) return false;
+  const actorHasNonRed = actorUncutValues.some((tile) => tile.gameValue !== "RED");
+  if (!actorHasNonRed) return true;
 
   const possibleTargets = getMission47PossibleTargets(state.campaign?.numberCards?.visible ?? []);
   if (possibleTargets.length === 0) return false;
