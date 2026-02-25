@@ -6,6 +6,24 @@ import {
   makeTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCut, executeDualCutDoubleDetector, executeSoloCut, resolveDetectorTileChoice } from "../gameLogic";
+import { dispatchHooks } from "../missionHooks";
+
+describe("mission 11 setup hook", () => {
+  it("creates a numberCards campaign object with a visible card", () => {
+    const state = makeGameState({ mission: 11 });
+    dispatchHooks(11, { point: "setup", state });
+
+    expect(state.campaign).toBeDefined();
+    expect(state.campaign!.numberCards).toBeDefined();
+    expect(state.campaign!.numberCards!.visible).toHaveLength(1);
+
+    const card = state.campaign!.numberCards!.visible[0];
+    expect(card.faceUp).toBe(true);
+    expect(card.value).toBeGreaterThanOrEqual(1);
+    expect(card.value).toBeLessThanOrEqual(12);
+    expect(card.id).toBe(`m11-blue-as-red-${card.value}`);
+  });
+});
 
 describe("mission 11 game logic", () => {
   it("explodes when a dual cut successfully cuts the hidden red-like blue value", () => {

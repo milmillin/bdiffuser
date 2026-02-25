@@ -21,6 +21,39 @@ function renderBoard(state: ClientGameState, playerId: string): string {
   );
 }
 
+describe("GameBoard mission 11 number card", () => {
+  it("renders a visible number card when campaign.numberCards is present", () => {
+    const state = makeGameState({
+      mission: 11,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", color: "blue", gameValue: 4, sortValue: 4 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p1", color: "blue", gameValue: 5, sortValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("number_7.png");
+  });
+});
+
 describe("GameBoard mission 11 reveal attempt", () => {
   it("shows an explicit reveal attempt action on the active player's turn", () => {
     const state = makeGameState({
