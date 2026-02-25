@@ -68,6 +68,7 @@ import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
   isDualCutTargetAllowed,
+  isMissionSpecialTargetAllowed,
 } from "./Actions/actionPanelMissionRules.js";
 import {
   BUTTON_PRIMARY_CLASS,
@@ -1069,10 +1070,11 @@ export function GameBoard({
                         gameState.phase === "playing"
                           ? (tileIndex) =>
                               handleOpponentTileClick(opp.id, tileIndex)
-                          : missionSpecialMode
+                            : missionSpecialMode
                             ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
                                 if (!oppTile || oppTile.cut) return;
+                                if (!isMissionSpecialTargetAllowed(gameState, oppTile.color)) return;
                                 toggleMissionSpecialTarget(opp.id, tileIndex);
                               }
                           : mission46ForcedForMe
@@ -1126,8 +1128,8 @@ export function GameBoard({
                         gameState.phase === "playing" &&
                         MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind)
                           ? getOpponentTileSelectableFilter(opp.id)
-                          : missionSpecialMode
-                            ? (tile: VisibleTile) => !tile.cut
+                        : missionSpecialMode
+                          ? (tile: VisibleTile) => !tile.cut && isMissionSpecialTargetAllowed(gameState, tile.color)
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
@@ -1631,9 +1633,9 @@ export function GameBoard({
                           ? (tile: VisibleTile) =>
                               !tile.cut &&
                               !(hasXWireEquipmentRestriction && tile.isXMarked)
-                          : missionSpecialMode
-                            ? (tile: VisibleTile) => !tile.cut
-                          : mission46ForcedForMe
+                            : missionSpecialMode
+                            ? (tile: VisibleTile) => !tile.cut && isMissionSpecialTargetAllowed(gameState, tile.color)
+                            : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : playingInteractionEnabled &&
                               isMyTurn

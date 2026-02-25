@@ -12,6 +12,7 @@ import {
   getMission9SequenceGate,
   isMission9BlockedCutValue,
   isDualCutTargetAllowed,
+  isMissionSpecialTargetAllowed,
 } from "./actionPanelMissionRules.js";
 
 function makeMission9State(pointer = 0) {
@@ -113,6 +114,27 @@ describe("actionPanelMissionRules", () => {
     expect(isDualCutTargetAllowed(mission41, "blue")).toBe(true);
     expect(isDualCutTargetAllowed(mission48, "yellow")).toBe(false);
     expect(isDualCutTargetAllowed(mission48, "blue")).toBe(true);
+  });
+
+  it("allows mission-specific special target colors only", () => {
+    const mission13 = makeGameState({ mission: 13, players: [makePlayer({ id: "p1" })] });
+    const mission41 = makeGameState({ mission: 41, players: [makePlayer({ id: "p1" })] });
+    const mission48 = makeGameState({ mission: 48, players: [makePlayer({ id: "p1" })] });
+
+    expect(isMissionSpecialTargetAllowed(mission13, "red")).toBe(true);
+    expect(isMissionSpecialTargetAllowed(mission13, "blue")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission13, "yellow")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission13, undefined)).toBe(true);
+
+    expect(isMissionSpecialTargetAllowed(mission41, "yellow")).toBe(true);
+    expect(isMissionSpecialTargetAllowed(mission41, "blue")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission41, "red")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission41, undefined)).toBe(true);
+
+    expect(isMissionSpecialTargetAllowed(mission48, "yellow")).toBe(true);
+    expect(isMissionSpecialTargetAllowed(mission48, "blue")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission48, "red")).toBe(false);
+    expect(isMissionSpecialTargetAllowed(mission48, undefined)).toBe(true);
   });
 
   it("allows dual-cut targeting of blue/yellow wires in other missions", () => {

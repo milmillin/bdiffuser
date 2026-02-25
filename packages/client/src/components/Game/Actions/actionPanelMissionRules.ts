@@ -109,3 +109,18 @@ export function isDualCutTargetAllowed(
 
   return true;
 }
+
+export function isMissionSpecialTargetAllowed(
+  state: { mission: number },
+  targetColor: "red" | "yellow" | "blue" | undefined,
+): boolean {
+  if (state.mission !== 13 && state.mission !== 41 && state.mission !== 48) return true;
+
+  if (targetColor == null) return true;
+
+  if (state.mission === 13) {
+    return targetColor === "red";
+  }
+
+  return targetColor === "yellow";
+}
