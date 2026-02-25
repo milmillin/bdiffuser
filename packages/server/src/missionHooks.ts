@@ -876,7 +876,7 @@ function actorCanAffordAnyMission44Cut(
   ) && state.players.some((player) =>
     player.id !== actor.id && player.hand.some((tile) => !tile.cut),
   );
-  if (hasAnyDualCutTarget && state.mission !== 63) {
+  if (hasAnyDualCutTarget) {
     for (let value = 1; value <= 12; value++) {
       const requiredCost = getOxygenCostForCut(rule, value);
       if (requiredCost <= available) return true;

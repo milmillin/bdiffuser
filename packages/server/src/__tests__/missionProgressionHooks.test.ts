@@ -831,6 +831,55 @@ describe("mission progression hooks", () => {
     expect(autoSkipLog).toBeUndefined();
   });
 
+  it("mission 63 endTurn does not auto-skip if a non-owned low-cost dual-cut guess is possible", () => {
+    const actor = makePlayer({
+      id: "p1",
+      hand: [makeTile({ id: "p1-1", gameValue: 11 })],
+    });
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c-1", gameValue: 2 })],
+    });
+    const teammate = makePlayer({
+      id: "p3",
+      hand: [makeTile({ id: "p3-1", gameValue: 1 })],
+    });
+    const state = makeGameState({
+      mission: 63,
+      log: [],
+      players: [captain, actor, teammate],
+      currentPlayerIndex: 1,
+      turnNumber: 1,
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
+    });
+    dispatchHooks(63, { point: "setup", state });
+    if (!state.campaign?.oxygen) {
+      throw new Error("mission 63 should initialize oxygen");
+    }
+    state.campaign.oxygen.playerOxygen = {
+      captain: 0,
+      p1: 1,
+      p3: 0,
+    };
+
+    dispatchHooks(63, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "captain",
+    });
+
+    expect(state.board.detonatorPosition).toBe(0);
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.turnNumber).toBe(1);
+    const autoSkipLog = state.log.find(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail) === "oxygen_progression:auto_skip|player=p1|detonator=1",
+    );
+    expect(autoSkipLog).toBeUndefined();
+  });
+
   it("mission 63 setup gives captain oxygen and starts reserve at zero", () => {
     const players = [
       makePlayer({ id: "p1" }),
