@@ -1620,6 +1620,89 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 47: auto-skips a stuck player and advances detonator", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-1", gameValue: 2, cut: false })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", gameValue: "RED", cut: false })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [makeTile({ id: "p3-1", gameValue: 4, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 47,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 0,
+        turnNumber: 7,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m47-visible-11", value: 11, faceUp: true },
+              { id: "m47-visible-12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(47, { point: "endTurn", state });
+
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(8);
+      expect(state.board.detonatorPosition).toBe(2);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "add_subtract_number_cards:auto_skip|player=p1|detonator=2",
+      );
+      expect(skipLog).toBeDefined();
+    });
+
+    it("mission 47: mandatory skip can trigger detonator loss", () => {
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [makeTile({ id: "s-1", gameValue: 2, cut: false })],
+      });
+      const stillStuck = makePlayer({
+        id: "still-stuck",
+        hand: [makeTile({ id: "d-1", gameValue: 3, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 47,
+        players: [stuck, stillStuck],
+        currentPlayerIndex: 0,
+        turnNumber: 11,
+        board: makeBoardState({ detonatorPosition: 2, detonatorMax: 3 }),
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m47-visible-11", value: 11, faceUp: true },
+              { id: "m47-visible-12", value: 12, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(47, { point: "endTurn", state });
+
+      expect(state.phase).toBe("finished");
+      expect(state.result).toBe("loss_detonator");
+      expect(state.board.detonatorPosition).toBe(3);
+      expect(state.currentPlayerIndex).toBe(0);
+      expect(state.turnNumber).toBe(11);
+    });
+
     it("mission 65: mandatory skip can trigger detonator loss", () => {
       const stuck = makePlayer({
         id: "stuck",

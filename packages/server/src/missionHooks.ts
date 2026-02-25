@@ -4488,6 +4488,34 @@ function getCurrentPlayerHasUncutCards(state: Readonly<GameState>): boolean {
   return currentPlayer.hand.some((tile) => !tile.cut);
 }
 
+function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: string): boolean {
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor) return false;
+
+  const hasUncutNonRed = actor.hand.some((tile) => !tile.cut && tile.gameValue !== "RED");
+  if (!hasUncutNonRed) return true;
+
+  const possibleTargets = getMission47PossibleTargets(
+    state.campaign?.numberCards?.visible ?? [],
+  );
+  if (possibleTargets.length === 0) return false;
+
+  const legalTargets = new Set(possibleTargets);
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (
+        !tile.cut &&
+        typeof tile.gameValue === "number" &&
+        legalTargets.has(tile.gameValue)
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 function getMission47AttemptedValues(
   action: { type: string; [key: string]: unknown },
 ): Array<number | "YELLOW"> {
@@ -4756,6 +4784,47 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
     });
 
     recycleMission47Cards(ctx);
+  },
+
+  endTurn(_rule: AddSubtractNumberCardsRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished" || ctx.state.mission !== 47) return;
+
+    const playerCount = ctx.state.players.length;
+    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
+
+    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+      if (ctx.state.result != null) return;
+
+      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
+      if (!actor) return;
+
+      if (canCurrentPlayerPlayMission47(ctx.state, actor.id)) {
+        return;
+      }
+
+      ctx.state.board.detonatorPosition += 1;
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: actor.id,
+        action: "hookEffect",
+        detail:
+          `add_subtract_number_cards:auto_skip|player=${actor.id}` +
+          `|detonator=${ctx.state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+
+      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+        ctx.state.phase = "finished";
+        ctx.state.result = "loss_detonator";
+        return;
+      }
+
+      const nextPlayerIndex = findNextUncutPlayerIndex(ctx.state, ctx.state.currentPlayerIndex);
+      if (nextPlayerIndex == null) return;
+
+      ctx.state.currentPlayerIndex = nextPlayerIndex;
+      ctx.state.turnNumber += 1;
+    }
   },
 });
 
