@@ -15,6 +15,8 @@ import {
   MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
+import { mapBunkerCellForDisplay, type CardRotation } from "./cardRotation.js";
+import { useIsMobileViewport } from "./useIsMobileViewport.js";
 import { ScrollableRow } from "./Board/BoardArea.js";
 
 type EquipmentSecondaryLock = {
@@ -382,6 +384,8 @@ function CampaignObjectsHint({
   hideNumberCards: boolean;
 }) {
   const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
+  const isMobileViewport = useIsMobileViewport();
+  const bunkerCardRotation = getMission66BunkerInlineRotation(isMobileViewport);
 
   const campaign = gameState.campaign;
   if (!campaign) return null;
@@ -512,7 +516,7 @@ function CampaignObjectsHint({
                         name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
                         previewImage: cutterImage,
                         previewAspectRatio: "1037/736",
-                        previewRotateCcw90: true,
+                        previewRotation: "ccw90",
                       })
                     }
                   />
@@ -862,6 +866,18 @@ function CampaignObjectsHint({
                   const image = isBackFace
                     ? BUNKER_CARD_IMAGES.back
                     : BUNKER_CARD_IMAGES.front;
+                  const mission66DisplayPoint =
+                    mission66TrackPoint != null
+                      ? mapBunkerCellForDisplay(
+                          {
+                            row: mission66TrackPoint.row,
+                            col: mission66TrackPoint.col,
+                          },
+                          bunkerCardRotation,
+                          MISSION66_BUNKER_GRID_SIZE.rows,
+                          MISSION66_BUNKER_GRID_SIZE.cols,
+                        )
+                      : null;
                   const standeeOverlay =
                     mission66TrackPoint != null
                       ? (
@@ -869,8 +885,8 @@ function CampaignObjectsHint({
                           <div
                             className="pointer-events-none absolute z-10"
                             style={{
-                              left: `${((mission66TrackPoint.col + 0.5) / MISSION66_BUNKER_GRID_SIZE.cols) * 100}%`,
-                              top: `${((mission66TrackPoint.row + 0.5) / MISSION66_BUNKER_GRID_SIZE.rows) * 100}%`,
+                              left: `${((mission66DisplayPoint!.col + 0.5) / MISSION66_BUNKER_GRID_SIZE.cols) * 100}%`,
+                              top: `${((mission66DisplayPoint!.row + 0.5) / MISSION66_BUNKER_GRID_SIZE.rows) * 100}%`,
                               width: `${(100 / MISSION66_BUNKER_GRID_SIZE.cols) * 0.55}%`,
                               transform: "translate(-50%, -58%)",
                             }}
@@ -993,12 +1009,15 @@ function CampaignObjectsHint({
                           <CampaignObjectCard
                             image={image}
                             borderClassName="border-blue-500"
-                            rotateCw90
+                            rotateCw90={bunkerCardRotation === "cw90"}
+                            rotateCcw90={bunkerCardRotation === "ccw90"}
                             rotatedFrameClassName="h-56 sm:h-64 aspect-[1037/736]"
                             overlayNode={standeeOverlay}
                             onClick={() => setPreviewCard({
                               name: isBackFace ? "Bunker Card (Back)" : "Bunker Card (Front)",
                               previewImage: image,
+                              previewMobileAspectRatio: "1037/736",
+                              previewMobileRotation: "ccw90",
                               detailSubtitle:
                                 `Floor: ${isBackFace ? "B" : "A"} · ` +
                                 `${MISSION66_BUNKER_CELLS_BY_FLOOR[isBackFace ? "back" : "front"].length} blocks`,
@@ -1142,6 +1161,10 @@ function CampaignObjectsHint({
       )}
     </>
   );
+}
+
+export function getMission66BunkerInlineRotation(isMobileViewport: boolean): CardRotation {
+  return isMobileViewport ? "ccw90" : "cw90";
 }
 
 export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) {

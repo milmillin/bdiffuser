@@ -1,12 +1,20 @@
 import { useEffect } from "react";
+import { getCardRotationTransform, type CardRotation } from "./cardRotation.js";
+import { useIsMobileViewport } from "./useIsMobileViewport.js";
 
 export type CardPreviewCard = {
   name: string;
   previewImage: string | null;
   /** Override the default portrait aspect ratio (e.g. "1037/736" for landscape). */
   previewAspectRatio?: string;
+  /** Mobile-only aspect ratio override. */
+  previewMobileAspectRatio?: string;
   /** Scale the modal/card display size (e.g. 1.5 = 150%). */
   previewScale?: number;
+  /** Rotate preview image in 90-degree steps. */
+  previewRotation?: CardRotation;
+  /** Mobile-only rotation override. */
+  previewMobileRotation?: CardRotation;
   /** Rotate the preview image counter-clockwise 90 degrees. */
   previewRotateCcw90?: boolean;
   detailSubtitle?: string;
@@ -15,6 +23,24 @@ export type CardPreviewCard = {
   detailReminders?: string[];
 };
 
+export function getEffectivePreviewRotation(
+  card: CardPreviewCard,
+  isMobile: boolean,
+): CardRotation {
+  if (isMobile && card.previewMobileRotation) return card.previewMobileRotation;
+  if (card.previewRotation) return card.previewRotation;
+  if (card.previewRotateCcw90) return "ccw90";
+  return "none";
+}
+
+export function getEffectivePreviewAspectRatio(
+  card: CardPreviewCard,
+  isMobile: boolean,
+): string {
+  if (isMobile && card.previewMobileAspectRatio) return card.previewMobileAspectRatio;
+  return card.previewAspectRatio ?? "739/1040";
+}
+
 export function CardPreviewModal({
   card,
   onClose,
@@ -22,15 +48,16 @@ export function CardPreviewModal({
   card: CardPreviewCard;
   onClose: () => void;
 }) {
+  const isMobile = useIsMobileViewport();
   const requestedScale = card.previewScale ?? 1;
   const previewScale =
     Number.isFinite(requestedScale) && requestedScale > 0
       ? requestedScale
       : 1;
   const maxWidthRem = 42 * previewScale;
-  const imageTransform = card.previewRotateCcw90
-    ? "rotate(-90deg)"
-    : undefined;
+  const imageRotation = getEffectivePreviewRotation(card, isMobile);
+  const imageTransform = getCardRotationTransform(imageRotation);
+  const previewAspectRatio = getEffectivePreviewAspectRatio(card, isMobile);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -61,13 +88,18 @@ export function CardPreviewModal({
           Close
         </button>
         <div className="min-h-0 grid gap-3 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <div className="shrink-0 w-full max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900" style={{ aspectRatio: card.previewAspectRatio ?? "739/1040" }}>
+          <div
+            className="shrink-0 w-full max-h-[50dvh] sm:max-h-none overflow-hidden rounded-xl bg-slate-900"
+            style={{ aspectRatio: previewAspectRatio }}
+            data-preview-aspect={previewAspectRatio}
+          >
             {card.previewImage ? (
               <img
                 src={`/images/${card.previewImage}`}
                 alt={card.name}
                 className="h-full w-full object-contain"
                 style={imageTransform ? { transform: imageTransform } : undefined}
+                data-preview-rotation={imageRotation}
               />
             ) : (
               <div className="h-full w-full bg-slate-900" />
