@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderLogDetail } from "@bomb-busters/shared";
+import { getMission66BunkerTrackPoint, renderLogDetail } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeGameState,
@@ -1823,6 +1823,99 @@ describe("mission progression hooks", () => {
     expect(
       state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
     ).toBe(1);
+  });
+
+  it("mission 66 end-to-end simulation follows full bunker path and rotating constraints", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: Array.from({ length: 12 }, (_, idx) =>
+            makeTile({
+              id: `p1-${idx + 1}`,
+              gameValue: idx + 1,
+              sortValue: idx + 1,
+            })
+          ),
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-hold", gameValue: 12, sortValue: 12 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+
+    const constraints = state.campaign?.constraints;
+    expect(constraints).toBeDefined();
+    expect(constraints?.global).toHaveLength(4);
+    expect(constraints?.deck).toHaveLength(1);
+    const globalConstraintIds = constraints?.global.map((constraint) => constraint.id) ?? [];
+    const actionConstraintId = constraints?.deck?.[0]?.id;
+    const bunkerConstraintIds = [
+      ...globalConstraintIds,
+      actionConstraintId,
+    ]
+      .filter((id): id is string => typeof id === "string")
+      .sort();
+    expect(bunkerConstraintIds).toEqual(["A", "B", "C", "D", "E"]);
+
+    expect(state.campaign?.bunkerTracker).toEqual({ position: 0, max: 10 });
+    expect(
+      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+    ).toBe(0);
+    expect(getMission66BunkerTrackPoint(0, 10)).toMatchObject({
+      index: 0,
+      floor: "front",
+      row: 0,
+      col: 0,
+    });
+
+    for (let step = 1; step <= 10; step++) {
+      const result = executeSoloCut(state, "p1", step);
+      expect(result.type).toBe("soloCutResult");
+      expect(state.campaign?.bunkerTracker?.position).toBe(step);
+      expect(
+        state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
+      ).toBe(step % 4);
+
+      const tracker = state.campaign?.bunkerTracker;
+      if (!tracker) {
+        throw new Error("mission 66 should keep bunker tracker initialized");
+      }
+      const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
+      expect(point.index).toBe(step);
+      if (step === 5) {
+        expect(point).toMatchObject({ floor: "front", row: 0, col: 3 });
+      }
+      if (step === 6) {
+        expect(point).toMatchObject({ floor: "back", row: 0, col: 3 });
+      }
+    }
+
+    const finalTracker = state.campaign?.bunkerTracker;
+    if (!finalTracker) {
+      throw new Error("mission 66 should keep bunker tracker initialized");
+    }
+    expect(getMission66BunkerTrackPoint(finalTracker.position, finalTracker.max)).toMatchObject({
+      index: 10,
+      floor: "back",
+      row: 2,
+      col: 3,
+    });
+    expect(state.phase).toBe("playing");
+    expect(state.result).toBeNull();
+
+    const bunkerProgressLogs = state.log.filter(
+      (entry) =>
+        entry.action === "hookEffect"
+        && renderLogDetail(entry.detail).startsWith("bunker_flow:"),
+    );
+    expect(bunkerProgressLogs).toHaveLength(10);
   });
 
   it("mission 59: rotates Nano after a solo cut when requested", () => {

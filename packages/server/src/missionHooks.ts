@@ -2534,6 +2534,29 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     const position = clampProgress(rule.start, max);
     ctx.state.campaign!.bunkerTracker = { position, max };
 
+    const bunkerConstraintIds = ["A", "B", "C", "D", "E"] as const;
+    const bunkerConstraints = shuffle(
+      bunkerConstraintIds
+        .map((id) => {
+          const def = CONSTRAINT_CARD_DEFS.find((card) => card.id === id);
+          return def
+            ? {
+                id: def.id,
+                name: def.name,
+                description: def.description,
+                active: false,
+              }
+            : null;
+        })
+        .filter((card): card is ConstraintCard => card != null),
+    );
+    const actionConstraint = bunkerConstraints.pop();
+    ctx.state.campaign!.constraints = {
+      global: bunkerConstraints,
+      perPlayer: {},
+      deck: actionConstraint ? [actionConstraint] : [],
+    };
+
     const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     setActionPointer(ctx.state, position % cycle);
 
@@ -2541,7 +2564,7 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `bunker_flow:start=${position},max=${max},cycle=${cycle}`,
+      detail: `bunker_flow:start=${position},max=${max},cycle=${cycle}|constraints=${bunkerConstraints.map((c) => c.id).join(",")}|action=${actionConstraint?.id ?? "none"}`,
       timestamp: Date.now(),
     });
   },

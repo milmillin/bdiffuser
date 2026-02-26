@@ -8,6 +8,10 @@ import {
   CONSTRAINT_CARD_BACK,
   CUTTER_CARD_IMAGES,
   BUNKER_CARD_IMAGES,
+  MISSION66_BUNKER_CELLS_BY_FLOOR,
+  MISSION66_BUNKER_GRID_SIZE,
+  MISSION66_BUNKER_TRACK_PATH,
+  getMission66BunkerTrackPoint,
   MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -114,9 +118,12 @@ function CampaignObjectCard({
   dimmed,
   overlayLabel,
   rotateCcw90,
+  rotateCw90,
+  rotatedFrameClassName,
   badgeLabel,
   sizeClassName,
   imageFit,
+  overlayNode,
   onClick,
 }: {
   image: string;
@@ -126,27 +133,36 @@ function CampaignObjectCard({
   overlayLabel?: string;
   /** Display a portrait image in a landscape container, rotated -90°. */
   rotateCcw90?: boolean;
+  /** Display a portrait image in a landscape container, rotated +90°. */
+  rotateCw90?: boolean;
+  /** Override rotated-frame size/aspect classes. */
+  rotatedFrameClassName?: string;
   badgeLabel?: string;
   /** Override the default outer width classes (e.g. larger cards). */
   sizeClassName?: string;
   /** Override the default image fit mode. */
   imageFit?: "cover" | "contain";
+  /** Optional absolute-positioned overlay rendered over the card image. */
+  overlayNode?: ReactNode;
   onClick: () => void;
 }) {
+  const isRotated = rotateCcw90 || rotateCw90;
   const widthClass =
-    sizeClassName ?? (rotateCcw90
+    sizeClassName ?? (isRotated
       ? "w-auto"
       : landscape
         ? "w-[10.5rem] sm:w-48"
         : "w-20 sm:w-24");
   const aspectClass = landscape ? "aspect-[1037/736]" : "aspect-[739/1040]";
-  const frameClass = rotateCcw90 ? "h-20 sm:h-24 aspect-[1037/736]" : `w-full ${aspectClass}`;
+  const frameClass = isRotated
+    ? (rotatedFrameClassName ?? "h-20 sm:h-24 aspect-[1037/736]")
+    : `w-full ${aspectClass}`;
   const imageClassName =
     imageFit === "contain"
       ? "h-full w-full object-contain"
       : "h-full w-full object-cover";
 
-  if (rotateCcw90) {
+  if (isRotated) {
     return (
       <div
         className={`flex ${widthClass} shrink-0 items-center justify-center rounded-xl overflow-hidden transition-transform duration-150 ease-out hover:scale-[1.01]`}
@@ -163,7 +179,9 @@ function CampaignObjectCard({
               height: "calc(100% * 1037 / 736)",
               top: "50%",
               left: "50%",
-              transform: "translate(-50%, -50%) rotate(-90deg)",
+              transform: rotateCcw90
+                ? "translate(-50%, -50%) rotate(-90deg)"
+                : "translate(-50%, -50%) rotate(90deg)",
             }}
           >
             <img
@@ -177,6 +195,7 @@ function CampaignObjectCard({
               {badgeLabel}
             </span>
           )}
+          {overlayNode}
           {dimmed && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {overlayLabel && (
@@ -208,6 +227,7 @@ function CampaignObjectCard({
             {badgeLabel}
           </span>
         )}
+        {overlayNode}
         {dimmed && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             {overlayLabel && (
@@ -389,8 +409,28 @@ function CampaignObjectsHint({
     }))
     .filter((entry) => entry.cards.length > 0);
 
-  const globalConstraints =
+  const activeGlobalConstraints =
     campaign.constraints?.global.filter((constraint) => constraint.active) ?? [];
+  const mission66GlobalConstraints =
+    gameState.mission === 66 ? (campaign.constraints?.global ?? []) : [];
+  const globalConstraints =
+    gameState.mission === 66 ? mission66GlobalConstraints : activeGlobalConstraints;
+  const mission66ActionConstraint =
+    gameState.mission === 66 ? (campaign.constraints?.deck?.[0] ?? null) : null;
+  const mission66ActionPointer =
+    gameState.mission === 66
+      ? campaign.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value
+      : undefined;
+  const mission66ConstraintSlots =
+    gameState.mission === 66
+      ? [
+          { label: "North", card: globalConstraints[0] ?? null, slotIndex: 0 },
+          { label: "South", card: globalConstraints[1] ?? null, slotIndex: 1 },
+          { label: "East", card: globalConstraints[2] ?? null, slotIndex: 2 },
+          { label: "West", card: globalConstraints[3] ?? null, slotIndex: 3 },
+          { label: "Action", card: mission66ActionConstraint, slotIndex: null },
+        ]
+      : [];
   const perPlayerConstraints: { playerName: string; cards: typeof globalConstraints }[] = [];
   for (const [playerId, cards] of Object.entries(campaign.constraints?.perPlayer ?? {})) {
     const activeCards = cards.filter((constraint) => constraint.active);
@@ -403,6 +443,9 @@ function CampaignObjectsHint({
       cards: activeCards,
     });
   }
+  const showStandaloneConstraints =
+    gameState.mission !== 66 &&
+    (globalConstraints.length > 0 || perPlayerConstraints.length > 0 || mission66ActionConstraint != null);
 
   const activeChallenges = campaign.challenges?.active ?? [];
   const completedChallenges = campaign.challenges?.completed ?? [];
@@ -423,9 +466,11 @@ function CampaignObjectsHint({
       }))
     : [];
 
-  const specialMarkers = (campaign.specialMarkers ?? []).filter((marker) =>
-    sequencePointer != null ? marker.kind !== "sequence_pointer" : true,
-  );
+  const specialMarkers = (campaign.specialMarkers ?? []).filter((marker) => {
+    if (marker.kind === "action_pointer") return false;
+    if (sequencePointer != null && marker.kind === "sequence_pointer") return false;
+    return true;
+  });
 
   const hasNumberCardContent =
     cutterImage != null ||
@@ -584,7 +629,7 @@ function CampaignObjectsHint({
           </SectionShell>
         )}
 
-        {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
+        {showStandaloneConstraints && (
           <SectionShell>
             <div className="text-[10px] font-bold uppercase tracking-wide text-rose-200">
               Constraints
@@ -631,6 +676,24 @@ function CampaignObjectsHint({
                     />
                   );
                 }),
+              )}
+              {mission66ActionConstraint && (
+                <CampaignObjectCard
+                  key={`mission66-action-${mission66ActionConstraint.id}`}
+                  image={getConstraintCardImage(mission66ActionConstraint.id)}
+                  borderClassName="border-fuchsia-500"
+                  sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                  badgeLabel="ACT"
+                  onClick={() =>
+                    setPreviewCard({
+                      name: `Constraint ${mission66ActionConstraint.id} (ACTION)`,
+                      previewImage: getConstraintCardImage(mission66ActionConstraint.id),
+                      previewScale: 1.5,
+                      detailSubtitle: mission66ActionConstraint.name || mission66ActionConstraint.id,
+                      detailEffect: mission66ActionConstraint.description,
+                    })
+                  }
+                />
               )}
             </CampaignRow>
           </SectionShell>
@@ -784,29 +847,243 @@ function CampaignObjectsHint({
             )}
             {campaign.bunkerTracker && (
               <div className="space-y-2 rounded-lg bg-blue-950/20 px-2.5 py-2">
-                <CampaignRow>
-                  <CampaignObjectCard
-                    image={BUNKER_CARD_IMAGES.front}
-                    borderClassName="border-blue-500"
-                    onClick={() => setPreviewCard({
-                      name: "Bunker Card (Front)",
-                      previewImage: BUNKER_CARD_IMAGES.front,
-                    })}
-                  />
-                  <CampaignObjectCard
-                    image={BUNKER_CARD_IMAGES.back}
-                    borderClassName="border-slate-500"
-                    onClick={() => setPreviewCard({
-                      name: "Bunker Card (Back)",
-                      previewImage: BUNKER_CARD_IMAGES.back,
-                    })}
-                  />
-                </CampaignRow>
-                <TrackerBar
-                  label="Bunker"
-                  position={campaign.bunkerTracker.position}
-                  max={campaign.bunkerTracker.max}
-                />
+                {(() => {
+                  const mission66TrackPoint =
+                    gameState.mission === 66
+                      ? getMission66BunkerTrackPoint(
+                          campaign.bunkerTracker!.position,
+                          campaign.bunkerTracker!.max,
+                        )
+                      : null;
+                  const isBackFace =
+                    mission66TrackPoint != null
+                      ? mission66TrackPoint.floor === "back"
+                      : campaign.bunkerTracker!.position > Math.floor(campaign.bunkerTracker!.max / 2);
+                  const image = isBackFace
+                    ? BUNKER_CARD_IMAGES.back
+                    : BUNKER_CARD_IMAGES.front;
+                  const standeeOverlay =
+                    mission66TrackPoint != null
+                      ? (
+                        <>
+                          <div
+                            className="pointer-events-none absolute z-10"
+                            style={{
+                              left: `${((mission66TrackPoint.col + 0.5) / MISSION66_BUNKER_GRID_SIZE.cols) * 100}%`,
+                              top: `${((mission66TrackPoint.row + 0.5) / MISSION66_BUNKER_GRID_SIZE.rows) * 100}%`,
+                              width: `${(100 / MISSION66_BUNKER_GRID_SIZE.cols) * 0.55}%`,
+                              transform: "translate(-50%, -58%)",
+                            }}
+                          >
+                            <img
+                              src="/images/standee.png"
+                              alt=""
+                              className="h-auto w-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.65)]"
+                            />
+                          </div>
+                          <div className="pointer-events-none absolute right-1.5 top-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                            row: {mission66TrackPoint.row + 1}, column: {mission66TrackPoint.col + 1}
+                          </div>
+                        </>
+                      )
+                      : null;
+                  const mission66VisibleConstraintSlots = mission66ConstraintSlots.filter(
+                    (slot): slot is {
+                      label: string;
+                      card: NonNullable<typeof slot.card>;
+                      slotIndex: number | null;
+                    } => slot.card != null,
+                  );
+                  const mission66ItemStatuses =
+                    mission66TrackPoint != null
+                      ? (() => {
+                          const currentKey =
+                            `${mission66TrackPoint.floor}:${mission66TrackPoint.row}:${mission66TrackPoint.col}`;
+                          const visitedKeys = new Set(
+                            MISSION66_BUNKER_TRACK_PATH
+                              .filter((point) => point.index <= mission66TrackPoint.index)
+                              .map((point) => `${point.floor}:${point.row}:${point.col}`),
+                          );
+                          const frontAction =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "action")
+                              ?? null;
+                          const backAction =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "action")
+                              ?? null;
+                          const frontStairs =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "stairs")
+                              ?? null;
+                          const goal =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "goal")
+                              ?? null;
+                          const detonator =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "detonator")
+                              ?? null;
+
+                          const resolveStatus = (
+                            floor: "front" | "back",
+                            row: number,
+                            col: number,
+                          ): "Current" | "Reached" | "Pending" => {
+                            const key = `${floor}:${row}:${col}`;
+                            if (key === currentKey) return "Current";
+                            if (visitedKeys.has(key)) return "Reached";
+                            return "Pending";
+                          };
+
+                          return [
+                            frontAction
+                              ? {
+                                  label: "Key",
+                                  status: resolveStatus(frontAction.floor, frontAction.row, frontAction.col),
+                                }
+                              : null,
+                            frontStairs
+                              ? {
+                                  label: "Stairs",
+                                  status: resolveStatus(frontStairs.floor, frontStairs.row, frontStairs.col),
+                                }
+                              : null,
+                            goal
+                              ? {
+                                  label: "Skull",
+                                  status: resolveStatus(goal.floor, goal.row, goal.col),
+                                }
+                              : null,
+                            backAction
+                              ? {
+                                  label: "Alarm",
+                                  status: resolveStatus(backAction.floor, backAction.row, backAction.col),
+                                }
+                              : null,
+                            detonator
+                              ? {
+                                  label: "Detonator",
+                                  status: resolveStatus(detonator.floor, detonator.row, detonator.col),
+                                }
+                              : null,
+                          ].filter((entry): entry is { label: string; status: "Current" | "Reached" | "Pending" } => entry != null);
+                        })()
+                      : [];
+                  const mission66ActivatedItems = mission66ItemStatuses.filter(
+                    (entry) => entry.status !== "Pending",
+                  );
+                  return (
+                    <div
+                      className={
+                        gameState.mission === 66 && mission66VisibleConstraintSlots.length > 0
+                          ? "grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] gap-3 items-start"
+                          : ""
+                      }
+                    >
+                      <div className="space-y-2">
+                        <div className="flex justify-center lg:justify-start">
+                          <CampaignObjectCard
+                            image={image}
+                            borderClassName="border-blue-500"
+                            rotateCw90
+                            rotatedFrameClassName="h-56 sm:h-64 aspect-[1037/736]"
+                            overlayNode={standeeOverlay}
+                            onClick={() => setPreviewCard({
+                              name: isBackFace ? "Bunker Card (Back)" : "Bunker Card (Front)",
+                              previewImage: image,
+                              detailSubtitle:
+                                `Floor: ${isBackFace ? "B" : "A"} · ` +
+                                `${MISSION66_BUNKER_CELLS_BY_FLOOR[isBackFace ? "back" : "front"].length} blocks`,
+                            })}
+                          />
+                        </div>
+                        <TrackerBar
+                          label="Bunker"
+                          position={campaign.bunkerTracker.position}
+                          max={campaign.bunkerTracker.max}
+                        />
+                      </div>
+                      {gameState.mission === 66 && mission66VisibleConstraintSlots.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="rounded-lg bg-rose-950/25 px-2 py-2">
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-rose-200">
+                              Constraints
+                            </div>
+                            <div className="mt-1.5 flex flex-wrap justify-center gap-2">
+                              {mission66VisibleConstraintSlots.map((slot) => {
+                                const image = getConstraintCardImage(slot.card.id);
+                                const isMission66ActionTarget =
+                                  slot.slotIndex != null && mission66ActionPointer === slot.slotIndex;
+                                const isActionSlot = slot.label === "Action";
+                                return (
+                                  <div
+                                    key={`mission66-bunker-slot-${slot.label}-${slot.card.id}`}
+                                    className={`flex shrink-0 flex-col items-center gap-1 ${
+                                      isActionSlot ? "ml-4 sm:ml-6" : ""
+                                    }`}
+                                  >
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-rose-100/90">
+                                      {slot.label}
+                                    </span>
+                                    <CampaignObjectCard
+                                      image={image}
+                                      borderClassName={
+                                        isActionSlot
+                                          ? "border-fuchsia-500"
+                                          : isMission66ActionTarget
+                                            ? "border-cyan-500"
+                                            : "border-rose-500"
+                                      }
+                                      sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                                      onClick={() =>
+                                        setPreviewCard({
+                                          name: `Constraint ${slot.card.id} (${slot.label})`,
+                                          previewImage: image,
+                                          previewScale: 1.5,
+                                          detailSubtitle: slot.card.name || slot.card.id,
+                                          detailEffect: slot.card.description,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {mission66ActivatedItems.length > 0 && (
+                            <div className="rounded-lg bg-blue-950/35 px-2 py-1.5">
+                              <div className="flex items-center gap-2">
+                                <div className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-blue-200">
+                                  Bunker Items
+                                </div>
+                                <div className="min-w-0 flex-1 flex items-center gap-1 overflow-x-auto whitespace-nowrap">
+                                  {mission66ActivatedItems.map((entry) => (
+                                    <div
+                                      key={`mission66-item-${entry.label}`}
+                                      className="flex shrink-0 items-center gap-1 rounded border border-blue-500/30 bg-black/20 px-1.5 py-0.5"
+                                    >
+                                      <span className="text-[9px] font-semibold text-blue-100/90">
+                                        {entry.label}
+                                      </span>
+                                      <span
+                                        className={`h-2.5 w-2.5 rounded-full ring-1 ${
+                                          entry.status === "Current"
+                                            ? "bg-cyan-300 ring-cyan-100/70"
+                                            : entry.status === "Reached"
+                                              ? "bg-emerald-300 ring-emerald-100/70"
+                                              : "bg-slate-400 ring-slate-200/60"
+                                        }`}
+                                        aria-label={`${entry.label} status: ${entry.status}`}
+                                        title={`${entry.label}: ${entry.status}`}
+                                      >
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </SectionShell>
