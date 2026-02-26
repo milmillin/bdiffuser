@@ -19,8 +19,7 @@
   },
   "durable_objects": {
     "bindings": [
-      { "name": "BombBustersServer", "class_name": "BombBustersServer" },
-      { "name": "StatsServer", "class_name": "StatsServer" }
+      { "name": "BombBustersServer", "class_name": "BombBustersServer" }
     ]
   },
   "migrations": [
