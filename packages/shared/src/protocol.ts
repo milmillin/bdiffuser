@@ -78,6 +78,7 @@ export type ClientMessage =
   | { type: "removeBot"; botId: string }
   | { type: "kickPlayer"; playerId: string }
   | { type: "surrenderVote"; vote: boolean }
+  | { type: "confirmSurrender" }
   | { type: "chat"; text: string }
   | { type: "playAgain" };
 

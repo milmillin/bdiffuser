@@ -149,7 +149,7 @@ describe("GameBoard text polish", () => {
     expect(html).not.toContain("the Captain");
   });
 
-  it("uses clearer surrender vote button label", () => {
+  it("uses vote/unvote surrender button labels", () => {
     const state = makeGameState({
       mission: 10,
       phase: "playing",
@@ -172,8 +172,61 @@ describe("GameBoard text polish", () => {
     });
 
     const html = renderBoard(toClientGameState(state, "me"), "me");
-    expect(html).toContain("Surrender 1/2");
-    expect(html).not.toContain("GG 1/2");
+    expect(html).toContain("Unvote Surrender 1/2");
+    expect(html).toContain("data-testid=\"surrender-vote-button\"");
+    expect(html).not.toContain("data-testid=\"confirm-surrender-button\"");
+  });
+
+  it("shows vote label when the local player has not voted yes", () => {
+    const state = makeGameState({
+      mission: 10,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", gameValue: 3 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", gameValue: 6 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("Vote Surrender 0/2");
+    expect(html).not.toContain("data-testid=\"confirm-surrender-button\"");
+  });
+
+  it("shows final surrender confirm button only after vote threshold is met", () => {
+    const state = makeGameState({
+      mission: 10,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Me",
+          hand: [makeTile({ id: "m1", gameValue: 3 })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "P2",
+          hand: [makeTile({ id: "p2-1", gameValue: 6 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      surrenderVote: {
+        yesVoterIds: ["me", "p2"],
+      },
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).toContain("Unvote Surrender 2/2");
+    expect(html).toContain("data-testid=\"confirm-surrender-button\"");
+    expect(html).toContain(">Surrender</button>");
   });
 
   it("updates reveal-reds hint wording to clarify selection does not affect outcome", () => {

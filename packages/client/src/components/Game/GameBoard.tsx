@@ -285,6 +285,8 @@ export function GameBoard({
     !me.isBot;
   const hasVotedSurrenderYes =
     canVoteSurrender && surrenderVoteYesSet.has(playerId);
+  const canConfirmSurrender =
+    canVoteSurrender && surrenderVoteYesCount >= surrenderVoteRequired;
   const toggleSurrenderVote = useCallback(() => {
     if (!canVoteSurrender) return;
     send({
@@ -292,6 +294,10 @@ export function GameBoard({
       vote: !hasVotedSurrenderYes,
     });
   }, [canVoteSurrender, hasVotedSurrenderYes, send]);
+  const confirmSurrender = useCallback(() => {
+    if (!canConfirmSurrender) return;
+    send({ type: "confirmSurrender" });
+  }, [canConfirmSurrender, send]);
   const opponentsWithOrder = gameState.players
     .map((p, i) => ({ player: p, turnOrder: i + 1 }))
     .filter((entry) => entry.player.id !== playerId);
@@ -1321,7 +1327,9 @@ export function GameBoard({
             hasVotedSurrenderYes={hasVotedSurrenderYes}
             surrenderVoteYesCount={surrenderVoteYesCount}
             surrenderVoteRequired={surrenderVoteRequired}
+            canConfirmSurrender={canConfirmSurrender}
             onToggleSurrenderVote={toggleSurrenderVote}
+            onConfirmSurrender={confirmSurrender}
             onOpenRules={() => setIsRulesPopupOpen(true)}
           />
           <BoardArea
@@ -2912,7 +2920,9 @@ function Header({
   hasVotedSurrenderYes,
   surrenderVoteYesCount,
   surrenderVoteRequired,
+  canConfirmSurrender,
   onToggleSurrenderVote,
+  onConfirmSurrender,
   onOpenRules,
 }: {
   gameState: ClientGameState;
@@ -2922,7 +2932,9 @@ function Header({
   hasVotedSurrenderYes: boolean;
   surrenderVoteYesCount: number;
   surrenderVoteRequired: number;
+  canConfirmSurrender: boolean;
   onToggleSurrenderVote: () => void;
+  onConfirmSurrender: () => void;
   onOpenRules: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -2973,7 +2985,18 @@ function Header({
               }`}
               title={`Surrender vote: ${surrenderVoteYesCount}/${surrenderVoteRequired} yes votes`}
             >
-              Surrender {surrenderVoteYesCount}/{surrenderVoteRequired}
+              {hasVotedSurrenderYes ? "Unvote" : "Vote"} Surrender {surrenderVoteYesCount}/{surrenderVoteRequired}
+            </button>
+          )}
+          {canConfirmSurrender && (
+            <button
+              type="button"
+              onClick={onConfirmSurrender}
+              data-testid="confirm-surrender-button"
+              className="rounded border border-red-300 bg-red-700 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-white transition-colors hover:bg-red-600"
+              title="Confirm surrender and end the mission"
+            >
+              Surrender
             </button>
           )}
           {/* Mobile-only: turn + rules in row 1 */}

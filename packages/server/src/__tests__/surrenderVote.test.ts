@@ -32,6 +32,7 @@ type SurrenderServer = {
   broadcastGameState: ReturnType<typeof vi.fn>;
   broadcastAction: ReturnType<typeof vi.fn>;
   handleSurrenderVote: (conn: SurrenderConnection, vote: boolean) => void;
+  handleConfirmSurrender: (conn: SurrenderConnection) => void;
 };
 
 function makeConnection(id: string): SurrenderConnection {
@@ -61,7 +62,7 @@ function makeServer(players: ReturnType<typeof makePlayer>[]): SurrenderServer {
 }
 
 describe("surrender vote handler", () => {
-  it("finishes the mission when a human-player majority votes yes (bots excluded)", async () => {
+  it("requires explicit surrender confirmation after majority yes votes", async () => {
     const { BombBustersServer } = await import("../index.js");
     const players = [
       makePlayer({ id: "p1", name: "Alpha", isBot: false }),
@@ -78,10 +79,16 @@ describe("surrender vote handler", () => {
     expect(server.broadcastAction).not.toHaveBeenCalled();
 
     server.handleSurrenderVote(makeConnection("p2"), true);
+    expect(server.room.gameState?.phase).toBe("playing");
+    expect(server.room.gameState?.result).toBeNull();
+    expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1", "p2"]);
+    expect(server.broadcastAction).not.toHaveBeenCalled();
+
+    server.handleConfirmSurrender(makeConnection("p2"));
     expect(server.room.gameState?.phase).toBe("finished");
     expect(server.room.gameState?.result).toBe("loss_surrender");
     expect(server.room.gameState?.surrenderVote).toBeUndefined();
-    expect(server.broadcastAction).toHaveBeenCalledWith({
+    expect(server.broadcastAction).toHaveBeenLastCalledWith({
       type: "gameOver",
       result: "loss_surrender",
     });
@@ -107,6 +114,38 @@ describe("surrender vote handler", () => {
     expect(server.broadcastGameState).toHaveBeenCalledTimes(1);
   });
 
+  it("allows unvoting after threshold and blocks confirmation when majority is no longer met", async () => {
+    const { BombBustersServer } = await import("../index.js");
+    const players = [
+      makePlayer({ id: "p1", isBot: false }),
+      makePlayer({ id: "p2", isBot: false }),
+      makePlayer({ id: "p3", isBot: false }),
+    ];
+    const server = makeServer(players);
+    Object.setPrototypeOf(server, BombBustersServer.prototype);
+
+    server.handleSurrenderVote(makeConnection("p1"), true);
+    server.handleSurrenderVote(makeConnection("p2"), true);
+    expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1", "p2"]);
+
+    server.handleSurrenderVote(makeConnection("p2"), false);
+    expect(server.room.gameState?.phase).toBe("playing");
+    expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1"]);
+
+    const confirmer = makeConnection("p1");
+    server.handleConfirmSurrender(confirmer);
+
+    expect(server.room.gameState?.phase).toBe("playing");
+    expect(server.room.gameState?.result).toBeNull();
+    expect(server.broadcastAction).not.toHaveBeenCalled();
+    expect(confirmer.send).toHaveBeenCalledWith(
+      JSON.stringify({
+        type: "error",
+        message: "Cannot surrender yet: majority vote not reached.",
+      }),
+    );
+  });
+
   it("rejects surrender votes from bots", async () => {
     const { BombBustersServer } = await import("../index.js");
     const players = [
@@ -128,6 +167,32 @@ describe("surrender vote handler", () => {
       JSON.stringify({
         type: "error",
         message: "Only human players can vote to surrender.",
+      }),
+    );
+  });
+
+  it("rejects surrender confirmation from bots", async () => {
+    const { BombBustersServer } = await import("../index.js");
+    const players = [
+      makePlayer({ id: "p1", isBot: false }),
+      makePlayer({ id: "p2", isBot: false }),
+      makePlayer({ id: "bot-1", isBot: true }),
+    ];
+    const server = makeServer(players);
+    Object.setPrototypeOf(server, BombBustersServer.prototype);
+    server.handleSurrenderVote(makeConnection("p1"), true);
+    server.handleSurrenderVote(makeConnection("p2"), true);
+
+    const botConn = makeConnection("bot-1");
+    server.handleConfirmSurrender(botConn);
+
+    expect(server.room.gameState?.phase).toBe("playing");
+    expect(server.room.gameState?.result).toBeNull();
+    expect(server.broadcastAction).not.toHaveBeenCalled();
+    expect(botConn.send).toHaveBeenCalledWith(
+      JSON.stringify({
+        type: "error",
+        message: "Only human players can confirm surrender.",
       }),
     );
   });
