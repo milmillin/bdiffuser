@@ -1560,6 +1560,74 @@ describe("missionHooks dispatcher", () => {
       expect(result.equipmentUnlockThreshold).toBeUndefined();
     });
 
+    it("mission 23: disables default equipment unlock before special action completion", () => {
+      const state = makeGameState({
+        mission: 23,
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: true,
+            }),
+            makeEquipmentCard({
+              id: "stabilizer",
+              unlockValue: 9,
+              faceDown: false,
+              unlocked: true,
+            }),
+          ],
+        }),
+      });
+
+      const result = dispatchHooks(23, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "player-1", value: 6 },
+        cutValue: 6,
+        cutSuccess: true,
+      });
+
+      expect(result.overrideEquipmentUnlock).toBe(true);
+      expect(result.equipmentUnlockThreshold).toBe(Number.MAX_SAFE_INTEGER);
+      expect(state.board.equipment[0].faceDown).toBe(true);
+      expect(state.board.equipment[0].unlocked).toBe(false);
+      expect(state.board.equipment[1].unlocked).toBe(true);
+    });
+
+    it("mission 23: does not override equipment unlock after special action completion", () => {
+      const state = makeGameState({
+        mission: 23,
+        board: makeBoardState({
+          equipment: [
+            makeEquipmentCard({
+              id: "rewinder",
+              unlockValue: 6,
+              faceDown: true,
+              unlocked: true,
+            }),
+          ],
+        }),
+        campaign: {
+          mission23SpecialActionDone: true,
+        },
+      });
+
+      const result = dispatchHooks(23, {
+        point: "resolve",
+        state,
+        action: { type: "soloCut", actorId: "player-1", value: 6 },
+        cutValue: 6,
+        cutSuccess: true,
+      });
+
+      expect(result.overrideEquipmentUnlock).toBeUndefined();
+      expect(result.equipmentUnlockThreshold).toBeUndefined();
+      expect(state.board.equipment[0].faceDown).toBe(true);
+      expect(state.board.equipment[0].unlocked).toBe(true);
+    });
+
     it("mission 12: returns equipment unlock threshold override", () => {
       const state = makeGameState({ mission: 12 });
 

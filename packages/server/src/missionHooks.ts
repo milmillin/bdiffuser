@@ -3056,6 +3056,24 @@ registerHookHandler<"simultaneous_four_cut">("simultaneous_four_cut", {
     });
   },
 
+  resolve(_rule: SimultaneousFourCutRuleDef, ctx: ResolveHookContext): HookResult | void {
+    if (ctx.state.mission !== 23) return;
+    if (ctx.state.campaign?.mission23SpecialActionDone) return;
+
+    // Mission 23 hidden pile must remain unavailable until the special action
+    // succeeds. If stale state marks a face-down card unlocked, normalize it.
+    for (const card of ctx.state.board.equipment) {
+      if (card.faceDown) {
+        card.unlocked = false;
+      }
+    }
+
+    return {
+      overrideEquipmentUnlock: true,
+      equipmentUnlockThreshold: DISABLE_DEFAULT_EQUIPMENT_UNLOCK_THRESHOLD,
+    };
+  },
+
   endTurn(_rule: SimultaneousFourCutRuleDef, ctx: EndTurnHookContext): void {
     if (ctx.state.phase === "finished") return;
     if (ctx.state.campaign?.mission23SpecialActionDone) return;

@@ -3,6 +3,8 @@ import type { GameState } from "@bomb-busters/shared";
 import {
   makeEquipmentCard,
   makeGameState,
+  makeNumberCard,
+  makeNumberCardState,
   makePlayer,
   makeTile,
   makeYellowTile,
@@ -151,6 +153,50 @@ describe("equipment unlock lifecycle", () => {
     expect(state.players[0].hand[0].cut).toBe(true);
     expect(state.players[0].hand[1].cut).toBe(true);
     expect(state.board.equipment[0].unlocked).toBe(true);
+  });
+
+  it("mission 23 keeps face-down equipment locked before special action completion", () => {
+    const actor = makePlayer({
+      id: "actor",
+      name: "Actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 5 }),
+        makeTile({ id: "a2", gameValue: 5 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+
+    const state = makeGameState({
+      mission: 23,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "rewinder",
+            name: "Rewinder",
+            unlockValue: 5,
+            faceDown: true,
+            unlocked: false,
+          }),
+        ],
+      },
+      campaign: {
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "m23-target", value: 9, faceUp: true })],
+        }),
+      },
+    });
+
+    executeSoloCut(state, "actor", 5);
+
+    expect(state.board.equipment[0].faceDown).toBe(true);
+    expect(state.board.equipment[0].unlocked).toBe(false);
   });
 
   it("multiple equipment with same unlockValue all unlock simultaneously", () => {

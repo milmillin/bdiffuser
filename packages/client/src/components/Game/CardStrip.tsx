@@ -45,7 +45,7 @@ type StackCard = CardPreviewCard & {
 
 function getStatusLabel(eq: BoardState["equipment"][number]) {
   if (eq.used) return { label: "Used", className: "bg-black/75 text-gray-200" };
-  if (eq.faceDown && !eq.unlocked) {
+  if (eq.faceDown) {
     return { label: "Face Down", className: "bg-black/75 text-slate-200" };
   }
   const primaryCuts = getPrimaryLockCutsRequired(eq);
@@ -72,7 +72,7 @@ function getStatusLabel(eq: BoardState["equipment"][number]) {
 
 function getFrameClass(eq: BoardState["equipment"][number]): string {
   if (eq.used) return "border-black/75";
-  if (eq.faceDown && !eq.unlocked) {
+  if (eq.faceDown) {
     return "border-black/75";
   }
   if (eq.unlocked && eq.secondaryLockValue !== undefined) {
@@ -156,7 +156,7 @@ export function CardStrip({
       const showBackImage = eq.faceDown || eq.used;
       const isLockedEquipmentCard =
         !eq.used &&
-        ((eq.faceDown && !eq.unlocked) ||
+        (eq.faceDown ||
           (eq.unlocked && eq.secondaryLockValue !== undefined) ||
           !eq.unlocked);
       builtCards.push({
@@ -169,19 +169,19 @@ export function CardStrip({
         isLocked: isLockedEquipmentCard,
         statusLabel: status.label,
         showLockIcon:
-          (eq.faceDown && !eq.unlocked) ||
+          eq.faceDown ||
           (eq.unlocked && eq.secondaryLockValue !== undefined) ||
           !eq.unlocked,
         statusClassName: status.className,
         frameClassName: getFrameClass(eq),
         detailSubtitle:
-          eq.faceDown && !eq.unlocked
+          eq.faceDown
             ? "Mission-locked card"
             : `Equipment ${eq.unlockValue}`,
         detailTiming: rulesText.timing,
         detailEffect: rulesText.effect,
         detailReminders: [...rulesText.reminders],
-        canUse: eq.unlocked && !eq.used,
+        canUse: !eq.faceDown && eq.unlocked && !eq.used,
         onUse: onSelectEquipmentAction
           ? () => onSelectEquipmentAction(eq.id)
           : undefined,
