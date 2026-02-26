@@ -2150,17 +2150,31 @@ export function GameBoard({
           >
             <span
               aria-hidden="true"
-              className={`absolute inset-y-1 left-1/2 -translate-x-1/2 w-px opacity-0 transition-all ${
-                isRightBarHidden
-                  ? "bg-gray-500/70 group-hover:opacity-100 group-hover:bg-gray-300/90 group-focus-visible:opacity-100 group-focus-visible:bg-gray-200"
-                  : "bg-gray-700/45 group-hover:opacity-100 group-hover:bg-gray-500/80 group-focus-visible:opacity-100 group-focus-visible:bg-gray-400/90"
-              }`}
-            />
-            <span
-              aria-hidden="true"
-              className="text-[10px] leading-none text-gray-500/80 transition-colors group-hover:text-gray-300 group-focus-visible:text-gray-200"
+              className="pointer-events-none absolute inset-y-1 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center"
             >
-              {isRightBarHidden ? "<" : ">"}
+              <span
+                className={`w-px flex-1 opacity-0 transition-all ${
+                  isRightBarHidden
+                    ? "bg-gray-500/70 group-hover:opacity-100 group-hover:bg-gray-300/90 group-focus-visible:opacity-100 group-focus-visible:bg-gray-200"
+                    : "bg-gray-700/45 group-hover:opacity-100 group-hover:bg-gray-500/80 group-focus-visible:opacity-100 group-focus-visible:bg-gray-400/90"
+                }`}
+              />
+              <span
+                className={`my-1 text-[10px] leading-none transition-all ${
+                  isRightBarHidden
+                    ? "opacity-100 text-gray-300/90 group-hover:text-gray-200 group-focus-visible:text-gray-200"
+                    : "opacity-0 text-gray-500/80 group-hover:opacity-100 group-hover:text-gray-300 group-focus-visible:opacity-100 group-focus-visible:text-gray-200"
+                }`}
+              >
+                {isRightBarHidden ? "<" : ">"}
+              </span>
+              <span
+                className={`w-px flex-1 opacity-0 transition-all ${
+                  isRightBarHidden
+                    ? "bg-gray-500/70 group-hover:opacity-100 group-hover:bg-gray-300/90 group-focus-visible:opacity-100 group-focus-visible:bg-gray-200"
+                    : "bg-gray-700/45 group-hover:opacity-100 group-hover:bg-gray-500/80 group-focus-visible:opacity-100 group-focus-visible:bg-gray-400/90"
+                }`}
+              />
             </span>
           </button>
 
