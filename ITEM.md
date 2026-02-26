@@ -222,6 +222,18 @@ Campaign oxygen reserve visual used in oxygen-tracker missions.
 
 ---
 
+## Standee
+
+Standalone character sticker-style asset used for promotional UI and artwork.
+
+| File | Description |
+|------|-------------|
+| `standee.png` | Rabbit mascot standee with transparent background |
+
+**Count:** **1 file**
+
+---
+
 ## Rule Stickers
 
 Sticker instructions applied to the rulebook at campaign milestones, unlocking new content.
@@ -251,5 +263,6 @@ Sticker instructions applied to the rulebook at campaign milestones, unlocking n
 | Number Tiles | 13 | PNG |
 | Bunker Card | 2 | PNG |
 | Oxygen Icon | 1 | PNG |
+| Standee | 1 | PNG |
 | Rule Stickers | 3 | PNG |
-| **Total** | **260** | |
+| **Total** | **261** | |
