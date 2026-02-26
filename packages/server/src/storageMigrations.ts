@@ -590,6 +590,16 @@ function normalizeGameState(
             : {}),
       };
     } else if (
+      obj.pendingForcedAction.kind === "mission36SequencePosition"
+      && typeof obj.pendingForcedAction.captainId === "string"
+      && obj.pendingForcedAction.captainId
+    ) {
+      pendingForcedAction = {
+        kind: "mission36SequencePosition" as const,
+        captainId: obj.pendingForcedAction.captainId,
+        reason: obj.pendingForcedAction.reason === "advance" ? "advance" : "initial",
+      };
+    } else if (
       obj.pendingForcedAction.kind === "detectorTileChoice"
       && typeof obj.pendingForcedAction.targetPlayerId === "string"
       && obj.pendingForcedAction.targetPlayerId

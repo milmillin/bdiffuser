@@ -1,7 +1,6 @@
 /**
  * Hook coverage check — asserts that every mission with `behaviorHooks`
- * also has `hookRules` defined (non-empty). Mission 36 is the intentional
- * exception (sequence_card_reposition is a variant, not a typed hookRule).
+ * also has `hookRules` defined (non-empty).
  */
 import { describe, it, expect } from "vitest";
 import { ALL_MISSION_IDS, type MissionId } from "../types";
@@ -10,14 +9,11 @@ import {
   hasXMarkedWireTalkiesRestriction,
 } from "../missionSchema";
 
-const EXCLUDED_MISSIONS = new Set([36]);
-
 describe("hook coverage", () => {
-  it("every mission with behaviorHooks has hookRules (except mission 36)", () => {
+  it("every mission with behaviorHooks has hookRules", () => {
     const missing: number[] = [];
 
     for (const id of ALL_MISSION_IDS) {
-      if (EXCLUDED_MISSIONS.has(id)) continue;
       const schema = MISSION_SCHEMAS[id];
       if (!schema.behaviorHooks?.length) continue;
       if (!schema.hookRules?.length) {
@@ -29,12 +25,6 @@ describe("hook coverage", () => {
       missing,
       `missions with behaviorHooks but no hookRules: ${missing.join(", ")}`,
     ).toEqual([]);
-  });
-
-  it("mission 36 has behaviorHooks but no hookRules (intentional)", () => {
-    const schema = MISSION_SCHEMAS[36];
-    expect(schema.behaviorHooks?.length).toBeGreaterThan(0);
-    expect(schema.hookRules?.length ?? 0).toBe(0);
   });
 
   it("no mission has hookRules without behaviorHooks", () => {

@@ -465,6 +465,13 @@ export type ForcedAction =
       direction: Mission61ConstraintRotationDirection;
       /** The player who acted immediately before this round started. */
       previousPlayerId?: string;
+    }
+  | {
+      kind: "mission36SequencePosition";
+      /** The captain who must choose the sequence-card side on Mission 36. */
+      captainId: string;
+      /** Why this choice is currently required. */
+      reason: "initial" | "advance";
     };
 
 export interface TurnEffects {

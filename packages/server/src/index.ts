@@ -433,6 +433,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission61ConstraintRotate":
         this.handleMission61ConstraintRotate(connection, msg.direction);
         break;
+      case "mission36SequencePosition":
+        this.handleMission36SequencePosition(connection, msg.side);
+        break;
       case "missionAudioControl":
         this.handleMissionAudioControl(
           connection,
@@ -534,6 +537,10 @@ export class BombBustersServer extends Server<Env> {
           }
           if (gs.pendingForcedAction.previousPlayerId === oldId) {
             gs.pendingForcedAction.previousPlayerId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission36SequencePosition") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
           }
         }
       }
@@ -877,6 +884,27 @@ export class BombBustersServer extends Server<Env> {
       state.phase = "playing";
       state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
       state.turnNumber = 1;
+
+      if (state.mission === 36) {
+        const visibleCards = state.campaign?.numberCards?.visible ?? [];
+        const hasSequencePointer =
+          state.campaign?.specialMarkers?.some(
+            (marker) => marker.kind === "sequence_pointer",
+          ) === true;
+        const captain = state.players.find((player) => player.isCaptain);
+        if (
+          captain &&
+          visibleCards.length > 1 &&
+          !hasSequencePointer &&
+          !state.pendingForcedAction
+        ) {
+          state.pendingForcedAction = {
+            kind: "mission36SequencePosition",
+            captainId: captain.id,
+            reason: "initial",
+          };
+        }
+      }
     }
   }
 
@@ -1603,6 +1631,96 @@ export class BombBustersServer extends Server<Env> {
     return;
   }
 
+  private applyMission36SequencePositionChoice(
+    state: GameState,
+    side: "left" | "right",
+    actorId: string,
+    reason: "initial" | "advance",
+  ): boolean {
+    const visibleCards = state.campaign?.numberCards?.visible ?? [];
+    if (visibleCards.length === 0) return false;
+
+    const pointer = side === "left" ? 0 : visibleCards.length - 1;
+    state.campaign ??= {};
+    const preservedMarkers = (state.campaign.specialMarkers ?? []).filter(
+      (marker) => marker.kind !== "sequence_pointer",
+    );
+    preservedMarkers.push({ kind: "sequence_pointer", value: pointer });
+    state.campaign.specialMarkers = preservedMarkers;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail: `mission36:sequence_position:side=${side}|reason=${reason}|value=${visibleCards[pointer]?.value ?? "unknown"}`,
+      timestamp: Date.now(),
+    });
+    return true;
+  }
+
+  handleMission36SequencePosition(
+    conn: Connection,
+    side: "left" | "right",
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Mission 36 sequence side: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 36 sequence position is only allowed during the playing phase.",
+      });
+      return;
+    }
+    if (side !== "left" && side !== "right") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Invalid Mission 36 sequence side.",
+      });
+      return;
+    }
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission36SequencePosition") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "No pending Mission 36 sequence position request",
+      });
+      return;
+    }
+    if (forced.captainId !== conn.id) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the captain can choose the Mission 36 sequence side",
+      });
+      return;
+    }
+
+    const applied = this.applyMission36SequencePositionChoice(
+      state,
+      side,
+      forced.captainId,
+      forced.reason,
+    );
+    if (!applied) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 36 sequence cards are not available.",
+      });
+      return;
+    }
+
+    state.pendingForcedAction = undefined;
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   private executeMission22TokenPass(
     state: GameState,
     forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission22TokenPass" }>,
@@ -2181,6 +2299,12 @@ export class BombBustersServer extends Server<Env> {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
+      } else if (forced?.kind === "mission36SequencePosition") {
+        const captain = state.players.find((p) => p.id === forced.captainId);
+        if (captain?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
       } else if (forced?.kind === "detectorTileChoice") {
         const chooser = state.players.find((p) => p.id === forced.targetPlayerId);
         if (chooser?.isBot) {
@@ -2273,6 +2397,29 @@ export class BombBustersServer extends Server<Env> {
   async executeBotTurn() {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
+
+    const mission36Forced = state.pendingForcedAction;
+    if (mission36Forced?.kind === "mission36SequencePosition") {
+      const captain = state.players.find((p) => p.id === mission36Forced.captainId);
+      if (captain?.isBot) {
+        const applied = this.applyMission36SequencePositionChoice(
+          state,
+          "left",
+          mission36Forced.captainId,
+          mission36Forced.reason,
+        );
+        if (!applied) {
+          console.log(
+            `Bot ${captain.id} mission36SequencePosition ignored: no visible sequence cards`,
+          );
+        }
+        state.pendingForcedAction = undefined;
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+    }
 
     // Detector tile choice: if a bot is the target, auto-resolve
     const detectorForced = state.pendingForcedAction;
@@ -2534,6 +2681,35 @@ export class BombBustersServer extends Server<Env> {
 
         state.pendingForcedAction = undefined;
         resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      case "mission36SequencePosition": {
+        const forced = state.pendingForcedAction;
+        if (!forced || forced.kind !== "mission36SequencePosition") {
+          console.log(`Bot ${botId} mission36SequencePosition ignored: no pending forced action`);
+          return;
+        }
+        if (forced.captainId !== botId) {
+          console.log(`Bot ${botId} mission36SequencePosition rejected: bot is not forced-action captain`);
+          return;
+        }
+
+        const applied = this.applyMission36SequencePositionChoice(
+          state,
+          botAction.side,
+          forced.captainId,
+          forced.reason,
+        );
+        if (!applied) {
+          console.log(
+            `Bot ${botId} mission36SequencePosition rejected: no visible sequence cards`,
+          );
+        }
+
+        state.pendingForcedAction = undefined;
         this.saveState();
         this.broadcastGameState();
         this.scheduleBotTurnIfNeeded();

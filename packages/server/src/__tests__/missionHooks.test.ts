@@ -701,6 +701,23 @@ describe("missionHooks dispatcher", () => {
       expect(sequencePointer).toEqual({ kind: "sequence_pointer", value: 0 });
     });
 
+    it("mission 36: initializes five visible sequence cards without an active pointer", () => {
+      const state = makeGameState({ mission: 36, log: [] });
+      dispatchHooks(36, { point: "setup", state });
+
+      const visible = state.campaign?.numberCards?.visible ?? [];
+      expect(visible).toHaveLength(5);
+      expect(visible.every((card) => card.faceUp)).toBe(true);
+      expect(new Set(visible.map((card) => card.value)).size).toBe(5);
+      expect(state.campaign?.numberCards?.deck.length).toBe(7);
+      expect(state.campaign?.numberCards?.discard.length).toBe(0);
+
+      const sequencePointer = state.campaign?.specialMarkers?.find(
+        (marker) => marker.kind === "sequence_pointer",
+      );
+      expect(sequencePointer).toBeUndefined();
+    });
+
     it("mission 50: removes preexisting validation markers during setup", () => {
       const state = makeGameState({
         mission: 50,
@@ -1359,6 +1376,60 @@ describe("missionHooks dispatcher", () => {
         (m) => m.kind === "sequence_pointer",
       );
       expect(marker?.value).toBe(3);
+    });
+
+    it("mission 36: removes completed active edge card and requests captain side choice", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [
+          makeTile({ id: "a1", gameValue: 2, cut: false }),
+          makeTile({ id: "a2", gameValue: 2, cut: true }),
+        ],
+      });
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [makeTile({ id: "c1", gameValue: 2, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 36,
+        players: [captain, actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m36-1", value: 2, faceUp: true },
+              { id: "m36-2", value: 5, faceUp: true },
+              { id: "m36-3", value: 7, faceUp: true },
+              { id: "m36-4", value: 9, faceUp: true },
+              { id: "m36-5", value: 11, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(36, {
+        point: "resolve",
+        state,
+        action: { type: "dualCut", actorId: "actor", targetPlayerId: "captain", targetTileIndex: 0, guessValue: 2 },
+        cutValue: 2,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.numberCards?.visible.map((card) => card.value)).toEqual([5, 7, 9, 11]);
+      expect(state.campaign?.numberCards?.discard.map((card) => card.value)).toEqual([2]);
+      expect(state.pendingForcedAction).toEqual({
+        kind: "mission36SequencePosition",
+        captainId: "captain",
+        reason: "advance",
+      });
+      const sequencePointer = state.campaign?.specialMarkers?.find(
+        (marker) => marker.kind === "sequence_pointer",
+      );
+      expect(sequencePointer).toBeUndefined();
     });
 
     it("mission 15: disables default equipment unlock when visible number is not completed", () => {
@@ -2563,6 +2634,50 @@ describe("missionHooks dispatcher", () => {
       expect(state.result).toBe("loss_detonator");
       expect(state.phase).toBe("finished");
     });
+
+    it("mission 36: explodes when current player only has blocked visible values", () => {
+      const stuck = makePlayer({
+        id: "stuck",
+        hand: [
+          makeTile({ id: "s1", gameValue: 7, cut: false }),
+          makeTile({ id: "s2", gameValue: 9, cut: false }),
+        ],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [makeTile({ id: "t1", gameValue: 2, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 36,
+        players: [stuck, teammate],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m36-1", value: 2, faceUp: true },
+              { id: "m36-2", value: 5, faceUp: true },
+              { id: "m36-3", value: 7, faceUp: true },
+              { id: "m36-4", value: 9, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      dispatchHooks(36, { point: "endTurn", state });
+
+      expect(state.result).toBe("loss_detonator");
+      expect(state.phase).toBe("finished");
+      const effectLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect" &&
+          renderLogDetail(entry.detail) === "mission36:stuck:all_wires_blocked",
+      );
+      expect(effectLog).toBeDefined();
+    });
   });
 
   describe("validate hooks", () => {
@@ -2607,6 +2722,48 @@ describe("missionHooks dispatcher", () => {
       expect(blocked.validationError).toContain("locked");
 
       const allowed = dispatchHooks(9, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "player-1",
+          guessValue: 2,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
+    });
+
+    it("mission 36: blocks non-active visible values", () => {
+      const state = makeGameState({
+        mission: 36,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m36-1", value: 2, faceUp: true },
+              { id: "m36-2", value: 5, faceUp: true },
+              { id: "m36-3", value: 7, faceUp: true },
+              { id: "m36-4", value: 9, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+          specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+        },
+      });
+
+      const blocked = dispatchHooks(36, {
+        point: "validate",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "player-1",
+          guessValue: 7,
+        },
+      });
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+
+      const allowed = dispatchHooks(36, {
         point: "validate",
         state,
         action: {

@@ -418,4 +418,36 @@ describe("getBotAction fallback", () => {
     });
     expect(mockedCallLLM).not.toHaveBeenCalled();
   });
+
+  it("returns mission36SequencePosition forced action for captain bot without calling LLM", async () => {
+    const bot = makePlayer({
+      id: "bot",
+      isBot: true,
+      isCaptain: true,
+      hand: [makeTile({ id: "b1", color: "blue", gameValue: 4, sortValue: 4, cut: false })],
+    });
+    const teammate = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "p2-1", color: "blue", gameValue: 6, sortValue: 6, cut: false })],
+    });
+
+    const state = makeGameState({
+      mission: 36,
+      phase: "playing",
+      players: [bot, teammate],
+      currentPlayerIndex: 1,
+      pendingForcedAction: {
+        kind: "mission36SequencePosition",
+        captainId: "bot",
+        reason: "advance",
+      },
+    });
+
+    const result = await getBotAction(state, "bot", "", "");
+    expect(result.action).toEqual({
+      action: "mission36SequencePosition",
+      side: "left",
+    });
+    expect(mockedCallLLM).not.toHaveBeenCalled();
+  });
 });

@@ -53,6 +53,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
       2: { red: outOf(2, 3), yellow: exact(4) },
     },
     behaviorHooks: ["mission_36_sequence_card_reposition"],
+    hookRules: [{ kind: "sequence_card_reposition", visibleCount: 5, requiredCuts: 2 }],
   });
 
   setMission(37, {

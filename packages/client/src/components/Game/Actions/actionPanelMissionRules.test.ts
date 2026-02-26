@@ -44,6 +44,40 @@ function makeMission9State(pointer = 0) {
   });
 }
 
+function makeMission36State(pointer?: number) {
+  return makeGameState({
+    mission: 36,
+    players: [
+      makePlayer({
+        id: "p1",
+        hand: [
+          makeTile({ id: "a1", color: "blue", gameValue: 2, cut: true }),
+          makeTile({ id: "a2", color: "blue", gameValue: 7, cut: false }),
+        ],
+      }),
+      makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "b1", color: "yellow", gameValue: "YELLOW" })],
+      }),
+    ],
+    campaign: makeCampaignState({
+      numberCards: makeNumberCardState({
+        visible: [
+          makeNumberCard({ id: "m36-1", value: 2, faceUp: true }),
+          makeNumberCard({ id: "m36-2", value: 5, faceUp: true }),
+          makeNumberCard({ id: "m36-3", value: 7, faceUp: true }),
+          makeNumberCard({ id: "m36-4", value: 9, faceUp: true }),
+          makeNumberCard({ id: "m36-5", value: 11, faceUp: true }),
+        ],
+      }),
+      specialMarkers:
+        typeof pointer === "number"
+          ? [makeSpecialMarker({ kind: "sequence_pointer", value: pointer })]
+          : [],
+    }),
+  });
+}
+
 describe("actionPanelMissionRules", () => {
   it("returns mission 9 active sequence value and progress", () => {
     const state = makeMission9State(0);
@@ -89,6 +123,31 @@ describe("actionPanelMissionRules", () => {
   it("allows yellow values in mission 9 sequence gate", () => {
     const state = makeMission9State(0);
     expect(isMission9BlockedCutValue(state, "YELLOW")).toBe(false);
+  });
+
+  it("returns mission 36 active edge value and progress", () => {
+    const state = makeMission36State(4);
+    expect(getMission9SequenceGate(state)).toEqual({
+      activeValue: 11,
+      requiredCuts: 2,
+      activeProgress: 0,
+    });
+  });
+
+  it("blocks all non-active visible values in mission 36", () => {
+    const state = makeMission36State(4);
+    expect(isMission9BlockedCutValue(state, 2)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 5)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 7)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 9)).toBe(true);
+    expect(isMission9BlockedCutValue(state, 11)).toBe(false);
+  });
+
+  it("does not block mission 36 values before captain chooses a side", () => {
+    const state = makeMission36State();
+    expect(isMission9BlockedCutValue(state, 2)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 5)).toBe(false);
+    expect(isMission9BlockedCutValue(state, 11)).toBe(false);
   });
 
   it("never blocks values outside mission 9", () => {

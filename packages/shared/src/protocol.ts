@@ -61,6 +61,10 @@ export type ClientMessage =
       direction: Mission61ConstraintRotationDirection;
     }
   | {
+      type: "mission36SequencePosition";
+      side: "left" | "right";
+    }
+  | {
       type: "missionAudioControl";
       command: "play" | "pause";
       positionMs?: number;

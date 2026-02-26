@@ -62,6 +62,7 @@ export type {
   PlayerCount,
   RandomSetupInfoTokensRuleDef,
   ResolvedMissionSetup,
+  SequenceCardRepositionRuleDef,
   SequencePriorityRuleDef,
   SevensLastRuleDef,
   SimultaneousFourCutRuleDef,

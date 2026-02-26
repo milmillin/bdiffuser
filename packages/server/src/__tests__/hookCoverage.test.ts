@@ -47,20 +47,20 @@ describe("mission hook coverage", () => {
     }
   });
 
-  it("does not depend on behaviorHooks descriptors when hookRules are absent", () => {
+  it("returns empty setup results for missions without hookRules", () => {
     const previousStrict = getStrictUnknownHooks();
     setStrictUnknownHooks(true);
 
     try {
-      const descriptorOnlyMissions = ALL_MISSION_IDS.filter((missionId) => {
+      const missionsWithoutRules = ALL_MISSION_IDS.filter((missionId) => {
         const schema = MISSION_SCHEMAS[missionId];
-        return (schema.behaviorHooks?.length ?? 0) > 0 && (schema.hookRules?.length ?? 0) === 0;
+        return (schema.hookRules?.length ?? 0) === 0;
       });
 
       // Safety check so this test cannot pass vacuously.
-      expect(descriptorOnlyMissions.length).toBeGreaterThan(0);
+      expect(missionsWithoutRules.length).toBeGreaterThan(0);
 
-      for (const missionId of descriptorOnlyMissions) {
+      for (const missionId of missionsWithoutRules) {
         const state = makeGameState({ mission: missionId });
         const result = dispatchHooks(missionId, { point: "setup", state });
         expect(result).toEqual({});

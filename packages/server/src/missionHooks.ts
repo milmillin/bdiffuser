@@ -604,6 +604,7 @@ import type {
   InternFailureExplodesRuleDef,
   NoMarkersMemoryModeRuleDef,
   NoSpokenNumbersRuleDef,
+  SequenceCardRepositionRuleDef,
   SequencePriorityRuleDef,
   TimerRuleDef,
   DynamicTurnOrderRuleDef,
@@ -678,6 +679,18 @@ function setSequencePointer(state: GameState, value: number): void {
     markers.push({ kind: "sequence_pointer", value });
   }
   state.campaign.specialMarkers = markers;
+}
+
+function clearSequencePointer(state: GameState): void {
+  const markers = state.campaign?.specialMarkers;
+  if (!markers?.length) return;
+  state.campaign!.specialMarkers = markers.filter(
+    (marker) => marker.kind !== "sequence_pointer",
+  );
+}
+
+function getMission36CaptainId(state: Readonly<GameState>): string | null {
+  return state.players.find((player) => player.isCaptain)?.id ?? null;
 }
 
 function setActionPointer(state: GameState, value: number): void {
@@ -1509,6 +1522,190 @@ registerHookHandler<"sequence_priority">("sequence_priority", {
       playerId: currentPlayer.id,
       action: "hookEffect",
       detail: "sequence_priority:stuck:all_wires_blocked",
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/**
+ * Mission 36 — Sequence card reposition.
+ *
+ * Setup:
+ * - Shuffle Number cards, reveal 5 in a face-up line.
+ * - Captain chooses which edge is active before the first cut.
+ *
+ * Validate:
+ * - Numeric values matching visible non-active cards are blocked.
+ * - Active edge value is allowed.
+ * - Numeric values not visible in the line are allowed.
+ *
+ * Resolve:
+ * - After `requiredCuts` successful cuts of active value, remove that card.
+ * - If >=2 cards remain, captain must choose new active edge.
+ */
+registerHookHandler<"sequence_card_reposition">("sequence_card_reposition", {
+  setup(rule: SequenceCardRepositionRuleDef, ctx: SetupHookContext): void {
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const visibleValues = deckValues.slice(0, rule.visibleCount);
+    const hiddenDeckValues = deckValues.slice(rule.visibleCount);
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      visible: visibleValues.map((value, idx) => ({
+        id: `m36-visible-${idx}-${value}`,
+        value,
+        faceUp: true,
+      })),
+      deck: hiddenDeckValues.map((value, idx) => ({
+        id: `m36-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      playerHands: {},
+    };
+    clearSequencePointer(ctx.state);
+
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `mission36:sequence_setup:${visibleValues.join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: SequenceCardRepositionRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (
+      ctx.action.type !== "dualCut" &&
+      ctx.action.type !== "dualCutDoubleDetector" &&
+      ctx.action.type !== "soloCut"
+    ) {
+      return;
+    }
+
+    const cutValue =
+      ctx.action.type === "dualCut" ||
+      ctx.action.type === "dualCutDoubleDetector"
+        ? ctx.action.guessValue
+        : ctx.action.value;
+    if (typeof cutValue !== "number") return;
+
+    const visible = ctx.state.campaign?.numberCards?.visible ?? [];
+    if (visible.length === 0) return;
+
+    const hasPointer =
+      ctx.state.campaign?.specialMarkers?.some(
+        (marker) => marker.kind === "sequence_pointer",
+      ) === true;
+    if (!hasPointer) return;
+
+    const pointer = Math.min(getSequencePointer(ctx.state), visible.length - 1);
+    const blockedValues = visible
+      .flatMap((card, idx) => (idx === pointer ? [] : [card.value]));
+
+    if (blockedValues.includes(cutValue)) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          `Value ${cutValue} is blocked by Mission 36 sequence order until the active edge card is completed`,
+      };
+    }
+  },
+
+  resolve(rule: SequenceCardRepositionRuleDef, ctx: ResolveHookContext): HookResult | void {
+    if (ctx.action.type !== "dualCut" && ctx.action.type !== "soloCut") return;
+    if (!ctx.cutSuccess || typeof ctx.cutValue !== "number") return;
+
+    const numberCards = ctx.state.campaign?.numberCards;
+    if (!numberCards || numberCards.visible.length === 0) return;
+
+    const hasPointer =
+      ctx.state.campaign?.specialMarkers?.some(
+        (marker) => marker.kind === "sequence_pointer",
+      ) === true;
+    if (!hasPointer) return;
+
+    const pointer = Math.min(getSequencePointer(ctx.state), numberCards.visible.length - 1);
+    const activeCard = numberCards.visible[pointer];
+    if (!activeCard || ctx.cutValue !== activeCard.value) return;
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, activeCard.value);
+    if (projectedCutCount < rule.requiredCuts) return;
+
+    const [completedCard] = numberCards.visible.splice(pointer, 1);
+    if (completedCard) {
+      numberCards.discard.push({ ...completedCard, faceUp: true });
+    }
+
+    const remaining = numberCards.visible.length;
+    if (remaining === 0) {
+      clearSequencePointer(ctx.state);
+      if (ctx.state.pendingForcedAction?.kind === "mission36SequencePosition") {
+        ctx.state.pendingForcedAction = undefined;
+      }
+    } else if (remaining === 1) {
+      setSequencePointer(ctx.state, 0);
+      if (ctx.state.pendingForcedAction?.kind === "mission36SequencePosition") {
+        ctx.state.pendingForcedAction = undefined;
+      }
+    } else {
+      clearSequencePointer(ctx.state);
+      const captainId = getMission36CaptainId(ctx.state) ?? ctx.action.actorId;
+      ctx.state.pendingForcedAction = {
+        kind: "mission36SequencePosition",
+        captainId,
+        reason: "advance",
+      };
+    }
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `mission36:sequence_advance:value=${activeCard.value}|remaining=${remaining}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  endTurn(_rule: SequenceCardRepositionRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+
+    const visible = ctx.state.campaign?.numberCards?.visible ?? [];
+    if (visible.length <= 1) return;
+
+    const hasPointer =
+      ctx.state.campaign?.specialMarkers?.some(
+        (marker) => marker.kind === "sequence_pointer",
+      ) === true;
+    if (!hasPointer) return;
+
+    const pointer = Math.min(getSequencePointer(ctx.state), visible.length - 1);
+    const blockedValues = visible
+      .flatMap((card, idx) => (idx === pointer ? [] : [card.value]));
+    if (blockedValues.length === 0) return;
+
+    const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    const uncutTiles = currentPlayer.hand.filter((tile) => !tile.cut);
+    if (uncutTiles.length === 0) return;
+
+    const allBlocked = uncutTiles.every(
+      (tile) =>
+        typeof tile.gameValue === "number" &&
+        blockedValues.includes(tile.gameValue),
+    );
+    if (!allBlocked) return;
+
+    ctx.state.result = "loss_detonator";
+    ctx.state.phase = "finished";
+    emitMissionFailureTelemetry(ctx.state, "loss_detonator", currentPlayer.id, null);
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: currentPlayer.id,
+      action: "hookEffect",
+      detail: "mission36:stuck:all_wires_blocked",
       timestamp: Date.now(),
     });
   },

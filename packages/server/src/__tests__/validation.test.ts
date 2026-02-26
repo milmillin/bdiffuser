@@ -1384,6 +1384,50 @@ describe("mission 9 sequence-priority validation", () => {
   });
 });
 
+describe("mission 36 sequence-card reposition validation", () => {
+  it("rejects non-active visible values", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 7 })],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 7 })],
+    });
+    const state = makeGameState({
+      mission: 36,
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "c1", value: 2, faceUp: true },
+            { id: "c2", value: 5, faceUp: true },
+            { id: "c3", value: 7, faceUp: true },
+            { id: "c4", value: 9, faceUp: true },
+            { id: "c5", value: 11, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+        specialMarkers: [{ kind: "sequence_pointer", value: 0 }],
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 7,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+  });
+});
+
 describe("mission 23/39 simultaneous four target protection", () => {
   it("mission 23: rejects regular cuts of the Number-card value before special action", () => {
     const actor = makePlayer({

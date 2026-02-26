@@ -223,6 +223,20 @@ export interface SequencePriorityRuleDef {
 }
 
 /**
+ * Mission 36 — Sequence card reposition.
+ * Five visible number cards create an ordered gate where only the active edge
+ * value is currently gated; all other visible values are blocked until the
+ * active card is completed, then the captain can choose the new active edge.
+ */
+export interface SequenceCardRepositionRuleDef {
+  kind: "sequence_card_reposition";
+  /** Number of visible sequence cards on the table line. */
+  visibleCount: 5;
+  /** Required global cut count to complete the active edge value. */
+  requiredCuts: 2;
+}
+
+/**
  * Mission 18 — Forced General Radar flow.
  * Each turn: reveal a Number card, auto-compute General Radar on that value,
  * then active player designates which player performs the cut.
@@ -509,6 +523,7 @@ export type MissionHookRuleDef =
   | ChallengeRewardsRuleDef
   | BunkerFlowRuleDef
   | SequencePriorityRuleDef
+  | SequenceCardRepositionRuleDef
   | InternFailureExplodesRuleDef
   | ForcedGeneralRadarFlowRuleDef
   | SimultaneousFourCutRuleDef

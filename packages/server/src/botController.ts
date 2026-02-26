@@ -211,7 +211,8 @@ export type BotAction =
     }
   | { action: "chooseNextPlayer"; targetPlayerId: string }
   | { action: "designateCutter"; targetPlayerId: string }
-  | { action: "mission61ConstraintRotate"; direction: "clockwise" | "counter_clockwise" | "skip" };
+  | { action: "mission61ConstraintRotate"; direction: "clockwise" | "counter_clockwise" | "skip" }
+  | { action: "mission36SequencePosition"; side: "left" | "right" };
 
 export interface BotActionResult {
   action: BotAction;
@@ -245,6 +246,11 @@ export async function getBotAction(
   const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
   if (forcedMission61Action) {
     return { action: forcedMission61Action, reasoning: null };
+  }
+
+  const forcedMission36Action = getForcedMission36SequencePositionAction(state, botId);
+  if (forcedMission36Action) {
+    return { action: forcedMission36Action, reasoning: null };
   }
 
   const filtered = filterStateForPlayer(state, botId);
@@ -416,6 +422,12 @@ function parseLLMAction(
     return { action: "mission61ConstraintRotate", direction };
   }
 
+  if (action === "mission36SequencePosition") {
+    const side = result.side as string;
+    if (side !== "left" && side !== "right") return null;
+    return { action: "mission36SequencePosition", side };
+  }
+
   return null;
 }
 
@@ -496,6 +508,16 @@ function validateBotAction(
       }
       if (forced.captainId !== botId) {
         return "Only the captain can rotate constraints on mission 61";
+      }
+      return null;
+    }
+    case "mission36SequencePosition": {
+      const forced = state.pendingForcedAction;
+      if (!forced || forced.kind !== "mission36SequencePosition") {
+        return "No pending mission36 sequence-position action";
+      }
+      if (forced.captainId !== botId) {
+        return "Only the captain can choose the mission 36 sequence side";
       }
       return null;
     }
@@ -585,6 +607,17 @@ function getForcedMission61ConstraintRotateAction(
       ? forced.direction
       : "clockwise";
   return { action: "mission61ConstraintRotate", direction };
+}
+
+function getForcedMission36SequencePositionAction(
+  state: GameState,
+  botId: string,
+): BotAction | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission36SequencePosition") return null;
+  if (forced.captainId !== botId) return null;
+
+  return { action: "mission36SequencePosition", side: "left" };
 }
 
 function collectBotGuessValues(
@@ -677,6 +710,11 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
   const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
   if (forcedMission61Action) {
     return forcedMission61Action;
+  }
+
+  const forcedMission36Action = getForcedMission36SequencePositionAction(state, botId);
+  if (forcedMission36Action) {
+    return forcedMission36Action;
   }
 
   const bot = state.players.find((p) => p.id === botId)!;

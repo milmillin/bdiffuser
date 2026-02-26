@@ -302,17 +302,25 @@ function StatPill({
 
 function SequencePriorityHint({ gameState }: { gameState: ClientGameState }) {
   const visible = gameState.campaign?.numberCards?.visible ?? [];
-  if (visible.length < 3) return null;
+  const isMission36 = gameState.mission === 36;
+  if (visible.length < (isMission36 ? 2 : 3)) return null;
+  const cards = isMission36 ? visible : visible.slice(0, 3);
+  const pointerMarker = gameState.campaign?.specialMarkers?.find(
+    (m) => m.kind === "sequence_pointer",
+  );
   const pointer =
-    gameState.campaign?.specialMarkers?.find((m) => m.kind === "sequence_pointer")
-      ?.value ?? 0;
+    pointerMarker && typeof pointerMarker.value === "number"
+      ? Math.max(0, Math.min(pointerMarker.value, cards.length - 1))
+      : null;
 
   return (
     <div className="rounded-xl bg-[var(--color-bomb-surface)] px-2.5 py-2 space-y-1.5">
       <div className="flex gap-2">
-        {visible.slice(0, 3).map((card, idx) => {
-          const isActive = idx === pointer;
-          const isUnlocked = idx < pointer;
+        {cards.map((card, idx) => {
+          const isActive = pointer != null && idx === pointer;
+          const isUnlocked = !isMission36 && pointer != null && idx < pointer;
+          const isBlocked = isMission36 && pointer != null && idx !== pointer;
+          const isPending = isMission36 && pointer == null;
           return (
             <div
               key={card.id}
@@ -321,12 +329,24 @@ function SequencePriorityHint({ gameState }: { gameState: ClientGameState }) {
                   ? "border-emerald-400 bg-emerald-900/40"
                   : isUnlocked
                     ? "border-gray-600 bg-gray-800/60"
+                  : isBlocked
+                    ? "border-amber-500/70 bg-amber-950/30"
+                  : isPending
+                    ? "border-sky-500/70 bg-sky-950/30"
                     : "border-amber-500/70 bg-amber-950/30"
               }`}
             >
               <div className="text-lg font-black text-white">{card.value}</div>
               <div className="text-[10px] uppercase tracking-wide text-gray-300">
-                {isActive ? "Active" : isUnlocked ? "Unlocked" : "Locked"}
+                {isActive
+                  ? "Active"
+                  : isUnlocked
+                    ? "Unlocked"
+                  : isBlocked
+                    ? "Blocked"
+                  : isPending
+                    ? "Pending"
+                    : "Locked"}
               </div>
             </div>
           );
@@ -522,22 +542,31 @@ function CampaignObjectsHint({
                   />
                 )}
                 {displayVisibleCards.map((card, idx) => {
-                  const isSequenceCard = sequencePointer != null && idx < 3;
+                  const isSequenceCard =
+                    sequencePointer != null &&
+                    (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
                   let image: string;
                   let borderClassName: string;
                   let dimmed = false;
 
                   if (isSequenceCard) {
-                    if (idx < sequencePointer) {
-                      image = NUMBER_CARD_BACK;
-                      borderClassName = "border-black/75";
-                      dimmed = true;
-                    } else if (idx === sequencePointer) {
+                    if (gameState.mission === 36) {
                       image = getNumberCardImage(card.value);
-                      borderClassName = "border-emerald-500";
+                      borderClassName = idx === sequencePointer
+                        ? "border-emerald-500"
+                        : "border-amber-500";
                     } else {
-                      image = getNumberCardImage(card.value);
-                      borderClassName = "border-amber-500";
+                      if (idx < sequencePointer) {
+                        image = NUMBER_CARD_BACK;
+                        borderClassName = "border-black/75";
+                        dimmed = true;
+                      } else if (idx === sequencePointer) {
+                        image = getNumberCardImage(card.value);
+                        borderClassName = "border-emerald-500";
+                      } else {
+                        image = getNumberCardImage(card.value);
+                        borderClassName = "border-amber-500";
+                      }
                     }
                   } else {
                     image = card.faceUp
@@ -1168,14 +1197,26 @@ export function getMission66BunkerInlineRotation(isMobileViewport: boolean): Car
 }
 
 export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) {
+  const sequencePointerMarker = gameState.campaign?.specialMarkers?.find(
+    (marker) => marker.kind === "sequence_pointer",
+  );
+  const sequencePointerValue =
+    sequencePointerMarker && typeof sequencePointerMarker.value === "number"
+      ? sequencePointerMarker.value
+      : null;
   const showSequence =
     gameState.mission === 9 ||
+    gameState.mission === 36 ||
     ((gameState.campaign?.numberCards?.visible?.length ?? 0) >= 3 &&
-      gameState.campaign?.specialMarkers?.some(
-        (m) => m.kind === "sequence_pointer",
-      ) === true);
+      sequencePointerValue != null);
   const showEquipmentLocks = gameState.mission === 12;
   const showCampaignObjects = gameState.campaign != null;
+  const sequencePointer =
+    showSequence
+      ? gameState.mission === 9
+        ? sequencePointerValue ?? 0
+        : sequencePointerValue
+      : null;
 
   if (!showSequence && !showEquipmentLocks && !showCampaignObjects) return null;
 
@@ -1186,7 +1227,7 @@ export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) 
       {showCampaignObjects && (
         <CampaignObjectsHint
           gameState={gameState}
-          sequencePointer={showSequence ? (gameState.campaign?.specialMarkers?.find(m => m.kind === "sequence_pointer")?.value ?? 0) : null}
+          sequencePointer={sequencePointer}
           hideNumberCards={false}
         />
       )}

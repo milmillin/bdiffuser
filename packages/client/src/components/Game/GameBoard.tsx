@@ -30,6 +30,7 @@ import {
   getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
 } from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
+import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
@@ -96,6 +97,7 @@ const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
 const FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE = "mission61ConstraintRotate";
+const FORCED_ACTION_MISSION36_SEQUENCE_POSITION = "mission36SequencePosition";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
@@ -104,6 +106,7 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
   FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE,
+  FORCED_ACTION_MISSION36_SEQUENCE_POSITION,
 ]);
 
 function getUnknownForcedAction(
@@ -460,6 +463,8 @@ export function GameBoard({
       : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
         ? pendingForcedAction.targetPlayerId
       : pendingForcedAction?.kind === "mission61ConstraintRotate"
+        ? pendingForcedAction.captainId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION36_SEQUENCE_POSITION
         ? pendingForcedAction.captainId
           : undefined);
   const forcedActionCaptainName = forcedActionCaptainId
@@ -1643,6 +1648,19 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Playing phase: forced action (mission 36 sequence position) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION36_SEQUENCE_POSITION &&
+                  gameState.pendingForcedAction.captainId === playerId &&
+                  me && (
+                    <Mission36SequencePositionPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {gameState.phase === "playing" && mission46ForcedForMe && (
                   <Mission46SevensCutPanel
                     selectedCount={mission46Targets.length}
@@ -2379,6 +2397,21 @@ function getStatusContent(
       </span>
     );
   }
+  if (
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === FORCED_ACTION_MISSION36_SEQUENCE_POSITION &&
+    pendingForcedAction.captainId !== playerId
+  ) {
+    return (
+      <span className="text-gray-300">
+        Waiting for{" "}
+        <span className="text-yellow-400 font-bold">
+          {forcedActionCaptainName ?? "the Captain"}
+        </span>{" "}
+        to choose the active Mission 36 sequence side...
+      </span>
+    );
+  }
   // --- Setup phase ---
   if (isSetup && isMyTurn) {
     return (
@@ -2692,7 +2725,7 @@ export function PendingActionStrip({
         </div>
         {mission9SelectedGuessBlocked && (
           <div className={PANEL_SUBTEXT_CLASS}>
-            Mission 9: this value cannot be used for Dual Cut right now
+            Mission {mission}: this value cannot be used for Dual Cut right now
             {typeof mission9ActiveValue === "number"
               ? ` (need ${mission9ActiveValue})`
               : ""}
@@ -2888,7 +2921,7 @@ function ActionMissionHints({
   mission59ForwardValues: number[];
   forceRevealReds: boolean;
 }) {
-  if (!isMyTurn && mission !== 9) return null;
+  if (!isMyTurn && mission !== 9 && mission !== 36) return null;
 
   return (
     <div className="space-y-2">
@@ -2901,13 +2934,13 @@ function ActionMissionHints({
         </div>
       )}
 
-      {mission === 9 && typeof mission9ActiveValue === "number" && (
+      {(mission === 9 || mission === 36) && typeof mission9ActiveValue === "number" && (
         <div
           className="rounded-lg border border-emerald-500/50 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100 space-y-1"
           data-testid="mission9-action-reminder"
         >
           <div className="font-bold uppercase tracking-wide text-emerald-200">
-            Mission 9 Sequence Action Gate
+            Mission {mission} Sequence Action Gate
           </div>
           <div>
             Active value: <span className="font-semibold">{mission9ActiveValue}</span> (
