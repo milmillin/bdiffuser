@@ -59,7 +59,7 @@ export function RightPanel({
 }
 
 export function MissionCard({ missionId }: { missionId: MissionId }) {
-  const [showBack, setShowBack] = useState(false);
+  const [showBack, setShowBack] = useState(true);
 
   const frontSrc = `/images/${MISSION_IMAGES[missionId]}`;
   const backSrc = `/images/mission_${missionId}_back.jpg`;

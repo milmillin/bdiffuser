@@ -16,6 +16,7 @@ import {
   type SpecialMarker,
   type MissionAudioState,
   type Mission22TokenPassBoardState,
+  type SurrenderVoteState,
 } from "@bomb-busters/shared";
 import {
   cloneFailureCounters,
@@ -378,6 +379,19 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
   };
 }
 
+function normalizeSurrenderVote(raw: unknown): SurrenderVoteState | undefined {
+  if (!isObject(raw) || !Array.isArray(raw.yesVoterIds)) return undefined;
+
+  const yesVoterIds = Array.from(new Set(
+    raw.yesVoterIds.filter(
+      (id): id is string => typeof id === "string" && id.length > 0,
+    ),
+  ));
+  if (yesVoterIds.length === 0) return undefined;
+
+  return { yesVoterIds };
+}
+
 function normalizeCampaign(raw: unknown): CampaignState | undefined {
   if (!isObject(raw)) return undefined;
 
@@ -484,6 +498,7 @@ function normalizeGameState(
     resultRaw === "loss_red_wire" ||
     resultRaw === "loss_detonator" ||
     resultRaw === "loss_timer" ||
+    resultRaw === "loss_surrender" ||
     resultRaw === null
       ? resultRaw
       : null;
@@ -497,6 +512,7 @@ function normalizeGameState(
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
   const missionAudio = normalizeMissionAudio(obj.missionAudio);
+  const surrenderVote = normalizeSurrenderVote(obj.surrenderVote);
   // Forced-action migration: supports all persisted forced-action kinds.
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
@@ -662,6 +678,7 @@ function normalizeGameState(
     ...(campaign ? { campaign } : {}),
     ...(missionAudio ? { missionAudio } : {}),
     ...(pendingForcedAction ? { pendingForcedAction } : {}),
+    ...(surrenderVote ? { surrenderVote } : {}),
     ...(typeof obj.timerDeadline === "number" && Number.isFinite(obj.timerDeadline)
       ? { timerDeadline: obj.timerDeadline }
       : {}),

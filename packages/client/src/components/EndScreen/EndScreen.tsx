@@ -16,6 +16,7 @@ export function EndScreen({
   const [showShame, setShowShame] = useState(false);
   const [showBoard, setShowBoard] = useState(false);
   const isWin = gameState.result === "win";
+  const isSurrender = gameState.result === "loss_surrender";
 
   if (showShame) {
     return (
@@ -42,7 +43,9 @@ export function EndScreen({
 
   const bg = isWin
     ? "radial-gradient(ellipse at 50% 40%, #d4e157 0%, #9ccc65 35%, #558b2f 70%, #33691e 100%)"
-    : "radial-gradient(ellipse at 50% 40%, #fb7185 0%, #e11d48 35%, #9f1239 65%, #4c0519 100%)";
+    : isSurrender
+      ? "radial-gradient(ellipse at 50% 40%, #fde68a 0%, #d97706 35%, #7c2d12 70%, #431407 100%)"
+      : "radial-gradient(ellipse at 50% 40%, #fb7185 0%, #e11d48 35%, #9f1239 65%, #4c0519 100%)";
 
   const canRestartMission = !gameState.isSpectator;
 
@@ -61,6 +64,15 @@ export function EndScreen({
               className="text-4xl font-black text-green-950 mt-6 drop-shadow-[0_0_20px_rgba(255,255,200,0.4)]"
             >
               MISSION COMPLETE!
+            </h1>
+          </>
+        ) : isSurrender ? (
+          <>
+            <h1
+              data-testid="result-title"
+              className="text-4xl font-black text-amber-100 mt-6 drop-shadow-[0_0_20px_rgba(120,53,15,0.7)]"
+            >
+              MISSION ABORTED
             </h1>
           </>
         ) : (
@@ -83,6 +95,8 @@ export function EndScreen({
             "The detonator hit zero. No survivors."}
           {gameState.result === "loss_timer" &&
             "The mission timer expired!"}
+          {gameState.result === "loss_surrender" &&
+            "The team surrendered."}
         </p>
 
         <div className="flex gap-4 mt-10">

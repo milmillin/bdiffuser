@@ -456,6 +456,9 @@ export class BombBustersServer extends Server<Env> {
       case "kickPlayer":
         this.handleKickPlayer(connection, msg.playerId);
         break;
+      case "surrenderVote":
+        this.handleSurrenderVote(connection, msg.vote);
+        break;
       case "chat":
         this.handleChat(connection, msg.text);
         break;
@@ -530,6 +533,12 @@ export class BombBustersServer extends Server<Env> {
             gs.pendingForcedAction.previousPlayerId = newId;
           }
         }
+      }
+
+      if (gs.surrenderVote) {
+        gs.surrenderVote.yesVoterIds = gs.surrenderVote.yesVoterIds.map((id) =>
+          id === oldId ? newId : id,
+        );
       }
     }
   }
@@ -1781,6 +1790,76 @@ export class BombBustersServer extends Server<Env> {
     missionAudio.positionMs = nextPosition;
     missionAudio.syncedAtMs = nowMs;
 
+    this.saveState();
+    this.broadcastGameState();
+  }
+
+  handleSurrenderVote(conn: Connection, vote: boolean) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot vote to surrender: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "setup_info_tokens" && state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Surrender voting is only allowed during active gameplay.",
+      });
+      return;
+    }
+
+    const voter = state.players.find((player) => player.id === conn.id);
+    if (!voter || voter.isBot) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only human players can vote to surrender.",
+      });
+      return;
+    }
+
+    const eligiblePlayers = state.players.filter((player) => !player.isBot);
+    const eligibleIds = new Set(eligiblePlayers.map((player) => player.id));
+    const yesVoters = new Set(
+      (state.surrenderVote?.yesVoterIds ?? []).filter((id) =>
+        eligibleIds.has(id),
+      ),
+    );
+
+    if (vote) {
+      yesVoters.add(conn.id);
+    } else {
+      yesVoters.delete(conn.id);
+    }
+
+    const requiredVotes = Math.floor(eligiblePlayers.length / 2) + 1;
+
+    if (yesVoters.size >= requiredVotes) {
+      const previousResult = state.result;
+      state.phase = "finished";
+      state.result = "loss_surrender";
+      state.pendingForcedAction = undefined;
+      state.surrenderVote = undefined;
+      this.maybeRecordMissionFailure(previousResult, state);
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: conn.id,
+        action: "surrenderVote",
+        detail: `surrender vote passed (${yesVoters.size}/${eligiblePlayers.length})`,
+        timestamp: Date.now(),
+      });
+      this.saveState();
+      this.broadcastAction({ type: "gameOver", result: "loss_surrender" });
+      this.broadcastGameState();
+      return;
+    }
+
+    state.surrenderVote =
+      yesVoters.size > 0
+        ? { yesVoterIds: Array.from(yesVoters) }
+        : undefined;
     this.saveState();
     this.broadcastGameState();
   }

@@ -46,6 +46,9 @@ export function filterStateForPlayer(
               : state.pendingForcedAction,
         }
       : {}),
+    ...(state.surrenderVote
+      ? { surrenderVote: state.surrenderVote }
+      : {}),
     ...(state.missionAudio
       ? { missionAudio: state.missionAudio }
       : {}),
@@ -167,6 +170,9 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
               ? { ...state.pendingForcedAction, matchingTileIndices: [] }
               : state.pendingForcedAction,
         }
+      : {}),
+    ...(state.surrenderVote
+      ? { surrenderVote: state.surrenderVote }
       : {}),
     ...(state.missionAudio
       ? { missionAudio: state.missionAudio }

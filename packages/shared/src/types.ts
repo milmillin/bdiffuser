@@ -469,6 +469,11 @@ export interface TurnEffects {
   };
 }
 
+export interface SurrenderVoteState {
+  /** Player IDs (humans only) currently voting yes to surrender. */
+  yesVoterIds: string[];
+}
+
 // ── Action Validation ─────────────────────────────────────
 
 /** Stable machine-readable legality reasons for action rejection. */
@@ -513,7 +518,13 @@ export interface ActionLegalityError {
 // ── Game State ──────────────────────────────────────────────
 
 export type GamePhase = "lobby" | "setup_info_tokens" | "playing" | "finished";
-export type GameResult = "win" | "loss_red_wire" | "loss_detonator" | "loss_timer" | null;
+export type GameResult =
+  | "win"
+  | "loss_red_wire"
+  | "loss_detonator"
+  | "loss_timer"
+  | "loss_surrender"
+  | null;
 
 export type MissionAudioStatus = "playing" | "paused";
 
@@ -544,6 +555,8 @@ export interface GameState {
   campaign?: CampaignState;
   /** A forced action that must be resolved before normal play resumes. */
   pendingForcedAction?: ForcedAction;
+  /** Ongoing surrender vote (yes voters only). */
+  surrenderVote?: SurrenderVoteState;
   /** Temporary turn-scoped effects from equipment cards. */
   turnEffects?: TurnEffects;
   /** Mission audio playback state synchronized across all players. */
@@ -605,6 +618,8 @@ export interface ClientGameState {
   campaign?: CampaignState;
   /** A forced action that must be resolved before normal play resumes. */
   pendingForcedAction?: ForcedAction;
+  /** Ongoing surrender vote (yes voters only). */
+  surrenderVote?: SurrenderVoteState;
   /** Mission audio playback state synchronized across all players. */
   missionAudio?: MissionAudioState;
   /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */

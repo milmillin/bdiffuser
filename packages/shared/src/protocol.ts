@@ -77,6 +77,7 @@ export type ClientMessage =
   | { type: "addBot" }
   | { type: "removeBot"; botId: string }
   | { type: "kickPlayer"; playerId: string }
+  | { type: "surrenderVote"; vote: boolean }
   | { type: "chat"; text: string }
   | { type: "playAgain" };
 

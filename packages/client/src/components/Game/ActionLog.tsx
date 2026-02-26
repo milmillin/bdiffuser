@@ -44,6 +44,7 @@ export function ActionLog({
             {result === "loss_red_wire" && "BOOM — a red wire was cut!"}
             {result === "loss_detonator" && "BOOM — detonator reached the end!"}
             {result === "loss_timer" && "TIME'S UP — mission timer expired!"}
+            {result === "loss_surrender" && "MISSION ABORTED — team surrendered."}
           </div>
         )}
       </div>

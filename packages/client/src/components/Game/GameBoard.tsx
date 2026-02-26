@@ -262,6 +262,34 @@ export function GameBoard({
   const isFinished = gameState.phase === "finished";
   const isMyTurn = !isFinished && currentPlayer?.id === playerId;
   const me = gameState.players.find((p) => p.id === playerId);
+  const nonBotPlayers = useMemo(
+    () => gameState.players.filter((player) => !player.isBot),
+    [gameState.players],
+  );
+  const surrenderVoteYesVoterIds = gameState.surrenderVote?.yesVoterIds ?? [];
+  const surrenderVoteYesSet = useMemo(
+    () => new Set(surrenderVoteYesVoterIds),
+    [surrenderVoteYesVoterIds],
+  );
+  const surrenderVoteYesCount = nonBotPlayers.reduce(
+    (count, player) => count + (surrenderVoteYesSet.has(player.id) ? 1 : 0),
+    0,
+  );
+  const surrenderVoteRequired = Math.floor(nonBotPlayers.length / 2) + 1;
+  const canVoteSurrender =
+    gameState.phase !== "finished" &&
+    !gameState.isSpectator &&
+    !!me &&
+    !me.isBot;
+  const hasVotedSurrenderYes =
+    canVoteSurrender && surrenderVoteYesSet.has(playerId);
+  const toggleSurrenderVote = useCallback(() => {
+    if (!canVoteSurrender) return;
+    send({
+      type: "surrenderVote",
+      vote: !hasVotedSurrenderYes,
+    });
+  }, [canVoteSurrender, hasVotedSurrenderYes, send]);
   const opponentsWithOrder = gameState.players
     .map((p, i) => ({ player: p, turnOrder: i + 1 }))
     .filter((entry) => entry.player.id !== playerId);
@@ -1179,6 +1207,11 @@ export function GameBoard({
             gameState={gameState}
             playerId={playerId}
             timerDisplay={timerDisplay}
+            canVoteSurrender={canVoteSurrender}
+            hasVotedSurrenderYes={hasVotedSurrenderYes}
+            surrenderVoteYesCount={surrenderVoteYesCount}
+            surrenderVoteRequired={surrenderVoteRequired}
+            onToggleSurrenderVote={toggleSurrenderVote}
             onOpenRules={() => setIsRulesPopupOpen(true)}
           />
           <BoardArea
@@ -2641,11 +2674,21 @@ function Header({
   gameState,
   playerId,
   timerDisplay,
+  canVoteSurrender,
+  hasVotedSurrenderYes,
+  surrenderVoteYesCount,
+  surrenderVoteRequired,
+  onToggleSurrenderVote,
   onOpenRules,
 }: {
   gameState: ClientGameState;
   playerId: string;
   timerDisplay: { text: string; isCritical: boolean } | null;
+  canVoteSurrender: boolean;
+  hasVotedSurrenderYes: boolean;
+  surrenderVoteYesCount: number;
+  surrenderVoteRequired: number;
+  onToggleSurrenderVote: () => void;
   onOpenRules: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -2683,18 +2726,35 @@ function Header({
             </span>
           )}
         </div>
-        {/* Mobile-only: turn + rules in row 1 */}
-        <div className="flex md:hidden items-center gap-2 shrink-0 ml-2">
-          <div className="text-xs text-gray-400" data-testid="turn-number-mobile">
-            T<span className="font-bold text-white">{gameState.turnNumber}</span>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          {canVoteSurrender && (
+            <button
+              type="button"
+              onClick={onToggleSurrenderVote}
+              data-testid="surrender-vote-button"
+              className={`rounded border px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide transition-colors ${
+                hasVotedSurrenderYes
+                  ? "border-red-300 bg-red-700/80 text-white hover:bg-red-700"
+                  : "border-red-800 bg-red-950/80 text-red-200 hover:border-red-500 hover:text-red-100"
+              }`}
+              title={`Surrender vote: ${surrenderVoteYesCount}/${surrenderVoteRequired} yes votes`}
+            >
+              GG {surrenderVoteYesCount}/{surrenderVoteRequired}
+            </button>
+          )}
+          {/* Mobile-only: turn + rules in row 1 */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className="text-xs text-gray-400" data-testid="turn-number-mobile">
+              T<span className="font-bold text-white">{gameState.turnNumber}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenRules}
+              className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+            >
+              Rules
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onOpenRules}
-            className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
-          >
-            Rules
-          </button>
         </div>
       </div>
 
