@@ -1,0 +1,42 @@
+name: Deploy to Cloudflare (mek)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-mek
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Deploy server
+        run: pnpm --filter server run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.MEK_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MEK_CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Build client
+        run: pnpm build
+        env:
+          VITE_PARTYKIT_HOST: ${{ secrets.MEK_VITE_PARTYKIT_HOST }}
+
+      - name: Deploy client
+        run: pnpm --filter client exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.MEK_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MEK_CLOUDFLARE_ACCOUNT_ID }}
