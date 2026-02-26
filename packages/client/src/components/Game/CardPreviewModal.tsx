@@ -5,6 +5,8 @@ export type CardPreviewCard = {
   previewImage: string | null;
   /** Override the default portrait aspect ratio (e.g. "1037/736" for landscape). */
   previewAspectRatio?: string;
+  /** Scale the modal/card display size (e.g. 1.5 = 150%). */
+  previewScale?: number;
   /** Rotate the preview image counter-clockwise 90 degrees. */
   previewRotateCcw90?: boolean;
   detailSubtitle?: string;
@@ -20,6 +22,16 @@ export function CardPreviewModal({
   card: CardPreviewCard;
   onClose: () => void;
 }) {
+  const requestedScale = card.previewScale ?? 1;
+  const previewScale =
+    Number.isFinite(requestedScale) && requestedScale > 0
+      ? requestedScale
+      : 1;
+  const maxWidthRem = 42 * previewScale;
+  const imageTransform = card.previewRotateCcw90
+    ? "rotate(-90deg)"
+    : undefined;
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -37,7 +49,8 @@ export function CardPreviewModal({
       aria-label={`${card.name} card details`}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden rounded-2xl border border-gray-600 bg-[var(--color-bomb-surface)] p-3"
+        className="relative w-full max-w-full max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden rounded-2xl border border-gray-600 bg-[var(--color-bomb-surface)] p-3"
+        style={{ maxWidth: `${maxWidthRem}rem` }}
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -54,7 +67,7 @@ export function CardPreviewModal({
                 src={`/images/${card.previewImage}`}
                 alt={card.name}
                 className="h-full w-full object-contain"
-                style={card.previewRotateCcw90 ? { transform: "rotate(-90deg)" } : undefined}
+                style={imageTransform ? { transform: imageTransform } : undefined}
               />
             ) : (
               <div className="h-full w-full bg-slate-900" />

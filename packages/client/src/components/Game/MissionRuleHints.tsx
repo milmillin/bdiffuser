@@ -6,7 +6,6 @@ import {
   getChallengeCardImage,
   NUMBER_CARD_BACK,
   CONSTRAINT_CARD_BACK,
-  CHALLENGE_CARD_BACK,
   CUTTER_CARD_IMAGES,
   BUNKER_CARD_IMAGES,
   MISSION_SCHEMAS,
@@ -116,6 +115,7 @@ function CampaignObjectCard({
   overlayLabel,
   rotateCcw90,
   badgeLabel,
+  sizeClassName,
   onClick,
 }: {
   image: string;
@@ -126,13 +126,16 @@ function CampaignObjectCard({
   /** Display a portrait image in a landscape container, rotated -90°. */
   rotateCcw90?: boolean;
   badgeLabel?: string;
+  /** Override the default outer width classes (e.g. larger cards). */
+  sizeClassName?: string;
   onClick: () => void;
 }) {
-  const widthClass = rotateCcw90
-    ? "w-auto"
-    : landscape
-      ? "w-28 sm:w-32"
-      : "w-20 sm:w-24";
+  const widthClass =
+    sizeClassName ?? (rotateCcw90
+      ? "w-auto"
+      : landscape
+        ? "w-[10.5rem] sm:w-48"
+        : "w-20 sm:w-24");
   const aspectClass = landscape ? "aspect-[1037/736]" : "aspect-[739/1040]";
   const frameClass = rotateCcw90 ? "h-20 sm:h-24 aspect-[1037/736]" : `w-full ${aspectClass}`;
 
@@ -381,7 +384,6 @@ function CampaignObjectsHint({
 
   const globalConstraints =
     campaign.constraints?.global.filter((constraint) => constraint.active) ?? [];
-  const constraintDeckCount = campaign.constraints?.deck?.length ?? 0;
   const perPlayerConstraints: { playerName: string; cards: typeof globalConstraints }[] = [];
   for (const [playerId, cards] of Object.entries(campaign.constraints?.perPlayer ?? {})) {
     const activeCards = cards.filter((constraint) => constraint.active);
@@ -397,7 +399,12 @@ function CampaignObjectsHint({
 
   const activeChallenges = campaign.challenges?.active ?? [];
   const completedChallenges = campaign.challenges?.completed ?? [];
-  const challengeDeckCount = campaign.challenges?.deck.length ?? 0;
+  const sortedActiveChallenges = [...activeChallenges].sort(
+    (a, b) => Number(a.id) - Number(b.id),
+  );
+  const sortedCompletedChallenges = [...completedChallenges].sort(
+    (a, b) => Number(a.id) - Number(b.id),
+  );
 
   const oxygen = campaign.oxygen;
   const oxygenByPlayer = oxygen
@@ -424,10 +431,8 @@ function CampaignObjectsHint({
     hasNumberCardContent ||
     globalConstraints.length > 0 ||
     perPlayerConstraints.length > 0 ||
-    constraintDeckCount > 0 ||
-    activeChallenges.length > 0 ||
-    completedChallenges.length > 0 ||
-    challengeDeckCount > 0 ||
+    sortedActiveChallenges.length > 0 ||
+    sortedCompletedChallenges.length > 0 ||
     oxygen != null ||
     campaign.nanoTracker != null ||
     campaign.bunkerTracker != null ||
@@ -571,8 +576,11 @@ function CampaignObjectsHint({
           </SectionShell>
         )}
 
-        {(globalConstraints.length > 0 || perPlayerConstraints.length > 0 || constraintDeckCount > 0) && (
+        {(globalConstraints.length > 0 || perPlayerConstraints.length > 0) && (
           <SectionShell>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-rose-200">
+              Constraints
+            </div>
             <CampaignRow>
               {globalConstraints.map((constraint) => {
                 const image = getConstraintCardImage(constraint.id);
@@ -581,10 +589,12 @@ function CampaignObjectsHint({
                     key={`global-${constraint.id}`}
                     image={image}
                     borderClassName="border-rose-500"
+                    sizeClassName="w-[7.5rem] sm:w-[9rem]"
                     onClick={() =>
                       setPreviewCard({
                         name: `Constraint ${constraint.id}`,
                         previewImage: image,
+                        previewScale: 1.5,
                         detailSubtitle: constraint.name || constraint.id,
                         detailEffect: constraint.description,
                       })
@@ -600,10 +610,12 @@ function CampaignObjectsHint({
                       key={`${entry.playerName}-${constraint.id}`}
                       image={image}
                       borderClassName="border-amber-500"
+                      sizeClassName="w-[7.5rem] sm:w-[9rem]"
                       onClick={() =>
                         setPreviewCard({
                           name: `Constraint ${constraint.id}`,
                           previewImage: image,
+                          previewScale: 1.5,
                           detailSubtitle: constraint.name || constraint.id,
                           detailEffect: constraint.description,
                         })
@@ -612,29 +624,17 @@ function CampaignObjectsHint({
                   );
                 }),
               )}
-              {constraintDeckCount > 0 && (
-                <CampaignObjectCard
-                  image={CONSTRAINT_CARD_BACK}
-                  borderClassName="border-slate-500"
-                  badgeLabel={String(constraintDeckCount)}
-                  onClick={() =>
-                    setPreviewCard({
-                      name: "Constraint Deck",
-                      previewImage: CONSTRAINT_CARD_BACK,
-                      detailSubtitle:
-                        `${constraintDeckCount} card${constraintDeckCount === 1 ? "" : "s"} remaining`,
-                    })
-                  }
-                />
-              )}
             </CampaignRow>
           </SectionShell>
         )}
 
-        {(activeChallenges.length > 0 || completedChallenges.length > 0 || challengeDeckCount > 0) && (
+        {(sortedActiveChallenges.length > 0 || sortedCompletedChallenges.length > 0) && (
           <SectionShell>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-amber-200">
+              Challenges
+            </div>
             <CampaignRow>
-              {activeChallenges.map((challenge) => {
+              {sortedActiveChallenges.map((challenge) => {
                 const image = getChallengeCardImage(challenge.id);
                 return (
                   <CampaignObjectCard
@@ -654,7 +654,7 @@ function CampaignObjectsHint({
                   />
                 );
               })}
-              {completedChallenges.map((challenge) => {
+              {sortedCompletedChallenges.map((challenge) => {
                 const image = getChallengeCardImage(challenge.id);
                 return (
                   <CampaignObjectCard
@@ -676,23 +676,6 @@ function CampaignObjectsHint({
                   />
                 );
               })}
-              {challengeDeckCount > 0 && (
-                <CampaignObjectCard
-                  image={CHALLENGE_CARD_BACK}
-                  borderClassName="border-slate-500"
-                  landscape
-                  badgeLabel={String(challengeDeckCount)}
-                  onClick={() =>
-                    setPreviewCard({
-                      name: "Challenge Deck",
-                      previewImage: CHALLENGE_CARD_BACK,
-                      previewAspectRatio: "1037/736",
-                      detailSubtitle:
-                        `${challengeDeckCount} card${challengeDeckCount === 1 ? "" : "s"} remaining`,
-                    })
-                  }
-                />
-              )}
             </CampaignRow>
           </SectionShell>
         )}
