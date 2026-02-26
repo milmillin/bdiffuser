@@ -54,16 +54,17 @@ const PARTYKIT_HOST =
 
 function getRoomFromPath(): string | null {
   const path = window.location.pathname.replace(/^\//, "").trim();
-  if (path.endsWith("/debug")) return null;
+  if (/^.+\/debug(?:\/[^/]+)?$/.test(path)) return null;
   return path || null;
 }
 
 function maybeRedirectDebug() {
   const path = window.location.pathname.replace(/^\//, "").trim();
-  const match = path.match(/^(.+)\/debug$/);
+  const match = path.match(/^(.+)\/debug(?:\/([^/]+))?$/);
   if (match) {
+    const uidSuffix = match[2] ? `/${match[2]}` : "";
     const protocol = PARTYKIT_HOST.startsWith("localhost") ? "http" : "https";
-    window.location.href = `${protocol}://${PARTYKIT_HOST}/parties/bomb-busters-server/${match[1]}/debug`;
+    window.location.href = `${protocol}://${PARTYKIT_HOST}/parties/bomb-busters-server/${match[1]}/debug${uidSuffix}`;
   }
 }
 

@@ -543,26 +543,63 @@ export class BombBustersServer extends Server<Env> {
     }
   }
 
+  private normalizeHumanName(name: string): string {
+    return name.trim().toLowerCase();
+  }
+
+  private findHumanNameConflict(normalizedName: string, excludedPlayerId?: string): Player | undefined {
+    return this.room.players.find((player) =>
+      !player.isBot
+      && player.id !== excludedPlayerId
+      && this.normalizeHumanName(player.name) === normalizedName,
+    );
+  }
+
+  private findDisconnectedHumanByName(normalizedName: string): Player | undefined {
+    return this.room.players.find((player) =>
+      !player.isBot
+      && !player.connected
+      && this.normalizeHumanName(player.name) === normalizedName,
+    );
+  }
+
   handleJoin(conn: Connection, name: string) {
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      this.sendMsg(conn, { type: "error", message: "Name cannot be empty" });
+      return;
+    }
+    const normalizedName = this.normalizeHumanName(trimmedName);
+
     if (this.room.gameState) {
       // Reconnection during game — try exact ID match first
       let existing = this.room.players.find((p) => p.id === conn.id);
       if (existing) {
+        const conflict = this.findHumanNameConflict(normalizedName, existing.id);
+        if (conflict) {
+          this.sendMsg(conn, { type: "error", message: "Name already taken" });
+          return;
+        }
         existing.connected = true;
-        existing.name = name;
+        existing.name = trimmedName;
         this.broadcastGameState();
         return;
       }
 
       // Name-based fallback: find a disconnected player with the same name
-      const byName = this.room.players.find(
-        (p) => !p.isBot && !p.connected && p.name === name,
-      );
+      const byName = this.findDisconnectedHumanByName(normalizedName);
       if (byName) {
         this.replacePlayerId(byName.id, conn.id);
         byName.connected = true;
+        byName.name = trimmedName;
         this.saveState();
         this.broadcastGameState();
+        return;
+      }
+
+      const conflict = this.findHumanNameConflict(normalizedName);
+      if (conflict) {
+        this.sendMsg(conn, { type: "error", message: "Name already taken" });
         return;
       }
 
@@ -575,18 +612,27 @@ export class BombBustersServer extends Server<Env> {
     // Check if player already exists (reconnection in lobby — exact ID)
     let player = this.room.players.find((p) => p.id === conn.id);
     if (player) {
-      player.name = name;
+      const conflict = this.findHumanNameConflict(normalizedName, player.id);
+      if (conflict) {
+        this.sendMsg(conn, { type: "error", message: "Name already taken" });
+        return;
+      }
+      player.name = trimmedName;
       player.connected = true;
     } else {
       // Name-based fallback in lobby: find a disconnected player with the same name
-      const byName = this.room.players.find(
-        (p) => !p.isBot && !p.connected && p.name === name,
-      );
+      const byName = this.findDisconnectedHumanByName(normalizedName);
       if (byName) {
         this.replacePlayerId(byName.id, conn.id);
         byName.connected = true;
+        byName.name = trimmedName;
         player = byName;
       } else {
+        const conflict = this.findHumanNameConflict(normalizedName);
+        if (conflict) {
+          this.sendMsg(conn, { type: "error", message: "Name already taken" });
+          return;
+        }
         if (this.room.players.length >= 5) {
           this.sendMsg(conn, { type: "error", message: "Room is full (max 5 players)" });
           return;
@@ -594,7 +640,7 @@ export class BombBustersServer extends Server<Env> {
 
         const newPlayer: Player = {
           id: conn.id,
-          name,
+          name: trimmedName,
           character: null,
           isCaptain: false,
           hand: [],
@@ -2618,10 +2664,45 @@ export class BombBustersServer extends Server<Env> {
       );
     }
 
+    const debugUidMatch = url.pathname.match(/^.+\/debug\/([^/]+)$/);
+    if (debugUidMatch) {
+      const rawUid = debugUidMatch[1];
+      const uid = Number(rawUid);
+      const isUidInteger = /^[0-9]+$/.test(rawUid) && Number.isInteger(uid);
+      if (!isUidInteger || uid < 1 || uid > 5) {
+        return Response.json({ error: "Player not found" }, { status: 404 });
+      }
+
+      if (!this.room.gameState) {
+        return Response.json({ error: "No active game" }, { status: 409 });
+      }
+
+      const seatPlayer = this.room.players[uid - 1];
+      if (!seatPlayer) {
+        return Response.json({ error: "Player not found" }, { status: 404 });
+      }
+
+      const inGame = this.room.gameState.players.some((player) => player.id === seatPlayer.id);
+      if (!inGame) {
+        return Response.json({ error: "Player not found" }, { status: 404 });
+      }
+
+      return Response.json({
+        roomId: this.name,
+        queriedAt: Date.now(),
+        uid,
+        playerId: seatPlayer.id,
+        playerName: seatPlayer.name,
+        omniscience: false,
+        state: filterStateForPlayer(this.room.gameState, seatPlayer.id),
+      });
+    }
+
     if (url.pathname.endsWith("/debug")) {
       return Response.json({
         roomId: this.name,
         queriedAt: Date.now(),
+        omniscience: true,
         room: this.room,
       });
     }
