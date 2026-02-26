@@ -63,14 +63,6 @@ export function advanceTurn(state: GameState): void {
     previousPlayerId,
   });
 
-  if (state.mission === 10) {
-    console.log(
-      "[advanceTurn] mission=10 endTurn dispatched",
-      "previousPlayerId=", previousPlayerId,
-      "endTurnResult=", JSON.stringify(endTurnResult),
-      "pendingForcedAction=", JSON.stringify(state.pendingForcedAction),
-    );
-  }
 
   if (endTurnResult.nextPlayerIndex !== undefined) {
     const idx = endTurnResult.nextPlayerIndex;

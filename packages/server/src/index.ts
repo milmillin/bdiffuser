@@ -234,9 +234,13 @@ export class BombBustersServer extends Server<Env> {
     const connectedCount = this.room.players.filter((p) => p.connected).length;
     const id = this.env.BombBustersServer.idFromName("__stats__");
     const stub = this.env.BombBustersServer.get(id);
-    stub.fetch("https://stats/report", {
+    stub.fetch("https://dummy/parties/bomb-busters-server/__stats__", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-partykit-room": "__stats__",
+        "x-partykit-namespace": "bomb-busters-server",
+      },
       body: JSON.stringify({ roomId: this.name, players: connectedCount }),
     }).catch(() => {});
   }
@@ -2591,16 +2595,6 @@ export class BombBustersServer extends Server<Env> {
     const state = this.room.gameState;
     if (!state) return;
 
-    if (state.mission === 10) {
-      console.log(
-        "[broadcastGameState] mission=10",
-        "phase=", state.phase,
-        "pendingForcedAction=", JSON.stringify(state.pendingForcedAction),
-        "currentPlayerIndex=", state.currentPlayerIndex,
-        "turnNumber=", state.turnNumber,
-      );
-    }
-
     const playerIds = new Set(this.room.players.map((p) => p.id));
     let spectatorView: ReturnType<typeof filterStateForSpectator> | null = null;
 
@@ -2631,13 +2625,14 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/stats") {
-      try {
-        const id = env.BombBustersServer.idFromName("__stats__");
-        const stub = env.BombBustersServer.get(id);
-        return await stub.fetch(request);
-      } catch (e) {
-        return new Response(String(e), { status: 500 });
-      }
+      // Rewrite to partyserver route so routing headers are set correctly
+      const partyUrl = new URL(request.url);
+      partyUrl.pathname = "/parties/bomb-busters-server/__stats__";
+      const partyReq = new Request(partyUrl.toString(), request);
+      return (
+        (await routePartykitRequest(partyReq, env)) ??
+        new Response("Not found", { status: 404 })
+      );
     }
 
     return (
