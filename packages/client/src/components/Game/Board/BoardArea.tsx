@@ -5,30 +5,92 @@ import {
   type MissionId,
 } from "@bomb-busters/shared";
 
+const SCROLL_TOLERANCE_PX = 1;
+
+export interface HorizontalScrollState {
+  hasOverflow: boolean;
+  canScrollLeft: boolean;
+  canScrollRight: boolean;
+  shouldResetScroll: boolean;
+}
+
+export function deriveHorizontalScrollState({
+  scrollLeft,
+  clientWidth,
+  scrollWidth,
+  tolerancePx = SCROLL_TOLERANCE_PX,
+}: {
+  scrollLeft: number;
+  clientWidth: number;
+  scrollWidth: number;
+  tolerancePx?: number;
+}): HorizontalScrollState {
+  const maxScrollLeft = Math.max(0, scrollWidth - clientWidth);
+  if (maxScrollLeft <= tolerancePx) {
+    return {
+      hasOverflow: false,
+      canScrollLeft: false,
+      canScrollRight: false,
+      shouldResetScroll: scrollLeft > tolerancePx,
+    };
+  }
+  return {
+    hasOverflow: true,
+    canScrollLeft: scrollLeft > tolerancePx,
+    canScrollRight: scrollLeft < maxScrollLeft - tolerancePx,
+    shouldResetScroll: false,
+  };
+}
+
 export function ScrollableRow({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 1);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    const state = deriveHorizontalScrollState({
+      scrollLeft: el.scrollLeft,
+      clientWidth: el.clientWidth,
+      scrollWidth: el.scrollWidth,
+    });
+    if (state.shouldResetScroll && el.scrollLeft !== 0) {
+      el.scrollLeft = 0;
+    }
+    setHasOverflow(state.hasOverflow);
+    setCanScrollLeft(state.canScrollLeft);
+    setCanScrollRight(state.canScrollRight);
   }, []);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     updateScrollState();
-    const ro = new ResizeObserver(updateScrollState);
+    const ro = new ResizeObserver(() => updateScrollState());
     ro.observe(el);
+    if (el.firstElementChild) {
+      ro.observe(el.firstElementChild);
+    }
+    const mo = new MutationObserver(() => {
+      if (el.firstElementChild) {
+        ro.observe(el.firstElementChild);
+      }
+      updateScrollState();
+    });
+    mo.observe(el, { childList: true });
     el.addEventListener("scroll", updateScrollState, { passive: true });
     return () => {
       ro.disconnect();
+      mo.disconnect();
       el.removeEventListener("scroll", updateScrollState);
     };
   }, [updateScrollState]);
+
+  useEffect(() => {
+    updateScrollState();
+  }, [children, updateScrollState]);
 
   const scroll = (dir: -1 | 1) => {
     ref.current?.scrollBy({ left: dir * 120, behavior: "smooth" });
@@ -49,7 +111,7 @@ export function ScrollableRow({ children }: { children: ReactNode }) {
       )}
       <div
         ref={ref}
-        className="overflow-x-auto overscroll-x-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-2"
+        className={`${hasOverflow ? "overflow-x-auto" : "overflow-x-hidden"} overscroll-x-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-2`}
       >
         {children}
       </div>
