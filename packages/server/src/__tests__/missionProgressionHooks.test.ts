@@ -26,6 +26,35 @@ function parseChallengeValue(id: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+function valuePassesTestConstraint(value: number, constraintId: string): boolean {
+  const normalized = Math.floor(value);
+  switch (constraintId) {
+    case "A":
+      return normalized % 2 === 0;
+    case "B":
+      return normalized % 2 === 1;
+    case "C":
+      return normalized >= 1 && normalized <= 6;
+    case "D":
+      return normalized >= 7 && normalized <= 12;
+    case "E":
+      return normalized >= 4 && normalized <= 9;
+    case "F":
+      return normalized < 4 || normalized > 9;
+    default:
+      return true;
+  }
+}
+
+function pickValueForTestConstraints(constraintIds: readonly string[]): number {
+  for (let value = 1; value <= 12; value++) {
+    if (constraintIds.every((id) => valuePassesTestConstraint(value, id))) {
+      return value;
+    }
+  }
+  throw new Error(`No valid cut value for constraints: ${constraintIds.join(",")}`);
+}
+
 describe("mission progression hooks", () => {
   it("mission 43 setup initializes nano tracker", () => {
     const state = makeGameState({
@@ -1753,11 +1782,15 @@ describe("mission progression hooks", () => {
       state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
     ).toBe(0);
 
+    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
+    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
+    const cutValue = pickValueForTestConstraints([directionalConstraintId]);
+
     dispatchHooks(66, {
       point: "resolve",
       state,
-      action: { type: "soloCut", actorId: "p1", value: 4 },
-      cutValue: 4,
+      action: { type: "soloCut", actorId: "p1", value: cutValue },
+      cutValue,
       cutSuccess: true,
     });
 
@@ -1790,7 +1823,16 @@ describe("mission progression hooks", () => {
     });
 
     dispatchHooks(66, { point: "setup", state });
-    executeSoloCut(state, "p1", 5);
+    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
+    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
+    const cutValue = pickValueForTestConstraints([directionalConstraintId]);
+    state.players[0]!.hand = [
+      makeTile({ id: "p1-m66-a", gameValue: cutValue, sortValue: cutValue }),
+      makeTile({ id: "p1-m66-b", gameValue: cutValue, sortValue: cutValue }),
+      makeTile({ id: "p1-m66-c", gameValue: cutValue, sortValue: cutValue }),
+      makeTile({ id: "p1-m66-d", gameValue: cutValue, sortValue: cutValue }),
+    ];
+    executeSoloCut(state, "p1", cutValue);
 
     expect(state.campaign?.bunkerTracker?.position).toBe(2);
     expect(
@@ -1816,8 +1858,14 @@ describe("mission progression hooks", () => {
     });
 
     dispatchHooks(66, { point: "setup", state });
+    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
+    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
+    const guessValue = pickValueForTestConstraints([directionalConstraintId]);
+    const mismatchValue = guessValue === 12 ? 11 : 12;
+    state.players[0]!.hand = [makeTile({ id: "p1-m66-dual", gameValue: guessValue, sortValue: guessValue })];
+    state.players[1]!.hand = [makeTile({ id: "p2-m66-dual", gameValue: mismatchValue, sortValue: mismatchValue })];
 
-    executeDualCut(state, "p1", "p2", 0, 4);
+    executeDualCut(state, "p1", "p2", 0, guessValue);
 
     expect(state.campaign?.bunkerTracker?.position).toBe(1);
     expect(
@@ -1825,21 +1873,94 @@ describe("mission progression hooks", () => {
     ).toBe(1);
   });
 
+  it("mission 66 blocks bunker movement when directional constraint is not satisfied", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+    });
+    dispatchHooks(66, { point: "setup", state });
+
+    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
+    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
+    const invalidValue = (() => {
+      for (let value = 1; value <= 12; value++) {
+        if (!valuePassesTestConstraint(value, directionalConstraintId)) return value;
+      }
+      return null;
+    })();
+    if (invalidValue == null) throw new Error("expected a value that violates directional constraint");
+
+    dispatchHooks(66, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: invalidValue },
+      cutValue: invalidValue,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign?.bunkerTracker?.position).toBe(0);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail).startsWith("bunker_flow:blocked:direction")),
+    ).toBe(true);
+  });
+
+  it("mission 66 blocks bunker action-cell movement when ACTION constraint is not satisfied", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+    });
+    dispatchHooks(66, { point: "setup", state });
+    if (!state.campaign?.bunkerTracker) throw new Error("mission 66 should initialize bunker tracker");
+    if (!state.campaign?.constraints) throw new Error("mission 66 should initialize constraints");
+
+    // Move to the front ACTION cell on the canonical path.
+    state.campaign.bunkerTracker.position = 3;
+    const pointer = state.campaign.bunkerTracker.position % 4;
+    state.campaign.specialMarkers = [{ kind: "action_pointer", value: pointer }];
+
+    const directionalConstraintId = state.campaign.constraints.global[pointer]?.id;
+    const actionConstraintId = state.campaign.constraints.deck?.[0]?.id;
+    if (!directionalConstraintId || !actionConstraintId) {
+      throw new Error("mission 66 should initialize directional + action constraints");
+    }
+
+    const invalidActionValue = (() => {
+      for (let value = 1; value <= 12; value++) {
+        if (
+          valuePassesTestConstraint(value, directionalConstraintId)
+          && !valuePassesTestConstraint(value, actionConstraintId)
+        ) {
+          return value;
+        }
+      }
+      return null;
+    })();
+    if (invalidActionValue == null) {
+      throw new Error("expected a value that passes directional and fails action constraint");
+    }
+
+    dispatchHooks(66, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: invalidActionValue },
+      cutValue: invalidActionValue,
+      cutSuccess: true,
+    });
+
+    expect(state.campaign.bunkerTracker.position).toBe(3);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail).startsWith("bunker_flow:blocked:action")),
+    ).toBe(true);
+  });
+
   it("mission 66 end-to-end simulation follows full bunker path and rotating constraints", () => {
     const state = makeGameState({
       mission: 66,
       log: [],
       players: [
-        makePlayer({
-          id: "p1",
-          hand: Array.from({ length: 12 }, (_, idx) =>
-            makeTile({
-              id: `p1-${idx + 1}`,
-              gameValue: idx + 1,
-              sortValue: idx + 1,
-            })
-          ),
-        }),
+        makePlayer({ id: "p1", hand: [] }),
         makePlayer({
           id: "p2",
           hand: [makeTile({ id: "p2-hold", gameValue: 12, sortValue: 12 })],
@@ -1876,24 +1997,53 @@ describe("mission progression hooks", () => {
     });
 
     for (let step = 1; step <= 10; step++) {
-      const result = executeSoloCut(state, "p1", step);
+      const tracker = state.campaign?.bunkerTracker;
+      const constraintsState = state.campaign?.constraints;
+      if (!tracker || !constraintsState) {
+        throw new Error("mission 66 should keep bunker tracker/constraints initialized");
+      }
+      const pointer =
+        state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value
+          ?? (tracker.position % 4);
+      const directionalConstraintId = constraintsState.global[pointer]?.id;
+      if (!directionalConstraintId) throw new Error("expected active directional constraint");
+      const currentPoint = getMission66BunkerTrackPoint(tracker.position, tracker.max);
+      const requiredConstraintIds = [directionalConstraintId];
+      if (currentPoint.floor === "front" && currentPoint.row === 2 && currentPoint.col === 1) {
+        const actionConstraintId = constraintsState.deck?.[0]?.id;
+        if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
+      }
+      if (currentPoint.floor === "back" && currentPoint.row === 2 && currentPoint.col === 3) {
+        const actionConstraintId = constraintsState.deck?.[0]?.id;
+        if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
+      }
+      const cutValue = pickValueForTestConstraints(requiredConstraintIds);
+      state.players[0]!.hand.push(
+        makeTile({
+          id: `p1-m66-step-${step}`,
+          gameValue: cutValue,
+          sortValue: cutValue,
+        }),
+      );
+
+      const result = executeSoloCut(state, "p1", cutValue);
       expect(result.type).toBe("soloCutResult");
       expect(state.campaign?.bunkerTracker?.position).toBe(step);
       expect(
         state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
       ).toBe(step % 4);
 
-      const tracker = state.campaign?.bunkerTracker;
-      if (!tracker) {
+      const trackerAfterCut = state.campaign?.bunkerTracker;
+      if (!trackerAfterCut) {
         throw new Error("mission 66 should keep bunker tracker initialized");
       }
-      const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
+      const point = getMission66BunkerTrackPoint(trackerAfterCut.position, trackerAfterCut.max);
       expect(point.index).toBe(step);
-      if (step === 5) {
-        expect(point).toMatchObject({ floor: "front", row: 0, col: 3 });
-      }
-      if (step === 6) {
+      if (step === 7) {
         expect(point).toMatchObject({ floor: "back", row: 0, col: 3 });
+      }
+      if (step === 8) {
+        expect(point).toMatchObject({ floor: "back", row: 1, col: 3 });
       }
     }
 
@@ -1905,7 +2055,7 @@ describe("mission progression hooks", () => {
       index: 10,
       floor: "back",
       row: 2,
-      col: 3,
+      col: 2,
     });
     expect(state.phase).toBe("playing");
     expect(state.result).toBeNull();

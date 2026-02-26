@@ -913,6 +913,9 @@ function CampaignObjectsHint({
                           const frontStairs =
                             MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "stairs")
                               ?? null;
+                          const backStairs =
+                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "stairs")
+                              ?? null;
                           const goal =
                             MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "goal")
                               ?? null;
@@ -941,7 +944,16 @@ function CampaignObjectsHint({
                             frontStairs
                               ? {
                                   label: "Stairs",
-                                  status: resolveStatus(frontStairs.floor, frontStairs.row, frontStairs.col),
+                                  status: (() => {
+                                    const frontStatus = resolveStatus(
+                                      frontStairs.floor,
+                                      frontStairs.row,
+                                      frontStairs.col,
+                                    );
+                                    if (frontStatus !== "Pending") return frontStatus;
+                                    if (!backStairs) return frontStatus;
+                                    return resolveStatus(backStairs.floor, backStairs.row, backStairs.col);
+                                  })(),
                                 }
                               : null,
                             goal

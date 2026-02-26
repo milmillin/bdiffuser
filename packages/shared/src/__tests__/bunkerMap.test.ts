@@ -75,18 +75,95 @@ describe("mission 66 bunker map", () => {
     });
     expect(getMission66BunkerTrackPoint(5, 10)).toMatchObject({
       floor: "front",
-      row: 0,
+      row: 2,
       col: 3,
     });
     expect(getMission66BunkerTrackPoint(6, 10)).toMatchObject({
+      floor: "front",
+      row: 1,
+      col: 3,
+    });
+    expect(getMission66BunkerTrackPoint(7, 10)).toMatchObject({
       floor: "back",
       row: 0,
+      col: 3,
+    });
+    expect(getMission66BunkerTrackPoint(8, 10)).toMatchObject({
+      floor: "back",
+      row: 1,
+      col: 3,
+    });
+    expect(getMission66BunkerTrackPoint(9, 10)).toMatchObject({
+      floor: "back",
+      row: 2,
       col: 3,
     });
     expect(getMission66BunkerTrackPoint(10, 10)).toMatchObject({
       floor: "back",
       row: 2,
-      col: 3,
+      col: 2,
     });
+  });
+
+  it("follows a legal start-to-finish navigation order", () => {
+    expect(MISSION66_BUNKER_TRACK_PATH[0]).toMatchObject({
+      index: 0,
+      floor: "front",
+      row: 0,
+      col: 0,
+    });
+    expect(MISSION66_BUNKER_TRACK_PATH[MISSION66_BUNKER_TRACK_PATH.length - 1]).toMatchObject({
+      index: 10,
+      floor: "back",
+      row: 2,
+      col: 2,
+    });
+
+    for (let i = 1; i < MISSION66_BUNKER_TRACK_PATH.length; i++) {
+      const prev = MISSION66_BUNKER_TRACK_PATH[i - 1]!;
+      const next = MISSION66_BUNKER_TRACK_PATH[i]!;
+      expect(next.index).toBe(prev.index + 1);
+
+      if (prev.floor === next.floor) {
+        const distance = Math.abs(prev.row - next.row) + Math.abs(prev.col - next.col);
+        expect(distance).toBe(1);
+      } else {
+        const nextCell = getMission66BunkerCell(next.floor, next.row, next.col);
+        expect(nextCell?.marker).toBe("stairs");
+        // Entering stairs flips immediately, so floor-transition can occur from an
+        // adjacent front tile to the connected back stairs in one tracked step.
+        const frontStairs = getMission66BunkerCell("front", 0, 3);
+        expect(frontStairs?.marker).toBe("stairs");
+        const distanceToFrontStairs = Math.abs(prev.row - 0) + Math.abs(prev.col - 3);
+        expect(prev.floor).toBe("front");
+        expect(distanceToFrontStairs).toBe(1);
+        expect(getMission66ConnectedCell("front", 0, 3)).toMatchObject({
+          floor: next.floor,
+          row: next.row,
+          col: next.col,
+        });
+      }
+    }
+  });
+
+  it("activates bunker items in expected order from start to finish", () => {
+    const indexOf = (floor: "front" | "back", row: number, col: number): number =>
+      MISSION66_BUNKER_TRACK_PATH.findIndex(
+        (point) => point.floor === floor && point.row === row && point.col === col,
+      );
+
+    const keyIndex = indexOf("front", 2, 1);
+    const skullIndex = indexOf("front", 1, 3);
+    const stairsIndex = indexOf("back", 0, 3);
+    const alarmIndex = indexOf("back", 2, 3);
+
+    expect(keyIndex).toBe(3);
+    expect(skullIndex).toBe(6);
+    expect(stairsIndex).toBe(7);
+    expect(alarmIndex).toBe(9);
+    expect(keyIndex).toBeGreaterThanOrEqual(0);
+    expect(skullIndex).toBeGreaterThan(keyIndex);
+    expect(stairsIndex).toBeGreaterThan(keyIndex);
+    expect(alarmIndex).toBeGreaterThan(stairsIndex);
   });
 });

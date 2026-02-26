@@ -140,12 +140,13 @@ export const MISSION66_BUNKER_TRACK_PATH: readonly Mission66BunkerTrackPoint[] =
   { index: 2, floor: "front", row: 2, col: 0 },
   { index: 3, floor: "front", row: 2, col: 1 }, // ACTION key
   { index: 4, floor: "front", row: 2, col: 2 },
-  { index: 5, floor: "front", row: 0, col: 3 }, // Stairs (front)
-  { index: 6, floor: "back", row: 0, col: 3 }, // Stairs (back)
-  { index: 7, floor: "back", row: 0, col: 2 },
-  { index: 8, floor: "back", row: 1, col: 2 },
-  { index: 9, floor: "back", row: 2, col: 2 },
-  { index: 10, floor: "back", row: 2, col: 3 }, // ACTION alarm
+  { index: 5, floor: "front", row: 2, col: 3 },
+  { index: 6, floor: "front", row: 1, col: 3 }, // Goal (skull)
+  // Entering stairs flips immediately to back floor (no extra turn on front stair).
+  { index: 7, floor: "back", row: 0, col: 3 }, // Stairs (back)
+  { index: 8, floor: "back", row: 1, col: 3 },
+  { index: 9, floor: "back", row: 2, col: 3 }, // ACTION alarm
+  { index: 10, floor: "back", row: 2, col: 2 },
 ] as const;
 
 /**

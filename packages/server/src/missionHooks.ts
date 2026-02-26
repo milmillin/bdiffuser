@@ -43,6 +43,8 @@ import type {
 } from "@bomb-busters/shared";
 import {
   EQUIPMENT_DEFS,
+  getMission66BunkerCell,
+  getMission66BunkerTrackPoint,
   MISSION_SCHEMAS,
   isLogTextDetail,
   type MissionHookRuleDef,
@@ -688,6 +690,10 @@ function setActionPointer(state: GameState, value: number): void {
     markers.push({ kind: "action_pointer", value });
   }
   state.campaign.specialMarkers = markers;
+}
+
+function getActionPointer(state: Readonly<GameState>): number | undefined {
+  return state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value;
 }
 
 function parseTargetValueFromChallengeId(id: string): number | null {
@@ -2573,6 +2579,41 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     if (ctx.action.type !== "soloCut" && ctx.action.type !== "dualCut") return;
     const tracker = ctx.state.campaign?.bunkerTracker;
     if (!tracker) return;
+    if (typeof ctx.cutValue !== "number") return;
+
+    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
+    const pointer = getActionPointer(ctx.state) ?? (tracker.position % cycle);
+    const directionalConstraint = ctx.state.campaign?.constraints?.global?.[pointer];
+    if (directionalConstraint && !valuePassesConstraint(ctx.cutValue, directionalConstraint.id)) {
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: ctx.action.actorId,
+        action: "hookEffect",
+        detail:
+          `bunker_flow:blocked:direction|pointer=${pointer}|constraint=${directionalConstraint.id}|value=${ctx.cutValue}`,
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
+    const currentCell = getMission66BunkerCell(point.floor, point.row, point.col);
+    const actionConstraint = ctx.state.campaign?.constraints?.deck?.[0];
+    if (
+      currentCell?.marker === "action" &&
+      actionConstraint &&
+      !valuePassesConstraint(ctx.cutValue, actionConstraint.id)
+    ) {
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: ctx.action.actorId,
+        action: "hookEffect",
+        detail:
+          `bunker_flow:blocked:action|constraint=${actionConstraint.id}|value=${ctx.cutValue}|cell=${point.floor}:${point.row}:${point.col}`,
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     const advanceBy = Math.max(0, Math.floor(rule.advanceBy));
     if (advanceBy === 0) return;
@@ -2587,8 +2628,6 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
 
     const before = tracker.position;
     tracker.position = clampProgress(before + effectiveAdvanceBy, tracker.max);
-
-    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     setActionPointer(ctx.state, tracker.position % cycle);
 
     pushGameLog(ctx.state, {
