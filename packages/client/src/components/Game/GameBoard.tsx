@@ -2144,11 +2144,24 @@ export function GameBoard({
             type="button"
             data-testid="right-bar-toggle"
             onClick={() => setIsRightBarHidden((prev) => !prev)}
-            className="hidden md:flex items-center justify-center w-7 rounded border border-gray-700 bg-[var(--color-bomb-surface)] text-gray-300 text-sm font-black transition-colors hover:border-amber-500 hover:text-amber-300"
+            className="group relative hidden md:flex h-full w-6 items-center justify-center focus-visible:outline-none"
             aria-label={isRightBarHidden ? "Show right bar" : "Hide right bar"}
             title={isRightBarHidden ? "Show right bar" : "Hide right bar"}
           >
-            {isRightBarHidden ? "<" : ">"}
+            <span
+              aria-hidden="true"
+              className={`absolute inset-y-1 left-1/2 -translate-x-1/2 w-px opacity-0 transition-all ${
+                isRightBarHidden
+                  ? "bg-gray-500/70 group-hover:opacity-100 group-hover:bg-gray-300/90 group-focus-visible:opacity-100 group-focus-visible:bg-gray-200"
+                  : "bg-gray-700/45 group-hover:opacity-100 group-hover:bg-gray-500/80 group-focus-visible:opacity-100 group-focus-visible:bg-gray-400/90"
+              }`}
+            />
+            <span
+              aria-hidden="true"
+              className="text-[10px] leading-none text-gray-500/80 transition-colors group-hover:text-gray-300 group-focus-visible:text-gray-200"
+            >
+              {isRightBarHidden ? "<" : ">"}
+            </span>
           </button>
 
           {/* Sidebar: mission card + action log / chat (desktop only, can be hidden via edge toggle) */}
