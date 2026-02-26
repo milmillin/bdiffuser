@@ -37,6 +37,7 @@ export function RightPanel({
     <div
       className="hidden w-48 md:grid md:w-60 lg:w-72 xl:w-80 flex-shrink-0 gap-3 overflow-hidden"
       style={{ gridTemplateRows: "1fr auto" }}
+      data-testid="right-panel"
     >
       {/* Top: scrollable info area */}
       <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">

@@ -325,6 +325,7 @@ export function GameBoard({
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
+  const [isRightBarHidden, setIsRightBarHidden] = useState(false);
 
   const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
 
@@ -1340,7 +1341,7 @@ export function GameBoard({
         </div>
 
         <div
-          className="grid grid-cols-[1fr] md:grid-cols-[1fr_auto] gap-2 pr-2 py-2 pb-14 md:pb-2 overflow-hidden min-w-0 min-h-0"
+          className={`grid grid-cols-[1fr] ${isRightBarHidden ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_auto_auto]"} gap-2 pr-2 py-2 pb-14 md:pb-2 overflow-hidden min-w-0 min-h-0`}
         >
           {/* Game area */}
           <div
@@ -2139,32 +2140,45 @@ export function GameBoard({
             </div>
           )}
 
-          {/* Sidebar: mission card + action log / chat (hidden on mobile via RightPanel's own classes) */}
-          <RightPanel
-            missionId={gameState.mission}
-            log={gameState.log}
-            players={gameState.players}
-            result={gameState.result}
-            chatMessages={chatMessages}
-            send={send}
-            playerId={playerId}
-            missionExtras={
-              <ActionMissionHints
-                mission={gameState.mission}
-                isMyTurn={isMyTurn}
-                mission11RevealBlockedHint={mission11RevealBlockedHint}
-                mission9ActiveValue={mission9ActiveValue}
-                mission9RequiredCuts={mission9RequiredCuts}
-                mission9ActiveProgress={mission9ActiveProgress}
-                mission9DualGuessBlocked={
-                  mission9PendingDualBlocked || mission9SelectedGuessBlocked
-                }
-                mission9HasYellowSoloValue={mission9HasYellowSoloValue}
-                mission59ForwardValues={mission59ForwardValues}
-                forceRevealReds={forceRevealReds}
-              />
-            }
-          />
+          <button
+            type="button"
+            data-testid="right-bar-toggle"
+            onClick={() => setIsRightBarHidden((prev) => !prev)}
+            className="hidden md:flex items-center justify-center w-7 rounded border border-gray-700 bg-[var(--color-bomb-surface)] text-gray-300 text-sm font-black transition-colors hover:border-amber-500 hover:text-amber-300"
+            aria-label={isRightBarHidden ? "Show right bar" : "Hide right bar"}
+            title={isRightBarHidden ? "Show right bar" : "Hide right bar"}
+          >
+            {isRightBarHidden ? "<" : ">"}
+          </button>
+
+          {/* Sidebar: mission card + action log / chat (desktop only, can be hidden via edge toggle) */}
+          {!isRightBarHidden && (
+            <RightPanel
+              missionId={gameState.mission}
+              log={gameState.log}
+              players={gameState.players}
+              result={gameState.result}
+              chatMessages={chatMessages}
+              send={send}
+              playerId={playerId}
+              missionExtras={
+                <ActionMissionHints
+                  mission={gameState.mission}
+                  isMyTurn={isMyTurn}
+                  mission11RevealBlockedHint={mission11RevealBlockedHint}
+                  mission9ActiveValue={mission9ActiveValue}
+                  mission9RequiredCuts={mission9RequiredCuts}
+                  mission9ActiveProgress={mission9ActiveProgress}
+                  mission9DualGuessBlocked={
+                    mission9PendingDualBlocked || mission9SelectedGuessBlocked
+                  }
+                  mission9HasYellowSoloValue={mission9HasYellowSoloValue}
+                  mission59ForwardValues={mission59ForwardValues}
+                  forceRevealReds={forceRevealReds}
+                />
+              }
+            />
+          )}
         </div>
 
       </div>
