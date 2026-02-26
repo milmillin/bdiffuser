@@ -219,7 +219,7 @@ const MVP_RANK_STYLES = [
 ];
 
 const btnBase =
-  "px-7 py-3.5 rounded-xl font-extrabold text-base tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
+  "px-4 py-2.5 sm:px-7 sm:py-3.5 min-h-11 sm:min-h-0 rounded-xl font-extrabold text-sm sm:text-base leading-tight tracking-wide sm:tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
 
 export function ShameDashboard({
   gameState,
@@ -359,7 +359,7 @@ export function ShameDashboard({
         <div className="pt-4">
           <button
             onClick={onBack}
-            className={`${btnBase} ${isWin ? "bg-green-800 border-green-950 text-green-100 shadow-[0_4px_15px_rgba(22,101,52,0.5)] hover:bg-green-700 hover:shadow-[0_6px_20px_rgba(22,101,52,0.6)]" : "bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]"}`}
+            className={`w-full sm:w-auto ${btnBase} ${isWin ? "bg-green-800 border-green-950 text-green-100 shadow-[0_4px_15px_rgba(22,101,52,0.5)] hover:bg-green-700 hover:shadow-[0_6px_20px_rgba(22,101,52,0.6)]" : "bg-gray-700 border-gray-900 text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] hover:bg-gray-600 hover:shadow-[0_6px_20px_rgba(0,0,0,0.5)]"}`}
           >
             Back
           </button>
