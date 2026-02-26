@@ -4907,6 +4907,10 @@ registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
       };
     }
 
+    if (ctx.action.type === "revealReds") {
+      return;
+    }
+
     const isCutAction = ctx.action.type === "dualCut"
       || ctx.action.type === "dualCutDoubleDetector"
       || ctx.action.type === "soloCut";

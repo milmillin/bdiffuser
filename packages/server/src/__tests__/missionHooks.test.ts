@@ -2762,17 +2762,17 @@ describe("missionHooks dispatcher", () => {
       expect(allowed.validationError).toBeUndefined();
     });
 
-    it("mission 26: blocks revealReds even when a matching visible number exists", () => {
+    it("mission 26: allows revealReds when no visible Number cards remain", () => {
       const actor = makePlayer({
         id: "p1",
-        hand: [makeTile({ id: "r1", color: "blue", gameValue: 1, cut: false })],
+        hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
       });
       const state = makeGameState({
         mission: 26,
         players: [actor],
         campaign: {
           numberCards: {
-            visible: [{ id: "m26-visible-1", value: 1, faceUp: true }],
+            visible: [],
             deck: [],
             discard: [],
             playerHands: {},
@@ -2780,7 +2780,7 @@ describe("missionHooks dispatcher", () => {
         },
       });
 
-      const blocked = dispatchHooks(26, {
+      const result = dispatchHooks(26, {
         point: "validate",
         state,
         action: {
@@ -2789,8 +2789,7 @@ describe("missionHooks dispatcher", () => {
         },
       });
 
-      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
-      expect(blocked.validationError).toContain("must cut a wire");
+      expect(result.validationError).toBeUndefined();
     });
 
     it("mission 59: blocks revealReds when a cut action is required", () => {

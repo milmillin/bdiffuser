@@ -1122,7 +1122,7 @@ describe("canRevealReds mission rules", () => {
     expect(canRevealReds(state, "me")).toBe(false);
   });
 
-  it("returns false in mission 26 even when all remaining wires are red", () => {
+  it("returns true in mission 26 when all remaining wires are red", () => {
     const state = makeGameState({
       mission: 26,
       players: [
@@ -1133,7 +1133,7 @@ describe("canRevealReds mission rules", () => {
       ],
     }) as unknown as ClientGameState;
 
-    expect(canRevealReds(state, "me")).toBe(false);
+    expect(canRevealReds(state, "me")).toBe(true);
   });
 
   it("returns true outside mission 13 when all remaining wires are red", () => {
