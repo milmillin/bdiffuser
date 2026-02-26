@@ -58,6 +58,8 @@ import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { CardStrip } from "./CardStrip.js";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 import {
+  canStageEquipmentCardFromCardStrip,
+  canStagePersonalSkillFromCardStrip,
   canRevealReds,
   isRevealRedsForced,
   isMission59DualCutActorTileValueAllowed,
@@ -347,6 +349,10 @@ export function GameBoard({
     number | null
   >(null);
   const [mission46Targets, setMission46Targets] = useState<MultiCutTarget[]>([]);
+  const [missionFourCutTargets, setMissionFourCutTargets] = useState<
+    MultiCutTarget[]
+  >([]);
+  const [missionFourCutMode, setMissionFourCutMode] = useState(false);
   const [missionSpecialTargets, setMissionSpecialTargets] = useState<
     MultiCutTarget[]
   >([]);
@@ -446,6 +452,8 @@ export function GameBoard({
         ? pendingForcedAction.currentChooserId
       : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
         ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === "mission61ConstraintRotate"
+        ? pendingForcedAction.captainId
           : undefined);
   const forcedActionCaptainName = forcedActionCaptainId
     ? gameState.players.find((p) => p.id === forcedActionCaptainId)?.name
@@ -476,6 +484,8 @@ export function GameBoard({
     setMission59RotateNano(false);
     setEquipmentMode(null);
     setSelectedDockCardId(null);
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
   }, [mission46ForcedForMe]);
 
   const activeGlobalConstraints =
@@ -548,6 +558,25 @@ export function GameBoard({
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const revealRedsForcedForActor = me != null && isRevealRedsForced(gameState, playerId);
   const revealRedsForced = isMyTurn && revealRedsForcedForActor;
+  const missionSupportsSimultaneousFourCut =
+    gameState.mission === 23 || gameState.mission === 39;
+  const missionFourCutTargetValue =
+    missionSupportsSimultaneousFourCut
+      ? gameState.campaign?.numberCards?.visible?.[0]?.value ?? null
+      : null;
+  const missionFourCutAlreadyDone = gameState.campaign?.mission23SpecialActionDone === true;
+  const canStartMissionFourCut =
+    missionSupportsSimultaneousFourCut &&
+    !missionFourCutAlreadyDone &&
+    typeof missionFourCutTargetValue === "number" &&
+    gameState.phase === "playing" &&
+    isMyTurn &&
+    !gameState.pendingForcedAction &&
+    !equipmentMode &&
+    pendingAction == null &&
+    !missionSpecialMode &&
+    !mission46ForcedForMe &&
+    !revealRedsForced;
   const missionSupportsSimultaneousThreeCut =
     gameState.mission === 13 || gameState.mission === 48 || gameState.mission === 41;
   const missionSpecialRequiredColor =
@@ -626,6 +655,7 @@ export function GameBoard({
     !gameState.pendingForcedAction &&
     !equipmentMode &&
     pendingAction == null &&
+    !missionFourCutMode &&
     !mission46ForcedForMe &&
     (!revealRedsForced || missionSpecialCanBypassForcedReveal);
   const mission11RevealBlockedHint =
@@ -647,6 +677,12 @@ export function GameBoard({
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
   }, [canStartMissionSpecialCut]);
+
+  useEffect(() => {
+    if (canStartMissionFourCut) return;
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
+  }, [canStartMissionFourCut]);
 
   const soloValues = me ? getSoloCutValues(gameState, playerId) : [];
   const soloValueSet = new Set<number | "YELLOW">(soloValues);
@@ -815,6 +851,8 @@ export function GameBoard({
     setMission59RotateNano(false);
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
   }, [gameState.turnNumber, gameState.phase]);
 
   useEffect(() => {
@@ -839,8 +877,17 @@ export function GameBoard({
     send(msg);
   }, [equipmentMode?.source, send]);
 
-  const handleOpponentTileClick = (oppId: string, tileIndex: number) => {
-    const newMode = _handleOpponentTileClick(equipmentMode, oppId, tileIndex);
+  const handleOpponentTileClick = (
+    oppId: string,
+    tileIndex: number,
+    targetPlayer?: ClientPlayer,
+  ) => {
+    const newMode = _handleOpponentTileClick(
+      equipmentMode,
+      oppId,
+      tileIndex,
+      targetPlayer,
+    );
     if (newMode !== equipmentMode) setEquipmentMode(newMode);
   };
 
@@ -857,8 +904,16 @@ export function GameBoard({
 
   // --- Selectability filters (delegated to pure functions) ---
 
-  const getOpponentTileSelectableFilter = (oppId: string) =>
-    _getOpponentTileSelectableFilter(equipmentMode, oppId, gameState.mission);
+  const getOpponentTileSelectableFilter = (
+    oppId: string,
+    targetPlayer?: ClientPlayer,
+  ) =>
+    _getOpponentTileSelectableFilter(
+      equipmentMode,
+      oppId,
+      gameState.mission,
+      targetPlayer,
+    );
 
   const getOwnTileSelectableFilter = () =>
     _getOwnTileSelectableFilter(equipmentMode, me, gameState);
@@ -881,6 +936,12 @@ export function GameBoard({
     if (equipmentMode) return undefined;
     if (missionSpecialMode) {
       const indices = missionSpecialTargets
+        .filter((target) => target.playerId === oppId)
+        .map((target) => target.tileIndex);
+      return indices.length > 0 ? indices : undefined;
+    }
+    if (missionFourCutMode) {
+      const indices = missionFourCutTargets
         .filter((target) => target.playerId === oppId)
         .map((target) => target.tileIndex);
       return indices.length > 0 ? indices : undefined;
@@ -919,6 +980,12 @@ export function GameBoard({
         .map((target) => target.tileIndex);
       return indices.length > 0 ? indices : undefined;
     }
+    if (!equipmentMode && missionFourCutMode) {
+      const indices = missionFourCutTargets
+        .filter((target) => target.playerId === playerId)
+        .map((target) => target.tileIndex);
+      return indices.length > 0 ? indices : undefined;
+    }
     if (!equipmentMode && mission46ForcedForMe) {
       const indices = mission46Targets
         .filter((target) => target.playerId === playerId)
@@ -936,33 +1003,30 @@ export function GameBoard({
     return undefined;
   };
 
-  const getCutCountForValue = (value: number): number => {
-    let count = 0;
-    for (const player of gameState.players) {
-      for (const tile of player.hand) {
-        if (tile.cut && tile.gameValue === value) count++;
-      }
-    }
-    return count;
-  };
-
   const canUseSkillFromCardStrip =
-    !!me &&
-    !!me.character &&
-    !me.characterUsed &&
-    (canUseCharacterSkillAnytime(me.character) || isMyTurn) &&
+    !!me?.character &&
     gameState.phase === "playing" &&
-    !gameState.pendingForcedAction &&
-    !revealRedsForcedForActor;
+    canStagePersonalSkillFromCardStrip(gameState, playerId, {
+      revealRedsForcedForActor,
+    }) &&
+    (canUseCharacterSkillAnytime(me.character) || isMyTurn);
 
   const stageEquipmentActionFromCardStrip = (equipmentId: string): boolean => {
-    if (!me || gameState.phase !== "playing" || gameState.pendingForcedAction) {
+    if (!me || gameState.phase !== "playing") {
       return false;
     }
-    if (equipmentMode || pendingAction || missionSpecialMode) return false;
+    if (equipmentMode || pendingAction || missionSpecialMode || missionFourCutMode) {
+      return false;
+    }
+    const typedEquipmentId = equipmentId as AnyEquipmentId;
+    if (!canStageEquipmentCardFromCardStrip(gameState, playerId, typedEquipmentId, {
+      revealRedsForcedForActor,
+    })) {
+      return false;
+    }
 
     const equipment = gameState.board.equipment.find((eq) => eq.id === equipmentId);
-    if (!equipment || !equipment.unlocked || equipment.used) return false;
+    if (!equipment) return false;
 
     const def = EQUIPMENT_DEFS.find((entry) => entry.id === equipment.id);
     if (!def) return false;
@@ -973,19 +1037,8 @@ export function GameBoard({
       def.useTiming === "immediate" ||
       ((def.useTiming === "in_turn" || def.useTiming === "start_of_turn") &&
         isMyTurn);
-    const secondaryValue = equipment.secondaryLockValue;
-    const secondaryRequired = equipment.secondaryLockCutsRequired ?? 2;
-    const secondaryProgress =
-      secondaryValue !== undefined
-        ? getCutCountForValue(secondaryValue)
-        : secondaryRequired;
-    const secondaryLocked =
-      secondaryValue !== undefined && secondaryProgress < secondaryRequired;
-    const blockedByForcedReveal = revealRedsForced && isMyTurn;
-    if (!timingAllowsUse || secondaryLocked || blockedByForcedReveal)
-      return false;
+    if (!timingAllowsUse) return false;
 
-    const typedEquipmentId = equipment.id as AnyEquipmentId;
     const immediatePayload = getImmediateEquipmentPayload(typedEquipmentId);
     if (immediatePayload) {
       setPendingAction({
@@ -1006,7 +1059,10 @@ export function GameBoard({
   };
 
   const stageSkillFromCardStrip = (): boolean => {
-    if (!me?.character || !canUseSkillFromCardStrip || missionSpecialMode) return false;
+    if (!me?.character || !canUseSkillFromCardStrip) return false;
+    if (equipmentMode || pendingAction || missionSpecialMode || missionFourCutMode) {
+      return false;
+    }
     const skillMode = getCharacterSkillMode(me.character);
     if (!skillMode) return false;
     setEquipmentMode(skillMode);
@@ -1072,6 +1128,25 @@ export function GameBoard({
     [],
   );
 
+  const toggleMissionFourCutTarget = useCallback(
+    (targetPlayerId: string, tileIndex: number) => {
+      setMissionFourCutTargets((current) => {
+        const existingIndex = current.findIndex(
+          (target) =>
+            target.playerId === targetPlayerId && target.tileIndex === tileIndex,
+        );
+        if (existingIndex >= 0) {
+          return current.filter((_, index) => index !== existingIndex);
+        }
+        if (current.length >= 4) {
+          return current;
+        }
+        return [...current, { playerId: targetPlayerId, tileIndex }];
+      });
+    },
+    [],
+  );
+
   const toggleMissionSpecialTarget = useCallback(
     (targetPlayerId: string, tileIndex: number) => {
       if (gameState.mission === 41 && targetPlayerId === playerId) return;
@@ -1096,6 +1171,37 @@ export function GameBoard({
     setMission46Targets([]);
   }, []);
 
+  const clearMissionFourCutTargets = useCallback(() => {
+    setMissionFourCutTargets([]);
+  }, []);
+
+  const startMissionFourCut = useCallback(() => {
+    if (!canStartMissionFourCut) return;
+    setMissionFourCutMode(true);
+    setMissionFourCutTargets([]);
+    setSelectedGuessTile(null);
+    setPendingAction(null);
+    setSelectedDockCardId(null);
+    setEquipmentMode(null);
+    setMissionSpecialMode(false);
+    setMissionSpecialTargets([]);
+  }, [canStartMissionFourCut]);
+
+  const cancelMissionFourCut = useCallback(() => {
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
+  }, []);
+
+  const confirmMissionFourCut = useCallback(() => {
+    if (!missionFourCutMode || missionFourCutTargets.length !== 4) return;
+    send({ type: "simultaneousFourCut", targets: missionFourCutTargets });
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+    setSelectedDockCardId(null);
+  }, [missionFourCutMode, missionFourCutTargets, send]);
+
   const startMissionSpecialCut = useCallback(() => {
     if (!canStartMissionSpecialCut) return;
     setMissionSpecialMode(true);
@@ -1104,6 +1210,8 @@ export function GameBoard({
     setPendingAction(null);
     setSelectedDockCardId(null);
     setEquipmentMode(null);
+    setMissionFourCutMode(false);
+    setMissionFourCutTargets([]);
   }, [canStartMissionSpecialCut]);
 
   const clearMissionSpecialTargets = useCallback(() => {
@@ -1251,13 +1359,19 @@ export function GameBoard({
                         MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind) &&
                         gameState.phase === "playing"
                           ? (tileIndex) =>
-                              handleOpponentTileClick(opp.id, tileIndex)
+                              handleOpponentTileClick(opp.id, tileIndex, opp)
                             : missionSpecialMode
                             ? (tileIndex) => {
                                 const oppTile = opp.hand[tileIndex];
                                 if (!oppTile || oppTile.cut) return;
                                 if (!isMissionSpecialTargetAllowed(gameState, oppTile.color)) return;
                                 toggleMissionSpecialTarget(opp.id, tileIndex);
+                              }
+                          : missionFourCutMode
+                            ? (tileIndex) => {
+                                const oppTile = opp.hand[tileIndex];
+                                if (!oppTile || oppTile.cut) return;
+                                toggleMissionFourCutTarget(opp.id, tileIndex);
                               }
                           : mission46ForcedForMe
                             ? (tileIndex) => {
@@ -1320,9 +1434,11 @@ export function GameBoard({
                         equipmentMode &&
                         gameState.phase === "playing" &&
                         MODES_NEEDING_OPPONENT_CLICK.has(equipmentMode.kind)
-                          ? getOpponentTileSelectableFilter(opp.id)
+                          ? getOpponentTileSelectableFilter(opp.id, opp)
                         : missionSpecialMode
                           ? (tile: VisibleTile) => !tile.cut && isMissionSpecialTargetAllowed(gameState, tile.color)
+                          : missionFourCutMode
+                            ? (tile: VisibleTile) => !tile.cut
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
@@ -1359,7 +1475,7 @@ export function GameBoard({
                         character={me.character}
                         characterUsed={me.characterUsed}
                         isMyTurn={isMyTurn}
-                        canSelectCards={!isSetup && !missionSpecialMode}
+                        canSelectCards={!isSetup && !missionSpecialMode && !missionFourCutMode}
                         selectedCardId={selectedDockCardId}
                         onSelectCard={setSelectedDockCardId}
                         onDeselectCard={cancelSelectedDockCard}
@@ -1517,6 +1633,45 @@ export function GameBoard({
                     selectedCount={mission46Targets.length}
                     onClear={clearMission46Targets}
                     onConfirm={confirmMission46SevensCut}
+                  />
+                )}
+
+                {gameState.phase === "playing" &&
+                  canStartMissionFourCut &&
+                  !missionFourCutMode &&
+                  typeof missionFourCutTargetValue === "number" && (
+                    <div
+                      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs space-y-2"
+                      data-testid="mission-four-cut-launch"
+                    >
+                      <div className="font-bold text-amber-300 uppercase tracking-wide">
+                        Mission {gameState.mission} Special Action
+                      </div>
+                      <div className="text-amber-100">
+                        Cut the 4 wires matching Number card{" "}
+                        <span className="font-black text-amber-200">
+                          {missionFourCutTargetValue}
+                        </span>{" "}
+                        at the same time.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={startMissionFourCut}
+                        className="px-3 py-1 rounded bg-amber-700 hover:bg-amber-600 text-white font-black transition-colors"
+                      >
+                        Select 4 Wires
+                      </button>
+                    </div>
+                  )}
+
+                {gameState.phase === "playing" && missionFourCutMode && (
+                  <MissionFourCutPanel
+                    mission={gameState.mission}
+                    targetValue={missionFourCutTargetValue}
+                    selectedCount={missionFourCutTargets.length}
+                    onClear={clearMissionFourCutTargets}
+                    onCancel={cancelMissionFourCut}
+                    onConfirm={confirmMissionFourCut}
                   />
                 )}
 
@@ -1807,6 +1962,12 @@ export function GameBoard({
                                 if (!tile || tile.cut) return;
                                 toggleMissionSpecialTarget(playerId, tileIndex);
                               }
+                          : missionFourCutMode
+                            ? (tileIndex) => {
+                                const tile = me.hand[tileIndex];
+                                if (!tile || tile.cut) return;
+                                toggleMissionFourCutTarget(playerId, tileIndex);
+                              }
                           : mission46ForcedForMe
                             ? (tileIndex) => {
                                 const tile = me.hand[tileIndex];
@@ -1906,6 +2067,8 @@ export function GameBoard({
                               !(hasXWireEquipmentRestriction && tile.isXMarked)
                             : missionSpecialMode
                             ? (tile: VisibleTile) => !tile.cut && isMissionSpecialTargetAllowed(gameState, tile.color)
+                            : missionFourCutMode
+                            ? (tile: VisibleTile) => !tile.cut
                             : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : playingInteractionEnabled &&
@@ -2244,6 +2407,75 @@ function Mission46SevensCutPanel({
           className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
         >
           Clear
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          className={`px-3 py-1 rounded font-black transition-colors ${
+            canConfirm
+              ? "bg-red-600 hover:bg-red-500 text-white"
+              : "bg-gray-700 text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Confirm 4-Wire Cut
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MissionFourCutPanel({
+  mission,
+  targetValue,
+  selectedCount,
+  onClear,
+  onCancel,
+  onConfirm,
+}: {
+  mission: number;
+  targetValue: number | null;
+  selectedCount: number;
+  onClear: () => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const canConfirm = selectedCount === 4;
+
+  return (
+    <div
+      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs space-y-2"
+      data-testid="mission-four-cut-panel"
+    >
+      <div className="font-bold text-amber-300 uppercase tracking-wide">
+        Mission {mission} Special Action
+      </div>
+      <div className="text-amber-100">
+        Select exactly 4 uncut wires for the simultaneous cut
+        {typeof targetValue === "number" ? (
+          <>
+            {" "}
+            matching Number card{" "}
+            <span className="font-black text-amber-200">{targetValue}</span>
+          </>
+        ) : null}
+        .
+      </div>
+      <div className="text-amber-200/90">{selectedCount}/4 wires selected</div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onClear}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+        >
+          Cancel
         </button>
         <button
           type="button"
@@ -2662,8 +2894,8 @@ function ActionMissionHints({
           data-testid="reveal-reds-click-hint"
         >
           {mission === 11
-            ? "Reveal Reds: click one of your hidden red-like wires, then Confirm."
-            : "Reveal Reds: click one of your red wires, then Confirm."}
+            ? "Reveal Reds: select any hidden red-like wire to stage the action, then Confirm (selection does not change the result)."
+            : "Reveal Reds: select any red wire to stage the action, then Confirm (selection does not change the result)."}
         </div>
       )}
     </div>
@@ -2739,7 +2971,7 @@ function Header({
               }`}
               title={`Surrender vote: ${surrenderVoteYesCount}/${surrenderVoteRequired} yes votes`}
             >
-              GG {surrenderVoteYesCount}/{surrenderVoteRequired}
+              Surrender {surrenderVoteYesCount}/{surrenderVoteRequired}
             </button>
           )}
           {/* Mobile-only: turn + rules in row 1 */}

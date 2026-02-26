@@ -3,6 +3,7 @@ import type {
   ClientMessage,
   ClientPlayer,
   EquipmentGuessValue,
+  UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import {
@@ -150,6 +151,59 @@ function getPlayerStandSizes(player: ClientPlayer): number[] {
     return [player.hand.length];
   }
   return maybeStandSizes;
+}
+
+function flatIndexToStandIndex(player: ClientPlayer, flatIndex: number): number | null {
+  if (!Number.isInteger(flatIndex) || flatIndex < 0 || flatIndex >= player.hand.length) {
+    return null;
+  }
+
+  const standSizes = getPlayerStandSizes(player);
+  let cursor = 0;
+  for (let standIndex = 0; standIndex < standSizes.length; standIndex += 1) {
+    const size = standSizes[standIndex] ?? 0;
+    const endExclusive = cursor + size;
+    if (flatIndex < endExclusive) {
+      return standIndex;
+    }
+    cursor = endExclusive;
+  }
+
+  return null;
+}
+
+function areFlatIndicesAdjacentWithinStand(
+  player: ClientPlayer,
+  indexA: number,
+  indexB: number,
+): boolean {
+  if (Math.abs(indexA - indexB) !== 1) return false;
+  const standA = flatIndexToStandIndex(player, indexA);
+  const standB = flatIndexToStandIndex(player, indexB);
+  return standA != null && standA === standB;
+}
+
+function isLabelEqual(tileA: ClientPlayer["hand"][number], tileB: ClientPlayer["hand"][number]): boolean {
+  if (tileA.color === "red" && tileB.color === "red") return true;
+  if (tileA.color === "yellow" && tileB.color === "yellow") return true;
+  if (tileA.color === "blue" && tileB.color === "blue") {
+    return tileA.gameValue === tileB.gameValue;
+  }
+  return false;
+}
+
+export function buildTalkiesWalkiesPayload(
+  mode: Extract<EquipmentMode, { kind: "talkies_walkies" }>,
+): Extract<UseEquipmentPayload, { kind: "talkies_walkies" }> | null {
+  if (mode.teammateId == null || mode.myTileIndex == null) return null;
+  return {
+    kind: "talkies_walkies",
+    teammateId: mode.teammateId,
+    myTileIndex: mode.myTileIndex,
+    ...(mode.teammateTileIndex != null
+      ? { teammateTileIndex: mode.teammateTileIndex }
+      : {}),
+  };
 }
 
 export function EquipmentModePanel({
@@ -389,43 +443,67 @@ export function EquipmentModePanel({
     case "label_eq":
     case "label_neq": {
       if (mode.firstTileIndex === null) {
-        content = mode.kind === "label_neq"
-          ? "Click one of your wires to select the first wire."
-          : "Click one of your uncut wires to select the first wire.";
+        content = "Click one of your wires to select the first wire.";
       } else if (mode.secondTileIndex !== null) {
         const symbol = mode.kind === "label_eq" ? "=" : "≠";
-        content = (
-          <>
-            Wires {wireLabel(mode.firstTileIndex)} &amp;{" "}
-            {wireLabel(mode.secondTileIndex)} will be labeled {symbol}.
-          </>
-        );
-        confirmButton = (
-          <button
-            type="button"
-            data-testid={`${mode.kind}-confirm`}
-            onClick={() =>
-              sendAndCancel({
-                type: "useEquipment",
-                equipmentId: mode.kind,
-                payload: {
-                  kind: mode.kind,
-                  tileIndexA: mode.firstTileIndex!,
-                  tileIndexB: mode.secondTileIndex!,
-                },
-              })
-            }
-            className={BUTTON_PRIMARY_CLASS}
-          >
-            {mode.kind === "label_eq" ? "Confirm Label =" : "Confirm Label ≠"}
-          </button>
-        );
+        const firstTile = me.hand[mode.firstTileIndex];
+        const secondTile = me.hand[mode.secondTileIndex];
+        const pairAdjacent = firstTile && secondTile
+          ? areFlatIndicesAdjacentWithinStand(
+              me,
+              mode.firstTileIndex,
+              mode.secondTileIndex,
+            )
+          : false;
+        const pairEqual = firstTile && secondTile
+          ? isLabelEqual(firstTile, secondTile)
+          : false;
+        const pairValid = firstTile && secondTile
+          ? mode.kind === "label_eq"
+            ? pairAdjacent && pairEqual
+            : pairAdjacent && !pairEqual && !(firstTile.cut && secondTile.cut)
+          : false;
+
+        if (pairValid) {
+          content = (
+            <>
+              Wires {wireLabel(mode.firstTileIndex)} &amp;{" "}
+              {wireLabel(mode.secondTileIndex)} will be labeled {symbol}.
+            </>
+          );
+          confirmButton = (
+            <button
+              type="button"
+              data-testid={`${mode.kind}-confirm`}
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: mode.kind,
+                  payload: {
+                    kind: mode.kind,
+                    tileIndexA: mode.firstTileIndex!,
+                    tileIndexB: mode.secondTileIndex!,
+                  },
+                })
+              }
+              className={BUTTON_PRIMARY_CLASS}
+            >
+              {mode.kind === "label_eq" ? "Confirm Label =" : "Confirm Label ≠"}
+            </button>
+          );
+        } else {
+          content = mode.kind === "label_eq"
+            ? "Invalid pair: Label = requires adjacent wires on the same stand with matching values."
+            : "Invalid pair: Label ≠ requires adjacent wires on the same stand with different values (not both cut).";
+        }
       } else {
-        const adjacentLabels: string[] = [];
-        if (mode.firstTileIndex > 0)
-          adjacentLabels.push(wireLabel(mode.firstTileIndex - 1));
-        if (mode.firstTileIndex < me.hand.length - 1)
-          adjacentLabels.push(wireLabel(mode.firstTileIndex + 1));
+        const adjacentLabels: string[] = [mode.firstTileIndex - 1, mode.firstTileIndex + 1]
+          .filter((index) =>
+            index >= 0 &&
+            index < me.hand.length &&
+            areFlatIndicesAdjacentWithinStand(me, mode.firstTileIndex!, index),
+          )
+          .map((index) => wireLabel(index));
         content = (
           <>
             Selected wire {wireLabel(mode.firstTileIndex)}. Now click an
@@ -480,6 +558,8 @@ export function EquipmentModePanel({
         </div>
       );
       if (twAllComplete) {
+        const payload = buildTalkiesWalkiesPayload(mode);
+        if (!payload) break;
         confirmButton = (
           <button
             type="button"
@@ -488,11 +568,7 @@ export function EquipmentModePanel({
               sendAndCancel({
                 type: "useEquipment",
                 equipmentId: "talkies_walkies",
-                payload: {
-                  kind: "talkies_walkies",
-                  teammateId: mode.teammateId!,
-                  myTileIndex: mode.myTileIndex!,
-                },
+                payload,
               })
             }
             className={BUTTON_PRIMARY_CLASS}

@@ -35,12 +35,79 @@ function isMissionRestrictedDetectorTarget(
   return false;
 }
 
+function getPlayerStandSizes(player: Pick<ClientPlayer, "hand" | "standSizes">): number[] {
+  if (!Array.isArray(player.standSizes) || player.standSizes.length === 0) {
+    return [player.hand.length];
+  }
+
+  if (!player.standSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+
+  const total = player.standSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) {
+    return [player.hand.length];
+  }
+
+  return player.standSizes;
+}
+
+function flatIndexToStandIndex(
+  player: Pick<ClientPlayer, "hand" | "standSizes">,
+  flatIndex: number,
+): number | null {
+  if (!Number.isInteger(flatIndex) || flatIndex < 0 || flatIndex >= player.hand.length) {
+    return null;
+  }
+
+  const standSizes = getPlayerStandSizes(player);
+  let cursor = 0;
+  for (let standIndex = 0; standIndex < standSizes.length; standIndex += 1) {
+    const size = standSizes[standIndex] ?? 0;
+    const endExclusive = cursor + size;
+    if (flatIndex < endExclusive) {
+      return standIndex;
+    }
+    cursor = endExclusive;
+  }
+
+  return null;
+}
+
+function areFlatIndicesOnSameStand(
+  player: Pick<ClientPlayer, "hand" | "standSizes">,
+  indexA: number,
+  indexB: number,
+): boolean {
+  const standA = flatIndexToStandIndex(player, indexA);
+  const standB = flatIndexToStandIndex(player, indexB);
+  return standA != null && standA === standB;
+}
+
+function areFlatIndicesAdjacentWithinStand(
+  player: Pick<ClientPlayer, "hand" | "standSizes">,
+  indexA: number,
+  indexB: number,
+): boolean {
+  return Math.abs(indexA - indexB) === 1 && areFlatIndicesOnSameStand(player, indexA, indexB);
+}
+
+function isLabelEqual(tileA: VisibleTile, tileB: VisibleTile): boolean {
+  if (tileA.color === "red" && tileB.color === "red") return true;
+  if (tileA.color === "yellow" && tileB.color === "yellow") return true;
+  if (tileA.color === "blue" && tileB.color === "blue") {
+    return tileA.gameValue === tileB.gameValue;
+  }
+  return false;
+}
+
 // --- Selectability filters ---
 
 export function getOpponentTileSelectableFilter(
   mode: EquipmentMode | null,
   oppId: string,
   mission?: MissionId,
+  targetPlayer?: ClientPlayer,
 ): ((tile: VisibleTile, idx: number) => boolean) | undefined {
   if (!mode) return undefined;
   const hasXRestriction = mission != null
@@ -48,16 +115,53 @@ export function getOpponentTileSelectableFilter(
   switch (mode.kind) {
     case "double_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
-      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
+      return (tile, idx) => {
+        if (tile.cut || isMissionRestrictedDetectorTarget(tile, mission)) return false;
+        if (
+          mode.targetPlayerId === oppId &&
+          mode.selectedTiles.length > 0 &&
+          targetPlayer
+        ) {
+          return areFlatIndicesOnSameStand(
+            targetPlayer,
+            mode.selectedTiles[0]!,
+            idx,
+          );
+        }
+        return true;
+      };
     case "talkies_walkies":
       return (tile) => !tile.cut && !(hasXRestriction && tile.isXMarked);
     case "triple_detector":
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return () => false;
-      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
+      return (tile, idx) => {
+        if (
+          tile.cut ||
+          isMissionRestrictedDetectorTarget(tile, mission) ||
+          (hasXRestriction && tile.isXMarked)
+        ) {
+          return false;
+        }
+        if (
+          mode.targetPlayerId === oppId &&
+          mode.targetTileIndices.length > 0 &&
+          targetPlayer
+        ) {
+          return areFlatIndicesOnSameStand(
+            targetPlayer,
+            mode.targetTileIndices[0]!,
+            idx,
+          );
+        }
+        return true;
+      };
     case "super_detector":
       return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
     case "x_or_y_ray":
-      return (tile) => !tile.cut && !isMissionRestrictedDetectorTarget(tile, mission);
+      return (tile) =>
+        !tile.cut &&
+        !isMissionRestrictedDetectorTarget(tile, mission) &&
+        !(hasXRestriction && tile.isXMarked);
     case "grappling_hook":
       return (tile) =>
         !tile.cut &&
@@ -100,15 +204,27 @@ export function getOwnTileSelectableFilter(
       return (tile) => !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number";
     case "label_eq":
       if (mode.secondTileIndex !== null) return () => false;
-      if (mode.firstTileIndex === null) return (tile) => !tile.cut;
-      return (tile, idx) => !tile.cut && Math.abs(idx - mode.firstTileIndex!) === 1;
-    case "label_neq":
-      if (mode.secondTileIndex !== null) return () => false;
-      if (mode.firstTileIndex === null) return () => true;
+      if (mode.firstTileIndex === null) {
+        return (tile) => !(hasXRestriction && tile.isXMarked);
+      }
       return (tile, idx) => {
-        if (Math.abs(idx - mode.firstTileIndex!) !== 1) return false;
         const firstTile = me.hand[mode.firstTileIndex!];
         if (!firstTile) return false;
+        if (hasXRestriction && (firstTile.isXMarked || tile.isXMarked)) return false;
+        if (!areFlatIndicesAdjacentWithinStand(me, mode.firstTileIndex!, idx)) return false;
+        return isLabelEqual(firstTile, tile);
+      };
+    case "label_neq":
+      if (mode.secondTileIndex !== null) return () => false;
+      if (mode.firstTileIndex === null) {
+        return (tile) => !(hasXRestriction && tile.isXMarked);
+      }
+      return (tile, idx) => {
+        const firstTile = me.hand[mode.firstTileIndex!];
+        if (!firstTile) return false;
+        if (hasXRestriction && (firstTile.isXMarked || tile.isXMarked)) return false;
+        if (!areFlatIndicesAdjacentWithinStand(me, mode.firstTileIndex!, idx)) return false;
+        if (isLabelEqual(firstTile, tile)) return false;
         return !(firstTile.cut && tile.cut);
       };
     case "talkies_walkies":
@@ -219,16 +335,25 @@ export function handleOpponentTileClick(
   mode: EquipmentMode | null,
   oppId: string,
   tileIndex: number,
+  targetPlayer?: ClientPlayer,
 ): EquipmentMode | null {
   if (!mode) return null;
   switch (mode.kind) {
     case "double_detector": {
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return mode;
-      const newTiles = mode.selectedTiles.includes(tileIndex)
-        ? mode.selectedTiles.filter((i) => i !== tileIndex)
-        : mode.selectedTiles.length >= 2
-          ? mode.selectedTiles
-          : [...mode.selectedTiles, tileIndex];
+      let newTiles: number[] = mode.selectedTiles;
+      if (mode.selectedTiles.includes(tileIndex)) {
+        newTiles = mode.selectedTiles.filter((i) => i !== tileIndex);
+      } else if (mode.selectedTiles.length < 2) {
+        if (
+          mode.selectedTiles.length > 0 &&
+          targetPlayer &&
+          !areFlatIndicesOnSameStand(targetPlayer, mode.selectedTiles[0]!, tileIndex)
+        ) {
+          return mode;
+        }
+        newTiles = [...mode.selectedTiles, tileIndex];
+      }
       return {
         ...mode,
         targetPlayerId: newTiles.length > 0 ? oppId : null,
@@ -249,11 +374,23 @@ export function handleOpponentTileClick(
     }
     case "triple_detector": {
       if (mode.targetPlayerId && mode.targetPlayerId !== oppId) return mode;
-      const newTiles = mode.targetTileIndices.includes(tileIndex)
-        ? mode.targetTileIndices.filter((i) => i !== tileIndex)
-        : mode.targetTileIndices.length >= 3
-          ? mode.targetTileIndices
-          : [...mode.targetTileIndices, tileIndex];
+      let newTiles: number[] = mode.targetTileIndices;
+      if (mode.targetTileIndices.includes(tileIndex)) {
+        newTiles = mode.targetTileIndices.filter((i) => i !== tileIndex);
+      } else if (mode.targetTileIndices.length < 3) {
+        if (
+          mode.targetTileIndices.length > 0 &&
+          targetPlayer &&
+          !areFlatIndicesOnSameStand(
+            targetPlayer,
+            mode.targetTileIndices[0]!,
+            tileIndex,
+          )
+        ) {
+          return mode;
+        }
+        newTiles = [...mode.targetTileIndices, tileIndex];
+      }
       return {
         ...mode,
         targetPlayerId: newTiles.length > 0 ? oppId : null,
@@ -308,8 +445,11 @@ export function handleOwnTileClickEquipment(
 ): OwnTileClickResult {
   if (!mode || !me) return { newMode: mode };
   const tile = me.hand[tileIndex];
+  const hasXRestriction = gameState?.mission != null
+    && hasXMarkedWireTalkiesRestriction(gameState.mission);
   const allowCutTile =
     (mode.kind === "post_it" && canPostItTargetCutWire(gameState))
+    || mode.kind === "label_eq"
     || mode.kind === "label_neq"
     || mode.kind === "single_wire_label";
   if (!tile || (tile.cut && !allowCutTile)) return { newMode: mode };
@@ -345,6 +485,7 @@ export function handleOwnTileClickEquipment(
       return { newMode: { ...mode, guessTileIndex: tileIndex } };
     }
     case "label_eq": {
+      if (hasXRestriction && tile.isXMarked) return { newMode: mode };
       if (mode.firstTileIndex === null) {
         return { newMode: { ...mode, firstTileIndex: tileIndex } };
       }
@@ -355,10 +496,17 @@ export function handleOwnTileClickEquipment(
         return { newMode: { ...mode, secondTileIndex: null } };
       }
       if (mode.secondTileIndex !== null) return { newMode: mode };
-      if (Math.abs(tileIndex - mode.firstTileIndex) !== 1) return { newMode: mode };
+      const firstTile = me.hand[mode.firstTileIndex];
+      if (!firstTile) return { newMode: mode };
+      if (hasXRestriction && firstTile.isXMarked) return { newMode: mode };
+      if (!areFlatIndicesAdjacentWithinStand(me, tileIndex, mode.firstTileIndex)) {
+        return { newMode: mode };
+      }
+      if (!isLabelEqual(firstTile, tile)) return { newMode: mode };
       return { newMode: { ...mode, secondTileIndex: tileIndex } };
     }
     case "label_neq": {
+      if (hasXRestriction && tile.isXMarked) return { newMode: mode };
       if (mode.firstTileIndex === null) {
         return { newMode: { ...mode, firstTileIndex: tileIndex } };
       }
@@ -369,9 +517,14 @@ export function handleOwnTileClickEquipment(
         return { newMode: { ...mode, secondTileIndex: null } };
       }
       if (mode.secondTileIndex !== null) return { newMode: mode };
-      if (Math.abs(tileIndex - mode.firstTileIndex) !== 1) return { newMode: mode };
+      if (!areFlatIndicesAdjacentWithinStand(me, tileIndex, mode.firstTileIndex)) {
+        return { newMode: mode };
+      }
       const firstTile = me.hand[mode.firstTileIndex];
-      if (!firstTile || (firstTile.cut && tile.cut)) return { newMode: mode };
+      if (!firstTile) return { newMode: mode };
+      if (hasXRestriction && firstTile.isXMarked) return { newMode: mode };
+      if (isLabelEqual(firstTile, tile)) return { newMode: mode };
+      if (firstTile.cut && tile.cut) return { newMode: mode };
       return { newMode: { ...mode, secondTileIndex: tileIndex } };
     }
     case "talkies_walkies": {

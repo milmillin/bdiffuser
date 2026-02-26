@@ -2,6 +2,7 @@ import type {
   AnyEquipmentId,
   BaseEquipmentId,
   ClientGameState,
+  ClientPlayer,
   UseEquipmentPayload,
 } from "@bomb-busters/shared";
 import {
@@ -72,6 +73,91 @@ function getActiveConstraintIds(state: ClientGameState, playerId: string): strin
   }
 
   return active;
+}
+
+export function hasActiveConstraint(
+  state: ClientGameState,
+  playerId: string,
+  constraintId: string,
+): boolean {
+  return getActiveConstraintIds(state, playerId).includes(constraintId);
+}
+
+export function isMission41PlayerSkippingTurn(
+  state: Pick<ClientGameState, "mission">,
+  player: Pick<ClientPlayer, "hand">,
+): boolean {
+  if (state.mission !== 41) return false;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const uncutYellowCount = uncutTiles.filter((tile) => tile.color === "yellow").length;
+  if (uncutYellowCount !== 1) return false;
+
+  return uncutTiles.every((tile) => tile.color === "yellow" || tile.color === "red");
+}
+
+function countCutValue(state: ClientGameState, value: number): number {
+  return state.players.reduce((count, player) => {
+    return count + player.hand.filter((tile) => tile.cut && tile.gameValue === value).length;
+  }, 0);
+}
+
+function isEquipmentSecondaryLocked(
+  state: ClientGameState,
+  equipment: ClientGameState["board"]["equipment"][number],
+): boolean {
+  if (equipment.secondaryLockValue === undefined) return false;
+  const requiredCuts = equipment.secondaryLockCutsRequired ?? 2;
+  return countCutValue(state, equipment.secondaryLockValue) < requiredCuts;
+}
+
+export function canStageEquipmentCardFromCardStrip(
+  state: ClientGameState,
+  actorId: string,
+  equipmentId: AnyEquipmentId,
+  options: {
+    revealRedsForcedForActor: boolean;
+  },
+): boolean {
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor) return false;
+  if (state.pendingForcedAction) return false;
+  if (options.revealRedsForcedForActor) return false;
+  if (isMission41PlayerSkippingTurn(state, actor)) return false;
+  if (hasActiveConstraint(state, actorId, "G")) return false;
+  if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
+  if (state.mission === 18 && equipmentId === "general_radar") return false;
+  if (state.campaign?.mission18DesignatorIndex != null) return false;
+
+  const equipment = state.board.equipment.find((card) => card.id === equipmentId);
+  if (!equipment) return false;
+  if (equipment.faceDown) return false;
+  if (!equipment.unlocked) return false;
+  if (isEquipmentSecondaryLocked(state, equipment)) return false;
+  if (equipment.used) return false;
+
+  return true;
+}
+
+export function canStagePersonalSkillFromCardStrip(
+  state: ClientGameState,
+  actorId: string,
+  options: {
+    revealRedsForcedForActor: boolean;
+  },
+): boolean {
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor?.character) return false;
+  if (state.pendingForcedAction) return false;
+  if (options.revealRedsForcedForActor) return false;
+  if (isMission41PlayerSkippingTurn(state, actor)) return false;
+  if (hasActiveConstraint(state, actorId, "G")) return false;
+  if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
+  if (actor.characterUsed && state.mission !== 58) return false;
+
+  return true;
 }
 
 function getMission44DepthCost(value: number): number {

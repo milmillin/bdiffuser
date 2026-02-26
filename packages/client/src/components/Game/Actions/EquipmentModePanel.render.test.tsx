@@ -6,7 +6,7 @@ import {
   makePlayer,
   makeTile,
 } from "@bomb-busters/shared/testing";
-import { EquipmentModePanel } from "./EquipmentModePanel.js";
+import { EquipmentModePanel, buildTalkiesWalkiesPayload } from "./EquipmentModePanel.js";
 import type { EquipmentMode } from "./EquipmentModePanel.js";
 
 function renderMode(
@@ -301,9 +301,9 @@ describe("EquipmentModePanel — general_radar", () => {
 // ── label_eq ─────────────────────────────────────────────────────────────────
 
 describe("EquipmentModePanel — label_eq", () => {
-  it("step 1: shows instruction to click an uncut wire", () => {
+  it("step 1: shows instruction to click a wire", () => {
     const html = renderMode({ kind: "label_eq", firstTileIndex: null, secondTileIndex: null });
-    expect(html).toContain("Click one of your uncut wires");
+    expect(html).toContain("Click one of your wires");
     expect(html).not.toContain("Confirm Label =");
   });
 
@@ -313,11 +313,34 @@ describe("EquipmentModePanel — label_eq", () => {
     expect(html).not.toContain("Confirm Label =");
   });
 
-  it("step 3: shows confirm button when both wires selected", () => {
-    const html = renderMode({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 });
+  it("step 3: shows confirm button only for a valid equal pair", () => {
+    const html = renderMode(
+      { kind: "label_eq", firstTileIndex: 0, secondTileIndex: 1 },
+      {
+        players: [
+          makePlayer({
+            id: "me",
+            name: "Me",
+            hand: [
+              makeTile({ id: "t1", gameValue: 5 }),
+              makeTile({ id: "t2", gameValue: 5 }),
+              makeTile({ id: "t3", gameValue: 7 }),
+            ],
+          }),
+          makePlayer({ id: "opp1", name: "Opp1" }),
+          makePlayer({ id: "opp2", name: "Opp2" }),
+        ],
+      },
+    );
     expect(html).toContain("Confirm Label =");
     expect(html).toContain("data-testid=\"label_eq-confirm\"");
     expect(html).toContain("will be labeled =");
+  });
+
+  it("step 3: hides confirm for a non-equal pair", () => {
+    const html = renderMode({ kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 });
+    expect(html).not.toContain("Confirm Label =");
+    expect(html).toContain("Invalid pair");
   });
 });
 
@@ -341,6 +364,29 @@ describe("EquipmentModePanel — label_neq", () => {
     expect(html).toContain("Confirm Label ≠");
     expect(html).toContain("data-testid=\"label_neq-confirm\"");
     expect(html).toContain("will be labeled ≠");
+  });
+
+  it("step 3: hides confirm for an equal pair", () => {
+    const html = renderMode(
+      { kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 },
+      {
+        players: [
+          makePlayer({
+            id: "me",
+            name: "Me",
+            hand: [
+              makeTile({ id: "t1", gameValue: 6 }),
+              makeTile({ id: "t2", gameValue: 6 }),
+              makeTile({ id: "t3", gameValue: 7 }),
+            ],
+          }),
+          makePlayer({ id: "opp1", name: "Opp1" }),
+          makePlayer({ id: "opp2", name: "Opp2" }),
+        ],
+      },
+    );
+    expect(html).not.toContain("Confirm Label ≠");
+    expect(html).toContain("Invalid pair");
   });
 });
 
@@ -382,6 +428,21 @@ describe("EquipmentModePanel — talkies_walkies", () => {
     });
     expect(html).toContain("Confirm Talkies-Walkies");
     expect(html).toContain("data-testid=\"tw-confirm\"");
+  });
+
+  it("buildTalkiesWalkiesPayload includes teammateTileIndex for immediate swap path", () => {
+    const payload = buildTalkiesWalkiesPayload({
+      kind: "talkies_walkies",
+      teammateId: "opp1",
+      teammateTileIndex: 2,
+      myTileIndex: 1,
+    });
+    expect(payload).toEqual({
+      kind: "talkies_walkies",
+      teammateId: "opp1",
+      teammateTileIndex: 2,
+      myTileIndex: 1,
+    });
   });
 });
 

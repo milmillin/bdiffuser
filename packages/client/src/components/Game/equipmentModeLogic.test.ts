@@ -83,6 +83,23 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 0)).toBe(true);
   });
 
+  it("double_detector: after first pick, restricts selectable tiles to the same stand", () => {
+    const mode: EquipmentMode = {
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [1],
+      guessTileIndex: null,
+    };
+    const target = player({
+      id: "opp1",
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", undefined, target)!;
+    expect(filter(tile(), 0)).toBe(true);
+    expect(filter(tile(), 2)).toBe(false);
+  });
+
   it("double_detector: restricts mission 13 targets to blue wires only", () => {
     const mode: EquipmentMode = {
       kind: "double_detector",
@@ -173,6 +190,38 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 2)).toBe(false);
   });
 
+  it("triple_detector: after first pick, restricts selectable tiles to the same stand", () => {
+    const mode: EquipmentMode = {
+      kind: "triple_detector",
+      targetPlayerId: "opp1",
+      targetTileIndices: [1],
+      guessTileIndex: null,
+    };
+    const target = player({
+      id: "opp1",
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", undefined, target)!;
+    expect(filter(tile(), 0)).toBe(true);
+    expect(filter(tile(), 2)).toBe(false);
+  });
+
+  it.each([20, 35] as const)(
+    "triple_detector: blocks mission %i X-marked target tiles",
+    (mission) => {
+      const mode: EquipmentMode = {
+        kind: "triple_detector",
+        targetPlayerId: "opp1",
+        targetTileIndices: [],
+        guessTileIndex: null,
+      };
+      const filter = getOpponentTileSelectableFilter(mode, "opp1", mission)!;
+      expect(filter(tile({ isXMarked: true }), 0)).toBe(false);
+      expect(filter(tile({ isXMarked: false }), 1)).toBe(true);
+    },
+  );
+
   it("super_detector: returns true for uncut tiles on any opponent", () => {
     const mode: EquipmentMode = {
       kind: "super_detector",
@@ -210,6 +259,22 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
   });
+
+  it.each([20, 35] as const)(
+    "x_or_y_ray: blocks mission %i X-marked target tiles",
+    (mission) => {
+      const mode: EquipmentMode = {
+        kind: "x_or_y_ray",
+        targetPlayerId: "opp1",
+        targetTileIndex: 0,
+        guessATileIndex: null,
+        guessBTileIndex: null,
+      };
+      const filter = getOpponentTileSelectableFilter(mode, "opp1", mission)!;
+      expect(filter(tile({ isXMarked: true }), 0)).toBe(false);
+      expect(filter(tile({ isXMarked: false }), 1)).toBe(true);
+    },
+  );
 
   it.each([41, 48] as const)(
     "grappling_hook: blocks mission %i tripwire targets",
@@ -356,16 +421,49 @@ describe("getOwnTileSelectableFilter", () => {
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 0)).toBe(true);
     expect(filter(tile({ color: "red", gameValue: "RED" }), 1)).toBe(true);
-    expect(filter(tile({ cut: true }), 2)).toBe(false);
+    expect(filter(tile({ cut: true }), 2)).toBe(true);
   });
 
   it("label_eq step 2: allows only adjacent tiles", () => {
     const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 2, secondTileIndex: null };
-    const filter = getOwnTileSelectableFilter(mode, player())!;
+    const me = player({
+      hand: [
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 5 }),
+      ],
+    });
+    const filter = getOwnTileSelectableFilter(mode, me)!;
     expect(filter(tile(), 1)).toBe(true); // idx 1 is adjacent to 2
     expect(filter(tile(), 3)).toBe(true); // idx 3 is adjacent to 2
     expect(filter(tile(), 0)).toBe(false); // idx 0 is not adjacent
     expect(filter(tile(), 4)).toBe(false); // idx 4 is not adjacent
+  });
+
+  it("label_eq step 2: blocks across stand boundaries", () => {
+    const me = player({
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: null };
+    const filter = getOwnTileSelectableFilter(mode, me)!;
+    expect(filter(tile(), 2)).toBe(false);
+  });
+
+  it("label_eq step 2: requires equal values", () => {
+    const me = player({
+      hand: [
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 7 }),
+        tile({ gameValue: 5 }),
+      ],
+    });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 0, secondTileIndex: null };
+    const filter = getOwnTileSelectableFilter(mode, me)!;
+    expect(filter(me.hand[1], 1)).toBe(false);
+    expect(filter(me.hand[2], 2)).toBe(false);
   });
 
   it("label_eq step 3: blocks all tiles when both selected", () => {
@@ -386,16 +484,17 @@ describe("getOwnTileSelectableFilter", () => {
   it("label_neq step 2: allows adjacent tiles unless both selected tiles are cut", () => {
     const me = player({
       hand: [
-        tile({ cut: true }),
-        tile({ cut: true }),
-        tile({ cut: false }),
-        tile({ cut: false }),
+        tile({ cut: true, gameValue: 5 }),
+        tile({ cut: true, gameValue: 5 }),
+        tile({ cut: false, gameValue: 7 }),
+        tile({ cut: false, gameValue: 9 }),
       ],
     });
     const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 1, secondTileIndex: null };
     const filter = getOwnTileSelectableFilter(mode, me)!;
     expect(filter(tile({ cut: true }), 0)).toBe(false);
-    expect(filter(tile({ cut: false }), 2)).toBe(true);
+    expect(filter(tile({ cut: false, gameValue: 7 }), 2)).toBe(true);
+    expect(filter(tile({ cut: false, gameValue: 5 }), 2)).toBe(false);
     expect(filter(tile({ cut: false }), 3)).toBe(false);
   });
 
@@ -404,6 +503,19 @@ describe("getOwnTileSelectableFilter", () => {
     const filter = getOwnTileSelectableFilter(mode, player())!;
     expect(filter(tile(), 0)).toBe(false);
     expect(filter(tile(), 1)).toBe(false);
+  });
+
+  it("label_neq step 2: blocks equal adjacent values", () => {
+    const me = player({
+      hand: [
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 7 }),
+      ],
+    });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: null };
+    const filter = getOwnTileSelectableFilter(mode, me)!;
+    expect(filter(me.hand[1], 1)).toBe(false);
   });
 
   it("talkies_walkies: allows uncut tiles even when no teammate selected", () => {
@@ -875,6 +987,22 @@ describe("handleOpponentTileClick", () => {
     expect(result).toEqual(mode); // returned unchanged
   });
 
+  it("double_detector: blocks cross-stand second pick when stand metadata is available", () => {
+    const mode: EquipmentMode = {
+      kind: "double_detector",
+      targetPlayerId: "opp1",
+      selectedTiles: [1],
+      guessTileIndex: null,
+    };
+    const target = player({
+      id: "opp1",
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const result = handleOpponentTileClick(mode, "opp1", 2, target);
+    expect(result).toEqual(mode);
+  });
+
   it("double_detector: clears targetPlayerId when all tiles deselected", () => {
     const mode: EquipmentMode = {
       kind: "double_detector",
@@ -938,6 +1066,22 @@ describe("handleOpponentTileClick", () => {
       guessTileIndex: null,
     };
     const result = handleOpponentTileClick(mode, "opp2", 1);
+    expect(result).toEqual(mode);
+  });
+
+  it("triple_detector: blocks cross-stand target selection when stand metadata is available", () => {
+    const mode: EquipmentMode = {
+      kind: "triple_detector",
+      targetPlayerId: "opp1",
+      targetTileIndices: [1],
+      guessTileIndex: null,
+    };
+    const target = player({
+      id: "opp1",
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const result = handleOpponentTileClick(mode, "opp1", 2, target);
     expect(result).toEqual(mode);
   });
 
@@ -1160,6 +1304,29 @@ describe("handleOwnTileClickEquipment", () => {
     expect(result.sendPayload).toBeUndefined();
   });
 
+  it("label_eq step 2: ignores cross-stand adjacent index", () => {
+    const me = player({
+      hand: [tile(), tile(), tile(), tile()],
+      standSizes: [2, 2],
+    });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: null };
+    const result = handleOwnTileClickEquipment(mode, 2, me);
+    expect(result.newMode).toEqual(mode);
+  });
+
+  it("label_eq step 2: ignores non-equal adjacent value", () => {
+    const me = player({
+      hand: [
+        tile({ gameValue: 4 }),
+        tile({ gameValue: 7 }),
+        tile({ gameValue: 9 }),
+      ],
+    });
+    const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 0, secondTileIndex: null };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual(mode);
+  });
+
   it("label_eq: clicking secondTileIndex deselects it", () => {
     const me = player({ hand: [tile(), tile(), tile()] });
     const mode: EquipmentMode = { kind: "label_eq", firstTileIndex: 1, secondTileIndex: 2 };
@@ -1190,7 +1357,13 @@ describe("handleOwnTileClickEquipment", () => {
   });
 
   it("label_neq step 2: sets secondTileIndex for adjacent tile", () => {
-    const me = player({ hand: [tile(), tile(), tile()] });
+    const me = player({
+      hand: [
+        tile({ gameValue: 5 }),
+        tile({ gameValue: 7 }),
+        tile({ gameValue: 9 }),
+      ],
+    });
     const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: null };
     const result = handleOwnTileClickEquipment(mode, 1, me);
     expect(result.newMode).toEqual({ kind: "label_neq", firstTileIndex: 0, secondTileIndex: 1 });
@@ -1203,6 +1376,19 @@ describe("handleOwnTileClickEquipment", () => {
     const result = handleOwnTileClickEquipment(mode, 1, me);
     expect(result.newMode).toEqual(mode);
     expect(result.sendPayload).toBeUndefined();
+  });
+
+  it("label_neq step 2: blocks adjacent equal values", () => {
+    const me = player({
+      hand: [
+        tile({ gameValue: 6 }),
+        tile({ gameValue: 6 }),
+        tile({ gameValue: 8 }),
+      ],
+    });
+    const mode: EquipmentMode = { kind: "label_neq", firstTileIndex: 0, secondTileIndex: null };
+    const result = handleOwnTileClickEquipment(mode, 1, me);
+    expect(result.newMode).toEqual(mode);
   });
 
   it("label_neq: clicking secondTileIndex deselects it", () => {

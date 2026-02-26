@@ -1,8 +1,6 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import {
-  BUTTON_OPTION_CLASS,
-  BUTTON_OPTION_SELECTED_CLASS,
   BUTTON_PRIMARY_CLASS,
   BUTTON_SECONDARY_CLASS,
   PANEL_CLASS,
@@ -28,10 +26,15 @@ export function DesignateCutterPanel({
   const playersWithTiles = gameState.players.filter(
     (p) => p.hand.some((t) => !t.cut),
   );
+  const selectablePlayerIds = new Set(
+    playersWithTiles
+      .filter((player) => forced.radarResults[player.id] === true)
+      .map((player) => player.id),
+  );
 
   const canConfirm =
     selectedPlayerId != null &&
-    playersWithTiles.some((p) => p.id === selectedPlayerId);
+    selectablePlayerIds.has(selectedPlayerId);
 
   return (
     <div
@@ -69,30 +72,39 @@ export function DesignateCutterPanel({
         </div>
       </div>
       <p className={PANEL_TEXT_CLASS}>
-        Choose which player must cut a wire (including yourself).
+        Choose which player must cut a wire (including yourself). Players with
+        NO radar match are read-only.
       </p>
       <div className="flex items-center gap-2 flex-wrap">
-        {playersWithTiles.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedPlayerId(p.id)}
-            data-testid={`designate-player-${p.id}`}
-            className={`${
-              forced.radarResults[p.id]
-                ? selectedPlayerId === p.id
-                  ? "bg-emerald-600 ring-2 ring-sky-300 px-4 py-1.5 rounded text-xs font-bold transition-colors"
-                  : "bg-emerald-700 hover:bg-emerald-600 px-4 py-1.5 rounded text-xs font-bold transition-colors"
-                : selectedPlayerId === p.id
-                  ? BUTTON_OPTION_SELECTED_CLASS
-                  : BUTTON_OPTION_CLASS
-            }`}
-          >
-            {p.id === playerId ? "Myself" : p.name}
-            {forced.radarResults[p.id] && (
-              <span className="ml-1 text-xs opacity-75">(has {forced.value})</span>
-            )}
-          </button>
-        ))}
+        {playersWithTiles.map((p) => {
+          const hasRadarMatch = forced.radarResults[p.id] === true;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              disabled={!hasRadarMatch}
+              onClick={() => {
+                if (!hasRadarMatch) return;
+                setSelectedPlayerId(p.id);
+              }}
+              data-testid={`designate-player-${p.id}`}
+              className={`${
+                hasRadarMatch
+                  ? selectedPlayerId === p.id
+                    ? "bg-emerald-600 ring-2 ring-sky-300 px-4 py-1.5 rounded text-xs font-bold transition-colors"
+                    : "bg-emerald-700 hover:bg-emerald-600 px-4 py-1.5 rounded text-xs font-bold transition-colors"
+                  : "bg-gray-800/80 text-gray-400 border border-gray-600 px-4 py-1.5 rounded text-xs font-bold cursor-not-allowed"
+              }`}
+            >
+              {p.id === playerId ? "Myself" : p.name}
+              {hasRadarMatch ? (
+                <span className="ml-1 text-xs opacity-75">(has {forced.value})</span>
+              ) : (
+                <span className="ml-1 text-xs opacity-75">(read-only)</span>
+              )}
+            </button>
+          );
+        })}
         {playersWithTiles.length === 0 && (
           <span className={PANEL_SUBTEXT_CLASS}>No eligible players</span>
         )}
