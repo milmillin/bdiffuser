@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+# Keep the real index in sync after partial/pathspec commits where pre-commit
+# may have used a temporary index file.
+
+git add \
+  package.json \
+  packages/shared/package.json \
+  packages/server/package.json \
+  packages/client/package.json

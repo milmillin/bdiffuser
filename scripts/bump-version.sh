@@ -33,9 +33,22 @@ do
   "
 done
 
-# Stage the updated files so they're included in the commit
-git add \
-  "$ROOT/package.json" \
-  "$ROOT/packages/shared/package.json" \
-  "$ROOT/packages/server/package.json" \
-  "$ROOT/packages/client/package.json"
+stage_version_files() {
+  INDEX_FILE="$1"
+  if [ -n "$INDEX_FILE" ]; then
+    GIT_INDEX_FILE="$INDEX_FILE" git add \
+      "$ROOT/package.json" \
+      "$ROOT/packages/shared/package.json" \
+      "$ROOT/packages/server/package.json" \
+      "$ROOT/packages/client/package.json"
+  else
+    git add \
+      "$ROOT/package.json" \
+      "$ROOT/packages/shared/package.json" \
+      "$ROOT/packages/server/package.json" \
+      "$ROOT/packages/client/package.json"
+  fi
+}
+
+# Stage bumped files in the active commit index.
+stage_version_files "${GIT_INDEX_FILE-}"
