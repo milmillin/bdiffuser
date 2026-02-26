@@ -567,9 +567,13 @@ export function GameBoard({
   const revealRedsForced = isMyTurn && revealRedsForcedForActor;
   const missionSupportsSimultaneousFourCut =
     gameState.mission === 23 || gameState.mission === 39;
+  const missionFourCutTargetCard = missionSupportsSimultaneousFourCut
+    ? gameState.campaign?.numberCards?.visible?.[0]
+    : undefined;
   const missionFourCutTargetValue =
-    missionSupportsSimultaneousFourCut
-      ? gameState.campaign?.numberCards?.visible?.[0]?.value ?? null
+    missionSupportsSimultaneousFourCut &&
+      missionFourCutTargetCard?.faceUp === true
+      ? missionFourCutTargetCard.value
       : null;
   const missionFourCutAlreadyDone = gameState.campaign?.mission23SpecialActionDone === true;
   const canStartMissionFourCut =

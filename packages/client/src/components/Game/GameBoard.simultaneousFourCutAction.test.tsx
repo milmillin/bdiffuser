@@ -115,6 +115,35 @@ describe("GameBoard simultaneous 4-wire mission action", () => {
     const html = renderBoard(toClientGameState(state, "me"), "me");
     expect(html).not.toContain("data-testid=\"mission-four-cut-launch\"");
   });
+
+  it("hides four-cut launcher when the Number card is face down", () => {
+    const state = makeGameState({
+      mission: 39,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeTile({ id: "m1", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-1", gameValue: 4 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "n1", value: 4, faceUp: false }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+    expect(html).not.toContain("data-testid=\"mission-four-cut-launch\"");
+  });
 });
 
 describe("GameBoard text polish", () => {

@@ -1134,6 +1134,10 @@ export function executeSimultaneousFourCut(
       // Mark mission 23/39 special action as done.
       state.campaign ??= {};
       state.campaign.mission23SpecialActionDone = true;
+      const visibleNumberCard = state.campaign.numberCards?.visible?.[0];
+      if (visibleNumberCard) {
+        visibleNumberCard.faceUp = false;
+      }
 
       // Mission 39: after the special action succeeds, deal all remaining
       // Number cards equally starting from the captain, clockwise.

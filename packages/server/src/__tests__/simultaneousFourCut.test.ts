@@ -448,6 +448,7 @@ describe("executeSimultaneousFourCut", () => {
 
     // Special action marked done
     expect(state.campaign?.mission23SpecialActionDone).toBe(true);
+    expect(state.campaign?.numberCards?.visible[0]?.faceUp).toBe(false);
 
     // Action shape
     expect(action.type).toBe("simultaneousFourCutResult");
@@ -521,6 +522,7 @@ describe("executeSimultaneousFourCut", () => {
     expect(allDealt).toHaveLength(5);
     expect(allDealt.every((card) => card.faceUp === false)).toBe(true);
     expect(state.campaign?.numberCards?.visible[0]?.value).toBe(5);
+    expect(state.campaign?.numberCards?.visible[0]?.faceUp).toBe(false);
 
     // Mission 39 post-success tokens:
     // - p1 gets value 3 and still has an uncut 3, so receives one off-stand token.
