@@ -371,6 +371,9 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.visible.every((card) => card.faceUp)).toBe(true);
       expect(numberCards!.deck).toHaveLength(0);
       expect(numberCards!.discard).toHaveLength(0);
+      expect(numberCards!.visible.map((card) => card.value)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      ]);
 
       const values = [...new Set(numberCards!.visible.map((card) => card.value))].sort(
         (a, b) => a - b,

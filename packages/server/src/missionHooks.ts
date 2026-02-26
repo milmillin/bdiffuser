@@ -4869,7 +4869,7 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
  */
 registerHookHandler<"visible_number_card_gate">("visible_number_card_gate", {
   setup(_rule: VisibleNumberCardGateRuleDef, ctx: SetupHookContext): void {
-    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const deckValues = [...MISSION_NUMBER_VALUES];
     const numberCards = deckValues.map((value, idx) => ({
       id: `m26-visible-${idx}-${value}`,
       value,
