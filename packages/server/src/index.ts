@@ -2631,9 +2631,13 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/stats") {
-      const id = env.BombBustersServer.idFromName("__stats__");
-      const stub = env.BombBustersServer.get(id);
-      return stub.fetch(request);
+      try {
+        const id = env.BombBustersServer.idFromName("__stats__");
+        const stub = env.BombBustersServer.get(id);
+        return await stub.fetch(request);
+      } catch (e) {
+        return new Response(String(e), { status: 500 });
+      }
     }
 
     return (
