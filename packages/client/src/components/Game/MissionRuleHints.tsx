@@ -365,6 +365,10 @@ function CampaignObjectsHint({
       : undefined;
 
   const visibleCards = campaign.numberCards?.visible ?? [];
+  const displayVisibleCards =
+    gameState.mission === 26
+      ? [...visibleCards].sort((a, b) => a.value - b.value || a.id.localeCompare(b.id))
+      : visibleCards;
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
   const numberCardHandsByPlayer = gameState.players
@@ -411,7 +415,7 @@ function CampaignObjectsHint({
   const hasNumberCardContent =
     cutterImage != null ||
     (!hideNumberCards &&
-      (visibleCards.length > 0 ||
+      (displayVisibleCards.length > 0 ||
         deckCount > 0 ||
         discardCount > 0 ||
         numberCardHandsByPlayer.length > 0));
@@ -437,7 +441,7 @@ function CampaignObjectsHint({
       <div className="space-y-3">
         {hasNumberCardContent && (
           <SectionShell>
-            {(cutterImage || visibleCards.length > 0 || deckCount > 0 || discardCount > 0) && (
+            {(cutterImage || displayVisibleCards.length > 0 || deckCount > 0 || discardCount > 0) && (
               <CampaignRow>
                 {cutterImage && (
                   <CampaignObjectCard
@@ -455,7 +459,7 @@ function CampaignObjectsHint({
                     }
                   />
                 )}
-                {visibleCards.map((card, idx) => {
+                {displayVisibleCards.map((card, idx) => {
                   const isSequenceCard = sequencePointer != null && idx < 3;
                   let image: string;
                   let borderClassName: string;
