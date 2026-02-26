@@ -56,5 +56,18 @@ describe("EndScreen", () => {
     expect(html).toContain("data-testid=\"play-again\"");
     expect(html).toContain("Play Again");
   });
-});
 
+  it("renders View Board action", () => {
+    const html = renderToStaticMarkup(
+      <EndScreen
+        gameState={makeEndState({
+          playerId: "p1",
+          isSpectator: false,
+        })}
+        onPlayAgain={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("View Board");
+  });
+});

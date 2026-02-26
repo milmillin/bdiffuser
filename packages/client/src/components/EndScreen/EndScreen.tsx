@@ -2,9 +2,11 @@ import { useState } from "react";
 import type { ClientGameState } from "@bomb-busters/shared";
 import { ShameDashboard } from "./ShameDashboard";
 import { ExplosionEffect } from "./ExplosionEffect";
+import { BoardViewOverlay } from "./BoardViewOverlay";
 
 const btnBase =
   "px-4 py-2.5 sm:px-7 sm:py-3.5 min-h-11 sm:min-h-0 rounded-xl font-extrabold text-sm sm:text-base leading-tight tracking-wide sm:tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
+const boardViewBackButtonClass = `${btnBase} bg-gray-800 border-gray-950 text-white shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:bg-gray-700 hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]`;
 
 export function EndScreen({
   gameState,
@@ -30,14 +32,10 @@ export function EndScreen({
 
   if (showBoard) {
     return (
-      <div className="fixed inset-0 z-40">
-        <button
-          onClick={() => setShowBoard(false)}
-          className={`fixed top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-auto z-50 text-center ${btnBase} bg-gray-800 border-gray-950 text-white shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:bg-gray-700 hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]`}
-        >
-          Back to Results
-        </button>
-      </div>
+      <BoardViewOverlay
+        onBack={() => setShowBoard(false)}
+        buttonClassName={boardViewBackButtonClass}
+      />
     );
   }
 
