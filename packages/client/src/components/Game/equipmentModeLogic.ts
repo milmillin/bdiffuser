@@ -258,9 +258,7 @@ export function getOpponentSelectedTileIndex(
   if (!mode) return undefined;
   switch (mode.kind) {
     case "talkies_walkies":
-      return mode.teammateId === oppId
-        ? (mode.teammateTileIndex ?? undefined)
-        : undefined;
+      return undefined;
     case "x_or_y_ray":
       return mode.targetPlayerId === oppId ? (mode.targetTileIndex ?? undefined) : undefined;
     case "grappling_hook":
@@ -362,13 +360,13 @@ export function handleOpponentTileClick(
       };
     }
     case "talkies_walkies": {
-      if (mode.teammateId === oppId && mode.teammateTileIndex === tileIndex) {
+      if (mode.teammateId === oppId) {
         return { ...mode, teammateId: null, teammateTileIndex: null };
       }
       return {
         ...mode,
         teammateId: oppId,
-        teammateTileIndex: tileIndex,
+        teammateTileIndex: null,
         myTileIndex: mode.myTileIndex,
       };
     }
@@ -425,7 +423,12 @@ export function handleOpponentTileClick(
       if (mode.targetPlayerId === oppId && mode.targetTileIndex === tileIndex) {
         return { ...mode, targetPlayerId: null, targetTileIndex: null };
       }
-      return { ...mode, targetPlayerId: oppId, targetTileIndex: tileIndex };
+      return {
+        ...mode,
+        targetPlayerId: oppId,
+        targetTileIndex: tileIndex,
+        receiverStandIndex: mode.receiverStandIndex,
+      };
     }
     default:
       return mode;

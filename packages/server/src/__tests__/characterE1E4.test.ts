@@ -10,6 +10,7 @@ import {
 import {
   executeCharacterAbility,
   executeUseEquipment,
+  resolveTalkiesWalkiesTileChoice,
   validateCharacterAbility,
   validateUseEquipment,
 } from "../equipment";
@@ -216,6 +217,31 @@ describe("Character E1-E4 abilities", () => {
       expect(error?.code).toBe("CANNOT_TARGET_SELF");
     });
 
+    it("allows talkies off-turn even if actor must reveal reds on their own turn", () => {
+      const state = makeGameState({
+        mission: 3,
+        players: [
+          makePlayer({
+            id: "p1",
+            character: "character_e2",
+            hand: [makeRedTile({ id: "r1", cut: false })],
+          }),
+          makePlayer({
+            id: "p2",
+            hand: [makeTile({ id: "b1", gameValue: 8 })],
+          }),
+        ],
+        currentPlayerIndex: 1,
+      });
+
+      const error = validateCharacterAbility(state, "p1", {
+        kind: "talkies_walkies",
+        teammateId: "p2",
+        myTileIndex: 0,
+      });
+      expect(error).toBeNull();
+    });
+
     it("executes swap and marks character as used", () => {
       const state = makeGameState({
         players: [
@@ -233,12 +259,13 @@ describe("Character E1-E4 abilities", () => {
         ],
       });
 
-      executeCharacterAbility(state, "p1", {
+      const pending = executeCharacterAbility(state, "p1", {
         kind: "talkies_walkies",
         teammateId: "p2",
         myTileIndex: 0,
-        teammateTileIndex: 0,
       });
+      expect(pending.type).toBe("equipmentUsed");
+      resolveTalkiesWalkiesTileChoice(state, 0);
 
       expect(state.players[0].characterUsed).toBe(true);
       expect(state.players[0].hand[0].id).toBe("b1");

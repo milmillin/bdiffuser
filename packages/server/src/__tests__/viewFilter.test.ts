@@ -17,7 +17,7 @@ import {
   makeChallengeCard,
   makeChallengeCardState,
 } from "@bomb-busters/shared/testing";
-import { filterStateForPlayer } from "../viewFilter";
+import { filterStateForPlayer, filterStateForSpectator } from "../viewFilter";
 
 describe("filterStateForPlayer – campaign state", () => {
   it("omits campaign when GameState has no campaign", () => {
@@ -450,7 +450,7 @@ describe("filterStateForPlayer – campaign state", () => {
 
     const filtered = filterStateForPlayer(state, "player-1");
     expect(filtered.campaign!.numberCards!.deck[0]).toEqual({
-      id: "d1",
+      id: "hidden_number_deck_0",
       value: 0,
       faceUp: false,
     });
@@ -483,5 +483,133 @@ describe("filterStateForPlayer – campaign state", () => {
       { kind: "sequence_pointer", value: 1 },
       { kind: "action_pointer", value: 2 },
     ]);
+  });
+
+  it("redacts detector actorTileIndex from non-actor, non-target players", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({ id: "actor", name: "Actor" }),
+        makePlayer({ id: "target", name: "Target" }),
+        makePlayer({ id: "other", name: "Other" }),
+      ],
+      pendingForcedAction: {
+        kind: "detectorTileChoice",
+        actorId: "actor",
+        targetPlayerId: "target",
+        matchingTileIndices: [0, 1],
+        guessValue: 7,
+        source: "doubleDetector",
+        actorTileIndex: 2,
+        originalTileIndex1: 0,
+        originalTileIndex2: 1,
+      },
+    });
+
+    const actorView = filterStateForPlayer(state, "actor");
+    const otherView = filterStateForPlayer(state, "other");
+    const targetView = filterStateForPlayer(state, "target");
+
+    expect(actorView.pendingForcedAction).toMatchObject({
+      kind: "detectorTileChoice",
+      actorTileIndex: 2,
+      matchingTileIndices: [],
+    });
+    expect(otherView.pendingForcedAction).toMatchObject({
+      kind: "detectorTileChoice",
+      matchingTileIndices: [],
+    });
+    expect((otherView.pendingForcedAction as { actorTileIndex?: number }).actorTileIndex).toBeUndefined();
+    expect(targetView.pendingForcedAction).toMatchObject({
+      kind: "detectorTileChoice",
+      actorTileIndex: 2,
+      matchingTileIndices: [0, 1],
+    });
+  });
+});
+
+describe("filterStateForSpectator", () => {
+  it("hides all uncut tile identities during active play", () => {
+    const state = makeGameState({
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "p1",
+          hand: [
+            makeTile({ id: "p1-cut", gameValue: 2, cut: true }),
+            makeTile({ id: "p1-hidden", gameValue: 7, cut: false }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p2-hidden", gameValue: 9, cut: false })],
+        }),
+      ],
+    });
+
+    const filtered = filterStateForSpectator(state);
+    expect(filtered.isSpectator).toBe(true);
+    expect(filtered.players[0].hand[0]).toMatchObject({
+      id: "p1-cut",
+      cut: true,
+      color: "blue",
+      gameValue: 2,
+    });
+    expect(filtered.players[0].hand[1]).toMatchObject({ id: "p1-hidden", cut: false });
+    expect(filtered.players[0].hand[1].color).toBeUndefined();
+    expect(filtered.players[0].hand[1].gameValue).toBeUndefined();
+    expect(filtered.players[1].hand[0]).toMatchObject({ id: "p2-hidden", cut: false });
+    expect(filtered.players[1].hand[0].color).toBeUndefined();
+    expect(filtered.players[1].hand[0].gameValue).toBeUndefined();
+  });
+
+  it("redacts private number-card playerHands for spectators", () => {
+    const state = makeGameState({
+      campaign: makeCampaignState({
+        numberCards: makeNumberCardState({
+          playerHands: {
+            p1: [makeNumberCard({ id: "p1-secret", value: 3, faceUp: false })],
+            p2: [makeNumberCard({ id: "p2-secret", value: 8, faceUp: false })],
+          },
+        }),
+      }),
+    });
+
+    const filtered = filterStateForSpectator(state);
+    expect(filtered.campaign?.numberCards?.playerHands?.p1?.[0]).toEqual({
+      id: "hidden_number_hand_p1_0",
+      value: 0,
+      faceUp: false,
+    });
+    expect(filtered.campaign?.numberCards?.playerHands?.p2?.[0]).toEqual({
+      id: "hidden_number_hand_p2_0",
+      value: 0,
+      faceUp: false,
+    });
+  });
+
+  it("redacts detector actorTileIndex from spectators", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({ id: "actor", name: "Actor" }),
+        makePlayer({ id: "target", name: "Target" }),
+      ],
+      pendingForcedAction: {
+        kind: "detectorTileChoice",
+        actorId: "actor",
+        targetPlayerId: "target",
+        matchingTileIndices: [0, 1],
+        guessValue: 6,
+        source: "superDetector",
+        actorTileIndex: 1,
+        originalTargetTileIndices: [0, 1, 2],
+      },
+    });
+
+    const filtered = filterStateForSpectator(state);
+    expect(filtered.pendingForcedAction).toMatchObject({
+      kind: "detectorTileChoice",
+      matchingTileIndices: [],
+    });
+    expect((filtered.pendingForcedAction as { actorTileIndex?: number }).actorTileIndex).toBeUndefined();
   });
 });

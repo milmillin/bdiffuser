@@ -710,14 +710,14 @@ describe("highlight functions", () => {
       expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
     });
 
-    it("talkies_walkies: returns selected teammate tile for teammate", () => {
+    it("talkies_walkies: does not expose a selected teammate tile index", () => {
       const mode: EquipmentMode = {
         kind: "talkies_walkies",
         teammateId: "opp1",
         teammateTileIndex: 3,
         myTileIndex: null,
       };
-      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBe(3);
+      expect(getOpponentSelectedTileIndex(mode, "opp1")).toBeUndefined();
     });
 
     it("talkies_walkies: returns undefined for non-teammate", () => {
@@ -1024,7 +1024,7 @@ describe("handleOpponentTileClick", () => {
     };
     const result = handleOpponentTileClick(mode, "opp2", 3) as Extract<EquipmentMode, { kind: "talkies_walkies" }>;
     expect(result.teammateId).toBe("opp2");
-    expect(result.teammateTileIndex).toBe(3);
+    expect(result.teammateTileIndex).toBeNull();
     expect(result.myTileIndex).toBe(2); // preserved
   });
 

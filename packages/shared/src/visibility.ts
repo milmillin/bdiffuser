@@ -119,13 +119,21 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
 // ── Redaction Helpers ──────────────────────────────────────
 
 /** Redact a number card's value (replace with 0, force face-down). */
-export function redactNumberCard(card: NumberCard): NumberCard {
-  return { id: card.id, value: 0, faceUp: false };
+export function redactNumberCard(card: NumberCard, redactedId?: string): NumberCard {
+  return { id: redactedId ?? card.id, value: 0, faceUp: false };
 }
 
 /** Redact a challenge card's details (strip name/description). */
-export function redactChallengeCard(card: ChallengeCard): ChallengeCard {
-  return { id: card.id, name: "", description: "", completed: card.completed };
+export function redactChallengeCard(
+  card: ChallengeCard,
+  redactedId?: string,
+): ChallengeCard {
+  return {
+    id: redactedId ?? card.id,
+    name: "",
+    description: "",
+    completed: card.completed,
+  };
 }
 
 // ── Campaign State Filtering ───────────────────────────────
@@ -140,14 +148,18 @@ export function filterNumberCards(
   state: NumberCardState,
   playerId: string,
 ): NumberCardState {
-  const deck = state.deck.map(redactNumberCard);
+  const deck = state.deck.map((card, index) =>
+    redactNumberCard(card, `hidden_number_deck_${index}`),
+  );
   const playerHands: Record<string, NumberCard[]> = {};
   for (const [pid, hand] of Object.entries(state.playerHands)) {
     if (pid === playerId) {
       playerHands[pid] = hand;
     } else {
-      playerHands[pid] = hand.map((card) =>
-        card.faceUp ? card : redactNumberCard(card),
+      playerHands[pid] = hand.map((card, index) =>
+        card.faceUp
+          ? card
+          : redactNumberCard(card, `hidden_number_hand_${pid}_${index}`),
       );
     }
   }
@@ -162,7 +174,9 @@ export function filterNumberCards(
 export function filterChallenges(
   state: ChallengeCardState,
 ): ChallengeCardState {
-  const deck = state.deck.map(redactChallengeCard);
+  const deck = state.deck.map((card, index) =>
+    redactChallengeCard(card, `hidden_challenge_deck_${index}`),
+  );
   return { deck, active: state.active, completed: state.completed };
 }
 
@@ -174,16 +188,10 @@ export function filterCampaignState(
   campaign: CampaignState,
   playerId: string,
 ): CampaignState {
-  const isSpectator = playerId === "__spectator__";
   return {
     ...(campaign.numberCards
       ? {
-          numberCards: isSpectator
-            ? {
-                ...filterNumberCards(campaign.numberCards, playerId),
-                playerHands: campaign.numberCards.playerHands,
-              }
-            : filterNumberCards(campaign.numberCards, playerId),
+          numberCards: filterNumberCards(campaign.numberCards, playerId),
         }
       : {}),
     ...(campaign.constraints ? { constraints: campaign.constraints } : {}),

@@ -66,6 +66,7 @@ export type EquipmentMode = (
       kind: "grappling_hook";
       targetPlayerId: string | null;
       targetTileIndex: number | null;
+      receiverStandIndex?: number | null;
     }
 ) & { source?: EquipmentModeSource };
 
@@ -200,9 +201,6 @@ export function buildTalkiesWalkiesPayload(
     kind: "talkies_walkies",
     teammateId: mode.teammateId,
     myTileIndex: mode.myTileIndex,
-    ...(mode.teammateTileIndex != null
-      ? { teammateTileIndex: mode.teammateTileIndex }
-      : {}),
   };
 }
 
@@ -538,8 +536,8 @@ export function EquipmentModePanel({
       content = (
         <div className="space-y-2">
           <div>
-            Click one of your teammate's uncut wires on their stand, then click
-            one of your own uncut wires.
+            Click any uncut wire on a teammate&apos;s stand to select that teammate,
+            then click one of your own uncut wires.
           </div>
           <div>
             {twAllComplete ? (
@@ -1093,37 +1091,70 @@ export function EquipmentModePanel({
     }
 
     case "grappling_hook": {
+      const myStandCount = getPlayerStandSizes(me).length;
+      const requiresStandPick = myStandCount > 1;
+      const hasValidStandChoice = !requiresStandPick || mode.receiverStandIndex != null;
+
       if (mode.targetPlayerId == null || mode.targetTileIndex == null) {
         content = "Click an uncut wire on an opponent's stand.";
       } else {
         const targetName = opponents.find(
           (o) => o.id === mode.targetPlayerId,
         )?.name;
+        const standPicker = requiresStandPick
+          ? (
+            <div className="space-y-1">
+              <div>Choose which of your stands receives it:</div>
+              <div className="flex gap-2">
+                {Array.from({ length: myStandCount }, (_, standIndex) => {
+                  const selected = mode.receiverStandIndex === standIndex;
+                  return (
+                    <button
+                      key={standIndex}
+                      type="button"
+                      onClick={() => onUpdateMode({ ...mode, receiverStandIndex: standIndex })}
+                      className={selected ? BUTTON_OPTION_SELECTED_CLASS : BUTTON_OPTION_CLASS}
+                    >
+                      Stand {standIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )
+          : null;
         content = (
-          <>
-            Targeting {targetName}&apos;s wire{" "}
-            {wireLabel(mode.targetTileIndex)}.
-          </>
+          <div className="space-y-2">
+            <div>
+              Targeting {targetName}&apos;s wire {wireLabel(mode.targetTileIndex)}.
+            </div>
+            {standPicker}
+          </div>
         );
-        confirmButton = (
-          <button
-            type="button"
-            onClick={() =>
-              sendAndCancel({
-                type: "useEquipment",
-                equipmentId: "grappling_hook",
-                payload: {
-                  kind: "grappling_hook",
-                  targetPlayerId: mode.targetPlayerId!,
-                  targetTileIndex: mode.targetTileIndex!,
-                },
-              })
-            }
-            className={BUTTON_PRIMARY_CLASS}
-          >
-            Confirm Grappling Hook
-          </button>
-        );
+        if (hasValidStandChoice) {
+          confirmButton = (
+            <button
+              type="button"
+              onClick={() =>
+                sendAndCancel({
+                  type: "useEquipment",
+                  equipmentId: "grappling_hook",
+                  payload: {
+                    kind: "grappling_hook",
+                    targetPlayerId: mode.targetPlayerId!,
+                    targetTileIndex: mode.targetTileIndex!,
+                    ...(requiresStandPick && mode.receiverStandIndex != null
+                      ? { receiverStandIndex: mode.receiverStandIndex }
+                      : {}),
+                  },
+                })
+              }
+              className={BUTTON_PRIMARY_CLASS}
+            >
+              Confirm Grappling Hook
+            </button>
+          );
+        }
       }
       break;
     }

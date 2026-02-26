@@ -1,12 +1,12 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
-import { isLogTextDetail } from "@bomb-busters/shared";
 import {
   BUTTON_PRIMARY_CLASS,
   PANEL_CLASS,
   PANEL_TEXT_CLASS,
   PANEL_TITLE_CLASS,
 } from "./panelStyles.js";
+import { getMission11BlueAsRedValue } from "./actionRules.js";
 
 type DetectorForcedAction = Extract<
   NonNullable<ClientGameState["pendingForcedAction"]>,
@@ -21,25 +21,6 @@ export function getDetectorChoiceAvailableMatches(
     const tile = hand[idx];
     return !!tile && !tile.cut && tile.gameValue === forced.guessValue;
   });
-}
-
-export function getMission11BlueAsRedValue(
-  state: Pick<ClientGameState, "mission" | "log">,
-): number | null {
-  if (state.mission !== 11) return null;
-
-  for (const entry of state.log) {
-    if (entry.action !== "hookSetup") continue;
-    if (!isLogTextDetail(entry.detail)) continue;
-    const match = /^blue_as_red:(\d+)$/.exec(entry.detail.text.trim());
-    if (!match) continue;
-    const value = Number.parseInt(match[1]!, 10);
-    if (Number.isInteger(value) && value >= 1 && value <= 12) {
-      return value;
-    }
-  }
-
-  return null;
 }
 
 function isHiddenRedLike(

@@ -10,7 +10,11 @@ import {
   makeYellowTile,
 } from "@bomb-busters/shared/testing";
 import { executeDualCut, resolveDetectorTileChoice } from "../gameLogic";
-import { executeUseEquipment, validateUseEquipment } from "../equipment";
+import {
+  executeUseEquipment,
+  resolveTalkiesWalkiesTileChoice,
+  validateUseEquipment,
+} from "../equipment";
 
 function unlockedEquipment(id: string, name: string, unlockValue: EquipmentUnlockValue) {
   return makeEquipmentCard({ id, name, unlockValue, unlocked: true, used: false });
@@ -261,8 +265,8 @@ describe("equipment post-usage effects", () => {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 1,
-      teammateTileIndex: 0,
     });
+    resolveTalkiesWalkiesTileChoice(state, 0);
 
     // actor's hand[1] should now be teammate's old tile at index 0
     expect(state.players[0].hand[1].id).toBe("t0");

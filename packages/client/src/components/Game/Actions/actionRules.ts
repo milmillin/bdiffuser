@@ -263,7 +263,12 @@ export function getInitialEquipmentMode(
     case "disintegrator":
       return { kind: "disintegrator" };
     case "grappling_hook":
-      return { kind: "grappling_hook", targetPlayerId: null, targetTileIndex: null };
+      return {
+        kind: "grappling_hook",
+        targetPlayerId: null,
+        targetTileIndex: null,
+        receiverStandIndex: null,
+      };
     default:
       return null;
   }

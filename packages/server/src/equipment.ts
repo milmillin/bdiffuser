@@ -240,11 +240,18 @@ function adjustStandSize(
   standSizes[standIndex] = Math.max(0, standSizes[standIndex] + delta);
 }
 
-function resolveInsertStandIndex(player: Player, insertIndex: number): number | null {
-  const standSizes = getPlayerStandSizes(player);
-  if (standSizes.length <= 1) return 0;
-  if (insertIndex >= player.hand.length) return standSizes.length - 1;
-  return flatIndexToStandIndex(player, insertIndex);
+function resolveInsertIndexWithinStand(
+  player: Player,
+  standIndex: number,
+  sortValue: number,
+): number {
+  const range = resolveStandRange(player, standIndex);
+  if (!range) return player.hand.length;
+
+  for (let i = range.start; i < range.endExclusive; i++) {
+    if (player.hand[i].sortValue > sortValue) return i;
+  }
+  return range.endExclusive;
 }
 
 function buildGeneralRadarDetail(
@@ -371,7 +378,7 @@ export function validateUseEquipment(
     return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
   }
 
-  if (isRevealRedsForced(state, actor)) {
+  if (isPlayersTurn(state, actorId) && isRevealRedsForced(state, actor)) {
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
@@ -934,6 +941,24 @@ export function validateUseEquipment(
           "X-marked wires are ignored by equipment in this mission",
         );
       }
+      if (getPlayerStandSizes(actor).length > 1) {
+        const receiverStandIndex = payload.receiverStandIndex;
+        if (
+          typeof receiverStandIndex !== "number"
+          || !Number.isInteger(receiverStandIndex)
+        ) {
+          return legalityError(
+            "EQUIPMENT_INVALID_PAYLOAD",
+            "Choose which of your stands receives the grappling wire",
+          );
+        }
+        if (resolveStandRange(actor, receiverStandIndex) == null) {
+          return legalityError(
+            "EQUIPMENT_INVALID_PAYLOAD",
+            "Invalid receiver stand index",
+          );
+        }
+      }
       return null;
     }
   }
@@ -1069,26 +1094,6 @@ function validateTalkiesWalkiesPayload(
       "EQUIPMENT_RULE_VIOLATION",
       "Talkies-Walkies can only swap uncut wires",
     );
-  }
-
-  if (typeof payload.teammateTileIndex === "number") {
-    const teammateTile = getTileByFlatIndex(teammate, payload.teammateTileIndex);
-    if (!teammateTile) {
-      return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
-    }
-    if (hasXWireEquipmentRestriction(state) && isXMarkedWire(teammateTile)) {
-      return legalityError(
-        "MISSION_RULE_VIOLATION",
-        "X-marked wires are ignored by equipment in this mission",
-      );
-    }
-    if (teammateTile.cut) {
-      return legalityError(
-        "EQUIPMENT_RULE_VIOLATION",
-        "Talkies-Walkies can only swap uncut wires",
-      );
-    }
-    return null;
   }
 
   if (!hasSwappableTalkiesTile(state, teammate)) {
@@ -1318,47 +1323,25 @@ export function executeUseEquipment(
     }
     case "talkies_walkies": {
       const teammate = state.players.find((player) => player.id === payload.teammateId)!;
-      if (typeof payload.teammateTileIndex !== "number") {
-        state.pendingForcedAction = {
-          kind: "talkiesWalkiesTileChoice",
-          actorId,
-          targetPlayerId: teammate.id,
-          actorTileIndex: payload.myTileIndex,
-          source: "equipment",
-        };
-        addLog(
-          state,
-          actorId,
-          "useEquipment",
-          `used Talkies-Walkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
-        );
-        return {
-          type: "equipmentUsed",
-          equipmentId,
-          playerId: actorId,
-          effect: "talkies_walkies_pending",
-        };
-      }
-
-      swapTalkiesWires(
-        state,
-        actor,
-        teammate,
-        payload.myTileIndex,
-        payload.teammateTileIndex,
-      );
-
+      // Teammate always chooses their own wire via forced action.
+      state.pendingForcedAction = {
+        kind: "talkiesWalkiesTileChoice",
+        actorId,
+        targetPlayerId: teammate.id,
+        actorTileIndex: payload.myTileIndex,
+        source: "equipment",
+      };
       addLog(
         state,
         actorId,
         "useEquipment",
-        `used Talkies-Walkies with ${teammate.name} (swapped wires ${wireLabel(payload.myTileIndex)}/${wireLabel(payload.teammateTileIndex)})`,
+        `used Talkies-Walkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
       );
       return {
         type: "equipmentUsed",
         equipmentId,
         playerId: actorId,
-        effect: "talkies_walkies",
+        effect: "talkies_walkies_pending",
       };
     }
     case "emergency_batteries": {
@@ -1759,6 +1742,18 @@ export function executeUseEquipment(
       const target = state.players.find((player) => player.id === payload.targetPlayerId)!;
       const targetStandIndex = flatIndexToStandIndex(target, payload.targetTileIndex);
       const wire = target.hand[payload.targetTileIndex];
+      const actorStandCount = getPlayerStandSizes(actor).length;
+      let receiverStandIndex = 0;
+      if (actorStandCount > 1) {
+        const requestedReceiverStandIndex = payload.receiverStandIndex;
+        if (
+          typeof requestedReceiverStandIndex === "number"
+          && Number.isInteger(requestedReceiverStandIndex)
+          && resolveStandRange(actor, requestedReceiverStandIndex) != null
+        ) {
+          receiverStandIndex = requestedReceiverStandIndex;
+        }
+      }
 
       // Remove wire from target's hand
       target.hand.splice(payload.targetTileIndex, 1);
@@ -1779,17 +1774,14 @@ export function executeUseEquipment(
             : {}),
         }));
 
-      // Insert wire into actor's hand in sorted order (by sortValue)
-      let insertIndex = actor.hand.length;
-      for (let i = 0; i < actor.hand.length; i++) {
-        if (actor.hand[i].sortValue > wire.sortValue) {
-          insertIndex = i;
-          break;
-        }
-      }
-      const actorStandIndex = resolveInsertStandIndex(actor, insertIndex);
+      // Insert wire into the chosen receiving stand in sorted order.
+      const insertIndex = resolveInsertIndexWithinStand(
+        actor,
+        receiverStandIndex,
+        wire.sortValue,
+      );
       actor.hand.splice(insertIndex, 0, wire);
-      adjustStandSize(actor, actorStandIndex, 1);
+      adjustStandSize(actor, receiverStandIndex, 1);
 
       // Shift actor's info token positions for tokens at or after insert point
       actor.infoTokens = actor.infoTokens.map((t) => ({
@@ -1804,7 +1796,7 @@ export function executeUseEquipment(
         state,
         actorId,
         "useEquipment",
-        `used Grappling Hook — took wire from ${target.name}'s stand (position ${wireLabelOf(target, payload.targetTileIndex)})`,
+        `used Grappling Hook — took wire from ${target.name}'s stand (position ${wireLabelOf(target, payload.targetTileIndex)}) and placed it on stand ${receiverStandIndex + 1} at ${wireLabel(insertIndex)}`,
       );
 
       return {
@@ -1858,7 +1850,7 @@ export function validateCharacterAbility(
     return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
   }
 
-  if (isRevealRedsForced(state, actor)) {
+  if (isPlayersTurn(state, actorId) && isRevealRedsForced(state, actor)) {
     return legalityError(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
@@ -2063,47 +2055,25 @@ export function executeCharacterAbility(
 
     case "talkies_walkies": {
       const teammate = state.players.find((player) => player.id === payload.teammateId)!;
-      if (typeof payload.teammateTileIndex !== "number") {
-        state.pendingForcedAction = {
-          kind: "talkiesWalkiesTileChoice",
-          actorId,
-          targetPlayerId: teammate.id,
-          actorTileIndex: payload.myTileIndex,
-          source: "characterAbility",
-        };
-        addLog(
-          state,
-          actorId,
-          "characterAbility",
-          `used Walkie-Talkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
-        );
-        return {
-          type: "equipmentUsed",
-          equipmentId: "talkies_walkies",
-          playerId: actorId,
-          effect: "talkies_walkies_pending",
-        };
-      }
-
-      swapTalkiesWires(
-        state,
-        actor,
-        teammate,
-        payload.myTileIndex,
-        payload.teammateTileIndex,
-      );
-
+      // Teammate always chooses their own wire via forced action.
+      state.pendingForcedAction = {
+        kind: "talkiesWalkiesTileChoice",
+        actorId,
+        targetPlayerId: teammate.id,
+        actorTileIndex: payload.myTileIndex,
+        source: "characterAbility",
+      };
       addLog(
         state,
         actorId,
         "characterAbility",
-        `used Walkie-Talkies with ${teammate.name} (swapped wires ${wireLabel(payload.myTileIndex)}/${wireLabel(payload.teammateTileIndex)})`,
+        `used Walkie-Talkies with ${teammate.name} (selected wire ${wireLabel(payload.myTileIndex)}; waiting for ${teammate.name} to choose)`,
       );
       return {
         type: "equipmentUsed",
         equipmentId: "talkies_walkies",
         playerId: actorId,
-        effect: "talkies_walkies",
+        effect: "talkies_walkies_pending",
       };
     }
 

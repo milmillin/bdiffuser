@@ -12,6 +12,8 @@ import type {
 } from "@bomb-busters/shared";
 import { filterCampaignState, isLogTextDetail, logText } from "@bomb-busters/shared";
 
+type PendingForcedAction = NonNullable<GameState["pendingForcedAction"]>;
+
 /**
  * Filter game state for a specific player.
  * Players can see their own tile values but only backs of others' tiles (unless cut).
@@ -39,11 +41,10 @@ export function filterStateForPlayer(
       : {}),
     ...(state.pendingForcedAction
       ? {
-          pendingForcedAction:
-            state.pendingForcedAction.kind === "detectorTileChoice" &&
-            state.pendingForcedAction.targetPlayerId !== playerId
-              ? { ...state.pendingForcedAction, matchingTileIndices: [] }
-              : state.pendingForcedAction,
+          pendingForcedAction: filterPendingForcedActionForPlayer(
+            state.pendingForcedAction,
+            playerId,
+          ),
         }
       : {}),
     ...(state.surrenderVote
@@ -142,9 +143,39 @@ function isNumericList(value: string): boolean {
   return /^-?\d+(,-?\d+)*$/.test(value);
 }
 
+function removeDetectorActorTileIndex(
+  forced: Extract<PendingForcedAction, { kind: "detectorTileChoice" }>,
+): PendingForcedAction {
+  const { actorTileIndex: _actorTileIndex, ...rest } = forced;
+  return rest;
+}
+
+function filterPendingForcedActionForPlayer(
+  forced: PendingForcedAction,
+  playerId: string,
+): PendingForcedAction {
+  if (forced.kind !== "detectorTileChoice") return forced;
+  if (forced.targetPlayerId === playerId) return forced;
+
+  const hiddenMatches = { ...forced, matchingTileIndices: [] };
+  return forced.actorId === playerId
+    ? hiddenMatches
+    : removeDetectorActorTileIndex(hiddenMatches);
+}
+
+function filterPendingForcedActionForSpectator(
+  forced: PendingForcedAction,
+): PendingForcedAction {
+  if (forced.kind !== "detectorTileChoice") return forced;
+  return removeDetectorActorTileIndex({
+    ...forced,
+    matchingTileIndices: [],
+  });
+}
+
 /**
  * Filter game state for a spectator (not a player).
- * Spectators see all tiles fully visible but cannot act.
+ * Spectators cannot act. During active missions, only public information is visible.
  */
 export function filterStateForSpectator(state: GameState): ClientGameState {
   return {
@@ -152,7 +183,9 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
     roomId: state.roomId,
     playerId: "__spectator__",
     isSpectator: true,
-    players: state.players.map(filterPlayerFullyVisible),
+    players: state.phase === "finished"
+      ? state.players.map(filterPlayerFullyVisible)
+      : state.players.map(filterPlayerForSpectator),
     board: filterBoard(state.board),
     currentPlayerIndex: state.currentPlayerIndex,
     turnNumber: state.turnNumber,
@@ -165,10 +198,9 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
       : {}),
     ...(state.pendingForcedAction
       ? {
-          pendingForcedAction:
-            state.pendingForcedAction.kind === "detectorTileChoice"
-              ? { ...state.pendingForcedAction, matchingTileIndices: [] }
-              : state.pendingForcedAction,
+          pendingForcedAction: filterPendingForcedActionForSpectator(
+            state.pendingForcedAction,
+          ),
         }
       : {}),
     ...(state.surrenderVote
@@ -180,6 +212,23 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
     ...(state.timerDeadline != null
       ? { timerDeadline: state.timerDeadline }
       : {}),
+  };
+}
+
+function filterPlayerForSpectator(player: Player): ClientPlayer {
+  const standSizes = getNormalizedStandSizes(player);
+  return {
+    id: player.id,
+    name: player.name,
+    character: player.character,
+    isCaptain: player.isCaptain,
+    standSizes,
+    hand: player.hand.map((tile) => filterTileForSpectator(tile)),
+    infoTokens: player.infoTokens,
+    characterUsed: player.characterUsed,
+    connected: player.connected,
+    isBot: player.isBot,
+    remainingTiles: player.hand.filter((t) => !t.cut).length,
   };
 }
 
@@ -282,6 +331,30 @@ function filterTile(tile: WireTile, isOwn: boolean): VisibleTile {
     return {
       id: tile.id,
       cut: tile.cut,
+      ...(tile.isXMarked ? { isXMarked: true } : {}),
+      ...ownerSpread,
+      color: tile.color,
+      gameValue: tile.gameValue,
+      sortValue: tile.sortValue,
+      image: tile.image,
+    };
+  }
+
+  return {
+    id: tile.id,
+    cut: false,
+    ...(tile.isXMarked ? { isXMarked: true } : {}),
+    ...ownerSpread,
+  };
+}
+
+function filterTileForSpectator(tile: WireTile): VisibleTile {
+  const ownerSpread = tile.originalOwnerId != null ? { originalOwnerId: tile.originalOwnerId } : {};
+
+  if (tile.cut) {
+    return {
+      id: tile.id,
+      cut: true,
       ...(tile.isXMarked ? { isXMarked: true } : {}),
       ...ownerSpread,
       color: tile.color,

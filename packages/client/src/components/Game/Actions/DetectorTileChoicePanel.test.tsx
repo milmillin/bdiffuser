@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ClientGameState, GameState } from "@bomb-busters/shared";
-import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -137,15 +136,14 @@ describe("DetectorTileChoicePanel stand-selection flow", () => {
         }),
       ],
       currentPlayerIndex: 1,
-      log: [
-        {
-          turn: 0,
-          playerId: "system",
-          action: "hookSetup",
-          detail: logText("blue_as_red:7"),
-          timestamp: 1000,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
         },
-      ],
+      },
       pendingForcedAction: {
         kind: "detectorTileChoice",
         actorId: "actor",
@@ -186,15 +184,14 @@ describe("DetectorTileChoicePanel stand-selection flow", () => {
         }),
       ],
       currentPlayerIndex: 1,
-      log: [
-        {
-          turn: 0,
-          playerId: "system",
-          action: "hookSetup",
-          detail: logText("blue_as_red:7"),
-          timestamp: 1000,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
         },
-      ],
+      },
       pendingForcedAction: {
         kind: "detectorTileChoice",
         actorId: "actor",

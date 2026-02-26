@@ -76,6 +76,12 @@ describe("redactNumberCard", () => {
     const redacted = redactNumberCard(card);
     expect(redacted).toEqual({ id: "n5", value: 0, faceUp: false });
   });
+
+  it("uses the provided redacted id override", () => {
+    const card = makeNumberCard({ id: "n5", value: 7, faceUp: true });
+    const redacted = redactNumberCard(card, "hidden_number_deck_0");
+    expect(redacted).toEqual({ id: "hidden_number_deck_0", value: 0, faceUp: false });
+  });
 });
 
 describe("redactChallengeCard", () => {
@@ -89,6 +95,22 @@ describe("redactChallengeCard", () => {
     const redacted = redactChallengeCard(card);
     expect(redacted).toEqual({
       id: "ch-3",
+      name: "",
+      description: "",
+      completed: true,
+    });
+  });
+
+  it("uses the provided redacted id override", () => {
+    const card = makeChallengeCard({
+      id: "ch-3",
+      name: "Secret",
+      description: "Do something",
+      completed: true,
+    });
+    const redacted = redactChallengeCard(card, "hidden_challenge_deck_0");
+    expect(redacted).toEqual({
+      id: "hidden_challenge_deck_0",
       name: "",
       description: "",
       completed: true,
@@ -108,8 +130,8 @@ describe("filterNumberCards", () => {
     });
     const filtered = filterNumberCards(state, "p1");
     expect(filtered.deck).toHaveLength(2);
-    expect(filtered.deck[0]).toEqual({ id: "d1", value: 0, faceUp: false });
-    expect(filtered.deck[1]).toEqual({ id: "d2", value: 0, faceUp: false });
+    expect(filtered.deck[0]).toEqual({ id: "hidden_number_deck_0", value: 0, faceUp: false });
+    expect(filtered.deck[1]).toEqual({ id: "hidden_number_deck_1", value: 0, faceUp: false });
   });
 
   it("passes through discard and visible unchanged", () => {
@@ -140,7 +162,7 @@ describe("filterNumberCards", () => {
     const filtered = filterNumberCards(state, "p1");
     expect(filtered.playerHands["p2"]).toHaveLength(2);
     expect(filtered.playerHands["p2"][0]).toEqual({
-      id: "o1",
+      id: "hidden_number_hand_p2_0",
       value: 0,
       faceUp: false,
     });
@@ -205,6 +227,29 @@ describe("filterCampaignState", () => {
     expect(filtered.numberCards!.playerHands["p1"][0].value).toBe(3);
     // other's face-down card redacted
     expect(filtered.numberCards!.playerHands["p2"][0].value).toBe(0);
+    expect(filtered.numberCards!.playerHands["p2"][0].id).toBe("hidden_number_hand_p2_0");
+  });
+
+  it("redacts spectator view for all private number-card hands", () => {
+    const campaign = makeCampaignState({
+      numberCards: makeNumberCardState({
+        playerHands: {
+          p1: [makeNumberCard({ id: "p1-secret", value: 3, faceUp: false })],
+          p2: [makeNumberCard({ id: "p2-secret", value: 7, faceUp: false })],
+        },
+      }),
+    });
+    const filtered = filterCampaignState(campaign, "__spectator__");
+    expect(filtered.numberCards!.playerHands["p1"][0]).toEqual({
+      id: "hidden_number_hand_p1_0",
+      value: 0,
+      faceUp: false,
+    });
+    expect(filtered.numberCards!.playerHands["p2"][0]).toEqual({
+      id: "hidden_number_hand_p2_0",
+      value: 0,
+      faceUp: false,
+    });
   });
 
   it("passes constraints through unchanged", () => {

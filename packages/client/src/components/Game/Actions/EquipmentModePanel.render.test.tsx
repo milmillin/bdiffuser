@@ -400,7 +400,7 @@ describe("EquipmentModePanel — talkies_walkies", () => {
       teammateTileIndex: null,
       myTileIndex: null,
     });
-    expect(html).toContain("Click one of your teammate");
+    expect(html).toContain("Click any uncut wire on a teammate");
     expect(html).toContain("Still need:");
     expect(html).toContain("target player");
     expect(html).toContain("uncut wire");
@@ -430,7 +430,7 @@ describe("EquipmentModePanel — talkies_walkies", () => {
     expect(html).toContain("data-testid=\"tw-confirm\"");
   });
 
-  it("buildTalkiesWalkiesPayload includes teammateTileIndex for immediate swap path", () => {
+  it("buildTalkiesWalkiesPayload sends teammate + own wire only", () => {
     const payload = buildTalkiesWalkiesPayload({
       kind: "talkies_walkies",
       teammateId: "opp1",
@@ -440,7 +440,6 @@ describe("EquipmentModePanel — talkies_walkies", () => {
     expect(payload).toEqual({
       kind: "talkies_walkies",
       teammateId: "opp1",
-      teammateTileIndex: 2,
       myTileIndex: 1,
     });
   });
@@ -799,6 +798,58 @@ describe("EquipmentModePanel — grappling_hook", () => {
     });
     expect(html).toContain("Targeting");
     expect(html).toContain("Opp1");
+    expect(html).toContain("Confirm Grappling Hook");
+  });
+
+  it("with two stands requires receiver stand selection before confirm", () => {
+    const me = makePlayer({
+      id: "me",
+      name: "Me",
+      hand: [
+        makeTile({ id: "m1", gameValue: 2 }),
+        makeTile({ id: "m2", gameValue: 4 }),
+        makeTile({ id: "m3", gameValue: 8 }),
+      ],
+    });
+    (me as typeof me & { standSizes?: number[] }).standSizes = [2, 1];
+    const html = renderMode(
+      {
+        kind: "grappling_hook",
+        targetPlayerId: "opp1",
+        targetTileIndex: 0,
+        receiverStandIndex: null,
+      },
+      {
+        players: [me, makePlayer({ id: "opp1", name: "Opp1" })],
+      },
+    );
+    expect(html).toContain("Choose which of your stands receives it");
+    expect(html).not.toContain("Confirm Grappling Hook");
+  });
+
+  it("with two stands and chosen receiver stand shows confirm", () => {
+    const me = makePlayer({
+      id: "me",
+      name: "Me",
+      hand: [
+        makeTile({ id: "m1", gameValue: 2 }),
+        makeTile({ id: "m2", gameValue: 4 }),
+        makeTile({ id: "m3", gameValue: 8 }),
+      ],
+    });
+    (me as typeof me & { standSizes?: number[] }).standSizes = [2, 1];
+    const html = renderMode(
+      {
+        kind: "grappling_hook",
+        targetPlayerId: "opp1",
+        targetTileIndex: 0,
+        receiverStandIndex: 1,
+      },
+      {
+        players: [me, makePlayer({ id: "opp1", name: "Opp1" })],
+      },
+    );
+    expect(html).toContain("Choose which of your stands receives it");
     expect(html).toContain("Confirm Grappling Hook");
   });
 });

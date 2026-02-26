@@ -1009,7 +1009,7 @@ export function GameBoard({
     !!me?.character &&
     gameState.phase === "playing" &&
     canStagePersonalSkillFromCardStrip(gameState, playerId, {
-      revealRedsForcedForActor,
+      revealRedsForcedForActor: revealRedsForced,
     }) &&
     (canUseCharacterSkillAnytime(me.character) || isMyTurn);
 
@@ -1022,7 +1022,7 @@ export function GameBoard({
     }
     const typedEquipmentId = equipmentId as AnyEquipmentId;
     if (!canStageEquipmentCardFromCardStrip(gameState, playerId, typedEquipmentId, {
-      revealRedsForcedForActor,
+      revealRedsForcedForActor: revealRedsForced,
     })) {
       return false;
     }

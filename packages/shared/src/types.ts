@@ -139,8 +139,9 @@ export type UseEquipmentPayload =
       teammateId: string;
       myTileIndex: number;
       /**
-       * Optional at initiation time: the target player can choose this later
-       * via a forced action.
+       * Legacy field kept for compatibility.
+       * Server ignores this on initiation; the teammate must choose their own
+       * wire via forced action resolution.
        */
       teammateTileIndex?: number;
     }
@@ -181,6 +182,11 @@ export type UseEquipmentPayload =
       kind: "grappling_hook";
       targetPlayerId: string;
       targetTileIndex: number;
+      /**
+       * Required when the receiving player has 2 stands.
+       * Indicates which stand receives the taken wire.
+       */
+      receiverStandIndex?: number;
     };
 
 // ── Board State ─────────────────────────────────────────────

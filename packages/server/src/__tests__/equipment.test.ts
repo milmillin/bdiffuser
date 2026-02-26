@@ -715,6 +715,20 @@ describe("equipment validation matrix across shared game states", () => {
     expectLegalityCode(state, "actor", "rewinder", "FORCED_REVEAL_REDS_REQUIRED");
   });
 
+  it("allows anytime equipment off-turn even if actor must reveal reds on their own turn", () => {
+    const state = buildStateForEquipmentMatrix("talkies_walkies");
+    state.mission = 3;
+    state.players[0].hand = [makeRedTile({ id: "r1", cut: false })];
+    state.currentPlayerIndex = 1; // teammate's turn
+
+    const error = validateUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 0,
+    });
+    expect(error).toBeNull();
+  });
+
   it("mission 17: captain cannot activate equipment cards", () => {
     const state = buildStateForEquipmentMatrix("rewinder");
     state.mission = 17;
@@ -1032,16 +1046,15 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
   });
 
-  it("mission 20: rejects Talkies-Walkies when either selected wire is X-marked", () => {
+  it("mission 20: rejects Talkies-Walkies when actor-selected wire is X-marked", () => {
     const state = buildStateForEquipmentMatrix("talkies_walkies");
     state.mission = 20;
-    state.players[1].hand[0].isXMarked = true;
+    state.players[0].hand[1].isXMarked = true;
 
     const error = validateUseEquipment(state, "actor", "talkies_walkies", {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 1,
-      teammateTileIndex: 0,
     });
     expect(error).not.toBeNull();
     expect(error?.code).toBe("MISSION_RULE_VIOLATION");
@@ -1571,12 +1584,15 @@ describe("equipment execution", () => {
       unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
     );
 
-    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+    const pending = executeUseEquipment(state, "actor", "talkies_walkies", {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 1,
-      teammateTileIndex: 0,
     });
+    expect(pending.type).toBe("equipmentUsed");
+    if (pending.type !== "equipmentUsed") return;
+    expect(pending.effect).toBe("talkies_walkies_pending");
+    const action = resolveTalkiesWalkiesTileChoice(state, 0);
 
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
@@ -1617,8 +1633,8 @@ describe("equipment execution", () => {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 1,
-      teammateTileIndex: 2,
     });
+    resolveTalkiesWalkiesTileChoice(state, 2);
 
     expect((state.players[0] as typeof actor & { standSizes?: number[] }).standSizes).toEqual([2, 2]);
     expect((state.players[1] as typeof teammate & { standSizes?: number[] }).standSizes).toEqual([2, 2]);
@@ -1658,8 +1674,8 @@ describe("equipment execution", () => {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 1,
-      teammateTileIndex: 0,
     });
+    resolveTalkiesWalkiesTileChoice(state, 0);
 
     // Actor pre-sort after swap: [a4, t2 | a3, a9]
     // Per-stand sort yields [t2, a4 | a3, a9].
@@ -1674,6 +1690,47 @@ describe("equipment execution", () => {
     expect(state.players[1].infoTokens).toEqual([
       { value: 6, position: 1, isYellow: false },
     ]);
+  });
+
+  it("talkies-walkies ignores initiator-supplied teammate tile and still creates forced choice", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", sortValue: 1, gameValue: 1 }),
+        makeTile({ id: "a6", sortValue: 6, gameValue: 6 }),
+      ],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      name: "Teammate",
+      hand: [
+        makeTile({ id: "t2", sortValue: 2, gameValue: 2 }),
+        makeTile({ id: "t7", sortValue: 7, gameValue: 7 }),
+      ],
+    });
+    const state = stateWithEquipment(
+      [actor, teammate],
+      unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
+    );
+
+    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+      kind: "talkies_walkies",
+      teammateId: "teammate",
+      myTileIndex: 1,
+      teammateTileIndex: 0,
+    });
+
+    expect(action.type).toBe("equipmentUsed");
+    if (action.type !== "equipmentUsed") return;
+    expect(action.effect).toBe("talkies_walkies_pending");
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual(["a1", "a6"]);
+    expect(state.players[1].hand.map((tile) => tile.id)).toEqual(["t2", "t7"]);
+    expect(state.pendingForcedAction).toMatchObject({
+      kind: "talkiesWalkiesTileChoice",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      actorTileIndex: 1,
+    });
   });
 
   it("talkies-walkies can start with actor wire only and wait for target choice", () => {
@@ -1783,12 +1840,12 @@ describe("equipment execution", () => {
     );
     state.mission = 24;
 
-    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+    executeUseEquipment(state, "actor", "talkies_walkies", {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 0,
-      teammateTileIndex: 0,
     });
+    const action = resolveTalkiesWalkiesTileChoice(state, 0);
 
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
@@ -1827,12 +1884,12 @@ describe("equipment execution", () => {
       unlockedEquipmentCard("talkies_walkies", "Talkies-Walkies", 2),
     );
 
-    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+    executeUseEquipment(state, "actor", "talkies_walkies", {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 0,
-      teammateTileIndex: 0,
     });
+    const action = resolveTalkiesWalkiesTileChoice(state, 0);
 
     expect(action.type).toBe("equipmentUsed");
     // Base FAQ: token follows the swapped wire to the recipient stand.
@@ -1869,12 +1926,12 @@ describe("equipment execution", () => {
     );
     state.mission = 40;
 
-    const action = executeUseEquipment(state, "actor", "talkies_walkies", {
+    executeUseEquipment(state, "actor", "talkies_walkies", {
       kind: "talkies_walkies",
       teammateId: "teammate",
       myTileIndex: 0,
-      teammateTileIndex: 0,
     });
+    const action = resolveTalkiesWalkiesTileChoice(state, 0);
 
     expect(action.type).toBe("equipmentUsed");
     if (action.type !== "equipmentUsed") return;
@@ -2431,6 +2488,90 @@ describe("equipment execution", () => {
     expect(state.players[1].infoTokens).toEqual([
       { value: 5, position: 1, isYellow: false },
     ]);
+  });
+
+  it("grappling hook inserts into the chosen receiving stand for two-stand actor", () => {
+    const actor = withStandSizes(makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 1, sortValue: 1 }),
+        makeTile({ id: "a4", gameValue: 4, sortValue: 4 }),
+        makeTile({ id: "a7", gameValue: 7, sortValue: 7 }),
+        makeTile({ id: "a9", gameValue: 9, sortValue: 9 }),
+      ],
+    }), [2, 2]);
+    const target = withStandSizes(makePlayer({
+      id: "target",
+      hand: [
+        makeTile({ id: "t2", gameValue: 2, sortValue: 2 }),
+        makeTile({ id: "t3", gameValue: 3, sortValue: 3 }),
+      ],
+    }), [2]);
+    const state = makeGameState({
+      players: [actor, target],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        equipment: [
+          makeEquipmentCard({
+            id: "grappling_hook",
+            name: "Grappling Hook",
+            unlockValue: 6,
+            unlocked: true,
+            used: false,
+          }),
+        ],
+      },
+    });
+
+    const validation = validateUseEquipment(state, "actor", "grappling_hook", {
+      kind: "grappling_hook",
+      targetPlayerId: "target",
+      targetTileIndex: 1,
+      receiverStandIndex: 1,
+    });
+    expect(validation).toBeNull();
+
+    executeUseEquipment(state, "actor", "grappling_hook", {
+      kind: "grappling_hook",
+      targetPlayerId: "target",
+      targetTileIndex: 1,
+      receiverStandIndex: 1,
+    });
+
+    expect(state.players[0].hand.map((tile) => tile.id)).toEqual([
+      "a1",
+      "a4",
+      "t3",
+      "a7",
+      "a9",
+    ]);
+    expect((state.players[0] as typeof actor & { standSizes?: number[] }).standSizes).toEqual([2, 3]);
+  });
+
+  it("grappling hook requires receiverStandIndex when actor has two stands", () => {
+    const actor = withStandSizes(makePlayer({
+      id: "actor",
+      hand: [
+        makeTile({ id: "a1", gameValue: 1, sortValue: 1 }),
+        makeTile({ id: "a4", gameValue: 4, sortValue: 4 }),
+      ],
+    }), [1, 1]);
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 2, sortValue: 2 })],
+    });
+    const state = stateWithEquipment(
+      [actor, target],
+      unlockedEquipmentCard("grappling_hook", "Grappling Hook", 6),
+    );
+
+    const error = validateUseEquipment(state, "actor", "grappling_hook", {
+      kind: "grappling_hook",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+    });
+    expect(error?.code).toBe("EQUIPMENT_INVALID_PAYLOAD");
   });
 
   it("grappling hook removes target info tokens where positionB matches removed tile index", () => {
