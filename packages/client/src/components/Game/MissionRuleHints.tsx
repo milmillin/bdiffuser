@@ -116,6 +116,7 @@ function CampaignObjectCard({
   rotateCcw90,
   badgeLabel,
   sizeClassName,
+  imageFit,
   onClick,
 }: {
   image: string;
@@ -128,6 +129,8 @@ function CampaignObjectCard({
   badgeLabel?: string;
   /** Override the default outer width classes (e.g. larger cards). */
   sizeClassName?: string;
+  /** Override the default image fit mode. */
+  imageFit?: "cover" | "contain";
   onClick: () => void;
 }) {
   const widthClass =
@@ -138,6 +141,10 @@ function CampaignObjectCard({
         : "w-20 sm:w-24");
   const aspectClass = landscape ? "aspect-[1037/736]" : "aspect-[739/1040]";
   const frameClass = rotateCcw90 ? "h-20 sm:h-24 aspect-[1037/736]" : `w-full ${aspectClass}`;
+  const imageClassName =
+    imageFit === "contain"
+      ? "h-full w-full object-contain"
+      : "h-full w-full object-cover";
 
   if (rotateCcw90) {
     return (
@@ -162,7 +169,7 @@ function CampaignObjectCard({
             <img
               src={`/images/${image}`}
               alt=""
-              className="h-full w-full object-cover"
+              className={imageClassName}
             />
           </div>
           {badgeLabel && (
@@ -194,7 +201,7 @@ function CampaignObjectCard({
         <img
           src={`/images/${image}`}
           alt=""
-          className="h-full w-full object-cover"
+          className={imageClassName}
         />
         {badgeLabel && (
           <span className="absolute right-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-bold text-white">
@@ -407,6 +414,7 @@ function CampaignObjectsHint({
   );
 
   const oxygen = campaign.oxygen;
+  const oxygenBarMax = oxygen ? Math.max(oxygen.pool, 10) : 10;
   const oxygenByPlayer = oxygen
     ? gameState.players
       .map((player) => ({
@@ -682,19 +690,57 @@ function CampaignObjectsHint({
 
         {oxygen && (
           <SectionShell>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-sky-200">
+              Oxygen
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
               <div className="space-y-2 rounded-lg bg-sky-950/20 px-2.5 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-sky-300 font-semibold">Pool</span>
-                  <div className="flex-1 h-4 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all bg-sky-500"
-                      style={{ width: `${Math.min(100, (oxygen.pool / Math.max(oxygen.pool, 10)) * 100)}%` }}
+                <div className="flex items-start gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewCard({
+                        name: "Oxygen Reserve",
+                        previewImage: "oxygen.png",
+                        previewAspectRatio: "364/648",
+                      })
+                    }
+                    className="relative shrink-0 w-8 sm:w-10 aspect-[364/648] rounded-md border border-sky-500 overflow-hidden bg-slate-900"
+                    aria-label="View Oxygen Reserve"
+                  >
+                    <img
+                      src="/images/oxygen.png"
+                      alt=""
+                      className="h-full w-full object-contain"
                     />
+                  </button>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-sky-300 font-semibold">Pool</span>
+                      <span className="ml-auto text-sm font-black text-sky-100 tabular-nums">
+                        {oxygen.pool}
+                      </span>
+                    </div>
+                    <div className="relative h-4 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all bg-sky-500"
+                        style={{ width: `${Math.min(100, (oxygen.pool / oxygenBarMax) * 100)}%` }}
+                      />
+                      {oxygenBarMax > 1 && (
+                        <div className="pointer-events-none absolute inset-0">
+                          {Array.from({ length: oxygenBarMax - 1 }, (_, idx) => (
+                            <span
+                              key={`pool-guide-${idx}`}
+                              className="absolute top-0 bottom-0 w-px bg-white/25"
+                              style={{ left: `${((idx + 1) / oxygenBarMax) * 100}%` }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <OxygenTokenRow amount={oxygen.pool} />
                   </div>
-                  <span className="text-sm font-black text-sky-100 tabular-nums">{oxygen.pool}</span>
                 </div>
-                <OxygenTokenRow amount={oxygen.pool} />
               </div>
               <StatPill
                 label="Contributors"

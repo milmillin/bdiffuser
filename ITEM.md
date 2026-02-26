@@ -210,6 +210,18 @@ Two-sided card used in certain missions.
 
 ---
 
+## Oxygen Icon
+
+Campaign oxygen reserve visual used in oxygen-tracker missions.
+
+| File | Description |
+|------|-------------|
+| `oxygen.png` | Oxygen reserve image used in mission hint UI and card preview |
+
+**Count:** **1 file**
+
+---
+
 ## Rule Stickers
 
 Sticker instructions applied to the rulebook at campaign milestones, unlocking new content.
@@ -238,5 +250,6 @@ Sticker instructions applied to the rulebook at campaign milestones, unlocking n
 | Cutter Tiles | 2 | PNG |
 | Number Tiles | 13 | PNG |
 | Bunker Card | 2 | PNG |
+| Oxygen Icon | 1 | PNG |
 | Rule Stickers | 3 | PNG |
-| **Total** | **259** | |
+| **Total** | **260** | |
