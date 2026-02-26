@@ -2584,32 +2584,30 @@ registerHookHandler<"bunker_flow">("bunker_flow", {
     const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
     const pointer = getActionPointer(ctx.state) ?? (tracker.position % cycle);
     const directionalConstraint = ctx.state.campaign?.constraints?.global?.[pointer];
-    if (directionalConstraint && !valuePassesConstraint(ctx.cutValue, directionalConstraint.id)) {
+
+    const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
+    const currentCell = getMission66BunkerCell(point.floor, point.row, point.col);
+    const actionConstraint = ctx.state.campaign?.constraints?.deck?.[0];
+    const onActionCell = currentCell?.marker === "action";
+    if (onActionCell) {
+      if (actionConstraint && !valuePassesConstraint(ctx.cutValue, actionConstraint.id)) {
+        pushGameLog(ctx.state, {
+          turn: ctx.state.turnNumber,
+          playerId: ctx.action.actorId,
+          action: "hookEffect",
+          detail:
+            `bunker_flow:blocked:action|constraint=${actionConstraint.id}|value=${ctx.cutValue}|cell=${point.floor}:${point.row}:${point.col}`,
+          timestamp: Date.now(),
+        });
+        return;
+      }
+    } else if (directionalConstraint && !valuePassesConstraint(ctx.cutValue, directionalConstraint.id)) {
       pushGameLog(ctx.state, {
         turn: ctx.state.turnNumber,
         playerId: ctx.action.actorId,
         action: "hookEffect",
         detail:
           `bunker_flow:blocked:direction|pointer=${pointer}|constraint=${directionalConstraint.id}|value=${ctx.cutValue}`,
-        timestamp: Date.now(),
-      });
-      return;
-    }
-
-    const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
-    const currentCell = getMission66BunkerCell(point.floor, point.row, point.col);
-    const actionConstraint = ctx.state.campaign?.constraints?.deck?.[0];
-    if (
-      currentCell?.marker === "action" &&
-      actionConstraint &&
-      !valuePassesConstraint(ctx.cutValue, actionConstraint.id)
-    ) {
-      pushGameLog(ctx.state, {
-        turn: ctx.state.turnNumber,
-        playerId: ctx.action.actorId,
-        action: "hookEffect",
-        detail:
-          `bunker_flow:blocked:action|constraint=${actionConstraint.id}|value=${ctx.cutValue}|cell=${point.floor}:${point.row}:${point.col}`,
         timestamp: Date.now(),
       });
       return;

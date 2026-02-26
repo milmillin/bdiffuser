@@ -1,6 +1,6 @@
 {
   "name": "bomb-busters",
-  "version": "1.1.396",
+  "version": "1.1.397",
   "private": true,
   "pnpm": {
     "onlyBuiltDependencies": [

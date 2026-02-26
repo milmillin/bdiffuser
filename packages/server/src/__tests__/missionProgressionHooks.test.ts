@@ -2008,14 +2008,15 @@ describe("mission progression hooks", () => {
       const directionalConstraintId = constraintsState.global[pointer]?.id;
       if (!directionalConstraintId) throw new Error("expected active directional constraint");
       const currentPoint = getMission66BunkerTrackPoint(tracker.position, tracker.max);
-      const requiredConstraintIds = [directionalConstraintId];
+      const requiredConstraintIds: string[] = [];
       if (currentPoint.floor === "front" && currentPoint.row === 2 && currentPoint.col === 1) {
         const actionConstraintId = constraintsState.deck?.[0]?.id;
         if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
-      }
-      if (currentPoint.floor === "back" && currentPoint.row === 2 && currentPoint.col === 3) {
+      } else if (currentPoint.floor === "back" && currentPoint.row === 2 && currentPoint.col === 3) {
         const actionConstraintId = constraintsState.deck?.[0]?.id;
         if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
+      } else {
+        requiredConstraintIds.push(directionalConstraintId);
       }
       const cutValue = pickValueForTestConstraints(requiredConstraintIds);
       state.players[0]!.hand.push(
