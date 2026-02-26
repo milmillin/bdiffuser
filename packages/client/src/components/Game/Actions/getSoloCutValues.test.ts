@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import type { ClientGameState } from "@bomb-busters/shared";
-import { logText } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -838,6 +837,56 @@ describe("getSoloCutValues yellow logic", () => {
     expect(isMission59DualCutActorTileValueAllowed(state, 12)).toBe(false);
   });
 
+  it("allows YELLOW dual-cut guesses in missions without numeric card gates", () => {
+    const state = makeGameState({
+      mission: 2,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeYellowTile({ id: "y1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(isMission59DualCutActorTileValueAllowed(state, "YELLOW")).toBe(true);
+  });
+
+  it("disallows YELLOW dual-cut guesses in mission 26", () => {
+    const state = makeGameState({
+      mission: 26,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeYellowTile({ id: "y1" })],
+        }),
+      ],
+      campaign: {
+        numberCards: {
+          visible: [{ id: "n5", value: 5, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isMission59DualCutActorTileValueAllowed(state, "YELLOW")).toBe(false);
+  });
+
+  it("disallows YELLOW dual-cut guesses in mission 59", () => {
+    const state = makeGameState({
+      mission: 59,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeYellowTile({ id: "y1" })],
+        }),
+      ],
+    }) as unknown as ClientGameState;
+
+    expect(isMission59DualCutActorTileValueAllowed(state, "YELLOW")).toBe(false);
+  });
+
   it("extracts visible Mission 59 Number values from Nano direction", () => {
     const state = makeGameState({
       mission: 59,
@@ -1054,15 +1103,14 @@ describe("canRevealReds mission rules", () => {
           ],
         }),
       ],
-      log: [
-        {
-          turn: 0,
-          playerId: "system",
-          action: "hookSetup",
-          detail: logText("blue_as_red:7"),
-          timestamp: 1000,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
         },
-      ],
+      },
     }) as unknown as ClientGameState;
 
     expect(canRevealReds(state, "me")).toBe(true);
@@ -1080,15 +1128,14 @@ describe("canRevealReds mission rules", () => {
           ],
         }),
       ],
-      log: [
-        {
-          turn: 0,
-          playerId: "system",
-          action: "hookSetup",
-          detail: logText("blue_as_red:7"),
-          timestamp: 1000,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
         },
-      ],
+      },
     }) as unknown as ClientGameState;
 
     expect(canRevealReds(state, "me")).toBe(false);
@@ -1152,7 +1199,7 @@ describe("canRevealReds mission rules", () => {
 });
 
 describe("isRevealRedsForced", () => {
-  it("returns true in mission 11 when all remaining wires are the hidden red-like value", () => {
+  it("returns true in mission 11 when all remaining wires are the mission number-card value", () => {
     const state = makeGameState({
       mission: 11,
       players: [
@@ -1164,15 +1211,14 @@ describe("isRevealRedsForced", () => {
           ],
         }),
       ],
-      log: [
-        {
-          turn: 0,
-          playerId: "system",
-          action: "hookSetup",
-          detail: logText("blue_as_red:7"),
-          timestamp: 1000,
+      campaign: {
+        numberCards: {
+          visible: [{ id: "m11-blue-as-red-7", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
         },
-      ],
+      },
     }) as unknown as ClientGameState;
 
     expect(isRevealRedsForced(state, "me")).toBe(true);

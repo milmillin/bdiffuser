@@ -8,7 +8,6 @@ import type {
 import {
   BLUE_COPIES_PER_VALUE,
   getWirePoolCount,
-  isLogTextDetail,
   resolveMissionSetup,
 } from "@bomb-busters/shared";
 import type { EquipmentMode } from "./EquipmentModePanel.js";
@@ -445,7 +444,12 @@ export function isMission59CutValueVisible(
 export function isMission59DualCutActorTileValueAllowed(
   state: ClientGameState,
   value: unknown,
-): value is number {
+): value is number | "YELLOW" {
+  if (value === "YELLOW") {
+    // Mission 26 and Mission 59 restrict cut values to visible numeric Number cards.
+    return state.mission !== 26 && state.mission !== 59;
+  }
+
   if (state.mission !== 59) return isMission26CutValueVisible(state, value);
   if (typeof value !== "number") return false;
 
@@ -519,19 +523,13 @@ export function isRevealRedsForced(
   return uncutTiles.every((t) => t.color === "red");
 }
 
-function getMission11BlueAsRedValue(state: ClientGameState): number | null {
+export function getMission11BlueAsRedValue(
+  state: Pick<ClientGameState, "mission" | "campaign">,
+): number | null {
   if (state.mission !== 11) return null;
-
-  for (const entry of state.log) {
-    if (entry.action !== "hookSetup") continue;
-    if (!isLogTextDetail(entry.detail)) continue;
-    const match = /^blue_as_red:(\d+)$/.exec(entry.detail.text.trim());
-    if (!match) continue;
-    const value = Number(match[1]);
-    if (Number.isInteger(value) && value >= 1 && value <= 12) {
-      return value;
-    }
-  }
-
-  return null;
+  const value = state.campaign?.numberCards?.visible?.[0]?.value;
+  if (typeof value !== "number") return null;
+  if (!Number.isInteger(value)) return null;
+  if (value < 1 || value > 12) return null;
+  return value;
 }

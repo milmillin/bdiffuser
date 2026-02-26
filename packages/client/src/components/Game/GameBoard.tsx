@@ -28,7 +28,6 @@ import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import {
   DetectorTileChoicePanel,
   getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
-  getMission11BlueAsRedValue as _getMission11BlueAsRedValue,
 } from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
@@ -62,6 +61,7 @@ import {
   canStagePersonalSkillFromCardStrip,
   canRevealReds,
   isRevealRedsForced,
+  getMission11BlueAsRedValue as _getMission11BlueAsRedValue,
   isMission59DualCutActorTileValueAllowed,
   getMission59ForwardValues,
   getImmediateEquipmentPayload,
@@ -693,7 +693,9 @@ export function GameBoard({
   const mission9ActiveProgress = mission9Gate?.activeProgress;
   const isMission9BlockedValue = (value: number | "YELLOW"): boolean =>
     isMission9BlockedCutValue(gameState, value);
-  const isDualCutActorTileValueAllowed = (value: unknown): value is number => {
+  const isDualCutActorTileValueAllowed = (
+    value: unknown,
+  ): value is number | "YELLOW" => {
     return isMission59DualCutActorTileValueAllowed(gameState, value);
   };
   const selectedGuessValue =
@@ -2611,7 +2613,7 @@ export function PendingActionStrip({
             Mission 11 Reveal Check
           </div>
           <div className="text-sky-100">
-            If your remaining wires match the hidden red-like value, stage Reveal Reds to confirm.
+            If your remaining wires match the Mission 11 number-card value, stage Reveal Reds to confirm.
           </div>
           <button
             type="button"
@@ -2842,7 +2844,7 @@ function ActionMissionHints({
           className="rounded-lg border border-sky-500/50 bg-sky-950/25 px-3 py-2 text-xs text-sky-100"
           data-testid="mission11-reveal-hint"
         >
-          Mission 11: Reveal Reds is unavailable until your remaining wires match the hidden red-like value.
+          Mission 11: Reveal Reds is unavailable until your remaining wires match the mission number-card value.
         </div>
       )}
 
