@@ -34,7 +34,7 @@ export function filterStateForPlayer(
     turnNumber: state.turnNumber,
     mission: state.mission,
     result: state.result,
-    log: filterLog(state.log),
+    log: filterLog(state.log, state.players),
     chat: state.chat,
     ...(state.campaign
       ? { campaign: filterCampaignState(state.campaign, playerId) }
@@ -87,14 +87,42 @@ function filterEquipmentCardForClient(
   return equipment;
 }
 
-function filterLog(log: GameLogEntry[]): GameLogEntry[] {
+export function filterLog(
+  log: GameLogEntry[],
+  players: Pick<Player, "id" | "name">[],
+): GameLogEntry[] {
+  const playerNamesById = new Map(players.map((player) => [player.id, player.name]));
+
   return log.map((entry) => {
-    if (!isLogTextDetail(entry.detail)) return entry;
+    if (isLogTextDetail(entry.detail)) {
+      const text = redactHiddenCardNumbers(entry.action, entry.detail.text);
+      if (text === entry.detail.text) return entry;
+      return { ...entry, detail: logText(text) };
+    }
 
-    const text = redactHiddenCardNumbers(entry.action, entry.detail.text);
-    if (text === entry.detail.text) return entry;
+    if (entry.detail.template !== "designate_cutter.selected") return entry;
 
-    return { ...entry, detail: logText(text) };
+    const sourceParams = entry.detail.params;
+    const targetPlayerId = String(sourceParams.targetPlayerId ?? "").trim();
+    const explicitTargetName = String(sourceParams.targetPlayerName ?? "").trim();
+    const resolvedTargetName = targetPlayerId.length > 0
+      ? String(playerNamesById.get(targetPlayerId) ?? "").trim()
+      : "";
+    const safeTargetName = explicitTargetName || resolvedTargetName || "that player";
+    const params: Record<string, string | number | boolean> = {};
+    for (const [key, value] of Object.entries(sourceParams)) {
+      if (key === "targetPlayerId") continue;
+      params[key] = value;
+    }
+    params.targetPlayerName = safeTargetName;
+
+    return {
+      ...entry,
+      detail: {
+        ...entry.detail,
+        params,
+      },
+    };
   });
 }
 
@@ -191,7 +219,7 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
     turnNumber: state.turnNumber,
     mission: state.mission,
     result: state.result,
-    log: filterLog(state.log),
+    log: filterLog(state.log, state.players),
     chat: state.chat,
     ...(state.campaign
       ? { campaign: filterCampaignState(state.campaign, "__spectator__") }

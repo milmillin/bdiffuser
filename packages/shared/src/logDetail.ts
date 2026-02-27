@@ -47,11 +47,18 @@ function renderTemplate(
       return `used Coffee Mug and passed turn to ${resolvePlayerName(targetPlayerId)}`;
     }
     case "designate_cutter.selected": {
+      const targetPlayerName = String(detail.params.targetPlayerName ?? "").trim();
+      if (targetPlayerName.length > 0) {
+        return `designated ${targetPlayerName} to cut`;
+      }
       const targetPlayerId = String(detail.params.targetPlayerId ?? "");
       const resolvedTargetName = String(resolvePlayerName(targetPlayerId) ?? "").trim();
-      const targetName = resolvedTargetName.length === 0 || resolvedTargetName === targetPlayerId
-        ? "that player"
-        : resolvedTargetName;
+      const targetName =
+        targetPlayerId.length === 0
+        || resolvedTargetName.length === 0
+        || resolvedTargetName === targetPlayerId
+          ? "that player"
+          : resolvedTargetName;
       return `designated ${targetName} to cut`;
     }
   }

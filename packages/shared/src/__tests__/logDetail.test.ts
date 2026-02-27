@@ -16,7 +16,15 @@ describe("log detail rendering", () => {
     ).toBe("used Coffee Mug and passed turn to Bob");
   });
 
-  it("renders designate cutter template with resolved player name only", () => {
+  it("renders designate cutter template with explicit target player name", () => {
+    const detail = logTemplate("designate_cutter.selected", {
+      targetPlayerName: "Bob",
+    });
+
+    expect(renderLogDetail(detail, () => "ignored")).toBe("designated Bob to cut");
+  });
+
+  it("renders designate cutter template from target player id for backwards compatibility", () => {
     const detail = logTemplate("designate_cutter.selected", {
       targetPlayerId: "p2",
     });

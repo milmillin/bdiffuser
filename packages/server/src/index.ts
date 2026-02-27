@@ -26,7 +26,12 @@ import {
   shuffle,
   assignCharactersForGameStart,
 } from "./setup.js";
-import { filterStateForPlayer, filterStateForSpectator, createLobbyState } from "./viewFilter.js";
+import {
+  filterStateForPlayer,
+  filterStateForSpectator,
+  createLobbyState,
+  filterLog,
+} from "./viewFilter.js";
 import {
   validateDualCutWithHooks,
   validateDualCutDoubleDetectorWithHooks,
@@ -1487,7 +1492,7 @@ export class BombBustersServer extends Server<Env> {
       playerId: forced.designatorId,
       action: "designateCutter",
       detail: logTemplate("designate_cutter.selected", {
-        targetPlayerId,
+        targetPlayerName: target.name,
       }),
       timestamp: Date.now(),
     });
@@ -2704,7 +2709,7 @@ export class BombBustersServer extends Server<Env> {
           playerId: forced.designatorId,
           action: "designateCutter",
           detail: logTemplate("designate_cutter.selected", {
-            targetPlayerId: botAction.targetPlayerId,
+            targetPlayerName: target.name,
           }),
           timestamp: Date.now(),
         });
@@ -3039,11 +3044,20 @@ export class BombBustersServer extends Server<Env> {
     }
 
     if (url.pathname.endsWith("/debug")) {
+      const room = this.room.gameState
+        ? {
+            ...this.room,
+            gameState: {
+              ...this.room.gameState,
+              log: filterLog(this.room.gameState.log, this.room.gameState.players),
+            },
+          }
+        : this.room;
       return Response.json({
         roomId: this.name,
         queriedAt: Date.now(),
         omniscience: true,
-        room: this.room,
+        room,
       });
     }
 

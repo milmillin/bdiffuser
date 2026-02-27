@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { logText, renderLogDetail } from "@bomb-busters/shared";
+import { logTemplate, logText, renderLogDetail } from "@bomb-busters/shared";
 import {
   makeGameState,
   makePlayer,
@@ -314,6 +314,35 @@ describe("filterStateForPlayer – campaign state", () => {
     const filtered = filterStateForPlayer(state, "player-1");
     expect(filtered.log).toHaveLength(1);
     expect(renderLogDetail(filtered.log[0].detail)).toBe("m23:number_card:init:6");
+  });
+
+  it("sanitizes mission-18 designate-cutter template params to targetPlayerName", () => {
+    const state = makeGameState({
+      players: [
+        makePlayer({ id: "p1", name: "Alice" }),
+        makePlayer({ id: "p2", name: "Bob" }),
+      ],
+      log: [
+        {
+          turn: 1,
+          playerId: "p1",
+          action: "designateCutter",
+          detail: logTemplate("designate_cutter.selected", {
+            targetPlayerId: "p2",
+          }),
+          timestamp: 1000,
+        },
+      ],
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    expect(filtered.log).toHaveLength(1);
+    expect(filtered.log[0].detail).toEqual({
+      type: "template",
+      template: "designate_cutter.selected",
+      params: { targetPlayerName: "Bob" },
+    });
+    expect(renderLogDetail(filtered.log[0].detail)).toBe("designated Bob to cut");
   });
 
   it("preserves pending forced-action state for clients", () => {
