@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { useTurnNotification } from "./hooks/useTurnNotification.js";
+import { usePwaInstallPrompt } from "./hooks/usePwaInstallPrompt.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
@@ -68,8 +69,29 @@ function maybeRedirectDebug() {
   }
 }
 
+function useOnlineStatus(): boolean {
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
 export default function App() {
   maybeRedirectDebug();
+  const isOnline = useOnlineStatus();
 
   const [roomId, setRoomId] = useState<string | null>(() => {
     // Auto-join if we have a stored session for the URL room
@@ -144,11 +166,18 @@ export default function App() {
 
   let content;
   if (roomId) {
-    content = <GameRoom roomId={roomId} playerName={playerName} onLeave={handleLeave} />;
+    content = (
+      <GameRoom
+        roomId={roomId}
+        playerName={playerName}
+        onLeave={handleLeave}
+        isOnline={isOnline}
+      />
+    );
   } else if (pendingRoom) {
     content = <NameEntry roomCode={pendingRoom} onConfirm={handleConfirmName} onBack={handleBack} />;
   } else {
-    content = <LandingScreen onSelectRoom={handleSelectRoom} />;
+    content = <LandingScreen onSelectRoom={handleSelectRoom} isOnline={isOnline} />;
   }
 
   return (
@@ -157,7 +186,7 @@ export default function App() {
       {!roomId && (
         <div
           data-testid="app-version"
-          className="fixed bottom-3 left-3 text-xs font-mono text-gray-500 select-none"
+          className="fixed bottom-[max(env(safe-area-inset-bottom),0.75rem)] left-[max(env(safe-area-inset-left),0.75rem)] text-xs font-mono text-gray-500 select-none"
         >
           {`${APP_COMMIT_ID} | v${APP_VERSION}`}
         </div>
@@ -166,9 +195,18 @@ export default function App() {
   );
 }
 
-function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void }) {
+function LandingScreen({
+  onSelectRoom,
+  isOnline,
+}: {
+  onSelectRoom: (room: string) => void;
+  isOnline: boolean;
+}) {
   const [room, setRoom] = useState("");
   const [stats, setStats] = useState<{ rooms: number; players: number } | null>(null);
+  const { canInstall, isInstalled, showIosInstallHint, install } = usePwaInstallPrompt();
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installDismissed, setInstallDismissed] = useState(false);
 
   useEffect(() => {
     const protocol = PARTYKIT_HOST.startsWith("localhost") ? "http" : "https";
@@ -194,8 +232,23 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
     onSelectRoom(room.trim().toLowerCase());
   };
 
+  const handleInstall = useCallback(async () => {
+    if (isInstalling) return;
+    setIsInstalling(true);
+    setInstallDismissed(false);
+
+    try {
+      const installResult = await install();
+      if (installResult === "dismissed") {
+        setInstallDismissed(true);
+      }
+    } finally {
+      setIsInstalling(false);
+    }
+  }, [install, isInstalling]);
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" data-testid="join-screen">
+    <div className="safe-screen min-h-screen flex items-center justify-center p-4" data-testid="join-screen">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight">
@@ -208,6 +261,15 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
             </p>
           )}
         </div>
+
+        {!isOnline && (
+          <div
+            className="rounded-xl border border-amber-500/40 bg-amber-900/20 px-3 py-2 text-xs text-amber-200"
+            data-testid="offline-shell-notice"
+          >
+            Offline mode: app shell is available, but joining and playing rooms requires internet.
+          </div>
+        )}
 
         <div className="bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4">
           <div className="flex gap-2">
@@ -244,6 +306,32 @@ function LandingScreen({ onSelectRoom }: { onSelectRoom: (room: string) => void 
           >
             Create New Room
           </button>
+
+          {!isInstalled && canInstall && (
+            <button
+              onClick={handleInstall}
+              disabled={isInstalling}
+              data-testid="install-app"
+              className={`w-full ${btnSmall} bg-emerald-600 border-emerald-900 text-white shadow-[0_4px_15px_rgba(5,150,105,0.4)] hover:bg-emerald-500 ${btnDisabled}`}
+            >
+              {isInstalling ? "Opening install prompt..." : "Install App"}
+            </button>
+          )}
+
+          {!isInstalled && showIosInstallHint && (
+            <p
+              className="text-xs text-gray-300 text-center"
+              data-testid="ios-install-hint"
+            >
+              On iPhone/iPad: tap Share, then “Add to Home Screen”.
+            </p>
+          )}
+
+          {installDismissed && (
+            <p className="text-xs text-gray-400 text-center">
+              Install prompt dismissed. You can open it again anytime.
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -267,7 +355,7 @@ function NameEntry({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" data-testid="name-entry-screen">
+    <div className="safe-screen min-h-screen flex items-center justify-center p-4" data-testid="name-entry-screen">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight">
@@ -320,10 +408,12 @@ function GameRoom({
   roomId,
   playerName,
   onLeave,
+  isOnline,
 }: {
   roomId: string;
   playerName: string;
   onLeave: () => void;
+  isOnline: boolean;
 }) {
   // Restore stored playerId for reconnection (captured once on mount so it
   // doesn't flip from undefined → id after saveSession, which would re-trigger
@@ -354,10 +444,15 @@ function GameRoom({
 
   if (!connected) {
     return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="connecting-state">
+      <div className="safe-screen min-h-screen flex items-center justify-center px-4" data-testid="connecting-state">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-400">Connecting to room {roomId}...</p>
+          {!isOnline && (
+            <p className="mt-2 text-xs text-amber-300">
+              You are offline. Reconnect to continue.
+            </p>
+          )}
         </div>
       </div>
     );

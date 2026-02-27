@@ -73,7 +73,7 @@ export function Lobby({
   const previewAllowed = MISSION_SCHEMAS[previewMission].allowedPlayerCounts;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" data-testid="lobby-screen">
+    <div className="safe-screen min-h-screen flex items-center justify-center p-4" data-testid="lobby-screen">
       <div className="max-w-5xl w-full space-y-6">
         {/* Title + Room Code */}
         <div className="flex items-center justify-center gap-4 flex-wrap">

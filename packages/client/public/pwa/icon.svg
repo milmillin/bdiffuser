@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+  <title id="t">Bomb Busters icon</title>
+  <desc id="d">A stylized bomb with lit fuse.</desc>
+  <rect width="512" height="512" fill="#1a1a2e"/>
+  <circle cx="256" cy="298" r="150" fill="#0f172a" stroke="#fbbf24" stroke-width="20"/>
+  <rect x="224" y="123" width="64" height="56" rx="14" fill="#94a3b8"/>
+  <path d="M259 134 C 323 74, 356 90, 406 44" stroke="#f59e0b" stroke-width="18" stroke-linecap="round" fill="none"/>
+  <circle cx="406" cy="44" r="26" fill="#ef4444"/>
+  <circle cx="406" cy="44" r="44" fill="#fb7185" opacity="0.35"/>
+</svg>
