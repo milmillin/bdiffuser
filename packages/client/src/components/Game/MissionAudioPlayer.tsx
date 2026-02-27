@@ -15,8 +15,12 @@ import type {
 } from "@bomb-busters/shared";
 import {
   getMissionAudioDurationMs,
+  getMissionAudioVolume,
   getMissionAudioPositionMs,
+  isMissionAudioMuted,
   onMissionAudioEnded,
+  setMissionAudioMuted,
+  setMissionAudioVolume,
   stopMissionAudio,
   syncMissionAudioState,
 } from "../../audio/audio.js";
@@ -55,6 +59,10 @@ export function MissionAudioPlayer({
   const [localDurationMs, setLocalDurationMs] = useState<number | undefined>(
     undefined,
   );
+  const [volumePercent, setVolumePercent] = useState(() =>
+    Math.round(getMissionAudioVolume() * 100),
+  );
+  const [muted, setMuted] = useState(() => isMissionAudioMuted());
   const lastSeekSentAtRef = useRef(0);
 
   useEffect(() => {
@@ -199,6 +207,27 @@ export function MissionAudioPlayer({
     [missionAudio, sendAudioControl, sliderMaxMs],
   );
 
+  const handleVolumeChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextPercent = Number(event.target.value);
+      if (!Number.isFinite(nextPercent)) return;
+      const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
+      setVolumePercent(clampedPercent);
+      setMissionAudioVolume(clampedPercent / 100);
+      if (muted && clampedPercent > 0) {
+        setMuted(false);
+        setMissionAudioMuted(false);
+      }
+    },
+    [muted],
+  );
+
+  const handleMuteToggle = useCallback(() => {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+    setMissionAudioMuted(nextMuted);
+  }, [muted]);
+
   if (!missionAudio) return null;
 
   return (
@@ -243,6 +272,30 @@ export function MissionAudioPlayer({
           data-testid="mission-audio-pause"
         >
           Pause
+        </button>
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wide text-gray-400">
+          Volume
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={volumePercent}
+          onChange={handleVolumeChange}
+          className="h-2 w-full cursor-pointer accent-sky-400"
+          data-testid="mission-audio-volume-slider"
+        />
+        <button
+          type="button"
+          onClick={handleMuteToggle}
+          className="rounded-md border border-slate-500/60 bg-slate-900/40 px-2 py-1 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-900/60"
+          data-testid="mission-audio-mute"
+        >
+          {muted ? "Unmute" : "Mute"}
         </button>
       </div>
     </div>
