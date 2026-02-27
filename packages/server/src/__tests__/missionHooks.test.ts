@@ -422,7 +422,14 @@ describe("missionHooks dispatcher", () => {
       if (mission59Nano) {
         const leftCount = Math.max(0, sevenIndex);
         const rightCount = Math.max(0, numberCards!.visible.length - sevenIndex - 1);
-        expect(mission59Nano.facing).toBe(rightCount > leftCount ? 1 : -1);
+        const initialFacing = rightCount > leftCount ? 1 : -1;
+        const setupAutoSkips = state.log.filter(
+          (entry) =>
+            entry.action === "hookEffect"
+            && renderLogDetail(entry.detail).startsWith("mission_59:auto_skip|"),
+        ).length;
+        const expectedFacing = setupAutoSkips % 2 === 0 ? initialFacing : (initialFacing * -1);
+        expect(mission59Nano.facing).toBe(expectedFacing);
       }
     });
 

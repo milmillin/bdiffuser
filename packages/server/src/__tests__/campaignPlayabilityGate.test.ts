@@ -22,6 +22,10 @@ import {
   getMission22TokenPassAvailableValues,
 } from "../mission22TokenPass";
 import {
+  applyMission27TokenDraftChoice,
+  getMission27TokenDraftAvailableValues,
+} from "../mission27TokenDraft";
+import {
   dispatchHooks,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
@@ -497,6 +501,33 @@ function resolveForcedAction(state: GameState): boolean {
       state.pendingForcedAction = undefined;
     } else {
       const nextChooserIndex = forced.passingOrder[nextCompleted];
+      state.pendingForcedAction = {
+        ...forced,
+        currentChooserIndex: nextChooserIndex,
+        currentChooserId: state.players[nextChooserIndex].id,
+        completedCount: nextCompleted,
+      };
+    }
+    return true;
+  }
+
+  if (forced.kind === "mission27TokenDraft") {
+    const availableValues = getMission27TokenDraftAvailableValues(state);
+    if (availableValues.length === 0) {
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    const value = availableValues[Math.floor(Math.random() * availableValues.length)];
+    const applyResult = applyMission27TokenDraftChoice(state, forced, value);
+    if (!applyResult.ok) return false;
+
+    const nextCompleted = forced.completedCount + 1;
+    const remainingValues = getMission27TokenDraftAvailableValues(state);
+    if (nextCompleted >= forced.draftOrder.length || remainingValues.length === 0) {
+      state.pendingForcedAction = undefined;
+    } else {
+      const nextChooserIndex = forced.draftOrder[nextCompleted];
       state.pendingForcedAction = {
         ...forced,
         currentChooserIndex: nextChooserIndex,
