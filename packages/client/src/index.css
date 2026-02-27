@@ -25,6 +25,20 @@ body {
   overscroll-behavior: none;
 }
 
+html.ios-standalone-pwa,
+html.ios-standalone-pwa body,
+html.ios-standalone-pwa #root {
+  height: auto;
+  min-height: 100%;
+}
+
+html.ios-standalone-pwa body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .safe-screen {
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);

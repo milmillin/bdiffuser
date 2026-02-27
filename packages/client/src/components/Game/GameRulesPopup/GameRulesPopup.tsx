@@ -5,6 +5,7 @@ import { parseMarkdown } from "./markdownParser.js";
 import type { MarkdownSection } from "./markdownParser.js";
 import { SectionView } from "./markdownRenderer.js";
 import { useFilteredRules } from "./useFilteredRules.js";
+import { useBodyScrollLock } from "../../../hooks/useBodyScrollLock.js";
 
 // Parse once at module load — the raw markdown never changes at runtime.
 const ALL_SECTIONS: MarkdownSection[] = parseMarkdown(gameRulesMarkdown);
@@ -71,6 +72,7 @@ export function GameRulesPopup({
   const contentRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState("");
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
+  useBodyScrollLock(isOpen);
 
   // Derive filter inputs
   const equipmentIds = useMemo(
@@ -123,16 +125,6 @@ export function GameRulesPopup({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
-
-  // #9 — Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
 
   const handleNavigate = useCallback((id: string) => {
     const el = document.getElementById(id);

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { getCardRotationTransform, type CardRotation } from "./cardRotation.js";
 import { useIsMobileViewport } from "./useIsMobileViewport.js";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock.js";
 
 export type CardPreviewCard = {
   name: string;
@@ -48,6 +49,7 @@ export function CardPreviewModal({
   card: CardPreviewCard;
   onClose: () => void;
 }) {
+  useBodyScrollLock(true);
   const isMobile = useIsMobileViewport();
   const requestedScale = card.previewScale ?? 1;
   const previewScale =

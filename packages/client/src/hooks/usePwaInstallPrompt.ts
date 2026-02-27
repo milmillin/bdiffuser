@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isStandaloneDisplayMode } from "./useStandaloneMode.js";
 
 declare global {
   interface BeforeInstallPromptEvent extends Event {
@@ -11,18 +12,6 @@ declare global {
 }
 
 type InstallResult = "accepted" | "dismissed" | "unavailable";
-
-function isStandaloneDisplayMode(): boolean {
-  if (typeof window === "undefined") return false;
-  const inDisplayModeStandalone =
-    typeof window.matchMedia === "function"
-    && window.matchMedia("(display-mode: standalone)").matches;
-  const navigatorWithStandalone = navigator as Navigator & {
-    standalone?: boolean;
-  };
-  const inIosStandalone = navigatorWithStandalone.standalone === true;
-  return inDisplayModeStandalone || inIosStandalone;
-}
 
 function shouldShowIosInstallHint(
   isInstalled: boolean,

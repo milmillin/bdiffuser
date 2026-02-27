@@ -3,6 +3,7 @@ import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { useTurnNotification } from "./hooks/useTurnNotification.js";
 import { usePwaInstallPrompt } from "./hooks/usePwaInstallPrompt.js";
+import { useIsIosStandalonePwa } from "./hooks/useStandaloneMode.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
@@ -92,6 +93,7 @@ function useOnlineStatus(): boolean {
 export default function App() {
   maybeRedirectDebug();
   const isOnline = useOnlineStatus();
+  const isIosStandalonePwa = useIsIosStandalonePwa();
 
   const [roomId, setRoomId] = useState<string | null>(() => {
     // Auto-join if we have a stored session for the URL room
@@ -163,6 +165,22 @@ export default function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [roomId]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const className = "ios-standalone-pwa";
+    const root = document.documentElement;
+
+    if (isIosStandalonePwa) {
+      root.classList.add(className);
+    } else {
+      root.classList.remove(className);
+    }
+
+    return () => {
+      root.classList.remove(className);
+    };
+  }, [isIosStandalonePwa]);
 
   let content;
   if (roomId) {

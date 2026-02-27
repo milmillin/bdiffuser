@@ -55,6 +55,7 @@ import {
   handleOwnTileClickEquipment as _handleOwnTileClickEquipment,
 } from "./equipmentModeLogic.js";
 import { stopMissionAudio } from "../../audio/audio.js";
+import { useIsIosStandalonePwa } from "../../hooks/useStandaloneMode.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { CardStrip } from "./CardStrip.js";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -274,6 +275,8 @@ export function GameBoard({
     () => gameState.players.filter((player) => !player.isBot),
     [gameState.players],
   );
+  const isIosStandalonePwa = useIsIosStandalonePwa();
+  const usePageScroll = isIosStandalonePwa;
   const surrenderVoteYesVoterIds = gameState.surrenderVote?.yesVoterIds ?? [];
   const surrenderVoteYesSet = useMemo(
     () => new Set(surrenderVoteYesVoterIds),
@@ -823,12 +826,9 @@ export function GameBoard({
       }
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [isRulesPopupOpen]);
@@ -1330,12 +1330,17 @@ export function GameBoard({
   return (
     <>
       <div
-        className="grid h-dvh w-dvw overflow-hidden"
-        style={{ gridTemplateRows: "auto 1fr" }}
+        className={
+          usePageScroll
+            ? "grid min-h-dvh w-full overflow-visible"
+            : "grid h-dvh w-dvw overflow-hidden"
+        }
+        style={{ gridTemplateRows: usePageScroll ? "auto auto" : "auto 1fr" }}
         data-testid="game-board"
         data-phase={gameState.phase}
+        data-scroll-mode={usePageScroll ? "page" : "fixed"}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className={usePageScroll ? "overflow-visible" : "min-h-0 overflow-hidden"}>
           <Header
             gameState={gameState}
             playerId={playerId}
@@ -1357,15 +1362,21 @@ export function GameBoard({
         </div>
 
         <div
-          className={`grid grid-cols-[1fr] ${isRightBarHidden ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_auto_auto]"} gap-2 pr-2 py-2 pb-14 md:pb-2 overflow-hidden min-w-0 min-h-0`}
+          className={`grid grid-cols-[1fr] ${isRightBarHidden ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_auto_auto]"} gap-2 pr-2 py-2 pb-14 md:pb-2 ${usePageScroll ? "overflow-visible" : "overflow-hidden"} min-w-0 min-h-0`}
         >
           {/* Game area */}
           <div
             className={`grid gap-2 min-w-0 min-h-0 ${mobileTab !== "game" ? "hidden md:grid" : ""}`}
-            style={{ gridTemplateRows: "1fr auto" }}
+            style={{ gridTemplateRows: usePageScroll ? "auto auto" : "1fr auto" }}
           >
             {/* Scrollable top area */}
-            <div className="overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0">
+            <div
+              className={
+                usePageScroll
+                  ? "overflow-visible overflow-x-hidden min-w-0"
+                  : "overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0"
+              }
+            >
               <div className="w-full min-w-0 flex flex-col gap-2 overflow-x-hidden">
                 {/* Opponents area */}
                 <div className="flex gap-2 justify-center overflow-x-hidden flex-wrap min-w-0 w-full">
@@ -2146,7 +2157,9 @@ export function GameBoard({
 
           {/* Mobile-only tab content */}
           {mobileTab === "mission" && (
-            <div className="md:hidden overflow-y-auto min-h-0 space-y-3 px-2">
+            <div
+              className={`md:hidden ${usePageScroll ? "overflow-visible" : "overflow-y-auto"} min-h-0 space-y-3 px-2`}
+            >
               <MissionCard missionId={gameState.mission} />
               <ActionMissionHints
                 mission={gameState.mission}
