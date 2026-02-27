@@ -86,6 +86,12 @@ describe("mission complexity tier representative coverage", () => {
       for (const stand of standSlices) {
         expect(stand.length).toBeGreaterThan(0);
         expect(stand[stand.length - 1].isXMarked).toBe(true);
+        if (stand.length > 1) {
+          const maxBeforeRightmost = Math.max(
+            ...stand.slice(0, -1).map((tile) => tile.sortValue),
+          );
+          expect(stand[stand.length - 1].sortValue).toBeLessThan(maxBeforeRightmost);
+        }
       }
     }
   });

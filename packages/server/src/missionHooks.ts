@@ -4704,10 +4704,75 @@ function applyMission64FlippedWirePlacement(
   player.hand = hand;
 }
 
+function canMission20MarkerBreakAscendingOrder(
+  standTiles: readonly WireTile[],
+  markerIndex: number,
+): boolean {
+  if (markerIndex < 0 || markerIndex >= standTiles.length) return false;
+  if (standTiles.length <= 1) return false;
+
+  const markerSortValue = standTiles[markerIndex]?.sortValue;
+  if (markerSortValue == null) return false;
+
+  let maxOtherSortValue = Number.NEGATIVE_INFINITY;
+  for (let i = 0; i < standTiles.length; i++) {
+    if (i === markerIndex) continue;
+    const sortValue = standTiles[i]?.sortValue;
+    if (sortValue != null && sortValue > maxOtherSortValue) {
+      maxOtherSortValue = sortValue;
+    }
+  }
+
+  if (maxOtherSortValue === Number.NEGATIVE_INFINITY) return false;
+  return markerSortValue < maxOtherSortValue;
+}
+
+function findMission20FallbackMarkerIndex(standTiles: readonly WireTile[]): number {
+  if (standTiles.length <= 1) return -1;
+
+  let maxSortValue = Number.NEGATIVE_INFINITY;
+  for (const tile of standTiles) {
+    if (tile.sortValue > maxSortValue) {
+      maxSortValue = tile.sortValue;
+    }
+  }
+
+  let fallbackIndex = -1;
+  for (let i = 0; i < standTiles.length; i++) {
+    if ((standTiles[i]?.sortValue ?? Number.POSITIVE_INFINITY) < maxSortValue) {
+      fallbackIndex = i;
+    }
+  }
+
+  return fallbackIndex;
+}
+
+function resolveMission20MarkerIndex(
+  standTiles: readonly WireTile[],
+  preferredIndex: number,
+): number {
+  if (standTiles.length === 0) return -1;
+
+  const normalizedPreferredIndex =
+    preferredIndex >= 0 && preferredIndex < standTiles.length
+      ? preferredIndex
+      : standTiles.length - 1;
+
+  if (canMission20MarkerBreakAscendingOrder(standTiles, normalizedPreferredIndex)) {
+    return normalizedPreferredIndex;
+  }
+
+  const fallbackIndex = findMission20FallbackMarkerIndex(standTiles);
+  if (fallbackIndex !== -1) return fallbackIndex;
+
+  return normalizedPreferredIndex;
+}
+
 /**
  * Missions 20, 35: X-marked wire.
  * The last dealt wire on each stand is moved unsorted to the far right
- * and marked with X. Setup modifies tile positions.
+ * and marked with X. Mission 20 additionally guarantees the rightmost
+ * X wire is out-of-order whenever a valid candidate exists.
  */
 registerHookHandler<"x_marked_wire">("x_marked_wire", {
   setup(rule: XMarkedWireRuleDef, ctx: SetupHookContext): void {
@@ -4737,7 +4802,9 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
         const standTiles = player.hand.slice(start, endExclusive);
 
         let markerIndex = standTiles.findIndex((tile) => tile.isXMarked === true);
-        if (markerIndex === -1 && ctx.state.mission === 35) {
+        if (ctx.state.mission === 20) {
+          markerIndex = resolveMission20MarkerIndex(standTiles, markerIndex);
+        } else if (markerIndex === -1 && ctx.state.mission === 35) {
           const blueIndices = standTiles
             .map((tile, idx) => (tile.color === "blue" ? idx : -1))
             .filter((idx) => idx >= 0);

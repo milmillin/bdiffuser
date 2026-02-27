@@ -559,6 +559,73 @@ function flattenStandSeatsToPlayers(players: Player[], standSeats: StandSeat[]):
   }
 }
 
+function canMission20MarkerBreakAscendingOrder(
+  standTiles: readonly WireTile[],
+  markerIndex: number,
+): boolean {
+  if (markerIndex < 0 || markerIndex >= standTiles.length) return false;
+  if (standTiles.length <= 1) return false;
+
+  const markerSortValue = standTiles[markerIndex]?.sortValue;
+  if (markerSortValue == null) return false;
+
+  let maxOtherSortValue = Number.NEGATIVE_INFINITY;
+  for (let i = 0; i < standTiles.length; i++) {
+    if (i === markerIndex) continue;
+    const sortValue = standTiles[i]?.sortValue;
+    if (sortValue != null && sortValue > maxOtherSortValue) {
+      maxOtherSortValue = sortValue;
+    }
+  }
+
+  if (maxOtherSortValue === Number.NEGATIVE_INFINITY) return false;
+  return markerSortValue < maxOtherSortValue;
+}
+
+function findMission20FallbackMarkerIndex(standTiles: readonly WireTile[]): number {
+  if (standTiles.length <= 1) return -1;
+
+  let maxSortValue = Number.NEGATIVE_INFINITY;
+  for (const tile of standTiles) {
+    if (tile.sortValue > maxSortValue) {
+      maxSortValue = tile.sortValue;
+    }
+  }
+
+  let fallbackIndex = -1;
+  for (let i = 0; i < standTiles.length; i++) {
+    if ((standTiles[i]?.sortValue ?? Number.POSITIVE_INFINITY) < maxSortValue) {
+      fallbackIndex = i;
+    }
+  }
+
+  return fallbackIndex;
+}
+
+function resolveMission20MarkerIndex(
+  standTiles: readonly WireTile[],
+  preferredTileId?: string,
+): number {
+  if (standTiles.length === 0) return -1;
+
+  let preferredIndex =
+    preferredTileId == null
+      ? -1
+      : standTiles.findIndex((tile) => tile.id === preferredTileId);
+  if (preferredIndex === -1) {
+    preferredIndex = standTiles.length - 1;
+  }
+
+  if (canMission20MarkerBreakAscendingOrder(standTiles, preferredIndex)) {
+    return preferredIndex;
+  }
+
+  const fallbackIndex = findMission20FallbackMarkerIndex(standTiles);
+  if (fallbackIndex !== -1) return fallbackIndex;
+
+  return preferredIndex;
+}
+
 export function setupGame(
   players: Player[],
   mission: MissionId,
@@ -647,11 +714,15 @@ export function setupGame(
   // stand's far right and marked with X.
   if (mission === 20) {
     for (const standSeat of standSeats) {
-      const markerTileId = standSeat.lastDealtTileId;
-      if (!markerTileId) continue;
-      const markerIndex = standSeat.tiles.findIndex((tile) => tile.id === markerTileId);
+      const markerIndex = resolveMission20MarkerIndex(
+        standSeat.tiles,
+        standSeat.lastDealtTileId,
+      );
       if (markerIndex < 0) continue;
       const [markerTile] = standSeat.tiles.splice(markerIndex, 1);
+      for (const tile of standSeat.tiles) {
+        tile.isXMarked = false;
+      }
       markerTile.isXMarked = true;
       standSeat.tiles.push(markerTile);
     }

@@ -129,8 +129,10 @@ export function PlayerStand({
                       gridTemplateRows: "auto auto auto",
                     }}
                   >
-                    {/* Row 1: info tokens */}
+                    {/* Row 1: mission markers + info tokens */}
                     {segment.indices.map((flatIndex) => {
+                      const tile = player.hand[flatIndex];
+                      const hasXMarker = tile?.isXMarked === true;
                       const infoTokens = player.infoTokens.filter(
                         (token) => token.position === flatIndex || token.positionB === flatIndex,
                       );
@@ -144,6 +146,7 @@ export function PlayerStand({
                           }}
                         >
                           <div className="flex flex-col items-center gap-0.5">
+                            {hasXMarker && <XMarkerView />}
                             {infoTokens.map((token, tokenIndex) => (
                               <InfoTokenView
                                 key={`${flatIndex}-${tokenIndex}-${token.position}-${token.positionB ?? "x"}-${token.relation ?? token.countHint ?? token.parity ?? token.value}`}
@@ -239,7 +242,7 @@ function getValidatedStandSizes(player: ClientPlayer): number[] {
 function getTokenRowHeight(player: ClientPlayer): number {
   let maxTokenStack = 0;
   for (let tileIndex = 0; tileIndex < player.hand.length; tileIndex += 1) {
-    let count = 0;
+    let count = player.hand[tileIndex]?.isXMarked === true ? 1 : 0;
     for (const token of player.infoTokens) {
       if (token.position === tileIndex || token.positionB === tileIndex) {
         count += 1;
@@ -275,6 +278,16 @@ function getInfoTokenLabel(token: InfoToken): string {
   if (token.parity === "even") return "EVEN";
   if (token.parity === "odd") return "ODD";
   return String(token.value);
+}
+
+function XMarkerView() {
+  return (
+    <img
+      src="/images/info_x.png"
+      alt="Info: X"
+      className="w-full h-auto object-contain block"
+    />
+  );
 }
 
 function InfoTokenView({ token }: { token: InfoToken }) {

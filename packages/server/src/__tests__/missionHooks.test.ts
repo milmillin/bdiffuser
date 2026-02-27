@@ -508,6 +508,37 @@ describe("missionHooks dispatcher", () => {
       expect(captain.hand.find((tile) => tile.id === "c1")?.isXMarked).not.toBe(true);
     });
 
+    it("mission 20: normalizes X marker so the rightmost wire is out-of-order", () => {
+      const captain = makePlayer({
+        id: "captain",
+        hand: [
+          makeTile({ id: "c1", color: "blue", gameValue: 2, sortValue: 2 }),
+          makeTile({ id: "c2", color: "blue", gameValue: 7, sortValue: 7 }),
+          makeTile({ id: "c3", color: "red", gameValue: "RED", sortValue: 9.5, isXMarked: true }),
+        ],
+      });
+      captain.standSizes = [3];
+
+      const state = makeGameState({
+        mission: 20,
+        players: [captain],
+        log: [],
+      });
+
+      dispatchHooks(20, { point: "setup", state });
+
+      const stand = state.players[0].hand;
+      const marked = stand.filter((tile) => tile.isXMarked === true);
+      expect(marked).toHaveLength(1);
+      expect(stand[stand.length - 1].isXMarked).toBe(true);
+      expect(stand[stand.length - 1].id).toBe("c2");
+
+      const maxBeforeRightmost = Math.max(
+        ...stand.slice(0, -1).map((tile) => tile.sortValue),
+      );
+      expect(stand[stand.length - 1].sortValue).toBeLessThan(maxBeforeRightmost);
+    });
+
     it("mission 23: initializes hidden equipment pile with 7 face-down cards", () => {
       const state = makeGameState({
         mission: 23,

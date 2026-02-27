@@ -113,6 +113,28 @@ describe("PlayerStand", () => {
     expect(html).toContain("/images/info_x4.png");
   });
 
+  it("renders mission X marker image for X-marked wires", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [makeTile({ id: "t1", color: "blue", gameValue: 3, sortValue: 3, isXMarked: true })],
+      infoTokens: [],
+    }) as ClientPlayer;
+    player.remainingTiles = 1;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("/images/info_x.png");
+    expect(html).toContain("alt=\"Info: X\"");
+  });
+
   it("renders all info tokens present on a wire", () => {
     const player = makePlayer({
       id: "p1",
@@ -136,6 +158,33 @@ describe("PlayerStand", () => {
 
     const matches = html.match(/alt="Info: 5"/g) ?? [];
     expect(matches).toHaveLength(2);
+  });
+
+  it("renders both X marker and info token on the same wire and reserves stacked height", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5, isXMarked: true }),
+        makeTile({ id: "t2", color: "blue", gameValue: 8, sortValue: 8 }),
+      ],
+      standSizes: [1, 1],
+      infoTokens: [{ value: 5, position: 0, isYellow: false }],
+    }) as ClientPlayer;
+    player.remainingTiles = 2;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toContain("/images/info_x.png");
+    expect(html).toContain("/images/info_5.png");
+    expect(html).toContain("height:68px");
   });
 
   it("renders off-stand info token text when position is -1", () => {
