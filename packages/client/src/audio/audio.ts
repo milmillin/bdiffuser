@@ -5,17 +5,6 @@ export { synthBoom as playExplosionBoom };
 
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioFile: string | null = null;
-let missionAudioVolume = 1;
-let missionAudioMuted = false;
-
-function getEffectiveMissionAudioVolume(): number {
-  return missionAudioMuted ? 0 : missionAudioVolume;
-}
-
-function applyMissionAudioOutput(): void {
-  if (!currentAudio) return;
-  currentAudio.volume = getEffectiveMissionAudioVolume();
-}
 
 function ensureMissionAudio(audioFile: string): HTMLAudioElement {
   if (!currentAudio || currentAudioFile !== audioFile) {
@@ -26,8 +15,15 @@ function ensureMissionAudio(audioFile: string): HTMLAudioElement {
     currentAudio.preload = "auto";
     currentAudioFile = audioFile;
   }
-  applyMissionAudioOutput();
   return currentAudio;
+}
+
+function getEffectiveMissionAudioVolume(missionAudio: MissionAudioState): number {
+  const clampedVolume =
+    typeof missionAudio.volume === "number" && Number.isFinite(missionAudio.volume)
+      ? Math.min(1, Math.max(0, missionAudio.volume))
+      : 1;
+  return missionAudio.muted === true ? 0 : clampedVolume;
 }
 
 function maybeSeek(audio: HTMLAudioElement, positionMs: number): void {
@@ -47,6 +43,7 @@ export function syncMissionAudioState(
   resolvedPositionMs: number,
 ): void {
   const audio = ensureMissionAudio(missionAudio.audioFile);
+  audio.volume = getEffectiveMissionAudioVolume(missionAudio);
   maybeSeek(audio, resolvedPositionMs);
 
   if (missionAudio.status === "playing") {
@@ -63,6 +60,7 @@ export function syncMissionAudioState(
 /** Play a mission audio file from /audio/{audioFile}.mp3. */
 export function playMissionAudio(audioFile: string): void {
   const audio = ensureMissionAudio(audioFile);
+  audio.volume = 1;
   audio.play().catch(() => {
     // Autoplay may be blocked; user interaction required first.
   });
@@ -80,29 +78,6 @@ export function stopMissionAudio(): void {
     currentAudio = null;
     currentAudioFile = null;
   }
-}
-
-/** Current local mission-audio volume level (0-1). */
-export function getMissionAudioVolume(): number {
-  return missionAudioVolume;
-}
-
-/** Update local mission-audio volume level (0-1). */
-export function setMissionAudioVolume(volume: number): void {
-  if (!Number.isFinite(volume)) return;
-  missionAudioVolume = Math.min(1, Math.max(0, volume));
-  applyMissionAudioOutput();
-}
-
-/** Whether local mission-audio output is muted. */
-export function isMissionAudioMuted(): boolean {
-  return missionAudioMuted;
-}
-
-/** Toggle local mission-audio mute state. */
-export function setMissionAudioMuted(muted: boolean): void {
-  missionAudioMuted = muted;
-  applyMissionAudioOutput();
 }
 
 /** Check whether mission audio is currently playing. */

@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ClientGameState, GameState } from "@bomb-busters/shared";
 import { makeGameState, makePlayer } from "@bomb-busters/shared/testing";
-import { setMissionAudioMuted } from "../../audio/audio.js";
 import { MissionAudioPlayer } from "./MissionAudioPlayer.js";
 
 function toClientGameState(state: GameState, playerId: string): ClientGameState {
@@ -16,7 +15,10 @@ function toClientGameState(state: GameState, playerId: string): ClientGameState 
   } as unknown as ClientGameState;
 }
 
-function makeStateWithMissionAudio(playerId = "me"): ClientGameState {
+function makeStateWithMissionAudio(
+  playerId = "me",
+  missionAudioOverrides: Partial<NonNullable<GameState["missionAudio"]>> = {},
+): ClientGameState {
   const gameState = makeGameState({
     mission: 19,
     phase: "playing",
@@ -30,6 +32,7 @@ function makeStateWithMissionAudio(playerId = "me"): ClientGameState {
       positionMs: 0,
       syncedAtMs: 0,
       durationMs: 120_000,
+      ...missionAudioOverrides,
     },
   });
 
@@ -43,8 +46,7 @@ function renderMissionAudioPlayer(gameState: ClientGameState): string {
 }
 
 describe("MissionAudioPlayer", () => {
-  it("renders transport, timeline, and local volume controls", () => {
-    setMissionAudioMuted(false);
+  it("renders transport, timeline, and shared volume controls", () => {
     const html = renderMissionAudioPlayer(makeStateWithMissionAudio());
 
     expect(html).toContain("data-testid=\"mission-audio-controller\"");
@@ -56,14 +58,18 @@ describe("MissionAudioPlayer", () => {
     expect(html).toContain(">Mute<");
   });
 
-  it("renders unmute label when local mission audio is muted", () => {
-    setMissionAudioMuted(true);
-    try {
-      const html = renderMissionAudioPlayer(makeStateWithMissionAudio());
-      expect(html).toContain(">Unmute<");
-    } finally {
-      setMissionAudioMuted(false);
-    }
+  it("renders unmute label when shared mission audio is muted", () => {
+    const html = renderMissionAudioPlayer(
+      makeStateWithMissionAudio("me", { muted: true }),
+    );
+    expect(html).toContain(">Unmute<");
+  });
+
+  it("renders current shared volume value", () => {
+    const html = renderMissionAudioPlayer(
+      makeStateWithMissionAudio("me", { volume: 0.45 }),
+    );
+    expect(html).toContain("value=\"45\"");
   });
 
   it("renders nothing when mission audio is absent", () => {

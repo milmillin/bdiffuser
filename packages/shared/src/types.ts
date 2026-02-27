@@ -573,6 +573,10 @@ export interface MissionAudioState {
   syncedAtMs: number;
   /** Optional known duration in milliseconds. */
   durationMs?: number;
+  /** Shared output volume in the range 0..1 (global for the room). */
+  volume?: number;
+  /** Shared mute flag (global for the room). */
+  muted?: boolean;
 }
 
 export interface GameState {

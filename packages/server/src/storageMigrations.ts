@@ -389,6 +389,11 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
     raw.durationMs >= 0
       ? Math.round(raw.durationMs)
       : undefined;
+  const volume =
+    typeof raw.volume === "number" && Number.isFinite(raw.volume)
+      ? Math.min(1, Math.max(0, raw.volume))
+      : 1;
+  const muted = typeof raw.muted === "boolean" ? raw.muted : false;
 
   let positionMs =
     typeof raw.positionMs === "number" && Number.isFinite(raw.positionMs)
@@ -404,6 +409,8 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
     status,
     positionMs,
     syncedAtMs,
+    volume,
+    muted,
     ...(durationMs != null ? { durationMs } : {}),
   };
 }

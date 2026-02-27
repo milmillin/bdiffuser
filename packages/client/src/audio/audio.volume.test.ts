@@ -1,11 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MissionAudioState } from "@bomb-busters/shared";
 import {
-  getMissionAudioVolume,
-  isMissionAudioMuted,
   playMissionAudio,
-  setMissionAudioMuted,
-  setMissionAudioVolume,
   stopMissionAudio,
+  syncMissionAudioState,
 } from "./audio.js";
 
 class FakeAudio {
@@ -37,7 +35,19 @@ class FakeAudio {
   removeEventListener(): void {}
 }
 
-describe("mission audio local volume controls", () => {
+function makeMissionAudioState(
+  overrides: Partial<MissionAudioState> = {},
+): MissionAudioState {
+  return {
+    audioFile: "mission_19",
+    status: "paused",
+    positionMs: 0,
+    syncedAtMs: 0,
+    ...overrides,
+  };
+}
+
+describe("mission audio shared volume output", () => {
   beforeAll(() => {
     vi.stubGlobal("Audio", FakeAudio as unknown as typeof Audio);
   });
@@ -49,76 +59,85 @@ describe("mission audio local volume controls", () => {
   beforeEach(() => {
     FakeAudio.instances = [];
     stopMissionAudio();
-    setMissionAudioVolume(1);
-    setMissionAudioMuted(false);
   });
 
   afterEach(() => {
     stopMissionAudio();
-    setMissionAudioVolume(1);
-    setMissionAudioMuted(false);
   });
 
-  it("defaults to full volume and unmuted output", () => {
-    expect(getMissionAudioVolume()).toBe(1);
-    expect(isMissionAudioMuted()).toBe(false);
-  });
-
-  it("clamps local volume to the 0-1 range", () => {
-    setMissionAudioVolume(-0.4);
-    expect(getMissionAudioVolume()).toBe(0);
-
-    setMissionAudioVolume(1.6);
-    expect(getMissionAudioVolume()).toBe(1);
-
-    setMissionAudioVolume(0.37);
-    expect(getMissionAudioVolume()).toBeCloseTo(0.37, 8);
-  });
-
-  it("mutes and unmutes loaded mission audio without losing the configured volume", () => {
-    setMissionAudioVolume(0.42);
-    playMissionAudio("mission_19");
-
+  it("defaults to full volume when shared volume fields are absent", () => {
+    syncMissionAudioState(makeMissionAudioState(), 0);
     const audio = FakeAudio.instances[0];
     expect(audio).toBeDefined();
     if (!audio) {
       throw new Error("Expected mission audio instance");
     }
-    expect(audio.volume).toBeCloseTo(0.42, 8);
-
-    setMissionAudioMuted(true);
-    expect(isMissionAudioMuted()).toBe(true);
-    expect(audio.volume).toBe(0);
-
-    setMissionAudioMuted(false);
-    expect(isMissionAudioMuted()).toBe(false);
-    expect(audio.volume).toBeCloseTo(0.42, 8);
+    expect(audio.volume).toBe(1);
   });
 
-  it("applies local volume/mute settings to newly created audio elements", () => {
-    setMissionAudioVolume(0.25);
-    setMissionAudioMuted(true);
+  it("applies shared room volume from mission audio state", () => {
+    syncMissionAudioState(
+      makeMissionAudioState({
+        volume: 0.38,
+      }),
+      0,
+    );
+    const audio = FakeAudio.instances[0];
+    expect(audio).toBeDefined();
+    if (!audio) {
+      throw new Error("Expected mission audio instance");
+    }
+    expect(audio.volume).toBeCloseTo(0.38, 8);
+  });
+
+  it("applies shared mute over shared volume", () => {
+    syncMissionAudioState(
+      makeMissionAudioState({
+        volume: 0.52,
+        muted: true,
+      }),
+      0,
+    );
+    const audio = FakeAudio.instances[0];
+    expect(audio).toBeDefined();
+    if (!audio) {
+      throw new Error("Expected mission audio instance");
+    }
+    expect(audio.volume).toBe(0);
+
+    syncMissionAudioState(
+      makeMissionAudioState({
+        volume: 0.52,
+        muted: false,
+      }),
+      0,
+    );
+    expect(audio.volume).toBeCloseTo(0.52, 8);
+  });
+
+  it("clamps out-of-range shared volume values", () => {
+    syncMissionAudioState(
+      makeMissionAudioState({
+        volume: -2,
+      }),
+      0,
+    );
+    const audio = FakeAudio.instances[0];
+    expect(audio).toBeDefined();
+    if (!audio) {
+      throw new Error("Expected mission audio instance");
+    }
+    expect(audio.volume).toBe(0);
+
+    syncMissionAudioState(
+      makeMissionAudioState({
+        volume: 99,
+      }),
+      0,
+    );
+    expect(audio.volume).toBe(1);
 
     playMissionAudio("mission_19");
-    const firstAudio = FakeAudio.instances[0];
-    expect(firstAudio).toBeDefined();
-    if (!firstAudio) {
-      throw new Error("Expected first mission audio instance");
-    }
-    expect(firstAudio.volume).toBe(0);
-
-    stopMissionAudio();
-
-    playMissionAudio("mission_30");
-    const secondAudio = FakeAudio.instances[1];
-    expect(secondAudio).toBeDefined();
-    if (!secondAudio) {
-      throw new Error("Expected second mission audio instance");
-    }
-    expect(secondAudio.volume).toBe(0);
-    expect(secondAudio).not.toBe(firstAudio);
-
-    setMissionAudioMuted(false);
-    expect(secondAudio.volume).toBeCloseTo(0.25, 8);
+    expect(audio.volume).toBe(1);
   });
 });

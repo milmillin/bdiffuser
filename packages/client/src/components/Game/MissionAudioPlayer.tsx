@@ -16,12 +16,8 @@ import type {
 } from "@bomb-busters/shared";
 import {
   getMissionAudioDurationMs,
-  getMissionAudioVolume,
   getMissionAudioPositionMs,
-  isMissionAudioMuted,
   onMissionAudioEnded,
-  setMissionAudioMuted,
-  setMissionAudioVolume,
   stopMissionAudio,
   syncMissionAudioState,
 } from "../../audio/audio.js";
@@ -47,6 +43,17 @@ function formatAudioTime(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function resolveMissionAudioVolume(missionAudio: MissionAudioState): number {
+  if (typeof missionAudio.volume !== "number" || !Number.isFinite(missionAudio.volume)) {
+    return 1;
+  }
+  return Math.min(1, Math.max(0, missionAudio.volume));
+}
+
+function resolveMissionAudioMuted(missionAudio: MissionAudioState): boolean {
+  return missionAudio.muted === true;
+}
+
 export function MissionAudioPlayer({
   gameState,
   send,
@@ -61,10 +68,13 @@ export function MissionAudioPlayer({
     undefined,
   );
   const [volumePercent, setVolumePercent] = useState(() =>
-    Math.round(getMissionAudioVolume() * 100),
+    missionAudio ? Math.round(resolveMissionAudioVolume(missionAudio) * 100) : 100,
   );
-  const [muted, setMuted] = useState(() => isMissionAudioMuted());
+  const [muted, setMuted] = useState(() =>
+    missionAudio ? resolveMissionAudioMuted(missionAudio) : false,
+  );
   const lastSeekSentAtRef = useRef(0);
+  const lastVolumeSentAtRef = useRef(0);
 
   useEffect(() => {
     if (!missionAudio) {
@@ -73,6 +83,16 @@ export function MissionAudioPlayer({
       setLocalDurationMs(undefined);
     }
   }, [missionAudio]);
+
+  useEffect(() => {
+    if (!missionAudio) {
+      setVolumePercent(100);
+      setMuted(false);
+      return;
+    }
+    setVolumePercent(Math.round(resolveMissionAudioVolume(missionAudio) * 100));
+    setMuted(resolveMissionAudioMuted(missionAudio));
+  }, [missionAudio?.audioFile, missionAudio?.volume, missionAudio?.muted]);
 
   useEffect(() => {
     if (!missionAudio) return;
@@ -124,10 +144,23 @@ export function MissionAudioPlayer({
 
   const sendAudioControl = useCallback(
     (
-      command: "play" | "pause" | "seek",
+      command: "play" | "pause" | "seek" | "setVolume",
       positionMs: number | undefined,
       forceDurationMs?: number,
+      volume?: number,
+      mutedValue?: boolean,
     ) => {
+      if (command === "setVolume") {
+        if (volume == null || !Number.isFinite(volume)) return;
+        send({
+          type: "missionAudioControl",
+          command,
+          volume: Math.min(1, Math.max(0, volume)),
+          ...(typeof mutedValue === "boolean" ? { muted: mutedValue } : {}),
+        });
+        return;
+      }
+
       const durationMs =
         forceDurationMs ??
         getMissionAudioDurationMs() ??
@@ -263,24 +296,90 @@ export function MissionAudioPlayer({
 
   const handleVolumeChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
+      if (!missionAudio) return;
       const nextPercent = Number(event.target.value);
       if (!Number.isFinite(nextPercent)) return;
       const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
+      const nextMuted = muted && clampedPercent > 0 ? false : muted;
       setVolumePercent(clampedPercent);
-      setMissionAudioVolume(clampedPercent / 100);
       if (muted && clampedPercent > 0) {
         setMuted(false);
-        setMissionAudioMuted(false);
+      }
+
+      const nowMs = Date.now();
+      if (nowMs - lastVolumeSentAtRef.current >= 80) {
+        sendAudioControl(
+          "setVolume",
+          undefined,
+          undefined,
+          clampedPercent / 100,
+          nextMuted,
+        );
+        lastVolumeSentAtRef.current = nowMs;
       }
     },
-    [muted],
+    [missionAudio, muted, sendAudioControl],
+  );
+
+  const handleVolumeCommit = useCallback(
+    (event: MouseEvent<HTMLInputElement> | TouchEvent<HTMLInputElement>) => {
+      if (!missionAudio) return;
+      const nextPercent = Number(event.currentTarget.value);
+      if (!Number.isFinite(nextPercent)) return;
+      const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
+      const nextMuted = muted && clampedPercent > 0 ? false : muted;
+      setVolumePercent(clampedPercent);
+      if (muted && clampedPercent > 0) {
+        setMuted(false);
+      }
+      sendAudioControl(
+        "setVolume",
+        undefined,
+        undefined,
+        clampedPercent / 100,
+        nextMuted,
+      );
+      lastVolumeSentAtRef.current = Date.now();
+    },
+    [missionAudio, muted, sendAudioControl],
+  );
+
+  const handleVolumeBlur = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      if (!missionAudio) return;
+      const nextPercent = Number(event.currentTarget.value);
+      if (!Number.isFinite(nextPercent)) return;
+      const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
+      const nextMuted = muted && clampedPercent > 0 ? false : muted;
+      setVolumePercent(clampedPercent);
+      if (muted && clampedPercent > 0) {
+        setMuted(false);
+      }
+      sendAudioControl(
+        "setVolume",
+        undefined,
+        undefined,
+        clampedPercent / 100,
+        nextMuted,
+      );
+      lastVolumeSentAtRef.current = Date.now();
+    },
+    [missionAudio, muted, sendAudioControl],
   );
 
   const handleMuteToggle = useCallback(() => {
+    if (!missionAudio) return;
     const nextMuted = !muted;
     setMuted(nextMuted);
-    setMissionAudioMuted(nextMuted);
-  }, [muted]);
+    sendAudioControl(
+      "setVolume",
+      undefined,
+      undefined,
+      volumePercent / 100,
+      nextMuted,
+    );
+    lastVolumeSentAtRef.current = Date.now();
+  }, [missionAudio, muted, sendAudioControl, volumePercent]);
 
   if (!missionAudio) return null;
 
@@ -341,6 +440,9 @@ export function MissionAudioPlayer({
           step={1}
           value={volumePercent}
           onChange={handleVolumeChange}
+          onMouseUp={handleVolumeCommit}
+          onTouchEnd={handleVolumeCommit}
+          onBlur={handleVolumeBlur}
           className="h-2 w-full cursor-pointer accent-sky-400"
           data-testid="mission-audio-volume-slider"
         />

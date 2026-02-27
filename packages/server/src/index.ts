@@ -281,6 +281,8 @@ export class BombBustersServer extends Server<Env> {
       status: "paused",
       positionMs: 0,
       syncedAtMs: Date.now(),
+      volume: 1,
+      muted: false,
     };
   }
 
@@ -454,6 +456,8 @@ export class BombBustersServer extends Server<Env> {
           msg.command,
           msg.positionMs,
           msg.durationMs,
+          msg.volume,
+          msg.muted,
         );
         break;
       case "setCaptainMode":
@@ -2001,6 +2005,8 @@ export class BombBustersServer extends Server<Env> {
     command: MissionAudioControlCommand,
     positionMs?: number,
     durationMs?: number,
+    volume?: number,
+    muted?: boolean,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase === "finished") return;
@@ -2008,13 +2014,20 @@ export class BombBustersServer extends Server<Env> {
     if (
       command !== "play" &&
       command !== "pause" &&
-      command !== "seek"
+      command !== "seek" &&
+      command !== "setVolume"
     ) {
       this.sendMsg(conn, { type: "error", message: "Invalid mission audio command" });
       return;
     }
 
     const missionAudio = state.missionAudio;
+    if (missionAudio.volume === undefined) {
+      missionAudio.volume = 1;
+    }
+    if (missionAudio.muted === undefined) {
+      missionAudio.muted = false;
+    }
 
     if (durationMs !== undefined) {
       if (!Number.isFinite(durationMs) || durationMs < 0) {
@@ -2026,6 +2039,21 @@ export class BombBustersServer extends Server<Env> {
         missionAudio,
         missionAudio.positionMs,
       );
+    }
+
+    const parsedVolume =
+      typeof volume === "number" && Number.isFinite(volume)
+        ? Math.min(1, Math.max(0, volume))
+        : undefined;
+
+    if (volume !== undefined && parsedVolume === undefined) {
+      this.sendMsg(conn, { type: "error", message: "Invalid mission audio volume" });
+      return;
+    }
+
+    if (muted !== undefined && typeof muted !== "boolean") {
+      this.sendMsg(conn, { type: "error", message: "Invalid mission audio mute state" });
+      return;
     }
 
     const parsedPosition =
@@ -2043,6 +2071,11 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
+    if (command === "setVolume" && parsedVolume === undefined) {
+      this.sendMsg(conn, { type: "error", message: "setVolume requires a volume value" });
+      return;
+    }
+
     const nowMs = Date.now();
     const currentPosition = this.getMissionAudioCurrentPosition(
       missionAudio,
@@ -2052,6 +2085,13 @@ export class BombBustersServer extends Server<Env> {
       missionAudio,
       parsedPosition ?? currentPosition,
     );
+
+    if (parsedVolume !== undefined) {
+      missionAudio.volume = parsedVolume;
+    }
+    if (muted !== undefined) {
+      missionAudio.muted = muted;
+    }
 
     if (command === "play") {
       missionAudio.status = "playing";

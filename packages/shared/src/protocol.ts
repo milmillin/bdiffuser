@@ -70,11 +70,23 @@ export type ClientMessage =
       command: "play" | "pause";
       positionMs?: number;
       durationMs?: number;
+      volume?: number;
+      muted?: boolean;
     }
   | {
       type: "missionAudioControl";
       command: "seek";
       positionMs: number;
+      durationMs?: number;
+      volume?: number;
+      muted?: boolean;
+    }
+  | {
+      type: "missionAudioControl";
+      command: "setVolume";
+      volume: number;
+      muted?: boolean;
+      positionMs?: number;
       durationMs?: number;
     }
   | { type: "setCaptainMode"; mode: CaptainMode }
