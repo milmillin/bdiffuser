@@ -133,20 +133,39 @@ export function ScrollableRow({ children }: { children: ReactNode }) {
 function getMissionSetupInfo(
   missionId: MissionId,
   playerCount: number,
-): { blueRange: { minValue: number; maxValue: number }; redCount: number; yellowCount: number } {
+): {
+  blueRange: { minValue: number; maxValue: number };
+  redCount: number;
+  yellowCount: number;
+  redSetupUncertain: boolean;
+  yellowSetupUncertain: boolean;
+} {
   try {
     const { setup } = resolveMissionSetup(missionId, playerCount);
     return {
       blueRange: setup.blue,
       redCount: wirePoolCount(setup.red),
       yellowCount: wirePoolCount(setup.yellow),
+      redSetupUncertain: isWirePoolUncertain(setup.red),
+      yellowSetupUncertain: isWirePoolUncertain(setup.yellow),
     };
   } catch {
-    return { blueRange: { minValue: 1, maxValue: 12 }, redCount: 0, yellowCount: 0 };
+    return {
+      blueRange: { minValue: 1, maxValue: 12 },
+      redCount: 0,
+      yellowCount: 0,
+      redSetupUncertain: false,
+      yellowSetupUncertain: false,
+    };
   }
 }
 
-function wirePoolCount(spec: { kind: string; count?: number; keep?: number; values?: readonly number[] }): number {
+function wirePoolCount(spec: {
+  kind: string;
+  count?: number;
+  keep?: number;
+  values?: readonly number[];
+}): number {
   switch (spec.kind) {
     case "none": return 0;
     case "exact": return spec.count ?? 0;
@@ -155,6 +174,10 @@ function wirePoolCount(spec: { kind: string; count?: number; keep?: number; valu
     case "fixed": return spec.values?.length ?? 0;
     default: return 0;
   }
+}
+
+function isWirePoolUncertain(spec: { kind: string; keep?: number; draw?: number }): boolean {
+  return spec.kind === "out_of" && (spec.draw ?? 0) > (spec.keep ?? 0);
 }
 
 export function BoardArea({
@@ -166,9 +189,17 @@ export function BoardArea({
   missionId: MissionId;
   playerCount: number;
 }) {
-  const { blueRange, redCount, yellowCount } = getMissionSetupInfo(missionId, playerCount);
+  const {
+    blueRange,
+    redCount,
+    yellowCount,
+    redSetupUncertain,
+    yellowSetupUncertain,
+  } = getMissionSetupInfo(missionId, playerCount);
   const redRevealed = board.markers.filter((m) => m.color === "red" && m.confirmed).length;
   const yellowRevealed = board.markers.filter((m) => m.color === "yellow" && m.confirmed).length;
+  const showRedCounter = redCount > 0 && redSetupUncertain;
+  const showYellowCounter = yellowCount > 0 && yellowSetupUncertain;
 
   return (
     <div className="flex items-center gap-4 px-4 py-1.5 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0" data-testid="board-area">
@@ -177,15 +208,15 @@ export function BoardArea({
         markers={board.markers}
         blueRange={blueRange}
       />
-      {(redCount > 0 || yellowCount > 0) && (
+      {(showRedCounter || showYellowCounter) && (
         <div className="flex-shrink-0 flex items-center gap-2">
-          {redCount > 0 && (
+          {showRedCounter && (
             <div className="flex items-center gap-1" data-testid="red-wire-count">
               <div className="w-3 h-3 rounded-full bg-red-500" />
               <span className="text-[10px] font-bold text-red-400">{redRevealed}/{redCount}</span>
             </div>
           )}
-          {yellowCount > 0 && (
+          {showYellowCounter && (
             <div className="flex items-center gap-1" data-testid="yellow-wire-count">
               <div className="w-3 h-3 rounded-[1px] bg-yellow-500" />
               <span className="text-[10px] font-bold text-yellow-400">{yellowRevealed}/{yellowCount}</span>
