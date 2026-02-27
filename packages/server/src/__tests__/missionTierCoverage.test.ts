@@ -768,6 +768,67 @@ describe("mission complexity tier representative coverage", () => {
     expect(state.pendingForcedAction?.kind).toBe("mission22TokenPass");
   });
 
+  it("mission 27: yellow trigger fires after 2 yellow cuts via dual cut", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeYellowTile({ id: "cy", sortValue: 3.1 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [
+        makeYellowTile({ id: "y1", sortValue: 1.1 }),
+        makeYellowTile({ id: "y2", sortValue: 2.1 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 27,
+      players: [captain, target],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    executeDualCut(state, "captain", "target", 0, "YELLOW");
+
+    expect(state.campaign?.mission27TokenDraftTriggered).toBe(true);
+    expect(state.pendingForcedAction?.kind).toBe("mission27TokenDraft");
+    const board = state.campaign?.mission27TokenDraftBoard;
+    expect(board).toBeDefined();
+    expect((board?.numericTokens.length ?? 0) + (board?.yellowTokens ?? 0)).toBe(2);
+  });
+
+  it("mission 27: yellow trigger fires after solo cut of 2 yellows", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeYellowTile({ id: "y1", sortValue: 1.1 }),
+        makeYellowTile({ id: "y2", sortValue: 2.1 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      hand: [makeTile({ id: "b5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const state = makeGameState({
+      mission: 27,
+      players: [captain, p2],
+      currentPlayerIndex: 0,
+      turnNumber: 1,
+    });
+
+    executeSoloCut(state, "captain", "YELLOW");
+
+    expect(state.campaign?.mission27TokenDraftTriggered).toBe(true);
+    expect(state.pendingForcedAction?.kind).toBe("mission27TokenDraft");
+    const board = state.campaign?.mission27TokenDraftBoard;
+    expect(board).toBeDefined();
+    expect((board?.numericTokens.length ?? 0) + (board?.yellowTokens ?? 0)).toBe(2);
+  });
+
   it("mission 22: token pass sequential choosers and correct recipient", () => {
     const captain = makePlayer({
       id: "captain",

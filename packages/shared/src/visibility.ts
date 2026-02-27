@@ -78,6 +78,8 @@ export interface CampaignVisibilityModel {
   specialMarkers: "public";
   /** Mission 22 token-pass board supply: visible to all players. */
   mission22TokenPassBoard: "public";
+  /** Mission 27 token-draft line supply: visible to all players. */
+  mission27TokenDraftBoard: "public";
   /** Mission 17 captain false setup token mode: visible to all players. */
   falseInfoTokenMode: "public";
   /** Mission 52 all-false setup token mode: visible to all players. */
@@ -112,6 +114,7 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   bunkerTracker: "public",
   specialMarkers: "public",
   mission22TokenPassBoard: "public",
+  mission27TokenDraftBoard: "public",
   falseInfoTokenMode: "public",
   falseTokenMode: "public",
 } as const;
@@ -206,6 +209,9 @@ export function filterCampaignState(
       : {}),
     ...(campaign.mission22TokenPassBoard
       ? { mission22TokenPassBoard: campaign.mission22TokenPassBoard }
+      : {}),
+    ...(campaign.mission27TokenDraftBoard
+      ? { mission27TokenDraftBoard: campaign.mission27TokenDraftBoard }
       : {}),
     ...(campaign.falseInfoTokenMode !== undefined
       ? { falseInfoTokenMode: campaign.falseInfoTokenMode }

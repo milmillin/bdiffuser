@@ -497,6 +497,115 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves mission27 token-draft forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p3",
+            name: "Caro",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 6,
+        mission: 27,
+        result: null,
+        pendingForcedAction: {
+          kind: "mission27TokenDraft",
+          currentChooserIndex: 1,
+          currentChooserId: "p2",
+          draftOrder: [0, 1, "bad", 2],
+          completedCount: 1,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f27");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission27TokenDraft",
+      currentChooserIndex: 1,
+      currentChooserId: "p2",
+      draftOrder: [0, 1, 2],
+      completedCount: 1,
+    });
+  });
+
+  it("normalizes mission27 token-draft board state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "captain",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "p2",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 6,
+        mission: 27,
+        result: null,
+        campaign: {
+          mission27TokenDraftBoard: {
+            numericTokens: [4, 13, 9, "bad"],
+            yellowTokens: 1,
+          },
+          mission27TokenDraftTriggered: true,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f27b");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign?.mission27TokenDraftBoard).toEqual({
+      numericTokens: [4, 9],
+      yellowTokens: 1,
+    });
+    expect(normalized.gameState!.campaign?.mission27TokenDraftTriggered).toBe(true);
+  });
+
   it("preserves mission46 sevens-cut forced action state across restore", () => {
     const legacy = {
       gameState: {

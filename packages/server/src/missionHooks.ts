@@ -51,6 +51,7 @@ import {
 } from "@bomb-busters/shared";
 import { pushGameLog } from "./gameLog.js";
 import { getMission22TokenPassBoardState } from "./mission22TokenPass.js";
+import { buildMission27TokenDraftBoard } from "./mission27TokenDraft.js";
 import { isMission46SevenTile } from "./mission46.js";
 import { isMission41PlayerSkippingTurn } from "./missionGuards.js";
 
@@ -6025,6 +6026,64 @@ registerHookHandler<"no_character_cards">("no_character_cards", {
       playerId: "system",
       action: "hookSetup",
       detail: `no_character_cards:active|yellowTriggerDraftCount=${rule.yellowTriggerDraftCount ?? "none"}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  endTurn(rule: NoCharacterCardsRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    if (ctx.state.campaign?.mission27TokenDraftTriggered) return;
+
+    const triggerCount =
+      Number.isInteger(rule.yellowTriggerDraftCount) && rule.yellowTriggerDraftCount != null
+        ? Math.max(1, rule.yellowTriggerDraftCount)
+        : 2;
+    const yellowCount = countCutYellowTiles(ctx.state);
+    if (yellowCount < triggerCount) return;
+
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.mission27TokenDraftTriggered = true;
+    const draftBoard = buildMission27TokenDraftBoard(ctx.state, ctx.state.players.length);
+    ctx.state.campaign.mission27TokenDraftBoard = draftBoard;
+
+    const draftOrder = buildClockwisePassingOrder(ctx.state);
+    const hasDraftValues =
+      draftBoard.yellowTokens > 0 || draftBoard.numericTokens.length > 0;
+
+    if (draftOrder.length === 0 || !hasDraftValues) {
+      pushGameLog(ctx.state, {
+        turn: ctx.state.turnNumber,
+        playerId: "system",
+        action: "hookEffect",
+        detail:
+          `m27:yellow_trigger_token_draft:triggered|yellowCount=${yellowCount}` +
+          `|order=${draftOrder.join(",")}|numeric=${draftBoard.numericTokens.length}` +
+          `|yellow=${draftBoard.yellowTokens}|no_forced_action=true`,
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const firstIndex = draftOrder[0];
+    const firstPlayer = ctx.state.players[firstIndex];
+    if (!firstPlayer) return;
+
+    ctx.state.pendingForcedAction = {
+      kind: "mission27TokenDraft",
+      currentChooserIndex: firstIndex,
+      currentChooserId: firstPlayer.id,
+      draftOrder,
+      completedCount: 0,
+    };
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail:
+        `m27:yellow_trigger_token_draft:triggered|yellowCount=${yellowCount}` +
+        `|order=${draftOrder.join(",")}|numeric=${draftBoard.numericTokens.length}` +
+        `|yellow=${draftBoard.yellowTokens}`,
       timestamp: Date.now(),
     });
   },

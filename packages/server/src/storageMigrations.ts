@@ -16,6 +16,7 @@ import {
   type SpecialMarker,
   type MissionAudioState,
   type Mission22TokenPassBoardState,
+  type Mission27TokenDraftBoardState,
   type SurrenderVoteState,
 } from "@bomb-busters/shared";
 import {
@@ -181,6 +182,34 @@ function normalizeSpecialMarkers(raw: unknown): SpecialMarker[] {
 function normalizeMission22TokenPassBoard(
   raw: unknown,
 ): Mission22TokenPassBoardState {
+  if (!isObject(raw)) {
+    return { numericTokens: [], yellowTokens: 0 };
+  }
+
+  const numericTokens = Array.isArray((raw as { numericTokens?: unknown }).numericTokens)
+    ? (raw as { numericTokens: unknown[] }).numericTokens
+      .map((value) =>
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        value >= 1 &&
+        value <= 12
+          ? value
+          : null
+      )
+      .filter((value): value is number => value !== null)
+    : [];
+  const yellowTokens = typeof (raw as { yellowTokens?: unknown }).yellowTokens === "number" &&
+    Number.isInteger((raw as { yellowTokens?: unknown }).yellowTokens) &&
+    (raw as { yellowTokens: number }).yellowTokens >= 0
+    ? (raw as { yellowTokens: number }).yellowTokens
+    : 0;
+
+  return { numericTokens, yellowTokens };
+}
+
+function normalizeMission27TokenDraftBoard(
+  raw: unknown,
+): Mission27TokenDraftBoardState {
   if (!isObject(raw)) {
     return { numericTokens: [], yellowTokens: 0 };
   }
@@ -464,6 +493,21 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     }
   }
 
+  if (hasOwn(raw, "mission22TokenPassTriggered") && typeof raw.mission22TokenPassTriggered === "boolean") {
+    campaign.mission22TokenPassTriggered = raw.mission22TokenPassTriggered;
+  }
+
+  if (hasOwn(raw, "mission27TokenDraftBoard")) {
+    const board = normalizeMission27TokenDraftBoard(raw.mission27TokenDraftBoard);
+    if (board.numericTokens.length > 0 || board.yellowTokens > 0) {
+      campaign.mission27TokenDraftBoard = board;
+    }
+  }
+
+  if (hasOwn(raw, "mission27TokenDraftTriggered") && typeof raw.mission27TokenDraftTriggered === "boolean") {
+    campaign.mission27TokenDraftTriggered = raw.mission27TokenDraftTriggered;
+  }
+
   if (hasOwn(raw, "mission18DesignatorIndex") && typeof raw.mission18DesignatorIndex === "number") {
     campaign.mission18DesignatorIndex = raw.mission18DesignatorIndex;
   }
@@ -557,6 +601,25 @@ function normalizeGameState(
         currentChooserIndex: obj.pendingForcedAction.currentChooserIndex,
         currentChooserId: obj.pendingForcedAction.currentChooserId,
         passingOrder: obj.pendingForcedAction.passingOrder.filter(
+          (value): value is number => typeof value === "number" && Number.isFinite(value),
+        ),
+        completedCount: obj.pendingForcedAction.completedCount,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission27TokenDraft"
+      && typeof obj.pendingForcedAction.currentChooserIndex === "number"
+      && Number.isFinite(obj.pendingForcedAction.currentChooserIndex)
+      && typeof obj.pendingForcedAction.currentChooserId === "string"
+      && obj.pendingForcedAction.currentChooserId
+      && Array.isArray(obj.pendingForcedAction.draftOrder)
+      && typeof obj.pendingForcedAction.completedCount === "number"
+      && Number.isFinite(obj.pendingForcedAction.completedCount)
+    ) {
+      pendingForcedAction = {
+        kind: "mission27TokenDraft" as const,
+        currentChooserIndex: obj.pendingForcedAction.currentChooserIndex,
+        currentChooserId: obj.pendingForcedAction.currentChooserId,
+        draftOrder: obj.pendingForcedAction.draftOrder.filter(
           (value): value is number => typeof value === "number" && Number.isFinite(value),
         ),
         completedCount: obj.pendingForcedAction.completedCount,

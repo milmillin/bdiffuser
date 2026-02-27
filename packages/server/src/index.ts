@@ -96,6 +96,10 @@ import {
   getMission22TokenPassAvailableValues,
   getMission22TokenPassBoardState,
 } from "./mission22TokenPass.js";
+import {
+  applyMission27TokenDraftChoice,
+  getMission27TokenDraftAvailableValues,
+} from "./mission27TokenDraft.js";
 
 /** Delay before purging storage for finished rooms (1 hour). */
 const FINISHED_ROOM_CLEANUP_DELAY_MS = 60 * 60 * 1000;
@@ -424,6 +428,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission22TokenPassChoice":
         this.handleMission22TokenPassChoice(connection, msg.value);
         break;
+      case "mission27TokenDraftChoice":
+        this.handleMission27TokenDraftChoice(connection, msg.value);
+        break;
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
@@ -511,6 +518,10 @@ export class BombBustersServer extends Server<Env> {
             gs.pendingForcedAction.designatorId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "mission22TokenPass") {
+          if (gs.pendingForcedAction.currentChooserId === oldId) {
+            gs.pendingForcedAction.currentChooserId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission27TokenDraft") {
           if (gs.pendingForcedAction.currentChooserId === oldId) {
             gs.pendingForcedAction.currentChooserId = newId;
           }
@@ -1559,6 +1570,45 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  handleMission27TokenDraftChoice(conn: Connection, value: number) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot perform Mission 27 token draft: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 27 token draft is only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission27TokenDraft") {
+      this.sendMsg(conn, { type: "error", message: "No pending mission 27 token draft action" });
+      return;
+    }
+
+    if (conn.id !== forced.currentChooserId) {
+      this.sendMsg(conn, { type: "error", message: "It's not your turn to draft a token" });
+      return;
+    }
+
+    if (!Number.isInteger(value) || value < 0 || value > 12) {
+      this.sendMsg(conn, { type: "error", message: "Token value must be 0 (yellow) or 1-12" });
+      return;
+    }
+
+    const success = this.executeMission27TokenDraft(state, forced, value);
+    if (!success) {
+      this.sendMsg(conn, { type: "error", message: "Token value is not available in the draft line" });
+    }
+  }
+
   handleMission61ConstraintRotate(
     conn: Connection,
     direction: "clockwise" | "counter_clockwise" | "skip",
@@ -1757,6 +1807,55 @@ export class BombBustersServer extends Server<Env> {
         passingOrder: forced.passingOrder,
         completedCount: nextCompleted,
       };
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+    return true;
+  }
+
+  private executeMission27TokenDraft(
+    state: GameState,
+    forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission27TokenDraft" }>,
+    value: number,
+  ): boolean {
+    const result = applyMission27TokenDraftChoice(state, forced, value);
+    if (!result.ok) {
+      return false;
+    }
+
+    const token = result.updatedChooserToken;
+    const chooser = state.players[result.chooserIndex];
+    if (!chooser) return false;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: forced.currentChooserId,
+      action: "hookEffect",
+      detail: `m27:token_draft:value=${token.value}|chooser=${chooser.id}|position=${wireLabelOf(chooser, token.position)}`,
+      timestamp: Date.now(),
+    });
+
+    const nextCompleted = forced.completedCount + 1;
+    const availableValues = getMission27TokenDraftAvailableValues(state);
+    if (nextCompleted >= forced.draftOrder.length || availableValues.length === 0) {
+      state.pendingForcedAction = undefined;
+    } else {
+      const nextOrderIndex = nextCompleted;
+      const nextChooserIndex = forced.draftOrder[nextOrderIndex];
+      const nextChooser = state.players[nextChooserIndex];
+      if (!nextChooser) {
+        state.pendingForcedAction = undefined;
+      } else {
+        state.pendingForcedAction = {
+          kind: "mission27TokenDraft",
+          currentChooserIndex: nextChooserIndex,
+          currentChooserId: nextChooser.id,
+          draftOrder: forced.draftOrder,
+          completedCount: nextCompleted,
+        };
+      }
     }
 
     this.saveState();
@@ -2292,8 +2391,8 @@ export class BombBustersServer extends Server<Env> {
         }
       }
 
-      // Mission 22 token pass: schedule alarm if current chooser is a bot
-      if (forced?.kind === "mission22TokenPass") {
+      // Mission 22/27 token drafting: schedule alarm if current chooser is a bot.
+      if (forced?.kind === "mission22TokenPass" || forced?.kind === "mission27TokenDraft") {
         const chooser = state.players.find((p) => p.id === forced.currentChooserId);
         if (chooser?.isBot) {
           const botMs = Date.now() + 1500;
@@ -2499,6 +2598,29 @@ export class BombBustersServer extends Server<Env> {
         }
         const value = availableValues[Math.floor(Math.random() * availableValues.length)];
         const success = this.executeMission22TokenPass(state, m22Forced, value);
+        if (!success) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+        }
+        return;
+      }
+    }
+
+    // Mission 27 token draft: if a bot is the current chooser, pick a random value.
+    const m27Forced = state.pendingForcedAction;
+    if (m27Forced?.kind === "mission27TokenDraft") {
+      const chooser = state.players.find((p) => p.id === m27Forced.currentChooserId);
+      if (chooser?.isBot) {
+        const availableValues = getMission27TokenDraftAvailableValues(state);
+        if (availableValues.length === 0) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+          return;
+        }
+        const value = availableValues[Math.floor(Math.random() * availableValues.length)];
+        const success = this.executeMission27TokenDraft(state, m27Forced, value);
         if (!success) {
           state.pendingForcedAction = undefined;
           this.saveState();

@@ -243,6 +243,14 @@ export interface Mission22TokenPassBoardState {
   yellowTokens: number;
 }
 
+/** Remaining mission 27 token-draft values currently in the draft line. */
+export interface Mission27TokenDraftBoardState {
+  /** Numeric values currently available in the draft line. */
+  numericTokens: number[];
+  /** Yellow token copies currently available in the draft line. */
+  yellowTokens: number;
+}
+
 /** A constraint that restricts actions during a mission. */
 export interface ConstraintCard {
   id: string;
@@ -331,6 +339,10 @@ export interface CampaignState {
   mission22TokenPassTriggered?: boolean;
   /** Mission 22: remaining board supply for the token pass action. */
   mission22TokenPassBoard?: Mission22TokenPassBoardState;
+  /** Mission 27: whether the yellow-trigger token draft has been triggered. */
+  mission27TokenDraftTriggered?: boolean;
+  /** Mission 27: remaining values in the random token draft line. */
+  mission27TokenDraftBoard?: Mission27TokenDraftBoardState;
   /** Reserve pool of undealt equipment cards for False Bottom. */
   equipmentReserve?: EquipmentCard[];
   /** Mission 23: whether the simultaneous four-of-value cut has been completed. */
@@ -413,6 +425,17 @@ export type ForcedAction =
       /** Player indices in clockwise passing order, starting from captain. */
       passingOrder: number[];
       /** How many players have completed their token pass. */
+      completedCount: number;
+    }
+  | {
+      kind: "mission27TokenDraft";
+      /** Index of the player who currently must choose a token from the draft line. */
+      currentChooserIndex: number;
+      /** ID of the current chooser (convenience for message routing). */
+      currentChooserId: string;
+      /** Player indices in clockwise draft order, starting from captain. */
+      draftOrder: number[];
+      /** How many players have completed their draft pick. */
       completedCount: number;
     }
   | {
