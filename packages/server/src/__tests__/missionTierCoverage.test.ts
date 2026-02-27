@@ -1312,7 +1312,7 @@ describe("mission complexity tier representative coverage", () => {
     expect(captain.hand[0].cut).toBe(false);
   });
 
-  it("sergio tier (mission 17): failed dual cut by captain on non-captain places false token with announced value", () => {
+  it("sergio tier (mission 17): failed dual cut by captain on non-captain places token with actual value", () => {
     const captain = makePlayer({
       id: "captain",
       isCaptain: true,
@@ -1340,7 +1340,7 @@ describe("mission complexity tier representative coverage", () => {
     expect(state.board.detonatorPosition).toBe(detBefore + 1);
     expect(partner.infoTokens).toHaveLength(1);
     expect(partner.infoTokens[0]).toMatchObject({
-      value: 5,
+      value: 3,
       position: 0,
       isYellow: false,
     });
@@ -1383,6 +1383,43 @@ describe("mission complexity tier representative coverage", () => {
     });
     expect(captain.hand[0].gameValue).toBe(3);
     expect(captain.hand[0].cut).toBe(false);
+  });
+
+  it("campaign false-info-token mode: failed dual cut by captain on non-captain uses announced false value", () => {
+    const captain = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [makeTile({ id: "c5", color: "blue", gameValue: 5, sortValue: 5 })],
+    });
+    const partner = makePlayer({
+      id: "partner",
+      hand: [makeTile({ id: "p3", color: "blue", gameValue: 3, sortValue: 3 })],
+      infoTokens: [],
+    });
+    const state = makeGameState({
+      mission: 1,
+      campaign: { falseInfoTokenMode: true },
+      players: [captain, partner],
+      currentPlayerIndex: 0,
+    });
+    const detBefore = state.board.detonatorPosition;
+
+    const action = executeDualCut(state, "captain", "partner", 0, 5);
+
+    expect(action.type).toBe("dualCutResult");
+    if (action.type === "dualCutResult") {
+      expect(action.success).toBe(false);
+      expect(action.detonatorAdvanced).toBe(true);
+    }
+    expect(state.board.detonatorPosition).toBe(detBefore + 1);
+    expect(partner.infoTokens).toHaveLength(1);
+    expect(partner.infoTokens[0]).toMatchObject({
+      value: 5,
+      position: 0,
+      isYellow: false,
+    });
+    expect(partner.hand[0].gameValue).toBe(3);
+    expect(partner.hand[0].cut).toBe(false);
   });
 
   it("restriction tier (mission 34): enforces allowed player counts", () => {

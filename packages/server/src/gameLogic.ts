@@ -254,9 +254,14 @@ function usesAnnouncedFalseTokenForDualCut(
   actor: Readonly<Player>,
   target: Readonly<Player>,
 ): boolean {
-  const falseInfoTokenMode =
-    state.campaign?.falseInfoTokenMode === true || state.mission === 17;
   const falseTokenMode = state.campaign?.falseTokenMode === true || state.mission === 52;
+  const falseInfoTokenMode = state.campaign?.falseInfoTokenMode === true;
+
+  // Mission 17: only failed cuts in Rhett's (captain's) hand place
+  // announced-value false tokens.
+  if (state.mission === 17) {
+    return falseTokenMode || target.isCaptain;
+  }
 
   return (
     falseTokenMode
