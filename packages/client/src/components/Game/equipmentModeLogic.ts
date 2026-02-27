@@ -25,7 +25,9 @@ function isMissionRestrictedDetectorTarget(
   mission: number | undefined,
 ): boolean {
   if (mission === 13) {
-    return tile.color !== "blue";
+    // Opponent uncut tiles are usually color-hidden on the client. In mission 13,
+    // block only known non-blue detector targets and let server validation decide.
+    return tile.color === "red" || tile.color === "yellow";
   }
 
   if (mission === 41 || mission === 48) {

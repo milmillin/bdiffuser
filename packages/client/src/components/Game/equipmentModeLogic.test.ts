@@ -100,7 +100,7 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile(), 2)).toBe(false);
   });
 
-  it("double_detector: restricts mission 13 targets to blue wires only", () => {
+  it("double_detector: mission 13 blocks only explicit non-blue targets", () => {
     const mode: EquipmentMode = {
       kind: "double_detector",
       targetPlayerId: "opp1",
@@ -109,6 +109,7 @@ describe("getOpponentTileSelectableFilter", () => {
     };
     const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
     expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: undefined, gameValue: undefined }), 1)).toBe(true);
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
     expect(filter(tile({ color: "red", gameValue: "RED" }), 2)).toBe(false);
     expect(filter(tile({ color: "blue", gameValue: 7, cut: true }), 3)).toBe(false);
@@ -190,6 +191,20 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 2)).toBe(false);
   });
 
+  it("triple_detector: mission 13 blocks only explicit non-blue targets", () => {
+    const mode: EquipmentMode = {
+      kind: "triple_detector",
+      targetPlayerId: "opp1",
+      targetTileIndices: [0],
+      guessTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
+    expect(filter(tile({ color: "blue", gameValue: 6 }), 0)).toBe(true);
+    expect(filter(tile({ color: undefined, gameValue: undefined }), 1)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 2)).toBe(false);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 3)).toBe(false);
+  });
+
   it("triple_detector: after first pick, restricts selectable tiles to the same stand", () => {
     const mode: EquipmentMode = {
       kind: "triple_detector",
@@ -234,6 +249,20 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ cut: true }), 0)).toBe(false);
   });
 
+  it("super_detector: mission 13 blocks only explicit non-blue targets", () => {
+    const mode: EquipmentMode = {
+      kind: "super_detector",
+      targetPlayerId: null,
+      targetStandIndex: null,
+      guessTileIndex: null,
+    };
+    const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
+    expect(filter(tile({ color: "blue", gameValue: 7 }), 0)).toBe(true);
+    expect(filter(tile({ color: undefined, gameValue: undefined }), 1)).toBe(true);
+    expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 2)).toBe(false);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 3)).toBe(false);
+  });
+
   it("x_or_y_ray: returns true for uncut tiles on any opponent", () => {
     const mode: EquipmentMode = {
       kind: "x_or_y_ray",
@@ -247,7 +276,7 @@ describe("getOpponentTileSelectableFilter", () => {
     expect(filter(tile({ cut: true }), 0)).toBe(false);
   });
 
-  it("x_or_y_ray: restricts mission 13 targets to blue wires only", () => {
+  it("x_or_y_ray: mission 13 blocks only explicit non-blue targets", () => {
     const mode: EquipmentMode = {
       kind: "x_or_y_ray",
       targetPlayerId: "opp1",
@@ -257,7 +286,9 @@ describe("getOpponentTileSelectableFilter", () => {
     };
     const filter = getOpponentTileSelectableFilter(mode, "opp1", 13)!;
     expect(filter(tile({ color: "blue", gameValue: 5 }), 0)).toBe(true);
+    expect(filter(tile({ color: undefined, gameValue: undefined }), 1)).toBe(true);
     expect(filter(tile({ color: "yellow", gameValue: "YELLOW" }), 1)).toBe(false);
+    expect(filter(tile({ color: "red", gameValue: "RED" }), 2)).toBe(false);
   });
 
   it.each([20, 35] as const)(
