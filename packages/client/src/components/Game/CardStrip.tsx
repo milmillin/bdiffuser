@@ -43,7 +43,10 @@ type StackCard = CardPreviewCard & {
   onUse?: () => boolean;
 };
 
-function getStatusLabel(eq: BoardState["equipment"][number]) {
+function getStatusLabel(
+  eq: BoardState["equipment"][number],
+  equipmentUsageLocked: boolean,
+) {
   if (eq.used) return { label: "Used", className: "bg-black/75 text-gray-200" };
   if (eq.faceDown) {
     return { label: "Face Down", className: "bg-black/75 text-slate-200" };
@@ -62,6 +65,9 @@ function getStatusLabel(eq: BoardState["equipment"][number]) {
     };
   }
   if (eq.unlocked) {
+    if (equipmentUsageLocked) {
+      return { label: "Locked", className: "bg-black/75 text-yellow-200" };
+    }
     return { label: "Available", className: "bg-emerald-700/85 text-white" };
   }
   return {
@@ -70,7 +76,10 @@ function getStatusLabel(eq: BoardState["equipment"][number]) {
   };
 }
 
-function getFrameClass(eq: BoardState["equipment"][number]): string {
+function getFrameClass(
+  eq: BoardState["equipment"][number],
+  equipmentUsageLocked: boolean,
+): string {
   if (eq.used) return "border-black/75";
   if (eq.faceDown) {
     return "border-black/75";
@@ -79,6 +88,9 @@ function getFrameClass(eq: BoardState["equipment"][number]): string {
     return "border-black/75";
   }
   if (eq.unlocked) {
+    if (equipmentUsageLocked) {
+      return "border-black/75";
+    }
     return "border-emerald-700/85";
   }
   return "border-black/75";
@@ -103,6 +115,7 @@ export function CardStrip({
   onDeselectCard,
   onSelectEquipmentAction,
   onSelectPersonalSkill,
+  equipmentUsageLocked = false,
 }: {
   equipment: BoardState["equipment"];
   character?: CharacterId | null;
@@ -114,6 +127,7 @@ export function CardStrip({
   onDeselectCard?: () => void;
   onSelectEquipmentAction?: (equipmentId: string) => boolean;
   onSelectPersonalSkill?: () => boolean;
+  equipmentUsageLocked?: boolean;
 }) {
   const [previewCard, setPreviewCard] = useState<CardPreviewCard | null>(null);
 
@@ -150,7 +164,13 @@ export function CardStrip({
     }
 
     for (const eq of equipment) {
-      const status = getStatusLabel(eq);
+      const actorLockedEquipmentCard =
+        equipmentUsageLocked &&
+        !eq.used &&
+        !eq.faceDown &&
+        eq.unlocked &&
+        eq.secondaryLockValue === undefined;
+      const status = getStatusLabel(eq, actorLockedEquipmentCard);
       const def = EQUIPMENT_DEFS_BY_ID.get(eq.id);
       const rulesText = getEquipmentCardText(eq.id, def);
       const showBackImage = eq.faceDown || eq.used;
@@ -158,6 +178,7 @@ export function CardStrip({
         !eq.used &&
         (eq.faceDown ||
           (eq.unlocked && eq.secondaryLockValue !== undefined) ||
+          actorLockedEquipmentCard ||
           !eq.unlocked);
       builtCards.push({
         kind: "equipment",
@@ -171,9 +192,10 @@ export function CardStrip({
         showLockIcon:
           eq.faceDown ||
           (eq.unlocked && eq.secondaryLockValue !== undefined) ||
+          actorLockedEquipmentCard ||
           !eq.unlocked,
         statusClassName: status.className,
-        frameClassName: getFrameClass(eq),
+        frameClassName: getFrameClass(eq, actorLockedEquipmentCard),
         detailSubtitle:
           eq.faceDown
             ? "Mission-locked card"
@@ -181,7 +203,7 @@ export function CardStrip({
         detailTiming: rulesText.timing,
         detailEffect: rulesText.effect,
         detailReminders: [...rulesText.reminders],
-        canUse: !eq.faceDown && eq.unlocked && !eq.used,
+        canUse: !eq.faceDown && eq.unlocked && !eq.used && !actorLockedEquipmentCard,
         onUse: onSelectEquipmentAction
           ? () => onSelectEquipmentAction(eq.id)
           : undefined,
@@ -189,7 +211,14 @@ export function CardStrip({
     }
 
     return builtCards;
-  }, [character, characterUsed, equipment, onSelectEquipmentAction, onSelectPersonalSkill]);
+  }, [
+    character,
+    characterUsed,
+    equipment,
+    equipmentUsageLocked,
+    onSelectEquipmentAction,
+    onSelectPersonalSkill,
+  ]);
 
   return (
     <div className="w-full" data-testid="card-stack">

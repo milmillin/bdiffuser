@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { makeEquipmentCard } from "@bomb-busters/shared/testing";
 import { CardStrip } from "./CardStrip.js";
 
-function renderCardStrip(equipment: ReturnType<typeof makeEquipmentCard>[]): string {
+function renderCardStrip(
+  equipment: ReturnType<typeof makeEquipmentCard>[],
+  options: {
+    equipmentUsageLocked?: boolean;
+  } = {},
+): string {
   return renderToStaticMarkup(
     <CardStrip
       equipment={equipment}
@@ -12,6 +17,7 @@ function renderCardStrip(equipment: ReturnType<typeof makeEquipmentCard>[]): str
       canSelectCards={true}
       selectedCardId={null}
       onSelectEquipmentAction={vi.fn(() => true)}
+      equipmentUsageLocked={options.equipmentUsageLocked}
     />,
   );
 }
@@ -47,5 +53,24 @@ describe("CardStrip equipment status", () => {
 
     expect(html).toContain(">Available<");
     expect(html).not.toContain(">Face Down<");
+  });
+
+  it("shows locked when actor-level equipment lock is active", () => {
+    const html = renderCardStrip(
+      [
+        makeEquipmentCard({
+          id: "rewinder",
+          name: "Rewinder",
+          unlockValue: 6,
+          faceDown: false,
+          unlocked: true,
+          used: false,
+        }),
+      ],
+      { equipmentUsageLocked: true },
+    );
+
+    expect(html).toContain(">Locked<");
+    expect(html).not.toContain(">Available<");
   });
 });

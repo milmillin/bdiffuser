@@ -1033,6 +1033,8 @@ export function GameBoard({
       revealRedsForcedForActor: revealRedsForced,
     }) &&
     (canUseCharacterSkillAnytime(me.character) || isMyTurn);
+  const equipmentUsageLockedForActor =
+    !!me && me.isCaptain && (gameState.mission === 17 || gameState.mission === 28);
 
   const stageEquipmentActionFromCardStrip = (equipmentId: string): boolean => {
     if (!me || gameState.phase !== "playing") {
@@ -1506,6 +1508,7 @@ export function GameBoard({
                         onDeselectCard={cancelSelectedDockCard}
                         onSelectEquipmentAction={stageEquipmentActionFromCardStrip}
                         onSelectPersonalSkill={stageSkillFromCardStrip}
+                        equipmentUsageLocked={equipmentUsageLockedForActor}
                       />
                     </div>
                   </div>
