@@ -48,8 +48,11 @@ function renderTemplate(
     }
     case "designate_cutter.selected": {
       const targetPlayerId = String(detail.params.targetPlayerId ?? "");
-      const targetName = resolvePlayerName(targetPlayerId);
-      return `designated ${targetName} (${targetPlayerId}) to cut`;
+      const resolvedTargetName = String(resolvePlayerName(targetPlayerId) ?? "").trim();
+      const targetName = resolvedTargetName.length === 0 || resolvedTargetName === targetPlayerId
+        ? "that player"
+        : resolvedTargetName;
+      return `designated ${targetName} to cut`;
     }
   }
 }

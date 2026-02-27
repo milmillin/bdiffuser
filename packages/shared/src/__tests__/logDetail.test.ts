@@ -15,4 +15,32 @@ describe("log detail rendering", () => {
       renderLogDetail(detail, (playerId) => (playerId === "p2" ? "Bob" : playerId)),
     ).toBe("used Coffee Mug and passed turn to Bob");
   });
+
+  it("renders designate cutter template with resolved player name only", () => {
+    const detail = logTemplate("designate_cutter.selected", {
+      targetPlayerId: "p2",
+    });
+
+    expect(
+      renderLogDetail(detail, (playerId) => (playerId === "p2" ? "Bob" : playerId)),
+    ).toBe("designated Bob to cut");
+  });
+
+  it("renders designate cutter with placeholder when resolver returns the player ID", () => {
+    const detail = logTemplate("designate_cutter.selected", {
+      targetPlayerId: "p2",
+    });
+
+    expect(renderLogDetail(detail, (playerId) => playerId)).toBe(
+      "designated that player to cut",
+    );
+  });
+
+  it("renders designate cutter with placeholder when resolver returns empty text", () => {
+    const detail = logTemplate("designate_cutter.selected", {
+      targetPlayerId: "p2",
+    });
+
+    expect(renderLogDetail(detail, () => "   ")).toBe("designated that player to cut");
+  });
 });
