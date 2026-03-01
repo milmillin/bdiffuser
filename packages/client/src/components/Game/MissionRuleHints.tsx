@@ -523,7 +523,12 @@ function CampaignObjectsHint({
     .map((player) => ({
       playerId: player.id,
       playerName: player.name,
-      cards: campaign.numberCards?.playerHands?.[player.id] ?? [],
+      cards:
+        gameState.mission === 65
+          ? [...(campaign.numberCards?.playerHands?.[player.id] ?? [])].sort(
+            (a, b) => a.value - b.value || a.id.localeCompare(b.id),
+          )
+          : (campaign.numberCards?.playerHands?.[player.id] ?? []),
     }))
     .filter((entry) => entry.cards.length > 0);
 
@@ -1334,7 +1339,7 @@ function CampaignObjectsHint({
                               name: isBackFace ? "Bunker Card (Back)" : "Bunker Card (Front)",
                               previewImage: image,
                               previewMobileAspectRatio: "1037/736",
-                              previewMobileRotation: "ccw90",
+                              previewMobileRotation: "cw90",
                               detailSubtitle:
                                 `Floor: ${isBackFace ? "B" : "A"} · ` +
                                 `${MISSION66_BUNKER_CELLS_BY_FLOOR[isBackFace ? "back" : "front"].length} blocks`,
@@ -1481,8 +1486,8 @@ function CampaignObjectsHint({
   );
 }
 
-export function getMission66BunkerInlineRotation(isMobileViewport: boolean): CardRotation {
-  return isMobileViewport ? "ccw90" : "cw90";
+export function getMission66BunkerInlineRotation(_isMobileViewport: boolean): CardRotation {
+  return "cw90";
 }
 
 export function MissionRuleHints({ gameState }: { gameState: ClientGameState }) {

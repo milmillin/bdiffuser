@@ -733,38 +733,48 @@ describe("missionHooks dispatcher", () => {
     });
 
     it("mission 65: deals Number cards as equally as possible from captain clockwise", () => {
-      const p1 = makePlayer({ id: "p1", isCaptain: false });
-      const p2 = makePlayer({ id: "p2", isCaptain: false });
-      const p3 = makePlayer({ id: "p3", isCaptain: true });
-      const p4 = makePlayer({ id: "p4", isCaptain: false });
-      const p5 = makePlayer({ id: "p5", isCaptain: false });
-      const state = makeGameState({
-        mission: 65,
-        players: [p1, p2, p3, p4, p5],
-        log: [],
-      });
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+      try {
+        const p1 = makePlayer({ id: "p1", isCaptain: false });
+        const p2 = makePlayer({ id: "p2", isCaptain: false });
+        const p3 = makePlayer({ id: "p3", isCaptain: true });
+        const p4 = makePlayer({ id: "p4", isCaptain: false });
+        const p5 = makePlayer({ id: "p5", isCaptain: false });
+        const state = makeGameState({
+          mission: 65,
+          players: [p1, p2, p3, p4, p5],
+          log: [],
+        });
 
-      dispatchHooks(65, { point: "setup", state });
+        dispatchHooks(65, { point: "setup", state });
 
-      const numberCards = state.campaign?.numberCards;
-      expect(numberCards).toBeDefined();
-      expect(numberCards!.playerHands["p1"]).toHaveLength(2);
-      expect(numberCards!.playerHands["p2"]).toHaveLength(2);
-      expect(numberCards!.playerHands["p3"]).toHaveLength(3);
-      expect(numberCards!.playerHands["p4"]).toHaveLength(3);
-      expect(numberCards!.playerHands["p5"]).toHaveLength(2);
-      expect(numberCards!.deck).toHaveLength(0);
-      expect(
-        Object.values(numberCards!.playerHands)
-          .flat()
-          .every((card) => card.faceUp),
-      ).toBe(true);
+        const numberCards = state.campaign?.numberCards;
+        expect(numberCards).toBeDefined();
+        expect(numberCards!.playerHands["p1"]).toHaveLength(2);
+        expect(numberCards!.playerHands["p2"]).toHaveLength(2);
+        expect(numberCards!.playerHands["p3"]).toHaveLength(3);
+        expect(numberCards!.playerHands["p4"]).toHaveLength(3);
+        expect(numberCards!.playerHands["p5"]).toHaveLength(2);
+        expect(numberCards!.playerHands["p1"].map((card) => card.value)).toEqual([1, 11]);
+        expect(numberCards!.playerHands["p2"].map((card) => card.value)).toEqual([9, 10]);
+        expect(numberCards!.playerHands["p3"].map((card) => card.value)).toEqual([2, 7, 8]);
+        expect(numberCards!.playerHands["p4"].map((card) => card.value)).toEqual([3, 5, 6]);
+        expect(numberCards!.playerHands["p5"].map((card) => card.value)).toEqual([4, 12]);
+        expect(numberCards!.deck).toHaveLength(0);
+        expect(
+          Object.values(numberCards!.playerHands)
+            .flat()
+            .every((card) => card.faceUp),
+        ).toBe(true);
 
-      const dealtCardCount = Object.values(numberCards!.playerHands).reduce(
-        (sum, hand) => sum + hand.length,
-        0,
-      );
-      expect(dealtCardCount).toBe(12);
+        const dealtCardCount = Object.values(numberCards!.playerHands).reduce(
+          (sum, hand) => sum + hand.length,
+          0,
+        );
+        expect(dealtCardCount).toBe(12);
+      } finally {
+        randomSpy.mockRestore();
+      }
     });
 
     it("mission 9: initializes sequence cards and pointer", () => {

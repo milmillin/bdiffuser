@@ -6703,11 +6703,13 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
     for (let i = 0; i < playerCount; i++) {
       const player = ctx.state.players[i];
       const hand = deckValues.splice(0, cardsByPlayerIndex[i]);
-      playerHands[player.id] = hand.map((value, idx) => ({
-        id: `m65-${player.id}-${idx}-${value}`,
-        value,
-        faceUp: true,
-      }));
+      playerHands[player.id] = hand
+        .map((value, idx) => ({
+          id: `m65-${player.id}-${idx}-${value}`,
+          value,
+          faceUp: true,
+        }))
+        .sort((a, b) => a.value - b.value || a.id.localeCompare(b.id));
     }
 
     ctx.state.campaign.numberCards = {
