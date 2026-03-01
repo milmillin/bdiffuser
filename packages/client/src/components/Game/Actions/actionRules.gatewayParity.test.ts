@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ClientGameState, GameState } from "@bomb-busters/shared";
+import type { AnyEquipmentId, ClientGameState, GameState } from "@bomb-busters/shared";
+import { EQUIPMENT_DEFS } from "@bomb-busters/shared";
 import {
   makeConstraintCard,
   makeEquipmentCard,
@@ -12,6 +13,7 @@ import {
 import {
   canStageEquipmentCardFromCardStrip,
   canStagePersonalSkillFromCardStrip,
+  getAutoActivateEquipmentPayload,
 } from "./actionRules.js";
 
 function toClientGameState(state: GameState, playerId = "me"): ClientGameState {
@@ -68,6 +70,38 @@ function makeBaseState(overrides: Partial<GameState> = {}): ClientGameState {
 }
 
 describe("actionRules card-strip gateway parity", () => {
+  describe("getAutoActivateEquipmentPayload", () => {
+    it("returns payloads for every equipment with immediate timing", () => {
+      const immediateIds: AnyEquipmentId[] = EQUIPMENT_DEFS
+        .filter((def) => def.useTiming === "immediate")
+        .map((def) => def.id as AnyEquipmentId);
+
+      for (const equipmentId of immediateIds) {
+        expect(getAutoActivateEquipmentPayload(equipmentId)).toEqual({
+          kind: equipmentId,
+        });
+      }
+    });
+
+    it("returns the expected payload for current campaign immediate cards", () => {
+      expect(getAutoActivateEquipmentPayload("false_bottom")).toEqual({
+        kind: "false_bottom",
+      });
+      expect(getAutoActivateEquipmentPayload("emergency_drop")).toEqual({
+        kind: "emergency_drop",
+      });
+      expect(getAutoActivateEquipmentPayload("disintegrator")).toEqual({
+        kind: "disintegrator",
+      });
+    });
+
+    it("returns null for non-immediate equipment", () => {
+      expect(getAutoActivateEquipmentPayload("rewinder")).toBeNull();
+      expect(getAutoActivateEquipmentPayload("post_it")).toBeNull();
+      expect(getAutoActivateEquipmentPayload("talkies_walkies")).toBeNull();
+    });
+  });
+
   describe("canStageEquipmentCardFromCardStrip", () => {
     it("accepts legal equipment staging", () => {
       const state = makeBaseState();

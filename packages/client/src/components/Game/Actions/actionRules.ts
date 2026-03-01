@@ -7,6 +7,7 @@ import type {
 } from "@bomb-busters/shared";
 import {
   BLUE_COPIES_PER_VALUE,
+  EQUIPMENT_DEFS,
   getWirePoolCount,
   resolveMissionSetup,
 } from "@bomb-busters/shared";
@@ -29,6 +30,11 @@ const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
 
 const BASE_EQUIPMENT_SET = new Set<string>(BASE_EQUIPMENT_IDS);
 const VALUE_CONSTRAINT_IDS = new Set(["A", "B", "C", "D", "E", "F"]);
+const AUTO_ACTIVATE_EQUIPMENT_PAYLOADS = new Map<AnyEquipmentId, UseEquipmentPayload>(
+  EQUIPMENT_DEFS
+    .filter((def) => def.useTiming === "immediate")
+    .map((def) => [def.id as AnyEquipmentId, { kind: def.id } as UseEquipmentPayload]),
+);
 
 export function isBaseEquipmentId(id: string): id is BaseEquipmentId {
   return BASE_EQUIPMENT_SET.has(id);
@@ -205,6 +211,12 @@ export function getImmediateEquipmentPayload(
     default:
       return null;
   }
+}
+
+export function getAutoActivateEquipmentPayload(
+  equipmentId: AnyEquipmentId,
+): UseEquipmentPayload | null {
+  return AUTO_ACTIVATE_EQUIPMENT_PAYLOADS.get(equipmentId) ?? null;
 }
 
 export function getInitialEquipmentMode(

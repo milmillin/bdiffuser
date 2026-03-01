@@ -70,6 +70,7 @@ import {
   getMission11BlueAsRedValue as _getMission11BlueAsRedValue,
   isMission59DualCutActorTileValueAllowed,
   getMission59ForwardValues,
+  getAutoActivateEquipmentPayload,
   getImmediateEquipmentPayload,
   getInitialEquipmentMode,
   getSoloCutValues,
@@ -1120,6 +1121,18 @@ export function GameBoard({
       ((def.useTiming === "in_turn" || def.useTiming === "start_of_turn") &&
         isMyTurn);
     if (!timingAllowsUse) return false;
+
+    const autoActivatePayload = getAutoActivateEquipmentPayload(typedEquipmentId);
+    if (autoActivatePayload) {
+      send({
+        type: "useEquipment",
+        equipmentId: typedEquipmentId,
+        payload: autoActivatePayload,
+      });
+      setSelectedGuessTile(null);
+      setMission59RotateNano(false);
+      return false;
+    }
 
     const immediatePayload = getImmediateEquipmentPayload(typedEquipmentId);
     if (immediatePayload) {
