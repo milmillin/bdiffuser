@@ -2158,17 +2158,31 @@ export class BombBustersServer extends Server<Env> {
         eligibleIds.has(id),
       ),
     );
+    const hadYesVote = yesVoters.has(conn.id);
 
     if (vote) {
       yesVoters.add(conn.id);
     } else {
       yesVoters.delete(conn.id);
     }
+    const hasYesVote = yesVoters.has(conn.id);
+    const didChange = hadYesVote !== hasYesVote;
 
     state.surrenderVote =
       yesVoters.size > 0
         ? { yesVoterIds: Array.from(yesVoters) }
         : undefined;
+    if (didChange) {
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: conn.id,
+        action: "surrenderVote",
+        detail: hasYesVote
+          ? `voted to surrender (${yesVoters.size}/${eligiblePlayers.length} yes)`
+          : `unvoted surrender (${yesVoters.size}/${eligiblePlayers.length} yes)`,
+        timestamp: Date.now(),
+      });
+    }
     this.saveState();
     this.broadcastGameState();
   }

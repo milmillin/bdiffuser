@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { renderLogDetail } from "@bomb-busters/shared";
 import { makeGameState, makePlayer } from "@bomb-busters/shared/testing";
 import { ZERO_FAILURE_COUNTERS, cloneFailureCounters } from "../failureCounters.js";
 
@@ -61,6 +62,10 @@ function makeServer(players: ReturnType<typeof makePlayer>[]): SurrenderServer {
   } as unknown as SurrenderServer;
 }
 
+function getSurrenderVoteLogs(server: SurrenderServer) {
+  return (server.room.gameState?.log ?? []).filter((entry) => entry.action === "surrenderVote");
+}
+
 describe("surrender vote handler", () => {
   it("requires explicit surrender confirmation after majority yes votes", async () => {
     const { BombBustersServer } = await import("../index.js");
@@ -77,12 +82,22 @@ describe("surrender vote handler", () => {
     expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1"]);
     expect(server.broadcastGameState).toHaveBeenCalledTimes(1);
     expect(server.broadcastAction).not.toHaveBeenCalled();
+    expect(getSurrenderVoteLogs(server)).toHaveLength(1);
+    expect(getSurrenderVoteLogs(server)[0]?.playerId).toBe("p1");
+    expect(renderLogDetail(getSurrenderVoteLogs(server)[0]!.detail)).toBe(
+      "voted to surrender (1/2 yes)",
+    );
 
     server.handleSurrenderVote(makeConnection("p2"), true);
     expect(server.room.gameState?.phase).toBe("playing");
     expect(server.room.gameState?.result).toBeNull();
     expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1", "p2"]);
     expect(server.broadcastAction).not.toHaveBeenCalled();
+    expect(getSurrenderVoteLogs(server)).toHaveLength(2);
+    expect(getSurrenderVoteLogs(server)[1]?.playerId).toBe("p2");
+    expect(renderLogDetail(getSurrenderVoteLogs(server)[1]!.detail)).toBe(
+      "voted to surrender (2/2 yes)",
+    );
 
     server.handleConfirmSurrender(makeConnection("p2"));
     expect(server.room.gameState?.phase).toBe("finished");
@@ -112,6 +127,10 @@ describe("surrender vote handler", () => {
     expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1"]);
     expect(server.broadcastAction).not.toHaveBeenCalled();
     expect(server.broadcastGameState).toHaveBeenCalledTimes(1);
+    expect(getSurrenderVoteLogs(server)).toHaveLength(1);
+    expect(renderLogDetail(getSurrenderVoteLogs(server)[0]!.detail)).toBe(
+      "voted to surrender (1/3 yes)",
+    );
   });
 
   it("allows unvoting after threshold and blocks confirmation when majority is no longer met", async () => {
@@ -131,6 +150,11 @@ describe("surrender vote handler", () => {
     server.handleSurrenderVote(makeConnection("p2"), false);
     expect(server.room.gameState?.phase).toBe("playing");
     expect(server.room.gameState?.surrenderVote?.yesVoterIds).toEqual(["p1"]);
+    expect(getSurrenderVoteLogs(server)).toHaveLength(3);
+    expect(getSurrenderVoteLogs(server)[2]?.playerId).toBe("p2");
+    expect(renderLogDetail(getSurrenderVoteLogs(server)[2]!.detail)).toBe(
+      "unvoted surrender (1/3 yes)",
+    );
 
     const confirmer = makeConnection("p1");
     server.handleConfirmSurrender(confirmer);
@@ -163,11 +187,34 @@ describe("surrender vote handler", () => {
     expect(server.room.gameState?.surrenderVote).toBeUndefined();
     expect(server.broadcastAction).not.toHaveBeenCalled();
     expect(server.broadcastGameState).not.toHaveBeenCalled();
+    expect(getSurrenderVoteLogs(server)).toHaveLength(0);
     expect(botConn.send).toHaveBeenCalledWith(
       JSON.stringify({
         type: "error",
         message: "Only human players can vote to surrender.",
       }),
+    );
+  });
+
+  it("does not log duplicate vote commands that do not change state", async () => {
+    const { BombBustersServer } = await import("../index.js");
+    const players = [
+      makePlayer({ id: "p1", isBot: false }),
+      makePlayer({ id: "p2", isBot: false }),
+      makePlayer({ id: "p3", isBot: false }),
+    ];
+    const server = makeServer(players);
+    Object.setPrototypeOf(server, BombBustersServer.prototype);
+
+    server.handleSurrenderVote(makeConnection("p1"), true);
+    server.handleSurrenderVote(makeConnection("p1"), true);
+    server.handleSurrenderVote(makeConnection("p2"), false);
+    server.handleSurrenderVote(makeConnection("p2"), false);
+
+    expect(getSurrenderVoteLogs(server)).toHaveLength(1);
+    expect(getSurrenderVoteLogs(server)[0]?.playerId).toBe("p1");
+    expect(renderLogDetail(getSurrenderVoteLogs(server)[0]!.detail)).toBe(
+      "voted to surrender (1/3 yes)",
     );
   });
 
