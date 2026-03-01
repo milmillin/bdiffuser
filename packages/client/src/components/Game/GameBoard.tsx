@@ -82,6 +82,7 @@ import {
   deriveActionAttentionState,
   type ActionAttention,
 } from "./Actions/forcedActionAttention.js";
+import { resetDualCutToDraft } from "./dualCutStaging.js";
 import {
   BUTTON_PRIMARY_CLASS,
   BUTTON_FORCED_PRIMARY_CLASS,
@@ -2071,13 +2072,10 @@ export function GameBoard({
                                 const newGuessValue = tile.gameValue;
                                 if (newGuessValue == null || newGuessValue === "RED") return;
                                 if (!isDualCutActorTileValueAllowed(newGuessValue)) return;
-                                setPendingAction({
-                                  ...pendingAction,
-                                  actorTileIndex: tileIndex,
-                                  guessValue: newGuessValue,
-                                  mission59RotateNano:
-                                    pendingAction.mission59RotateNano,
-                                });
+                                const reset = resetDualCutToDraft(pendingAction, tileIndex);
+                                setPendingAction(reset.pendingAction);
+                                setSelectedGuessTile(reset.selectedGuessTile);
+                                setMission59RotateNano(reset.mission59RotateNano);
                                 return;
                               }
                               if (pendingAction) return;

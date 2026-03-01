@@ -76,6 +76,8 @@ describe("GameBoard PendingActionStrip", () => {
     );
 
     expect(html).toContain("value 3");
+    expect(html).toContain("Click an opponent wire for Dual Cut.");
+    expect(html).not.toContain("Confirm Dual Cut");
     expect(html).not.toContain("data-testid=\"dual-cut-guess-select\"");
   });
 });
