@@ -1,14 +1,14 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import {
+  BUTTON_FORCED_PRIMARY_CLASS,
   BUTTON_OPTION_CLASS,
   BUTTON_OPTION_SELECTED_CLASS,
-  BUTTON_PRIMARY_CLASS,
   BUTTON_SECONDARY_CLASS,
-  PANEL_CLASS,
-  PANEL_SUBTEXT_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_SUBTEXT_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 
 export function ChooseNextPlayerPanel({
@@ -47,22 +47,22 @@ export function ChooseNextPlayerPanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="choose-next-player-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>
         Captain — Choose Who Acts Next
       </div>
-      <p className={PANEL_TEXT_CLASS}>
+      <p className={PANEL_FORCED_TEXT_CLASS}>
         Select which player takes the next turn.
       </p>
       {previousPlayerName && (
-        <p className={PANEL_SUBTEXT_CLASS}>
-          Previous player: <span className="text-slate-200 font-semibold">{previousPlayerName}</span>
+        <p className={PANEL_FORCED_SUBTEXT_CLASS}>
+          Previous player: <span className="text-red-100 font-semibold">{previousPlayerName}</span>
         </p>
       )}
       {hasAlternative && (
-        <p className={PANEL_TEXT_CLASS}>
+        <p className={PANEL_FORCED_TEXT_CLASS}>
           In mission 10 (3+ players), the same player cannot act twice in a row.
         </p>
       )}
@@ -82,7 +82,7 @@ export function ChooseNextPlayerPanel({
           </button>
         ))}
         {eligiblePlayers.length === 0 && (
-          <span className={PANEL_SUBTEXT_CLASS}>No eligible players</span>
+          <span className={PANEL_FORCED_SUBTEXT_CLASS}>No eligible players</span>
         )}
       </div>
       {selectedPlayerId != null && (
@@ -103,7 +103,7 @@ export function ChooseNextPlayerPanel({
               }
             }}
             data-testid="choose-player-confirm"
-            className={BUTTON_PRIMARY_CLASS}
+            className={BUTTON_FORCED_PRIMARY_CLASS}
           >
             Confirm
           </button>

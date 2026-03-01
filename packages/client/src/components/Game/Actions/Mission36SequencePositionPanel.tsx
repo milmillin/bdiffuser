@@ -1,10 +1,10 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import {
-  BUTTON_PRIMARY_CLASS,
-  PANEL_CLASS,
-  PANEL_SUBTEXT_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_SUBTEXT_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 
 export function Mission36SequencePositionPanel({
@@ -30,12 +30,12 @@ export function Mission36SequencePositionPanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="mission36-sequence-position-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>Mission 36 - Choose Active Edge</div>
-      <p className={PANEL_TEXT_CLASS}>{reasonText}</p>
-      <p className={PANEL_SUBTEXT_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>Mission 36 - Choose Active Edge</div>
+      <p className={PANEL_FORCED_TEXT_CLASS}>{reasonText}</p>
+      <p className={PANEL_FORCED_SUBTEXT_CLASS}>
         Left: {typeof leftValue === "number" ? leftValue : "?"} | Right:{" "}
         {typeof rightValue === "number" ? rightValue : "?"}
       </p>
@@ -43,7 +43,7 @@ export function Mission36SequencePositionPanel({
         <button
           type="button"
           onClick={() => send({ type: "mission36SequencePosition", side: "left" })}
-          className={BUTTON_PRIMARY_CLASS}
+          className={BUTTON_FORCED_PRIMARY_CLASS}
           data-testid="mission36-sequence-position-left"
         >
           Active Left
@@ -51,7 +51,7 @@ export function Mission36SequencePositionPanel({
         <button
           type="button"
           onClick={() => send({ type: "mission36SequencePosition", side: "right" })}
-          className={BUTTON_PRIMARY_CLASS}
+          className={BUTTON_FORCED_PRIMARY_CLASS}
           data-testid="mission36-sequence-position-right"
         >
           Active Right

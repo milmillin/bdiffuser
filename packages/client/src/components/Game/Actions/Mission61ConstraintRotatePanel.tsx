@@ -1,10 +1,10 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import {
-  BUTTON_PRIMARY_CLASS,
-  PANEL_CLASS,
-  PANEL_SUBTEXT_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_SUBTEXT_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 
 export function Mission61ConstraintRotatePanel({
@@ -32,20 +32,20 @@ export function Mission61ConstraintRotatePanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="mission61-constraint-rotate-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>Mission 61 — Rotate Constraints</div>
-      <p className={PANEL_TEXT_CLASS}>Choose how to rotate the global constraints.</p>
-      <p className={PANEL_SUBTEXT_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>Mission 61 — Rotate Constraints</div>
+      <p className={PANEL_FORCED_TEXT_CLASS}>Choose how to rotate the global constraints.</p>
+      <p className={PANEL_FORCED_SUBTEXT_CLASS}>
         Current decision: {decisionText}.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => send({ type: "mission61ConstraintRotate", direction: "clockwise" })}
-          className={`${BUTTON_PRIMARY_CLASS} ${
-            clockwiseSelected ? "ring-2 ring-emerald-300" : ""
+          className={`${BUTTON_FORCED_PRIMARY_CLASS} ${
+            clockwiseSelected ? "ring-2 ring-red-300" : ""
           }`}
           data-testid="mission61-constraint-rotate-clockwise"
         >
@@ -56,8 +56,8 @@ export function Mission61ConstraintRotatePanel({
           onClick={() =>
             send({ type: "mission61ConstraintRotate", direction: "counter_clockwise" })
           }
-          className={`${BUTTON_PRIMARY_CLASS} ${
-            counterClockwiseSelected ? "ring-2 ring-emerald-300" : ""
+          className={`${BUTTON_FORCED_PRIMARY_CLASS} ${
+            counterClockwiseSelected ? "ring-2 ring-red-300" : ""
           }`}
           data-testid="mission61-constraint-rotate-counter-clockwise"
         >
@@ -66,8 +66,8 @@ export function Mission61ConstraintRotatePanel({
         <button
           type="button"
           onClick={() => send({ type: "mission61ConstraintRotate", direction: "skip" })}
-          className={`${BUTTON_PRIMARY_CLASS} ${
-            skipSelected ? "ring-2 ring-emerald-300" : ""
+          className={`${BUTTON_FORCED_PRIMARY_CLASS} ${
+            skipSelected ? "ring-2 ring-red-300" : ""
           }`}
           data-testid="mission61-constraint-rotate-skip"
         >

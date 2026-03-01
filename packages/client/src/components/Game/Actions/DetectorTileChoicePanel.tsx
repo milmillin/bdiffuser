@@ -1,10 +1,10 @@
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import { wireLabel } from "@bomb-busters/shared";
 import {
-  BUTTON_PRIMARY_CLASS,
-  PANEL_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 import { getMission11BlueAsRedValue } from "./actionRules.js";
 
@@ -124,13 +124,13 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className={PANEL_CLASS}
+        className={PANEL_FORCED_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className={PANEL_TITLE_CLASS}>
+        <div className={PANEL_FORCED_TITLE_CLASS}>
           Confirm Detector Result
         </div>
-        <div className={PANEL_TEXT_CLASS}>
+        <div className={PANEL_FORCED_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
@@ -154,7 +154,7 @@ export function DetectorTileChoicePanel({
               });
             }}
             data-testid="detector-tile-choice-confirm"
-            className={BUTTON_PRIMARY_CLASS}
+            className={BUTTON_FORCED_PRIMARY_CLASS}
           >
             Confirm
           </button>
@@ -178,13 +178,13 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className={PANEL_CLASS}
+        className={PANEL_FORCED_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className={PANEL_TITLE_CLASS}>
+        <div className={PANEL_FORCED_TITLE_CLASS}>
           Confirm Detector Result
         </div>
-        <div className={PANEL_TEXT_CLASS}>
+        <div className={PANEL_FORCED_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
@@ -208,7 +208,7 @@ export function DetectorTileChoicePanel({
               });
             }}
             data-testid="detector-tile-choice-confirm"
-            className={BUTTON_PRIMARY_CLASS}
+            className={BUTTON_FORCED_PRIMARY_CLASS}
           >
             Confirm
           </button>
@@ -226,13 +226,13 @@ export function DetectorTileChoicePanel({
 
     return (
       <div
-        className={PANEL_CLASS}
+        className={PANEL_FORCED_CLASS}
         data-testid="detector-tile-choice-panel"
       >
-        <div className={PANEL_TITLE_CLASS}>
+        <div className={PANEL_FORCED_TITLE_CLASS}>
           Confirm Wire Cut
         </div>
-        <div className={PANEL_TEXT_CLASS}>
+        <div className={PANEL_FORCED_TEXT_CLASS}>
           <p>
             {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
             and guessed{" "}
@@ -254,7 +254,7 @@ export function DetectorTileChoicePanel({
               send({ type: "detectorTileChoice", tileIndex: tileIdx });
             }}
             data-testid="detector-tile-choice-confirm"
-            className={BUTTON_PRIMARY_CLASS}
+            className={BUTTON_FORCED_PRIMARY_CLASS}
           >
             Confirm
           </button>
@@ -270,13 +270,13 @@ export function DetectorTileChoicePanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="detector-tile-choice-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>
         Choose Which Wire to Cut
       </div>
-      <div className={PANEL_TEXT_CLASS}>
+      <div className={PANEL_FORCED_TEXT_CLASS}>
         <p>
           {actorName} used <span className="text-cyan-400">{detectorLabel}</span>{" "}
           and guessed{" "}
@@ -298,7 +298,7 @@ export function DetectorTileChoicePanel({
             }
           }}
           data-testid="detector-tile-choice-confirm"
-          className={BUTTON_PRIMARY_CLASS}
+          className={BUTTON_FORCED_PRIMARY_CLASS}
         >
           Confirm
         </button>

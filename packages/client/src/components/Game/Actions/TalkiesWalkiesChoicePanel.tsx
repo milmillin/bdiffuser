@@ -4,10 +4,10 @@ import {
   hasXMarkedWireTalkiesRestriction,
 } from "@bomb-busters/shared";
 import {
-  BUTTON_PRIMARY_CLASS,
-  PANEL_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 
 export function TalkiesWalkiesChoicePanel({
@@ -46,13 +46,13 @@ export function TalkiesWalkiesChoicePanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="talkies-walkies-choice-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>
         Choose Your Wire to Swap
       </div>
-      <div className={PANEL_TEXT_CLASS}>
+      <div className={PANEL_FORCED_TEXT_CLASS}>
         <p>
           {actorName} used <span className="text-indigo-400">Talkies-Walkies</span>{" "}
           and selected wire <span className="font-bold text-slate-100">{wireLabel(forced.actorTileIndex)}</span>.
@@ -69,7 +69,7 @@ export function TalkiesWalkiesChoicePanel({
             }
           }}
           data-testid="talkies-choice-confirm"
-          className={BUTTON_PRIMARY_CLASS}
+          className={BUTTON_FORCED_PRIMARY_CLASS}
         >
           Confirm
         </button>

@@ -4,15 +4,28 @@ const BUTTON_BASE =
 export const PANEL_CLASS =
   "rounded-lg border border-slate-600/60 bg-slate-900/35 px-3 py-2 text-xs space-y-2";
 
+export const PANEL_FORCED_CLASS =
+  "rounded-lg border border-red-500/60 bg-red-950/30 px-3 py-2 text-xs space-y-2 forced-attention-pulse motion-reduce:animate-none";
+
 export const PANEL_TITLE_CLASS =
   "font-bold uppercase tracking-wide text-slate-100";
 
+export const PANEL_FORCED_TITLE_CLASS =
+  "font-bold uppercase tracking-wide text-red-100";
+
 export const PANEL_TEXT_CLASS = "text-slate-300";
+
+export const PANEL_FORCED_TEXT_CLASS = "text-red-100";
 
 export const PANEL_SUBTEXT_CLASS = "text-slate-400";
 
+export const PANEL_FORCED_SUBTEXT_CLASS = "text-red-200/90";
+
 export const BUTTON_PRIMARY_CLASS =
   `${BUTTON_BASE} bg-emerald-600 hover:bg-emerald-500 text-white`;
+
+export const BUTTON_FORCED_PRIMARY_CLASS =
+  `${BUTTON_BASE} bg-red-600 hover:bg-red-500 text-white`;
 
 export const BUTTON_SECONDARY_CLASS =
   `${BUTTON_BASE} bg-slate-700 hover:bg-slate-600 text-slate-100`;

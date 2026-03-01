@@ -1,12 +1,12 @@
 import { useState } from "react";
 import type { ClientGameState, ClientMessage } from "@bomb-busters/shared";
 import {
-  BUTTON_PRIMARY_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
   BUTTON_SECONDARY_CLASS,
-  PANEL_CLASS,
-  PANEL_SUBTEXT_CLASS,
-  PANEL_TEXT_CLASS,
-  PANEL_TITLE_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_SUBTEXT_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
 } from "./panelStyles.js";
 
 export function DesignateCutterPanel({
@@ -38,18 +38,18 @@ export function DesignateCutterPanel({
 
   return (
     <div
-      className={PANEL_CLASS}
+      className={PANEL_FORCED_CLASS}
       data-testid="designate-cutter-panel"
     >
-      <div className={PANEL_TITLE_CLASS}>
+      <div className={PANEL_FORCED_TITLE_CLASS}>
         Designate Who Cuts
       </div>
-      <div className={`${PANEL_TEXT_CLASS} space-y-1`}>
+      <div className={`${PANEL_FORCED_TEXT_CLASS} space-y-1`}>
         <p>
           Number card drawn:{" "}
-          <span className="font-bold text-slate-100 text-base">{forced.value}</span>
+          <span className="font-bold text-red-100 text-base">{forced.value}</span>
         </p>
-        <p className={PANEL_SUBTEXT_CLASS}>
+        <p className={PANEL_FORCED_SUBTEXT_CLASS}>
           General Radar results for value {forced.value}:
         </p>
         <div className="flex flex-wrap gap-2">
@@ -71,7 +71,7 @@ export function DesignateCutterPanel({
           })}
         </div>
       </div>
-      <p className={PANEL_TEXT_CLASS}>
+      <p className={PANEL_FORCED_TEXT_CLASS}>
         Choose which player must cut a wire (including yourself). Players with
         NO radar match are read-only.
       </p>
@@ -106,7 +106,7 @@ export function DesignateCutterPanel({
           );
         })}
         {playersWithTiles.length === 0 && (
-          <span className={PANEL_SUBTEXT_CLASS}>No eligible players</span>
+          <span className={PANEL_FORCED_SUBTEXT_CLASS}>No eligible players</span>
         )}
       </div>
       {selectedPlayerId != null && (
@@ -127,7 +127,7 @@ export function DesignateCutterPanel({
               }
             }}
             data-testid="designate-cutter-confirm"
-            className={BUTTON_PRIMARY_CLASS}
+            className={BUTTON_FORCED_PRIMARY_CLASS}
           >
             Confirm
           </button>

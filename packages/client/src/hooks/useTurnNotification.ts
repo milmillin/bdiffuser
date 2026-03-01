@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ClientGameState } from "@bomb-busters/shared";
+import { deriveActionAttentionState } from "../components/Game/Actions/forcedActionAttention.js";
+import { isRevealRedsForced } from "../components/Game/Actions/actionRules.js";
 
 const ORIGINAL_TITLE = document.title;
 
@@ -7,7 +9,9 @@ export function useTurnNotification(
   gameState: ClientGameState | null,
   playerId: string | null,
 ) {
-  const prevPlayerIndex = useRef<number | null>(null);
+  const initialized = useRef(false);
+  const prevCurrentPlayerId = useRef<string | null>(null);
+  const prevNeedsForcedInput = useRef(false);
   const titleOverridden = useRef(false);
 
   // Request notification permission on mount
@@ -35,31 +39,61 @@ export function useTurnNotification(
     };
   }, []);
 
-  // Fire notification when it becomes my turn
+  // Fire notification when it becomes my turn or a forced action targets me.
   useEffect(() => {
     if (!gameState || !playerId) return;
 
     const { currentPlayerIndex, players, phase } = gameState;
-    const prev = prevPlayerIndex.current;
-    prevPlayerIndex.current = currentPlayerIndex;
+    const currentPlayerId = players[currentPlayerIndex]?.id ?? null;
+    const revealRedsForcedForActor = isRevealRedsForced(gameState, playerId);
+    const attention = deriveActionAttentionState({
+      gameState,
+      playerId,
+      revealRedsForcedForActor,
+    });
+    const needsForcedInput =
+      attention.state === "forced_actor" ||
+      attention.state === "forced_reveal_reds";
 
-    if (prev === null || prev === currentPlayerIndex) return;
-    if (phase !== "playing") return;
+    if (!initialized.current) {
+      initialized.current = true;
+      prevCurrentPlayerId.current = currentPlayerId;
+      prevNeedsForcedInput.current = needsForcedInput;
+      return;
+    }
 
-    const currentPlayer = players[currentPlayerIndex];
-    if (!currentPlayer || currentPlayer.id !== playerId) return;
+    const becameTurn =
+      phase === "playing" &&
+      currentPlayerId === playerId &&
+      prevCurrentPlayerId.current !== playerId;
+    const becameForced =
+      phase === "playing" &&
+      needsForcedInput &&
+      !prevNeedsForcedInput.current;
+
+    prevCurrentPlayerId.current = currentPlayerId;
+    prevNeedsForcedInput.current = needsForcedInput;
+
+    if (!becameTurn && !becameForced) return;
     if (!document.hidden) return;
 
     // Change tab title
-    document.title = "YOUR TURN! - BOMBBUSTERS";
+    document.title = becameForced
+      ? "ACTION REQUIRED! - BOMBBUSTERS"
+      : "YOUR TURN! - BOMBBUSTERS";
     titleOverridden.current = true;
 
     // Send browser notification
     if ("Notification" in window && Notification.permission === "granted") {
-      const n = new Notification("BOMBBUSTERS - Your Turn!", {
-        body: "It's your turn to act.",
-        tag: "turn-notification",
-      });
+      const n = new Notification(
+        becameForced ? "BOMBBUSTERS - Action Required!" : "BOMBBUSTERS - Your Turn!",
+        {
+          body: becameForced
+            ? "A forced mission action needs your input."
+            : "It's your turn to act.",
+          tag: "turn-notification",
+        },
+      );
       n.onclick = () => {
         window.focus();
         n.close();

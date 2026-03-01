@@ -79,9 +79,18 @@ import {
   isMissionSpecialTargetAllowed,
 } from "./Actions/actionPanelMissionRules.js";
 import {
+  deriveActionAttentionState,
+  type ActionAttention,
+} from "./Actions/forcedActionAttention.js";
+import {
   BUTTON_PRIMARY_CLASS,
+  BUTTON_FORCED_PRIMARY_CLASS,
   BUTTON_SECONDARY_CLASS,
   PANEL_CLASS,
+  PANEL_FORCED_CLASS,
+  PANEL_FORCED_SUBTEXT_CLASS,
+  PANEL_FORCED_TEXT_CLASS,
+  PANEL_FORCED_TITLE_CLASS,
   PANEL_SUBTEXT_CLASS,
   PANEL_TEXT_CLASS,
   PANEL_TITLE_CLASS,
@@ -578,6 +587,17 @@ export function GameBoard({
   const forceRevealReds = isMyTurn && revealRedsAvailable;
   const revealRedsForcedForActor = me != null && isRevealRedsForced(gameState, playerId);
   const revealRedsForced = isMyTurn && revealRedsForcedForActor;
+  const actionAttention = deriveActionAttentionState({
+    gameState,
+    playerId,
+    revealRedsForcedForActor,
+  });
+  const standAttentionVariantForPlayer = (standPlayerId: string): "none" | "turn" | "forced" => {
+    if (actionAttention.forcedActorId === standPlayerId) return "forced";
+    const isCurrentTurnPlayer =
+      gameState.players[gameState.currentPlayerIndex]?.id === standPlayerId;
+    return isCurrentTurnPlayer ? "turn" : "none";
+  };
   const missionSupportsSimultaneousFourCut =
     gameState.mission === 23 || gameState.mission === 39;
   const missionFourCutTargetCard = missionSupportsSimultaneousFourCut
@@ -1386,6 +1406,7 @@ export function GameBoard({
                       player={opp}
                       isOpponent={true}
                       isCurrentTurn={opp.id === currentPlayer?.id}
+                      attentionVariant={standAttentionVariantForPlayer(opp.id)}
                       turnOrder={turnOrder}
                       onCharacterClick={
                         opp.character
@@ -1782,34 +1803,34 @@ export function GameBoard({
                 {gameState.phase === "playing" &&
                   unknownForcedAction &&
                   (isUnknownForcedActionCaptain ? (
-                    <div className={PANEL_CLASS} data-testid="forced-action-fallback-captain">
-                      <div className={PANEL_TITLE_CLASS}>Mission Action Required</div>
-                      <p className={PANEL_TEXT_CLASS}>
+                    <div className={PANEL_FORCED_CLASS} data-testid="forced-action-fallback-captain">
+                      <div className={PANEL_FORCED_TITLE_CLASS}>Mission Action Required</div>
+                      <p className={PANEL_FORCED_TEXT_CLASS}>
                         You must resolve a mission-required action before normal
                         turns continue.
                       </p>
-                      <p className={PANEL_SUBTEXT_CLASS}>
+                      <p className={PANEL_FORCED_SUBTEXT_CLASS}>
                         This client version does not support this forced action
                         yet.
                       </p>
                       <button
                         type="button"
                         onClick={() => window.location.reload()}
-                        className={BUTTON_PRIMARY_CLASS}
+                        className={BUTTON_FORCED_PRIMARY_CLASS}
                       >
                         Reload Client
                       </button>
                     </div>
                   ) : (
-                    <div className={PANEL_CLASS} data-testid="waiting-forced-action">
-                      <div className={PANEL_TITLE_CLASS}>Mission Action Required</div>
-                      <div className={PANEL_SUBTEXT_CLASS}>
+                    <div className={PANEL_FORCED_CLASS} data-testid="waiting-forced-action">
+                      <div className={PANEL_FORCED_TITLE_CLASS}>Mission Action Required</div>
+                      <div className={PANEL_FORCED_SUBTEXT_CLASS}>
                         Mission-required action is pending
                         {forcedActionCaptainName ? (
                           <>
                             {" "}
                             for{" "}
-                            <span className="text-slate-200 font-bold">
+                            <span className="text-red-100 font-bold">
                               {forcedActionCaptainName}
                             </span>
                           </>
@@ -1949,6 +1970,7 @@ export function GameBoard({
                   player={me}
                   isOpponent={false}
                   isCurrentTurn={me.id === currentPlayer?.id}
+                  attentionVariant={standAttentionVariantForPlayer(me.id)}
                   turnOrder={myOrder}
                   statusContent={getStatusContent(
                     gameState,
@@ -1956,7 +1978,7 @@ export function GameBoard({
                     currentPlayer,
                     isMyTurn,
                     isSetup,
-                    forcedActionCaptainName,
+                    actionAttention,
                     currentPlayer?.isBot ?? false,
                   )}
                   onCharacterClick={
@@ -2287,12 +2309,10 @@ function getStatusContent(
   currentPlayer: ClientGameState["players"][number] | undefined,
   isMyTurn: boolean,
   isSetup: boolean,
-  forcedActionCaptainName: string | undefined,
+  actionAttention: ActionAttention,
   isCurrentPlayerBot: boolean,
 ): React.ReactNode {
   if (gameState.phase === "finished") return null;
-
-  const pendingForcedAction = gameState.pendingForcedAction;
 
   // Turn distance for "you're next" / "N more turns" hint
   const myIndex = gameState.players.findIndex((p) => p.id === playerId);
@@ -2302,165 +2322,6 @@ function getStatusContent(
         gameState.players.length
       : 0;
 
-  // --- Forced action messages (playing phase only) ---
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "mission46SevensCut"
-  ) {
-    if (pendingForcedAction.playerId === playerId) {
-      return (
-        <span className="inline-flex items-center gap-2">
-          <span className="bg-amber-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
-            Forced
-          </span>
-          <span className="text-amber-300 font-bold">
-            Mission 46: select 4 wires for the simultaneous 7-cut.
-          </span>
-        </span>
-      );
-    }
-
-    const forcedPlayerName =
-      gameState.players.find((player) => player.id === pendingForcedAction.playerId)
-        ?.name ?? "the active player";
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">{forcedPlayerName}</span>{" "}
-        to resolve Mission 46&apos;s forced simultaneous 7-cut...
-      </span>
-    );
-  }
-
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "chooseNextPlayer" &&
-    pendingForcedAction.captainId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the Captain"}
-        </span>{" "}
-        to choose the next player...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "designateCutter" &&
-    pendingForcedAction.designatorId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the active player"}
-        </span>{" "}
-        to designate who cuts...
-        {pendingForcedAction.value && (
-          <span className="text-gray-500 ml-1">
-            (Number card:{" "}
-            <span className="text-white font-bold">
-              {pendingForcedAction.value}
-            </span>
-            )
-          </span>
-        )}
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "mission22TokenPass" &&
-    pendingForcedAction.currentChooserId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the active player"}
-        </span>{" "}
-        to choose a token value to pass...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "mission27TokenDraft" &&
-    pendingForcedAction.currentChooserId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the active player"}
-        </span>{" "}
-        to draft a token value...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "detectorTileChoice" &&
-    pendingForcedAction.targetPlayerId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the target player"}
-        </span>{" "}
-        to confirm...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === "talkiesWalkiesTileChoice" &&
-    pendingForcedAction.targetPlayerId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the target player"}
-        </span>{" "}
-        to choose a wire for Walkie-Talkies...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE &&
-    pendingForcedAction.captainId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the Captain"}
-        </span>{" "}
-        to rotate the constraints this round...
-      </span>
-    );
-  }
-  if (
-    gameState.phase === "playing" &&
-    pendingForcedAction?.kind === FORCED_ACTION_MISSION36_SEQUENCE_POSITION &&
-    pendingForcedAction.captainId !== playerId
-  ) {
-    return (
-      <span className="text-gray-300">
-        Waiting for{" "}
-        <span className="text-yellow-400 font-bold">
-          {forcedActionCaptainName ?? "the Captain"}
-        </span>{" "}
-        to choose the active Mission 36 sequence side...
-      </span>
-    );
-  }
   // --- Setup phase ---
   if (isSetup && isMyTurn) {
     return (
@@ -2481,8 +2342,103 @@ function getStatusContent(
       </span>
     );
   }
+  // --- Playing phase ---
+  if (gameState.phase === "playing") {
+    const { forcedKind, forcedActorName, progressStep, progressTotal } = actionAttention;
+    const progressText =
+      progressStep != null && progressTotal != null
+        ? ` (step ${progressStep}/${progressTotal})`
+        : "";
+
+    if (actionAttention.state === "forced_actor" || actionAttention.state === "forced_reveal_reds") {
+      let forcedText = "Resolve the mission-required action.";
+      switch (forcedKind) {
+        case "chooseNextPlayer":
+          forcedText = "Choose who acts next.";
+          break;
+        case "designateCutter":
+          forcedText = "Designate who cuts.";
+          break;
+        case "mission22TokenPass":
+          forcedText = `Choose a token to pass${progressText}.`;
+          break;
+        case "mission27TokenDraft":
+          forcedText = `Draft one token${progressText}.`;
+          break;
+        case "detectorTileChoice":
+          forcedText = "Resolve detector confirmation.";
+          break;
+        case "talkiesWalkiesTileChoice":
+          forcedText = "Choose your swap wire.";
+          break;
+        case FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE:
+          forcedText = "Choose the Mission 61 constraint rotation.";
+          break;
+        case FORCED_ACTION_MISSION36_SEQUENCE_POSITION:
+          forcedText = "Choose the active Mission 36 sequence edge.";
+          break;
+        case "mission46SevensCut":
+          forcedText = "Mission 46: select 4 wires for the simultaneous 7-cut.";
+          break;
+        case "revealRedsRequired":
+          forcedText = "Reveal Reds is required now.";
+          break;
+      }
+      return (
+        <span className="inline-flex items-center gap-2">
+          <span className="bg-red-500 text-white font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+            Forced Action
+          </span>
+          <span className="text-red-100 font-bold">{forcedText}</span>
+        </span>
+      );
+    }
+
+    if (actionAttention.state === "forced_waiting") {
+      const waitingFor = forcedActorName ?? "a teammate";
+      let waitingText = "to resolve a mission action";
+      switch (forcedKind) {
+        case "chooseNextPlayer":
+          waitingText = "to choose the next player";
+          break;
+        case "designateCutter":
+          waitingText = "to designate who cuts";
+          break;
+        case "mission22TokenPass":
+          waitingText = `to choose a token value to pass${progressText}`;
+          break;
+        case "mission27TokenDraft":
+          waitingText = `to draft a token value${progressText}`;
+          break;
+        case "detectorTileChoice":
+          waitingText = "to resolve detector confirmation";
+          break;
+        case "talkiesWalkiesTileChoice":
+          waitingText = "to choose a wire for Walkie-Talkies";
+          break;
+        case FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE:
+          waitingText = "to rotate the constraints this round";
+          break;
+        case FORCED_ACTION_MISSION36_SEQUENCE_POSITION:
+          waitingText = "to choose the active Mission 36 sequence side";
+          break;
+        case "mission46SevensCut":
+          waitingText = "to resolve Mission 46's forced simultaneous 7-cut";
+          break;
+      }
+
+      return (
+        <span className="text-gray-300">
+          Waiting for{" "}
+          <span className="text-red-300 font-bold">{waitingFor}</span>{" "}
+          {waitingText}...
+        </span>
+      );
+    }
+  }
+
   // --- Playing phase: normal turn ---
-  if (gameState.phase === "playing" && isMyTurn) {
+  if (gameState.phase === "playing" && actionAttention.state === "normal_turn") {
     return (
       <span className="inline-flex items-center gap-2">
         <span className="bg-yellow-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
@@ -2492,7 +2448,7 @@ function getStatusContent(
       </span>
     );
   }
-  if (gameState.phase === "playing" && !isMyTurn) {
+  if (gameState.phase === "playing" && actionAttention.state === "normal_waiting") {
     return isCurrentPlayerBot ? (
       <span className="inline-flex items-center gap-2 text-gray-300">
         <span className="inline-block w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
@@ -2527,21 +2483,21 @@ function Mission46SevensCutPanel({
 
   return (
     <div
-      className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs space-y-2"
+      className={PANEL_FORCED_CLASS}
       data-testid="mission46-sevens-cut-panel"
     >
-      <div className="font-bold text-amber-300 uppercase tracking-wide">
+      <div className={PANEL_FORCED_TITLE_CLASS}>
         Mission 46 Forced Action
       </div>
-      <div className="text-amber-100">
+      <div className={PANEL_FORCED_TEXT_CLASS}>
         Select exactly 4 uncut wires to attempt the simultaneous 7-wire cut.
       </div>
-      <div className="text-amber-200/90">{selectedCount}/4 wires selected</div>
+      <div className={PANEL_FORCED_SUBTEXT_CLASS}>{selectedCount}/4 wires selected</div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onClear}
-          className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold transition-colors"
+          className={BUTTON_SECONDARY_CLASS}
         >
           Clear
         </button>
@@ -2549,11 +2505,7 @@ function Mission46SevensCutPanel({
           type="button"
           onClick={onConfirm}
           disabled={!canConfirm}
-          className={`px-3 py-1 rounded font-black transition-colors ${
-            canConfirm
-              ? "bg-red-600 hover:bg-red-500 text-white"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
+          className={BUTTON_FORCED_PRIMARY_CLASS}
         >
           Confirm 4-Wire Cut
         </button>

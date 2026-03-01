@@ -65,6 +65,7 @@ describe("GameBoard mission 27 token draft forced action", () => {
     expect(html).toContain("data-testid=\"mission27-token-draft-panel\"");
     expect(html).toContain("data-testid=\"mission27-token-0\"");
     expect(html).toContain("data-testid=\"mission27-token-6\"");
+    expect(html).toContain("Step 1/2");
     expect(html).not.toContain("data-testid=\"forced-action-fallback-captain\"");
   });
 
