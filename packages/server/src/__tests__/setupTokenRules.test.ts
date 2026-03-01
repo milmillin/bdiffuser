@@ -377,10 +377,10 @@ describe("setupTokenRules", () => {
       expect(placements).toEqual([
         {
           playerId: "captain",
-          token: { value: 1, position: 0, isYellow: false },
+          token: { value: 1, position: -1, isYellow: false },
         },
       ]);
-      expect(captain.infoTokens).toEqual([{ value: 1, position: 0, isYellow: false }]);
+      expect(captain.infoTokens).toEqual([{ value: 1, position: -1, isYellow: false }]);
       expect(partner.infoTokens).toEqual([]);
       expect(allSetupInfoTokensPlaced(state)).toBe(true);
     });
