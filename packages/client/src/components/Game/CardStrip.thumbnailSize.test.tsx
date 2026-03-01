@@ -43,4 +43,26 @@ describe("CardStrip thumbnail sizing", () => {
       expect.arrayContaining(["w-[13.5rem]", "sm:w-[15rem]", "shrink-0"]),
     );
   });
+
+  it("renders personal skill thumbnails at 1.5x width", () => {
+    const html = renderToStaticMarkup(
+      <CardStrip
+        equipment={[]}
+        character="double_detector"
+        characterUsed={false}
+        isMyTurn={true}
+        canSelectCards={true}
+        selectedCardId={null}
+        onSelectPersonalSkill={vi.fn(() => true)}
+      />,
+    );
+
+    const classes = classesForTestId(
+      html,
+      "card-strip-thumb-character-double_detector",
+    );
+    expect(classes).toEqual(
+      expect.arrayContaining(["w-[13.5rem]", "sm:w-[15rem]", "shrink-0"]),
+    );
+  });
 });

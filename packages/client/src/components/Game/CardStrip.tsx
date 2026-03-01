@@ -251,10 +251,7 @@ export function CardStrip({
               const buttonCursorClass = isCardEnabled
                 ? "cursor-pointer"
                 : "cursor-default";
-              const cardWidthClass =
-                card.kind === "equipment"
-                  ? "w-[13.5rem] sm:w-[15rem]"
-                  : "w-36 sm:w-40";
+              const cardWidthClass = "w-[13.5rem] sm:w-[15rem]";
               return (
                 <div
                   key={card.id}
