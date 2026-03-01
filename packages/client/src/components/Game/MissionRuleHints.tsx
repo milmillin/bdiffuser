@@ -124,6 +124,7 @@ function CampaignObjectCard({
   rotatedFrameClassName,
   badgeLabel,
   sizeClassName,
+  testId,
   imageFit,
   overlayNode,
   onClick,
@@ -142,6 +143,8 @@ function CampaignObjectCard({
   badgeLabel?: string;
   /** Override the default outer width classes (e.g. larger cards). */
   sizeClassName?: string;
+  /** Optional test id on card thumbnail wrapper. */
+  testId?: string;
   /** Override the default image fit mode. */
   imageFit?: "cover" | "contain";
   /** Optional absolute-positioned overlay rendered over the card image. */
@@ -167,6 +170,7 @@ function CampaignObjectCard({
   if (isRotated) {
     return (
       <div
+        data-testid={testId}
         className={`flex ${widthClass} shrink-0 items-center justify-center rounded-xl overflow-hidden transition-transform duration-150 ease-out hover:scale-[1.01]`}
       >
         <button
@@ -212,6 +216,7 @@ function CampaignObjectCard({
 
   return (
     <div
+      data-testid={testId}
       className={`flex ${widthClass} shrink-0 flex-col rounded-xl overflow-hidden transition-transform duration-150 ease-out hover:scale-[1.01]`}
     >
       <button
@@ -455,7 +460,7 @@ function CampaignObjectsHint({
           { label: "Action", card: mission66ActionConstraint, slotIndex: null },
         ]
       : [];
-  const perPlayerConstraints: { playerName: string; cards: typeof globalConstraints }[] = [];
+  const perPlayerConstraints: { playerId: string; playerName: string; cards: typeof globalConstraints }[] = [];
   for (const [playerId, cards] of Object.entries(campaign.constraints?.perPlayer ?? {})) {
     const activeCards = cards.filter((constraint) => constraint.active);
     if (activeCards.length === 0) continue;
@@ -463,6 +468,7 @@ function CampaignObjectsHint({
       gameState.players.find((player) => player.id === playerId)?.name ??
       playerId;
     perPlayerConstraints.push({
+      playerId,
       playerName,
       cards: activeCards,
     });
@@ -495,6 +501,8 @@ function CampaignObjectsHint({
     if (sequencePointer != null && marker.kind === "sequence_pointer") return false;
     return true;
   });
+  const numberThumbnailSizeClass = "w-[7.5rem] sm:w-[9rem]";
+  const constraintThumbnailSizeClass = "w-[11.25rem] sm:w-[13.5rem]";
 
   const hasNumberCardContent =
     cutterImage != null ||
@@ -581,6 +589,8 @@ function CampaignObjectsHint({
                       key={card.id}
                       image={image}
                       borderClassName={borderClassName}
+                      sizeClassName={numberThumbnailSizeClass}
+                      testId={`mission-hint-thumb-number-visible-${card.id}`}
                       dimmed={dimmed}
                       onClick={() =>
                         setPreviewCard({
@@ -598,6 +608,8 @@ function CampaignObjectsHint({
                   <CampaignObjectCard
                     image={NUMBER_CARD_BACK}
                     borderClassName="border-slate-500"
+                    sizeClassName={numberThumbnailSizeClass}
+                    testId="mission-hint-thumb-number-deck"
                     badgeLabel={String(deckCount)}
                     onClick={() =>
                       setPreviewCard({
@@ -612,6 +624,8 @@ function CampaignObjectsHint({
                   <CampaignObjectCard
                     image={NUMBER_CARD_BACK}
                     borderClassName="border-black/75"
+                    sizeClassName={numberThumbnailSizeClass}
+                    testId="mission-hint-thumb-number-discard"
                     badgeLabel={String(discardCount)}
                     dimmed
                     overlayLabel="Used"
@@ -640,6 +654,8 @@ function CampaignObjectsHint({
                       borderClassName={
                         card.faceUp ? "border-sky-500" : "border-black/75"
                       }
+                        sizeClassName={numberThumbnailSizeClass}
+                        testId={`mission-hint-thumb-number-hand-${entry.playerId}-${card.id}-${idx}`}
                         dimmed={!card.faceUp}
                         overlayLabel={card.faceUp ? undefined : "Down"}
                         onClick={() =>
@@ -675,7 +691,8 @@ function CampaignObjectsHint({
                     key={`global-${constraint.id}`}
                     image={image}
                     borderClassName="border-rose-500"
-                    sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                    sizeClassName={constraintThumbnailSizeClass}
+                    testId={`mission-hint-thumb-constraint-global-${constraint.id}`}
                     onClick={() =>
                       setPreviewCard({
                         name: `Constraint ${constraint.id}`,
@@ -696,7 +713,8 @@ function CampaignObjectsHint({
                       key={`${entry.playerName}-${constraint.id}`}
                       image={image}
                       borderClassName="border-amber-500"
-                      sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                      sizeClassName={constraintThumbnailSizeClass}
+                      testId={`mission-hint-thumb-constraint-player-${constraint.id}-${entry.playerId}`}
                       onClick={() =>
                         setPreviewCard({
                           name: `Constraint ${constraint.id}`,
@@ -715,7 +733,8 @@ function CampaignObjectsHint({
                   key={`mission66-action-${mission66ActionConstraint.id}`}
                   image={getConstraintCardImage(mission66ActionConstraint.id)}
                   borderClassName="border-fuchsia-500"
-                  sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                  sizeClassName={constraintThumbnailSizeClass}
+                  testId={`mission-hint-thumb-constraint-action-${mission66ActionConstraint.id}`}
                   badgeLabel="ACT"
                   onClick={() =>
                     setPreviewCard({
@@ -1090,7 +1109,8 @@ function CampaignObjectsHint({
                                             ? "border-cyan-500"
                                             : "border-rose-500"
                                       }
-                                      sizeClassName="w-[7.5rem] sm:w-[9rem]"
+                                      sizeClassName={constraintThumbnailSizeClass}
+                                      testId={`mission-hint-thumb-constraint-slot-${slot.label}-${slot.card.id}`}
                                       onClick={() =>
                                         setPreviewCard({
                                           name: `Constraint ${slot.card.id} (${slot.label})`,

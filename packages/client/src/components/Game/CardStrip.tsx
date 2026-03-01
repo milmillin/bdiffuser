@@ -32,6 +32,7 @@ function formatLockRequirement(value: string | number, cuts: number): string {
 type StackCard = CardPreviewCard & {
   kind: "character" | "equipment";
   id: string;
+  entityId: string;
   image: string | null;
   isUsed: boolean;
   isLocked: boolean;
@@ -141,6 +142,7 @@ export function CardStrip({
       builtCards.push({
         kind: "character",
         id: `personal-${character}`,
+        entityId: character,
         name: charText.name,
         image: skillUsed ? "character_back.png" : charImage,
         previewImage: charImage,
@@ -183,6 +185,7 @@ export function CardStrip({
       builtCards.push({
         kind: "equipment",
         id: `equipment-${eq.id}`,
+        entityId: eq.id,
         name: eq.name,
         image: showBackImage ? "equipment_back.png" : eq.image,
         previewImage: eq.faceDown ? "equipment_back.png" : eq.image,
@@ -248,10 +251,15 @@ export function CardStrip({
               const buttonCursorClass = isCardEnabled
                 ? "cursor-pointer"
                 : "cursor-default";
+              const cardWidthClass =
+                card.kind === "equipment"
+                  ? "w-[13.5rem] sm:w-[15rem]"
+                  : "w-36 sm:w-40";
               return (
                 <div
                   key={card.id}
-                  className={`flex w-36 shrink-0 sm:w-40 flex-col items-stretch gap-0 rounded-xl overflow-hidden transition-transform duration-150 ease-out ${headerBgClass} ${wrapperScaleClass} ${wrapperHoverClass}`}
+                  data-testid={`card-strip-thumb-${card.kind}-${card.entityId}`}
+                  className={`flex ${cardWidthClass} shrink-0 flex-col items-stretch gap-0 rounded-xl overflow-hidden transition-transform duration-150 ease-out ${headerBgClass} ${wrapperScaleClass} ${wrapperHoverClass}`}
                 >
                   <div
                     className="w-full rounded-t-xl rounded-b-none pl-3 pr-2 py-1 text-left text-[9px] font-bold uppercase leading-none"
