@@ -150,3 +150,49 @@ describe("GameBoard mission 26 number cards", () => {
     expect(index9).toBeLessThan(index11);
   });
 });
+
+describe("GameBoard mission 47 number cards", () => {
+  it("renders visible number cards sorted by value", () => {
+    const state = makeGameState({
+      mission: 47,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "m1", color: "blue", gameValue: 4, sortValue: 4 }),
+          ],
+        }),
+        makePlayer({
+          id: "p2",
+          hand: [makeTile({ id: "p1", color: "blue", gameValue: 5, sortValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: {
+        numberCards: {
+          visible: [
+            { id: "m47-nine", value: 9, faceUp: true },
+            { id: "m47-two", value: 2, faceUp: true },
+            { id: "m47-eleven", value: 11, faceUp: true },
+          ],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const html = renderBoard(toClientGameState(state, "me"), "me");
+
+    const index2 = html.indexOf("number_2.png");
+    const index9 = html.indexOf("number_9.png");
+    const index11 = html.indexOf("number_11.png");
+
+    expect(index2).toBeGreaterThan(-1);
+    expect(index9).toBeGreaterThan(-1);
+    expect(index11).toBeGreaterThan(-1);
+    expect(index2).toBeLessThan(index9);
+    expect(index9).toBeLessThan(index11);
+  });
+});

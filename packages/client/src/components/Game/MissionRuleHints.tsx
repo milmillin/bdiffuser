@@ -427,7 +427,7 @@ function CampaignObjectsHint({
 
   const visibleCards = campaign.numberCards?.visible ?? [];
   const displayVisibleCards =
-    gameState.mission === 26
+    gameState.mission === 26 || gameState.mission === 47
       ? [...visibleCards].sort((a, b) => a.value - b.value || a.id.localeCompare(b.id))
       : visibleCards;
   const deckCount = campaign.numberCards?.deck.length ?? 0;

@@ -356,11 +356,9 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards!.visible.every((card) => card.faceUp)).toBe(true);
       expect(numberCards!.deck).toHaveLength(0);
       expect(numberCards!.discard).toHaveLength(0);
-
-      const values = [...new Set(numberCards!.visible.map((card) => card.value))].sort(
-        (a, b) => a - b,
-      );
-      expect(values).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+      expect(numberCards!.visible.map((card) => card.value)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      ]);
     });
 
     it("mission 26: initializes all Number cards faceup and empty deck/discard", () => {
@@ -1294,7 +1292,7 @@ describe("missionHooks dispatcher", () => {
       expect(state.campaign?.mission59Nano?.facing).toBe(1);
     });
 
-    it("mission 47: discards two Number cards when a valid cut action resolves", () => {
+    it("mission 47: flips used Number cards face-down when a valid cut action resolves", () => {
       const actor = makePlayer({
         id: "actor",
         hand: [makeTile({ id: "a1", gameValue: 4, cut: false })],
@@ -1334,13 +1332,16 @@ describe("missionHooks dispatcher", () => {
         cutSuccess: true,
       });
 
-      expect(state.campaign?.numberCards?.visible).toHaveLength(1);
-      expect(state.campaign?.numberCards?.discard).toHaveLength(2);
-      expect(state.campaign?.numberCards?.visible?.some((card) => card.id === "c9")).toBe(true);
-      expect(state.campaign?.numberCards?.discard.every((card) => card.faceUp)).toBe(true);
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards?.visible).toHaveLength(3);
+      expect(numberCards?.discard).toHaveLength(0);
+      const faceUpById = new Map(numberCards?.visible.map((card) => [card.id, card.faceUp]));
+      expect(faceUpById.get("c3")).toBe(false);
+      expect(faceUpById.get("c4")).toBe(false);
+      expect(faceUpById.get("c9")).toBe(true);
     });
 
-    it("mission 47: reshuffles discarded Number cards when none remain visible", () => {
+    it("mission 47: flips all Number cards face-up when every card is face-down", () => {
       const actor = makePlayer({
         id: "actor",
         hand: [makeTile({ id: "a1", gameValue: 4, cut: false })],
@@ -1383,6 +1384,43 @@ describe("missionHooks dispatcher", () => {
       expect(state.campaign?.numberCards?.discard).toHaveLength(0);
       expect(state.campaign?.numberCards?.visible.every((card) => card.faceUp)).toBe(true);
       expect(state.campaign?.numberCards?.visible.map((card) => card.id).sort()).toEqual(["c1", "c11"]);
+    });
+
+    it("mission 47: migrates legacy discard cards into sorted visible face-down cards", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
+      });
+      const state = makeGameState({
+        mission: 47,
+        players: [actor],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "c9", value: 9, faceUp: true },
+              { id: "c3", value: 3, faceUp: true },
+            ],
+            deck: [],
+            discard: [
+              { id: "c11", value: 11, faceUp: true },
+              { id: "c1", value: 1, faceUp: true },
+            ],
+            playerHands: {},
+          },
+        },
+      });
+
+      dispatchHooks(47, { point: "endTurn", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards?.discard).toEqual([]);
+      expect(numberCards?.visible.map((card) => card.value)).toEqual([1, 3, 9, 11]);
+      const faceUpById = new Map(numberCards?.visible.map((card) => [card.id, card.faceUp]));
+      expect(faceUpById.get("c1")).toBe(false);
+      expect(faceUpById.get("c11")).toBe(false);
+      expect(faceUpById.get("c3")).toBe(true);
+      expect(faceUpById.get("c9")).toBe(true);
     });
 
     it("mission 11: does not trigger loss for non-matching blue value", () => {
@@ -3470,6 +3508,50 @@ describe("missionHooks dispatcher", () => {
           type: "soloCut",
           actorId: "p1",
           value: 12,
+        },
+      });
+      expect(allowed.validationError).toBeUndefined();
+    });
+
+    it("mission 47: ignores face-down cards when validating arithmetic targets", () => {
+      const actor = makePlayer({ id: "p1", hand: [makeTile({ id: "a1", gameValue: 7, cut: false })] });
+      const state = makeGameState({
+        mission: 47,
+        players: [actor],
+        campaign: {
+          numberCards: {
+            visible: [
+              { id: "m47-visible-3", value: 3, faceUp: true },
+              { id: "m47-visible-9", value: 9, faceUp: false },
+              { id: "m47-visible-10", value: 10, faceUp: true },
+            ],
+            deck: [],
+            discard: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      const blocked = dispatchHooks(47, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 12,
+        },
+      });
+
+      expect(blocked.validationCode).toBe("MISSION_RULE_VIOLATION");
+      expect(blocked.validationError).toContain("Legal values: 7");
+
+      const allowed = dispatchHooks(47, {
+        point: "validate",
+        state,
+        action: {
+          type: "soloCut",
+          actorId: "p1",
+          value: 7,
         },
       });
       expect(allowed.validationError).toBeUndefined();

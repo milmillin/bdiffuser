@@ -5443,6 +5443,62 @@ function getCurrentPlayerHasUncutCards(state: Readonly<GameState>): boolean {
   return currentPlayer.hand.some((tile) => !tile.cut);
 }
 
+function sortMission47Cards<T extends { id: string; value: number }>(
+  cards: ReadonlyArray<T>,
+): T[] {
+  return [...cards].sort((a, b) => a.value - b.value || a.id.localeCompare(b.id));
+}
+
+function getMission47AvailableCards(
+  numberCards: Pick<NumberCardState, "visible" | "discard">,
+): Array<{ id: string; value: number; faceUp: boolean }> {
+  const faceUpVisible = numberCards.visible.filter((card) => card.faceUp);
+  if (faceUpVisible.length > 0) return sortMission47Cards(faceUpVisible);
+  if (numberCards.visible.length > 0) return sortMission47Cards(numberCards.visible);
+  if (numberCards.discard.length > 0) return sortMission47Cards(numberCards.discard);
+  return [];
+}
+
+function normalizeMission47CardState(state: GameState): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  if (numberCards.discard.length > 0) {
+    const existingIds = new Set(numberCards.visible.map((card) => card.id));
+    for (const card of numberCards.discard) {
+      if (existingIds.has(card.id)) continue;
+      numberCards.visible.push({
+        ...card,
+        faceUp: false,
+      });
+      existingIds.add(card.id);
+    }
+    numberCards.discard = [];
+  }
+
+  numberCards.visible = sortMission47Cards(numberCards.visible);
+}
+
+function refreshMission47CardsIfExhausted(state: GameState, actorId: string): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+  if (numberCards.visible.length === 0) return;
+  if (numberCards.visible.some((card) => card.faceUp)) return;
+
+  for (const card of numberCards.visible) {
+    card.faceUp = true;
+  }
+  numberCards.visible = sortMission47Cards(numberCards.visible);
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: `add_subtract_number_cards:reshuffle|count=${numberCards.visible.length}`,
+    timestamp: Date.now(),
+  });
+}
+
 function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: string): boolean {
   const actor = state.players.find((player) => player.id === actorId);
   if (!actor) return false;
@@ -5451,7 +5507,11 @@ function canCurrentPlayerPlayMission47(state: Readonly<GameState>, actorId: stri
   const actorHasNonRed = actorUncutValues.some((tile) => tile.gameValue !== "RED");
   if (!actorHasNonRed) return true;
 
-  const possibleTargets = getMission47PossibleTargets(state.campaign?.numberCards?.visible ?? []);
+  const possibleTargets = getMission47PossibleTargets(
+    state.campaign?.numberCards
+      ? getMission47AvailableCards(state.campaign.numberCards)
+      : [],
+  );
   if (possibleTargets.length === 0) return false;
 
   const legalTargets = new Set(possibleTargets);
@@ -5554,27 +5614,6 @@ function getMission47PossibleTargets(cards: ReadonlyArray<{ value: number }>): n
     }
   }
   return [...targets].sort((a, b) => a - b);
-}
-
-function recycleMission47Cards(ctx: ResolveHookContext): void {
-  const numberCards = ctx.state.campaign?.numberCards;
-  if (!numberCards) return;
-  if (numberCards.visible.length !== 0) return;
-  if (numberCards.discard.length === 0) return;
-
-  numberCards.visible = shuffle([...numberCards.discard]);
-  for (const card of numberCards.visible) {
-    card.faceUp = true;
-  }
-  numberCards.discard = [];
-
-  pushGameLog(ctx.state, {
-    turn: ctx.state.turnNumber,
-    playerId: ctx.action.actorId,
-    action: "hookEffect",
-    detail: `add_subtract_number_cards:reshuffle|count=${numberCards.visible.length}`,
-    timestamp: Date.now(),
-  });
 }
 
 function getMission29CompletedValues(state: Readonly<GameState>): Set<number> {
@@ -6040,7 +6079,7 @@ registerHookHandler<"squeak_number_challenge">("squeak_number_challenge", {
  */
 registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
   setup(_rule: AddSubtractNumberCardsRuleDef, ctx: SetupHookContext): void {
-    const visibleValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const visibleValues = [...MISSION_NUMBER_VALUES];
 
     ctx.state.campaign ??= {};
     ctx.state.campaign.numberCards = {
@@ -6081,7 +6120,7 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
       };
     }
 
-    const remaining = [...numberCards.visible];
+    const remaining = [...getMission47AvailableCards(numberCards)];
     const attemptedValues = getMission47AttemptedValues(ctx.action);
     if (attemptedValues.length === 0) {
       return {
@@ -6138,13 +6177,16 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
       return;
     }
 
+    normalizeMission47CardState(ctx.state);
+    refreshMission47CardsIfExhausted(ctx.state, ctx.action.actorId);
+
     const numberCards = ctx.state.campaign?.numberCards;
     if (!numberCards) return;
-    const remaining = [...numberCards.visible];
+    const remaining = [...getMission47AvailableCards(numberCards)];
     const attemptedValues = getMission47AttemptedValues(ctx.action);
     if (attemptedValues.length === 0) return;
 
-    const usedCards: typeof numberCards.visible = [];
+    const usedCardIds = new Set<string>();
     for (const attemptedValue of attemptedValues) {
       if (typeof attemptedValue !== "number") continue;
       const pair = findMission47PairForTarget(remaining, attemptedValue);
@@ -6153,30 +6195,36 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
       const sorted = pair[0] > pair[1] ? [pair[0], pair[1]] : [pair[1], pair[0]];
       const firstCard = remaining.splice(sorted[0], 1)[0];
       const secondCard = remaining.splice(sorted[1], 1)[0];
-      if (firstCard) usedCards.push(firstCard);
-      if (secondCard) usedCards.push(secondCard);
+      if (firstCard) usedCardIds.add(firstCard.id);
+      if (secondCard) usedCardIds.add(secondCard.id);
     }
-    if (usedCards.length === 0) return;
+    if (usedCardIds.size === 0) return;
 
-    for (const card of usedCards) {
-      card.faceUp = true;
-      numberCards.discard.push(card);
+    for (const card of numberCards.visible) {
+      if (usedCardIds.has(card.id)) {
+        card.faceUp = false;
+      }
     }
-    numberCards.visible = remaining;
+
+    const remainingCount = numberCards.visible.filter((card) => card.faceUp).length;
 
     pushGameLog(ctx.state, {
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
-      detail: `add_subtract_number_cards:consumed=${usedCards.length}|remaining=${remaining.length}`,
+      detail: `add_subtract_number_cards:consumed=${usedCardIds.size}|remaining=${remainingCount}`,
       timestamp: Date.now(),
     });
 
-    recycleMission47Cards(ctx);
+    refreshMission47CardsIfExhausted(ctx.state, ctx.action.actorId);
   },
 
   endTurn(_rule: AddSubtractNumberCardsRuleDef, ctx: EndTurnHookContext): void {
     if (ctx.state.phase === "finished" || ctx.state.mission !== 47) return;
+
+    normalizeMission47CardState(ctx.state);
+    const refreshActorId = ctx.state.players[ctx.state.currentPlayerIndex]?.id ?? "system";
+    refreshMission47CardsIfExhausted(ctx.state, refreshActorId);
 
     const playerCount = ctx.state.players.length;
     const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
