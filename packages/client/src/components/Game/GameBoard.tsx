@@ -590,7 +590,7 @@ export function GameBoard({
   const actionAttention = deriveActionAttentionState({
     gameState,
     playerId,
-    revealRedsForcedForActor,
+    revealRedsForcedNow: revealRedsForced,
   });
   const standAttentionVariantForPlayer = (standPlayerId: string): "none" | "turn" | "forced" => {
     if (actionAttention.forcedActorId === standPlayerId) return "forced";

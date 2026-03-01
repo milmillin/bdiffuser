@@ -1,8 +1,7 @@
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { ClientGameState, GameState } from "@bomb-busters/shared";
 import { makeGameState, makePlayer, makeTile } from "@bomb-busters/shared/testing";
-import { GameBoard } from "./GameBoard.js";
+import { deriveActionAttentionState } from "./forcedActionAttention.js";
 
 function toClientGameState(state: GameState, playerId: string): ClientGameState {
   return {
@@ -15,14 +14,8 @@ function toClientGameState(state: GameState, playerId: string): ClientGameState 
   } as unknown as ClientGameState;
 }
 
-function renderBoard(state: ClientGameState, playerId: string): string {
-  return renderToStaticMarkup(
-    <GameBoard gameState={state} send={vi.fn()} playerId={playerId} chatMessages={[]} />,
-  );
-}
-
-describe("GameBoard forced attention states", () => {
-  it("highlights the forced actor stand in red when forced actor differs from current player", () => {
+describe("deriveActionAttentionState", () => {
+  it("returns forced_actor when pending action targets local player", () => {
     const state = makeGameState({
       mission: 10,
       phase: "playing",
@@ -35,7 +28,7 @@ describe("GameBoard forced attention states", () => {
         }),
         makePlayer({
           id: "p2",
-          name: "Bob",
+          name: "Buddy",
           hand: [makeTile({ id: "b1", gameValue: 5 })],
         }),
       ],
@@ -43,18 +36,51 @@ describe("GameBoard forced attention states", () => {
       pendingForcedAction: {
         kind: "chooseNextPlayer",
         captainId: "captain",
-        lastPlayerId: "p2",
       },
     });
+    const clientState = toClientGameState(state, "captain");
 
-    const html = renderBoard(toClientGameState(state, "p2"), "p2");
+    const attention = deriveActionAttentionState({
+      gameState: clientState,
+      playerId: "captain",
+      revealRedsForcedNow: false,
+    });
 
-    expect(html).toContain("data-testid=\"player-stand-captain\"");
-    expect(html).toContain(">FORCED<");
-    expect(html).toContain("to choose the next player");
+    expect(attention.state).toBe("forced_actor");
+    expect(attention.forcedKind).toBe("chooseNextPlayer");
+    expect(attention.forcedActorId).toBe("captain");
   });
 
-  it("shows forced-action status copy when Reveal Reds is mandatory", () => {
+  it("returns normal_waiting when reveal-reds condition exists but player cannot act now", () => {
+    const state = makeGameState({
+      mission: 1,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "me",
+          name: "Agent",
+          hand: [makeTile({ id: "r1", color: "red", gameValue: "RED" })],
+        }),
+        makePlayer({
+          id: "p2",
+          name: "Buddy",
+          hand: [makeTile({ id: "b1", gameValue: 5 })],
+        }),
+      ],
+      currentPlayerIndex: 1,
+    });
+    const clientState = toClientGameState(state, "me");
+
+    const attention = deriveActionAttentionState({
+      gameState: clientState,
+      playerId: "me",
+      revealRedsForcedNow: false,
+    });
+
+    expect(attention.state).toBe("normal_waiting");
+  });
+
+  it("returns forced_reveal_reds only when actionable-now flag is true", () => {
     const state = makeGameState({
       mission: 1,
       phase: "playing",
@@ -72,38 +98,16 @@ describe("GameBoard forced attention states", () => {
       ],
       currentPlayerIndex: 0,
     });
+    const clientState = toClientGameState(state, "me");
 
-    const html = renderBoard(toClientGameState(state, "me"), "me");
-
-    expect(html).toContain("Forced Action");
-    expect(html).toContain("Reveal Reds is required now.");
-    expect(html).not.toContain("Choose an action");
-  });
-
-  it("does not show forced Reveal Reds state when local player is not the active player", () => {
-    const state = makeGameState({
-      mission: 1,
-      phase: "playing",
-      players: [
-        makePlayer({
-          id: "me",
-          name: "Agent",
-          hand: [makeTile({ id: "r1", color: "red", gameValue: "RED" })],
-        }),
-        makePlayer({
-          id: "p2",
-          name: "Buddy",
-          hand: [makeTile({ id: "b1", gameValue: 5 })],
-        }),
-      ],
-      currentPlayerIndex: 1,
+    const attention = deriveActionAttentionState({
+      gameState: clientState,
+      playerId: "me",
+      revealRedsForcedNow: true,
     });
 
-    const html = renderBoard(toClientGameState(state, "me"), "me");
-
-    expect(html).not.toContain("Reveal Reds is required now.");
-    expect(html).not.toContain(">FORCED<");
-    expect(html).toContain("Waiting for");
-    expect(html).toContain("Buddy");
+    expect(attention.state).toBe("forced_reveal_reds");
+    expect(attention.forcedActorId).toBe("me");
+    expect(attention.forcedKind).toBe("revealRedsRequired");
   });
 });

@@ -45,11 +45,14 @@ export function useTurnNotification(
 
     const { currentPlayerIndex, players, phase } = gameState;
     const currentPlayerId = players[currentPlayerIndex]?.id ?? null;
-    const revealRedsForcedForActor = isRevealRedsForced(gameState, playerId);
+    const revealRedsForcedNow =
+      phase === "playing" &&
+      currentPlayerId === playerId &&
+      isRevealRedsForced(gameState, playerId);
     const attention = deriveActionAttentionState({
       gameState,
       playerId,
-      revealRedsForcedForActor,
+      revealRedsForcedNow,
     });
     const needsForcedInput =
       attention.state === "forced_actor" ||

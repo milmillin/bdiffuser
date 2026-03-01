@@ -100,11 +100,11 @@ function getPendingForcedMetadata(
 export function deriveActionAttentionState({
   gameState,
   playerId,
-  revealRedsForcedForActor,
+  revealRedsForcedNow,
 }: {
   gameState: ClientGameState;
   playerId: string;
-  revealRedsForcedForActor: boolean;
+  revealRedsForcedNow: boolean;
 }): ActionAttention {
   const forcedMeta = getPendingForcedMetadata(gameState);
   if (forcedMeta) {
@@ -121,7 +121,7 @@ export function deriveActionAttentionState({
     };
   }
 
-  if (gameState.phase === "playing" && revealRedsForcedForActor) {
+  if (revealRedsForcedNow) {
     const me = gameState.players.find((player) => player.id === playerId);
     return {
       state: "forced_reveal_reds",
