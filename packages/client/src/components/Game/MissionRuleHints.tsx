@@ -416,12 +416,14 @@ function CampaignObjectsHint({
   if (!campaign) return null;
 
   const sequenceRule = MISSION_SCHEMAS[gameState.mission]?.hookRules?.find(
-    (r) => r.kind === "sequence_priority",
+    (r) => r.kind === "sequence_priority" || r.kind === "sequence_card_reposition",
   );
   const cutterImage =
     sequenceRule?.kind === "sequence_priority"
       ? CUTTER_CARD_IMAGES[sequenceRule.variant]
-      : undefined;
+      : sequenceRule?.kind === "sequence_card_reposition"
+        ? CUTTER_CARD_IMAGES.face_a
+        : undefined;
 
   const visibleCards = campaign.numberCards?.visible ?? [];
   const displayVisibleCards =
@@ -430,6 +432,24 @@ function CampaignObjectsHint({
       : visibleCards;
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
+  const showNumberDeck = gameState.mission !== 36;
+  const showDeckCard = showNumberDeck && deckCount > 0;
+  const mission36RightEdge = Math.max(0, displayVisibleCards.length - 1);
+  const mission36CutterPlacement =
+    gameState.mission === 36 &&
+    sequenceRule?.kind === "sequence_card_reposition" &&
+    sequencePointer != null
+      ? sequencePointer === 0
+        ? "left"
+        : sequencePointer === mission36RightEdge
+          ? "right"
+          : null
+      : null;
+  const showLeftCutter =
+    sequenceRule?.kind === "sequence_priority" ||
+    mission36CutterPlacement === "left";
+  const showRightCutter = mission36CutterPlacement === "right";
+  const hasCutterCard = cutterImage != null && (showLeftCutter || showRightCutter);
   const numberCardHandsByPlayer = gameState.players
     .map((player) => ({
       playerId: player.id,
@@ -505,10 +525,10 @@ function CampaignObjectsHint({
   const constraintThumbnailSizeClass = "w-[11.25rem] sm:w-[13.5rem]";
 
   const hasNumberCardContent =
-    cutterImage != null ||
+    hasCutterCard ||
     (!hideNumberCards &&
       (displayVisibleCards.length > 0 ||
-        deckCount > 0 ||
+        showDeckCard ||
         discardCount > 0 ||
         numberCardHandsByPlayer.length > 0));
 
@@ -531,17 +551,25 @@ function CampaignObjectsHint({
       <div className="space-y-3">
         {hasNumberCardContent && (
           <SectionShell>
-            {(cutterImage || displayVisibleCards.length > 0 || deckCount > 0 || discardCount > 0) && (
+            {(hasCutterCard || displayVisibleCards.length > 0 || showDeckCard || discardCount > 0) && (
               <CampaignRow>
-                {cutterImage && (
+                {cutterImage && showLeftCutter && (
                   <CampaignObjectCard
                     image={cutterImage}
                     borderClassName="border-emerald-500"
                     landscape
                     rotateCcw90
+                    testId={
+                      mission36CutterPlacement === "left"
+                        ? "mission-hint-thumb-sequence-cutter-left"
+                        : undefined
+                    }
                     onClick={() =>
                       setPreviewCard({
-                        name: `Sequence Priority (${sequenceRule?.variant === "face_a" ? "2 cuts" : "4 cuts"})`,
+                        name:
+                          sequenceRule?.kind === "sequence_priority"
+                            ? `Sequence Priority (${sequenceRule.variant === "face_a" ? "2 cuts" : "4 cuts"})`
+                            : "Mission 36 Sequence Cutter",
                         previewImage: cutterImage,
                         previewAspectRatio: "1037/736",
                         previewRotation: "ccw90",
@@ -604,7 +632,24 @@ function CampaignObjectsHint({
                     />
                   );
                 })}
-                {deckCount > 0 && (
+                {cutterImage && showRightCutter && (
+                  <CampaignObjectCard
+                    image={cutterImage}
+                    borderClassName="border-emerald-500"
+                    landscape
+                    rotateCw90
+                    testId="mission-hint-thumb-sequence-cutter-right"
+                    onClick={() =>
+                      setPreviewCard({
+                        name: "Mission 36 Sequence Cutter",
+                        previewImage: cutterImage,
+                        previewAspectRatio: "1037/736",
+                        previewRotation: "cw90",
+                      })
+                    }
+                  />
+                )}
+                {showDeckCard && (
                   <CampaignObjectCard
                     image={NUMBER_CARD_BACK}
                     borderClassName="border-slate-500"
