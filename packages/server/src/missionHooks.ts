@@ -5577,6 +5577,353 @@ function recycleMission47Cards(ctx: ResolveHookContext): void {
   });
 }
 
+function getMission29CompletedValues(state: Readonly<GameState>): Set<number> {
+  const completed = new Set<number>();
+  for (const value of MISSION_NUMBER_VALUES) {
+    if (getValidationTrackCount(state, value) >= 4) {
+      completed.add(value);
+    }
+  }
+  return completed;
+}
+
+function findMission29ChooserIndex(
+  state: Readonly<GameState>,
+  actorId: string,
+): number | null {
+  const actorIndex = state.players.findIndex((player) => player.id === actorId);
+  if (actorIndex < 0) return null;
+
+  const playerCount = state.players.length;
+  const playerHands = state.campaign?.numberCards?.playerHands ?? {};
+  for (let offset = 1; offset < playerCount; offset += 1) {
+    const candidateIndex = (actorIndex + offset) % playerCount;
+    const candidate = state.players[candidateIndex];
+    const hand = playerHands[candidate.id] ?? [];
+    if (hand.length > 0) return candidateIndex;
+  }
+
+  return null;
+}
+
+function discardMission29CardsForValues(
+  state: GameState,
+  values: ReadonlySet<number>,
+): number {
+  if (values.size === 0) return 0;
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return 0;
+
+  let removed = 0;
+  const discardCard = (card: { id: string; value: number; faceUp: boolean }) => {
+    numberCards.discard.push({
+      ...card,
+      faceUp: true,
+    });
+    removed += 1;
+  };
+
+  numberCards.deck = numberCards.deck.filter((card) => {
+    if (!values.has(card.value)) return true;
+    discardCard(card);
+    return false;
+  });
+  numberCards.visible = numberCards.visible.filter((card) => {
+    if (!values.has(card.value)) return true;
+    discardCard(card);
+    return false;
+  });
+
+  for (const [playerId, hand] of Object.entries(numberCards.playerHands)) {
+    const kept = hand.filter((card) => {
+      if (!values.has(card.value)) return true;
+      discardCard(card);
+      return false;
+    });
+    numberCards.playerHands[playerId] = kept;
+  }
+
+  return removed;
+}
+
+function drawMission29NextValidCard(
+  state: GameState,
+): { id: string; value: number; faceUp: boolean } | null {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return null;
+
+  const completed = getMission29CompletedValues(state);
+  while (numberCards.deck.length > 0) {
+    const nextCard = numberCards.deck.shift()!;
+    if (completed.has(nextCard.value)) {
+      numberCards.discard.push({
+        ...nextCard,
+        faceUp: true,
+      });
+      continue;
+    }
+    return {
+      ...nextCard,
+      faceUp: false,
+    };
+  }
+
+  return null;
+}
+
+function refillMission29Hand(state: GameState, playerId: string): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  const hand = numberCards.playerHands[playerId] ?? [];
+  numberCards.playerHands[playerId] = hand;
+  while (hand.length <= 1) {
+    const drawn = drawMission29NextValidCard(state);
+    if (!drawn) break;
+    hand.push(drawn);
+  }
+}
+
+function refillMission29LowHands(
+  state: GameState,
+  priorityPlayerId?: string,
+): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  if (priorityPlayerId) {
+    refillMission29Hand(state, priorityPlayerId);
+  }
+
+  for (const player of state.players) {
+    if (player.id === priorityPlayerId) continue;
+    refillMission29Hand(state, player.id);
+  }
+}
+
+function moveMission29CardsUnderDeckForEmptyWireHands(state: GameState): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return;
+
+  for (const player of state.players) {
+    const hasUncutWire = player.hand.some((tile) => !tile.cut);
+    if (hasUncutWire) continue;
+
+    const hand = numberCards.playerHands[player.id] ?? [];
+    if (hand.length === 0) continue;
+
+    for (const card of hand) {
+      numberCards.deck.push({
+        ...card,
+        faceUp: false,
+      });
+    }
+    numberCards.playerHands[player.id] = [];
+  }
+}
+
+function discardMission29LastRemainingValueCard(state: GameState): void {
+  const remainingValues = new Set<number>();
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (!tile.cut && typeof tile.gameValue === "number") {
+        remainingValues.add(tile.gameValue);
+      }
+    }
+  }
+  if (remainingValues.size !== 1) return;
+
+  const [lastValue] = [...remainingValues];
+  const removedFromPiles = discardMission29CardsForValues(state, new Set([lastValue]));
+
+  const turn = state.campaign?.mission29Turn;
+  const numberCards = state.campaign?.numberCards;
+  if (turn?.selectedCard?.value === lastValue && numberCards) {
+    numberCards.discard.push({
+      ...turn.selectedCard,
+      faceUp: true,
+    });
+    turn.selectedCard = undefined;
+  }
+
+  if (removedFromPiles > 0) {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail: `hidden_number_card_penalty:last_value_discarded|value=${lastValue}|count=${removedFromPiles}`,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+function queueMission29HiddenCardChoice(
+  state: GameState,
+  actorId: string,
+): void {
+  const chooserIndex = findMission29ChooserIndex(state, actorId);
+  state.campaign ??= {};
+  const campaign = state.campaign;
+
+  if (chooserIndex == null) {
+    campaign.mission29Turn = {
+      actorId,
+      chooserId: actorId,
+      matchedCut: false,
+      skipReveal: false,
+    };
+    state.pendingForcedAction = undefined;
+    return;
+  }
+
+  const chooser = state.players[chooserIndex];
+  campaign.mission29Turn = {
+    actorId,
+    chooserId: chooser.id,
+    matchedCut: false,
+    skipReveal: false,
+  };
+  state.pendingForcedAction = {
+    kind: "mission29HiddenNumberCard",
+    actorId,
+    chooserId: chooser.id,
+  };
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: "system",
+    action: "hookEffect",
+    detail:
+      `hidden_number_card_penalty:choose_hidden|actor=${getLogPlayerLabelById(state, actorId)}` +
+      `|chooser=${getLogPlayerLabel(chooser)}`,
+    timestamp: Date.now(),
+  });
+}
+
+function finalizeMission29Turn(state: GameState): void {
+  const campaign = state.campaign;
+  const numberCards = campaign?.numberCards;
+  const turn = campaign?.mission29Turn;
+  if (!campaign || !numberCards || !turn || !turn.selectedCard) return;
+
+  const selectedCard = turn.selectedCard;
+  const shouldReveal = !turn.skipReveal;
+  if (shouldReveal) {
+    selectedCard.faceUp = true;
+  }
+
+  if (shouldReveal && turn.matchedCut) {
+    state.board.detonatorPosition += 1;
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: turn.actorId,
+      action: "hookEffect",
+      detail:
+        `hidden_number_card_penalty:detonator_advance` +
+        `|player=${getLogPlayerLabelById(state, turn.actorId)}` +
+        `|value=${selectedCard.value}|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.phase = "finished";
+      state.result = "loss_detonator";
+      turn.selectedCard = undefined;
+      return;
+    }
+  }
+
+  const completedValues = getMission29CompletedValues(state);
+  if (completedValues.has(selectedCard.value)) {
+    numberCards.discard.push({
+      ...selectedCard,
+      faceUp: true,
+    });
+  } else {
+    const actorHand = numberCards.playerHands[turn.actorId] ?? [];
+    actorHand.push({
+      ...selectedCard,
+      faceUp: shouldReveal,
+    });
+    numberCards.playerHands[turn.actorId] = actorHand;
+  }
+
+  turn.selectedCard = undefined;
+  turn.matchedCut = false;
+  turn.skipReveal = false;
+}
+
+export function applyMission29HiddenNumberCardChoice(
+  state: GameState,
+  chooserId: string,
+  cardIndex: number,
+): { ok: boolean; message?: string } {
+  if (state.mission !== 29) {
+    return { ok: false, message: "Mission 29 hidden-card choice is not active" };
+  }
+
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission29HiddenNumberCard") {
+    return { ok: false, message: "No pending Mission 29 hidden Number card choice" };
+  }
+  if (forced.chooserId !== chooserId) {
+    return { ok: false, message: "Only the designated chooser can select the hidden Number card" };
+  }
+
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) {
+    return { ok: false, message: "Mission 29 Number cards are not initialized" };
+  }
+
+  const chooserHand = numberCards.playerHands[chooserId];
+  if (!chooserHand || chooserHand.length === 0) {
+    return { ok: false, message: "Chooser has no Number cards available" };
+  }
+
+  if (!Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= chooserHand.length) {
+    return { ok: false, message: "Invalid Mission 29 hidden Number card index" };
+  }
+
+  const selectedCard = chooserHand.splice(cardIndex, 1)[0];
+  selectedCard.faceUp = false;
+
+  state.campaign ??= {};
+  state.campaign.mission29Turn = {
+    actorId: forced.actorId,
+    chooserId: forced.chooserId,
+    selectedCard,
+    matchedCut: false,
+    skipReveal: false,
+  };
+  state.pendingForcedAction = undefined;
+
+  refillMission29LowHands(state, chooserId);
+  discardMission29LastRemainingValueCard(state);
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: chooserId,
+    action: "hookEffect",
+    detail:
+      `hidden_number_card_penalty:selected_hidden` +
+      `|chooser=${getLogPlayerLabelById(state, chooserId)}` +
+      `|actor=${getLogPlayerLabelById(state, forced.actorId)}`,
+    timestamp: Date.now(),
+  });
+
+  return { ok: true };
+}
+
+export function setMission29SkipRevealForCurrentTurn(
+  state: GameState,
+  actorId: string,
+): void {
+  if (state.mission !== 29) return;
+  const turn = state.campaign?.mission29Turn;
+  if (!turn || turn.actorId !== actorId) return;
+  turn.skipReveal = true;
+}
+
 /**
  * Mission 29: Hidden number card penalty.
  * Each turn a hidden number card is revealed and penalizes the player
@@ -5585,8 +5932,26 @@ function recycleMission47Cards(ctx: ResolveHookContext): void {
 registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", {
   setup(_rule: HiddenNumberCardPenaltyRuleDef, ctx: SetupHookContext): void {
     const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    const playerCount = ctx.state.players.length;
+    const captainIndex = Math.max(
+      0,
+      ctx.state.players.findIndex((player) => player.isCaptain),
+    );
+    const rightOfCaptainIndex = playerCount === 0 ? 0 : (captainIndex + 1) % playerCount;
 
     ctx.state.campaign ??= {};
+    const playerHands: Record<string, { id: string; value: number; faceUp: boolean }[]> = {};
+    for (let i = 0; i < playerCount; i += 1) {
+      const player = ctx.state.players[i];
+      const cardsToDeal = i === rightOfCaptainIndex ? 3 : 2;
+      const handValues = deckValues.splice(0, cardsToDeal);
+      playerHands[player.id] = handValues.map((value, cardIndex) => ({
+        id: `m29-hand-${player.id}-${cardIndex}-${value}`,
+        value,
+        faceUp: false,
+      }));
+    }
+
     ctx.state.campaign.numberCards = {
       visible: [],
       deck: deckValues.map((value, idx) => ({
@@ -5595,8 +5960,12 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
         faceUp: false,
       })),
       discard: [],
-      playerHands: {},
+      playerHands,
     };
+    queueMission29HiddenCardChoice(
+      ctx.state,
+      ctx.state.players[captainIndex]?.id ?? ctx.state.players[0]?.id ?? "system",
+    );
 
     pushGameLog(ctx.state, {
       turn: 0,
@@ -5605,6 +5974,47 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
       detail: "hidden_number_card_penalty:init",
       timestamp: Date.now(),
     });
+  },
+
+  resolve(_rule: HiddenNumberCardPenaltyRuleDef, ctx: ResolveHookContext): void {
+    if (!ctx.cutSuccess || typeof ctx.cutValue !== "number") return;
+
+    const turn = ctx.state.campaign?.mission29Turn;
+    if (!turn || turn.actorId !== ctx.action.actorId) return;
+
+    if (turn.selectedCard && turn.selectedCard.value === ctx.cutValue) {
+      turn.matchedCut = true;
+    }
+
+    const projectedCutCount = getProjectedCutCountForResolve(ctx, ctx.cutValue);
+    if (projectedCutCount < 4) return;
+
+    const removed = discardMission29CardsForValues(ctx.state, new Set([ctx.cutValue]));
+    if (removed <= 0) return;
+
+    pushGameLog(ctx.state, {
+      turn: ctx.state.turnNumber,
+      playerId: ctx.action.actorId,
+      action: "hookEffect",
+      detail: `hidden_number_card_penalty:completed=${ctx.cutValue}|discarded=${removed}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  endTurn(_rule: HiddenNumberCardPenaltyRuleDef, ctx: EndTurnHookContext): void {
+    const phaseBeforeEndTurn = ctx.state.phase;
+    if (phaseBeforeEndTurn === "finished") return;
+
+    finalizeMission29Turn(ctx.state);
+    if (ctx.state.phase === "finished") return;
+
+    moveMission29CardsUnderDeckForEmptyWireHands(ctx.state);
+    refillMission29LowHands(ctx.state);
+    discardMission29LastRemainingValueCard(ctx.state);
+
+    const nextActor = ctx.state.players[ctx.state.currentPlayerIndex];
+    if (!nextActor) return;
+    queueMission29HiddenCardChoice(ctx.state, nextActor.id);
   },
 });
 

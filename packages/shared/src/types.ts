@@ -321,6 +321,20 @@ export interface Mission59NanoState {
   facing: 1 | -1;
 }
 
+/** Mission 29: per-turn hidden Number-card selection and outcome state. */
+export interface Mission29TurnState {
+  /** Active player whose turn this hidden-card applies to. */
+  actorId: string;
+  /** Player to the actor's right who must choose the hidden card. */
+  chooserId: string;
+  /** Hidden Number card selected for this turn (if already chosen). */
+  selectedCard?: NumberCard;
+  /** Whether the actor successfully cut the selected value this turn. */
+  matchedCut?: boolean;
+  /** Whether reveal/penalty is skipped this turn (Coffee Mug FAQ). */
+  skipReveal?: boolean;
+}
+
 /**
  * All campaign-specific state, attached optionally to GameState.
  * Each sub-object is present only when the active mission uses that mechanic.
@@ -355,6 +369,8 @@ export interface CampaignState {
   falseTokenMode?: boolean;
   /** Mission 59: Nano line navigation state. */
   mission59Nano?: Mission59NanoState;
+  /** Mission 29: hidden Number-card turn state. */
+  mission29Turn?: Mission29TurnState;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────
@@ -437,6 +453,13 @@ export type ForcedAction =
       draftOrder: number[];
       /** How many players have completed their draft pick. */
       completedCount: number;
+    }
+  | {
+      kind: "mission29HiddenNumberCard";
+      /** The active Mission 29 player whose turn this card applies to. */
+      actorId: string;
+      /** The right-hand chooser who must select one hidden Number card. */
+      chooserId: string;
     }
   | {
       kind: "mission46SevensCut";

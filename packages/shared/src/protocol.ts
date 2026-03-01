@@ -55,6 +55,7 @@ export type ClientMessage =
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | { type: "mission22TokenPassChoice"; value: number }
   | { type: "mission27TokenDraftChoice"; value: number; tileIndex?: number }
+  | { type: "mission29HiddenNumberCardChoice"; cardIndex: number }
   | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
   | { type: "talkiesWalkiesChoice"; tileIndex: number }
   | {

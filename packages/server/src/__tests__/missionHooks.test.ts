@@ -21,6 +21,8 @@ import {
   setTelemetrySink,
   clearTelemetrySink,
   emitMissionFailureTelemetry,
+  applyMission29HiddenNumberCardChoice,
+  setMission29SkipRevealForCurrentTurn,
   UnknownHookError,
 } from "../missionHooks";
 import type {
@@ -390,6 +392,45 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail) === "visible_number_card_gate:init",
       );
       expect(setupLog).toBeDefined();
+    });
+
+    it("mission 29: deals hidden Number card hands and queues chooser forced action", () => {
+      const captain = makePlayer({
+        id: "captain",
+        isCaptain: true,
+        hand: [makeTile({ id: "c1", gameValue: 1 })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-1", gameValue: 2 })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        hand: [makeTile({ id: "p3-1", gameValue: 3 })],
+      });
+      const state = makeGameState({
+        mission: 29,
+        players: [captain, p2, p3],
+        log: [],
+      });
+
+      dispatchHooks(29, { point: "setup", state });
+
+      const numberCards = state.campaign?.numberCards;
+      expect(numberCards).toBeDefined();
+      expect(numberCards?.visible).toHaveLength(0);
+      expect(numberCards?.discard).toHaveLength(0);
+
+      expect(numberCards?.playerHands.captain).toHaveLength(2);
+      expect(numberCards?.playerHands.p2).toHaveLength(3);
+      expect(numberCards?.playerHands.p3).toHaveLength(2);
+      expect(numberCards?.deck).toHaveLength(5);
+
+      expect(state.pendingForcedAction).toEqual({
+        kind: "mission29HiddenNumberCard",
+        actorId: "captain",
+        chooserId: "p2",
+      });
     });
 
     it("mission 59: initializes all Number cards faceup and Nano starting state", () => {
@@ -967,6 +1008,70 @@ describe("missionHooks dispatcher", () => {
       const secondCard = state.campaign?.numberCards?.visible?.find((card) => card.id === "m26-visible-2");
       expect(firstCard?.faceUp).toBe(false);
       expect(secondCard?.faceUp).toBe(true);
+    });
+
+    it("mission 29: marks matched hidden card on successful matching cut and discards completed value cards", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a5", gameValue: 5, cut: false })],
+      });
+      const teammate = makePlayer({
+        id: "teammate",
+        hand: [
+          makeTile({ id: "t5-1", gameValue: 5, cut: true }),
+          makeTile({ id: "t5-2", gameValue: 5, cut: true }),
+          makeTile({ id: "t5-3", gameValue: 5, cut: true }),
+        ],
+      });
+      const chooser = makePlayer({
+        id: "chooser",
+        hand: [makeTile({ id: "c3", gameValue: 3, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 29,
+        players: [actor, teammate, chooser],
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [
+              { id: "m29-deck-5", value: 5, faceUp: false },
+              { id: "m29-deck-8", value: 8, faceUp: false },
+            ],
+            discard: [],
+            playerHands: {
+              actor: [{ id: "m29-actor-5", value: 5, faceUp: false }],
+              teammate: [{ id: "m29-team-4", value: 4, faceUp: false }],
+              chooser: [{ id: "m29-chooser-7", value: 7, faceUp: false }],
+            },
+          },
+          mission29Turn: {
+            actorId: "actor",
+            chooserId: "chooser",
+            selectedCard: { id: "m29-selected-5", value: 5, faceUp: false },
+            matchedCut: false,
+            skipReveal: false,
+          },
+        },
+      });
+
+      dispatchHooks(29, {
+        point: "resolve",
+        state,
+        action: {
+          type: "dualCut",
+          actorId: "actor",
+          targetPlayerId: "teammate",
+          targetTileIndex: 0,
+          guessValue: 5,
+        },
+        cutValue: 5,
+        cutSuccess: true,
+      });
+
+      expect(state.campaign?.mission29Turn?.matchedCut).toBe(true);
+      expect(state.campaign?.numberCards?.deck.some((card) => card.value === 5)).toBe(false);
+      expect(state.campaign?.numberCards?.playerHands.actor.some((card) => card.value === 5)).toBe(false);
+      expect(state.campaign?.numberCards?.discard.some((card) => card.value === 5)).toBe(true);
     });
 
     it("mission 59: moves Nano to cut card and flips matching Number card at 4 cuts", () => {
@@ -2004,6 +2109,158 @@ describe("missionHooks dispatcher", () => {
       );
       expect(skipLog).toBeDefined();
       expect(renderLogDetail(skipLog!.detail)).not.toContain(skipPlayer.id);
+    });
+
+    it("mission 29: endTurn reveals selected card, applies penalty on match, and queues next chooser", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        name: "p1",
+        hand: [makeTile({ id: "p1-4", gameValue: 4, cut: false })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        name: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6, cut: false })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        name: "p3",
+        hand: [makeTile({ id: "p3-8", gameValue: 8, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 29,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 8,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [{ id: "m29-deck-2", value: 2, faceUp: false }],
+            discard: [],
+            playerHands: {
+              p1: [{ id: "m29-p1-3", value: 3, faceUp: false }],
+              p2: [{ id: "m29-p2-4", value: 4, faceUp: false }],
+              p3: [{ id: "m29-p3-9", value: 9, faceUp: false }],
+            },
+          },
+          mission29Turn: {
+            actorId: "p1",
+            chooserId: "p2",
+            selectedCard: { id: "m29-selected-6", value: 6, faceUp: false },
+            matchedCut: true,
+            skipReveal: false,
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(29, { point: "endTurn", state, previousPlayerId: "p1" });
+
+      expect(state.board.detonatorPosition).toBe(2);
+      const p1Cards = state.campaign?.numberCards?.playerHands?.p1 ?? [];
+      expect(p1Cards.some((card) => card.id === "m29-selected-6" && card.faceUp)).toBe(true);
+
+      expect(state.pendingForcedAction).toEqual({
+        kind: "mission29HiddenNumberCard",
+        actorId: "p2",
+        chooserId: "p3",
+      });
+      expect(state.campaign?.mission29Turn?.actorId).toBe("p2");
+      expect(state.campaign?.mission29Turn?.chooserId).toBe("p3");
+    });
+
+    it("mission 29: skip-reveal turn does not advance detonator and keeps transferred card face down", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        hand: [makeTile({ id: "p1-4", gameValue: 4, cut: false })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 29,
+        players: [p1, p2],
+        currentPlayerIndex: 1,
+        turnNumber: 12,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [{ id: "m29-deck-8", value: 8, faceUp: false }],
+            discard: [],
+            playerHands: {
+              p1: [{ id: "m29-p1-2", value: 2, faceUp: false }],
+              p2: [{ id: "m29-p2-7", value: 7, faceUp: false }],
+            },
+          },
+          mission29Turn: {
+            actorId: "p1",
+            chooserId: "p2",
+            selectedCard: { id: "m29-selected-6", value: 6, faceUp: false },
+            matchedCut: true,
+            skipReveal: false,
+          },
+        },
+      });
+
+      setMission29SkipRevealForCurrentTurn(state, "p1");
+      dispatchHooks(29, { point: "endTurn", state, previousPlayerId: "p1" });
+
+      expect(state.board.detonatorPosition).toBe(1);
+      const transferred = state.campaign?.numberCards?.playerHands?.p1?.find(
+        (card) => card.id === "m29-selected-6",
+      );
+      expect(transferred?.faceUp).toBe(false);
+    });
+
+    it("mission 29: hidden-card choice consumes chooser card and clears forced action", () => {
+      const actor = makePlayer({
+        id: "actor",
+        hand: [makeTile({ id: "a4", gameValue: 4, cut: false })],
+      });
+      const chooser = makePlayer({
+        id: "chooser",
+        hand: [makeTile({ id: "c6", gameValue: 6, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 29,
+        players: [actor, chooser],
+        currentPlayerIndex: 0,
+        turnNumber: 7,
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [{ id: "m29-deck-8", value: 8, faceUp: false }],
+            discard: [],
+            playerHands: {
+              actor: [{ id: "m29-actor-3", value: 3, faceUp: false }],
+              chooser: [
+                { id: "m29-chooser-5", value: 5, faceUp: false },
+                { id: "m29-chooser-9", value: 9, faceUp: false },
+              ],
+            },
+          },
+          mission29Turn: {
+            actorId: "actor",
+            chooserId: "chooser",
+          },
+        },
+        pendingForcedAction: {
+          kind: "mission29HiddenNumberCard",
+          actorId: "actor",
+          chooserId: "chooser",
+        },
+      });
+
+      const result = applyMission29HiddenNumberCardChoice(state, "chooser", 1);
+
+      expect(result).toEqual({ ok: true });
+      expect(state.pendingForcedAction).toBeUndefined();
+      expect(state.campaign?.numberCards?.playerHands.chooser.map((card) => card.value)).toEqual([5, 8]);
+      expect(state.campaign?.mission29Turn?.selectedCard?.value).toBe(9);
+      expect(state.campaign?.mission29Turn?.matchedCut).toBe(false);
     });
 
     it("mission 41: auto-skips a player with only their tripwire and red wires", () => {

@@ -59,6 +59,7 @@ import {
   resolveTalkiesWalkiesTileChoice,
 } from "./equipment.js";
 import {
+  applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   emitMissionFailureTelemetry,
   rotateMission61Constraint,
@@ -450,6 +451,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission27TokenDraftChoice":
         this.handleMission27TokenDraftChoice(connection, msg.value, msg.tileIndex);
         break;
+      case "mission29HiddenNumberCardChoice":
+        this.handleMission29HiddenNumberCardChoice(connection, msg.cardIndex);
+        break;
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
@@ -546,6 +550,13 @@ export class BombBustersServer extends Server<Env> {
           if (gs.pendingForcedAction.currentChooserId === oldId) {
             gs.pendingForcedAction.currentChooserId = newId;
           }
+        } else if (gs.pendingForcedAction.kind === "mission29HiddenNumberCard") {
+          if (gs.pendingForcedAction.chooserId === oldId) {
+            gs.pendingForcedAction.chooserId = newId;
+          }
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
+          }
         } else if (gs.pendingForcedAction.kind === "detectorTileChoice") {
           if (gs.pendingForcedAction.targetPlayerId === oldId) {
             gs.pendingForcedAction.targetPlayerId = newId;
@@ -574,6 +585,15 @@ export class BombBustersServer extends Server<Env> {
           if (gs.pendingForcedAction.captainId === oldId) {
             gs.pendingForcedAction.captainId = newId;
           }
+        }
+      }
+
+      if (gs.campaign?.mission29Turn) {
+        if (gs.campaign.mission29Turn.actorId === oldId) {
+          gs.campaign.mission29Turn.actorId = newId;
+        }
+        if (gs.campaign.mission29Turn.chooserId === oldId) {
+          gs.campaign.mission29Turn.chooserId = newId;
         }
       }
 
@@ -1637,6 +1657,42 @@ export class BombBustersServer extends Server<Env> {
     }
   }
 
+  handleMission29HiddenNumberCardChoice(conn: Connection, cardIndex: number) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Mission 29 hidden Number card: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 29 hidden Number card selection is only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    if (!Number.isInteger(cardIndex) || cardIndex < 0) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 29 hidden Number card index must be a non-negative integer.",
+      });
+      return;
+    }
+
+    const result = applyMission29HiddenNumberCardChoice(state, conn.id, cardIndex);
+    if (!result.ok) {
+      this.sendMsg(conn, { type: "error", message: result.message ?? "Invalid Mission 29 hidden Number card choice" });
+      return;
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   handleMission61ConstraintRotate(
     conn: Connection,
     direction: "clockwise" | "counter_clockwise" | "skip",
@@ -2477,6 +2533,12 @@ export class BombBustersServer extends Server<Env> {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
+      } else if (forced?.kind === "mission29HiddenNumberCard") {
+        const chooser = state.players.find((p) => p.id === forced.chooserId);
+        if (chooser?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
       } else if (forced?.kind === "mission36SequencePosition") {
         const captain = state.players.find((p) => p.id === forced.captainId);
         if (captain?.isBot) {
@@ -2705,6 +2767,30 @@ export class BombBustersServer extends Server<Env> {
           this.saveState();
           this.broadcastGameState();
         }
+        return;
+      }
+    }
+
+    // Mission 29 hidden Number card: if chooser is a bot, pick a random card index.
+    const m29Forced = state.pendingForcedAction;
+    if (m29Forced?.kind === "mission29HiddenNumberCard") {
+      const chooser = state.players.find((p) => p.id === m29Forced.chooserId);
+      if (chooser?.isBot) {
+        const chooserCards = state.campaign?.numberCards?.playerHands?.[m29Forced.chooserId] ?? [];
+        if (chooserCards.length === 0) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+          return;
+        }
+        const cardIndex = Math.floor(Math.random() * chooserCards.length);
+        const result = applyMission29HiddenNumberCardChoice(state, m29Forced.chooserId, cardIndex);
+        if (!result.ok) {
+          state.pendingForcedAction = undefined;
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
         return;
       }
     }

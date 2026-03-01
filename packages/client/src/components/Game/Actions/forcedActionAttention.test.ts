@@ -51,6 +51,42 @@ describe("deriveActionAttentionState", () => {
     expect(attention.forcedActorId).toBe("captain");
   });
 
+  it("maps mission29HiddenNumberCard chooser as the forced actor", () => {
+    const state = makeGameState({
+      mission: 29,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "actor",
+          name: "Actor",
+          hand: [makeTile({ id: "a1", gameValue: 4 })],
+        }),
+        makePlayer({
+          id: "chooser",
+          name: "Chooser",
+          hand: [makeTile({ id: "c1", gameValue: 7 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      pendingForcedAction: {
+        kind: "mission29HiddenNumberCard",
+        actorId: "actor",
+        chooserId: "chooser",
+      },
+    });
+    const clientState = toClientGameState(state, "chooser");
+
+    const attention = deriveActionAttentionState({
+      gameState: clientState,
+      playerId: "chooser",
+      revealRedsForcedNow: false,
+    });
+
+    expect(attention.state).toBe("forced_actor");
+    expect(attention.forcedKind).toBe("mission29HiddenNumberCard");
+    expect(attention.forcedActorId).toBe("chooser");
+  });
+
   it("returns normal_waiting when reveal-reds condition exists but player cannot act now", () => {
     const state = makeGameState({
       mission: 1,

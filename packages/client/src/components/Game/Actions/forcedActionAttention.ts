@@ -82,6 +82,8 @@ function getPendingForcedMetadata(
         ...(total != null ? { progressStep: clampProgressStep(completedCount, total) } : {}),
       };
     }
+    case "mission29HiddenNumberCard":
+      return { kind: forced.kind, actorId: asString(forced.chooserId) };
     case "detectorTileChoice":
       return { kind: forced.kind, actorId: asString(forced.targetPlayerId) };
     case "talkiesWalkiesTileChoice":

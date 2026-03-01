@@ -652,6 +652,54 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves mission29 hidden-number forced action state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "actor",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "chooser",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 12,
+        mission: 29,
+        result: null,
+        pendingForcedAction: {
+          kind: "mission29HiddenNumberCard",
+          actorId: "actor",
+          chooserId: "chooser",
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f29");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission29HiddenNumberCard",
+      actorId: "actor",
+      chooserId: "chooser",
+    });
+  });
+
   it("preserves mission61 constraint-rotate forced action state across restore", () => {
     const legacy = {
       gameState: {
@@ -892,6 +940,67 @@ describe("normalizeRoomState", () => {
         ...legacy.gameState.campaign.constraints,
         deck: [],
       },
+    });
+  });
+
+  it("normalizes campaign mission29 turn state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "actor",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "chooser",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        mission: 29,
+        result: null,
+        campaign: {
+          mission29Turn: {
+            actorId: "actor",
+            chooserId: "chooser",
+            selectedCard: {
+              id: "m29-selected",
+              value: 8,
+              faceUp: "bad",
+            },
+            matchedCut: true,
+            skipReveal: "bad",
+          },
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-g29");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign?.mission29Turn).toEqual({
+      actorId: "actor",
+      chooserId: "chooser",
+      selectedCard: {
+        id: "m29-selected",
+        value: 8,
+        faceUp: false,
+      },
+      matchedCut: true,
     });
   });
 

@@ -26,6 +26,7 @@ import {
   getMission27TokenDraftAvailableValues,
 } from "../mission27TokenDraft";
 import {
+  applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
@@ -534,6 +535,30 @@ function resolveForcedAction(state: GameState): boolean {
         currentChooserId: state.players[nextChooserIndex].id,
         completedCount: nextCompleted,
       };
+    }
+    return true;
+  }
+
+  if (forced.kind === "mission29HiddenNumberCard") {
+    const chooserHand = state.campaign?.numberCards?.playerHands?.[forced.chooserId] ?? [];
+    if (chooserHand.length === 0) {
+      throw new Error(
+        `Mission ${state.mission}: mission29HiddenNumberCard chooser ` +
+        `${forced.chooserId} has no Number cards (turn=${state.turnNumber})`,
+      );
+    }
+
+    const cardIndex = Math.floor(Math.random() * chooserHand.length);
+    const applyResult = applyMission29HiddenNumberCardChoice(
+      state,
+      forced.chooserId,
+      cardIndex,
+    );
+    if (!applyResult.ok) {
+      throw new Error(
+        `Mission ${state.mission}: mission29HiddenNumberCard choice failed ` +
+        `for ${forced.chooserId}: ${applyResult.message ?? "unknown error"}`,
+      );
     }
     return true;
   }

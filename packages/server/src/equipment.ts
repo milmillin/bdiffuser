@@ -46,6 +46,7 @@ import {
   getHookRules,
   hasActiveConstraint,
   emitMissionFailureTelemetry,
+  setMission29SkipRevealForCurrentTurn,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
@@ -1240,6 +1241,7 @@ function findMatchingDetectorIndices(
 function setNextPlayerFromCoffee(
   state: GameState,
   targetPlayerId: string,
+  previousPlayerId?: string,
 ): void {
   const targetIndex = state.players.findIndex((player) => player.id === targetPlayerId);
   if (targetIndex === -1) return;
@@ -1251,6 +1253,7 @@ function setNextPlayerFromCoffee(
   const endTurnResult = dispatchHooks(state.mission, {
     point: "endTurn",
     state,
+    ...(previousPlayerId != null ? { previousPlayerId } : {}),
   });
   if (endTurnResult.nextPlayerIndex !== undefined) {
     const idx = endTurnResult.nextPlayerIndex;
@@ -1391,6 +1394,7 @@ export function executeUseEquipment(
       };
     }
     case "coffee_mug": {
+      setMission29SkipRevealForCurrentTurn(state, actorId);
       addLog(
         state,
         actorId,
@@ -1399,7 +1403,7 @@ export function executeUseEquipment(
           targetPlayerId: payload.targetPlayerId,
         }),
       );
-      setNextPlayerFromCoffee(state, payload.targetPlayerId);
+      setNextPlayerFromCoffee(state, payload.targetPlayerId, actorId);
       return {
         type: "equipmentUsed",
         equipmentId,

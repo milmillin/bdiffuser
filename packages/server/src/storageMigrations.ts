@@ -17,6 +17,7 @@ import {
   type MissionAudioState,
   type Mission22TokenPassBoardState,
   type Mission27TokenDraftBoardState,
+  type Mission29TurnState,
   type SurrenderVoteState,
 } from "@bomb-busters/shared";
 import {
@@ -233,6 +234,27 @@ function normalizeMission27TokenDraftBoard(
     : 0;
 
   return { numericTokens, yellowTokens };
+}
+
+function normalizeMission29Turn(
+  raw: unknown,
+): Mission29TurnState | undefined {
+  if (!isObject(raw)) return undefined;
+  if (typeof raw.actorId !== "string" || raw.actorId.length === 0) return undefined;
+  if (typeof raw.chooserId !== "string" || raw.chooserId.length === 0) return undefined;
+
+  const selectedCard =
+    hasOwn(raw, "selectedCard")
+      ? normalizeNumberCard(raw.selectedCard)
+      : null;
+
+  return {
+    actorId: raw.actorId,
+    chooserId: raw.chooserId,
+    ...(selectedCard ? { selectedCard } : {}),
+    ...(typeof raw.matchedCut === "boolean" ? { matchedCut: raw.matchedCut } : {}),
+    ...(typeof raw.skipReveal === "boolean" ? { skipReveal: raw.skipReveal } : {}),
+  };
 }
 
 function normalizeNumberCardHands(raw: unknown): Record<string, NumberCard[]> {
@@ -515,6 +537,13 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     campaign.mission27TokenDraftTriggered = raw.mission27TokenDraftTriggered;
   }
 
+  if (hasOwn(raw, "mission29Turn")) {
+    const mission29Turn = normalizeMission29Turn(raw.mission29Turn);
+    if (mission29Turn) {
+      campaign.mission29Turn = mission29Turn;
+    }
+  }
+
   if (hasOwn(raw, "mission18DesignatorIndex") && typeof raw.mission18DesignatorIndex === "number") {
     campaign.mission18DesignatorIndex = raw.mission18DesignatorIndex;
   }
@@ -630,6 +659,18 @@ function normalizeGameState(
           (value): value is number => typeof value === "number" && Number.isFinite(value),
         ),
         completedCount: obj.pendingForcedAction.completedCount,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission29HiddenNumberCard"
+      && typeof obj.pendingForcedAction.actorId === "string"
+      && obj.pendingForcedAction.actorId
+      && typeof obj.pendingForcedAction.chooserId === "string"
+      && obj.pendingForcedAction.chooserId
+    ) {
+      pendingForcedAction = {
+        kind: "mission29HiddenNumberCard" as const,
+        actorId: obj.pendingForcedAction.actorId,
+        chooserId: obj.pendingForcedAction.chooserId,
       };
     } else if (
       obj.pendingForcedAction.kind === "mission46SevensCut"
