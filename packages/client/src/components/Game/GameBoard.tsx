@@ -55,7 +55,7 @@ import {
   handleOwnTileClickEquipment as _handleOwnTileClickEquipment,
 } from "./equipmentModeLogic.js";
 import { stopMissionAudio } from "../../audio/audio.js";
-import { useIsIosStandalonePwa } from "../../hooks/useStandaloneMode.js";
+import { useIsStandalonePwa } from "../../hooks/useStandaloneMode.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { CardStrip } from "./CardStrip.js";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -285,8 +285,8 @@ export function GameBoard({
     () => gameState.players.filter((player) => !player.isBot),
     [gameState.players],
   );
-  const isIosStandalonePwa = useIsIosStandalonePwa();
-  const usePageScroll = isIosStandalonePwa;
+  const isStandalonePwa = useIsStandalonePwa();
+  const usePageScroll = isStandalonePwa;
   const surrenderVoteYesVoterIds = gameState.surrenderVote?.yesVoterIds ?? [];
   const surrenderVoteYesSet = useMemo(
     () => new Set(surrenderVoteYesVoterIds),
@@ -3019,7 +3019,7 @@ function Header({
 
   return (
     <div
-      className="flex flex-col md:flex-row md:items-center md:justify-between px-3 md:px-4 py-1.5 md:py-2 gap-1 md:gap-0 bg-[var(--color-bomb-surface)] border-b border-gray-700 flex-shrink-0"
+      className="flex flex-col gap-1 border-b border-gray-700 bg-[var(--color-bomb-surface)] px-3 pb-1.5 pt-[calc(env(safe-area-inset-top)+0.375rem)] md:flex-row md:items-center md:justify-between md:gap-0 md:px-4 md:pb-2 md:pt-[calc(env(safe-area-inset-top)+0.5rem)] flex-shrink-0"
       data-testid="game-header"
     >
       {/* Row 1: Brand + context (+ mobile-only turn/rules) */}

@@ -16,6 +16,66 @@ type MediaQueryListCompat = MediaQueryList & {
   removeListener?: (listener: (event: MediaQueryListEvent) => void) => void;
 };
 
+function subscribeStandaloneChanges(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const displayModeMediaQuery =
+    typeof window.matchMedia === "function"
+      ? window.matchMedia(STANDALONE_QUERY)
+      : null;
+  const displayModeMediaQueryCompat =
+    displayModeMediaQuery as MediaQueryListCompat | null;
+
+  if (
+    displayModeMediaQueryCompat
+    && typeof displayModeMediaQueryCompat.addEventListener === "function"
+    && typeof displayModeMediaQueryCompat.removeEventListener === "function"
+  ) {
+    displayModeMediaQueryCompat.addEventListener("change", onChange);
+  } else if (
+    displayModeMediaQueryCompat
+    && typeof displayModeMediaQueryCompat.addListener === "function"
+    && typeof displayModeMediaQueryCompat.removeListener === "function"
+  ) {
+    displayModeMediaQueryCompat.addListener(onChange);
+  }
+
+  window.addEventListener("focus", onChange);
+  window.addEventListener("pageshow", onChange);
+
+  return () => {
+    if (
+      displayModeMediaQueryCompat
+      && typeof displayModeMediaQueryCompat.removeEventListener === "function"
+    ) {
+      displayModeMediaQueryCompat.removeEventListener("change", onChange);
+    } else if (
+      displayModeMediaQueryCompat
+      && typeof displayModeMediaQueryCompat.removeListener === "function"
+    ) {
+      displayModeMediaQueryCompat.removeListener(onChange);
+    }
+
+    window.removeEventListener("focus", onChange);
+    window.removeEventListener("pageshow", onChange);
+  };
+}
+
+function useStandaloneModeValue(getValue: () => boolean): boolean {
+  const [value, setValue] = useState<boolean>(() => getValue());
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncState = () => setValue(getValue());
+    syncState();
+
+    return subscribeStandaloneChanges(syncState);
+  }, [getValue]);
+
+  return value;
+}
+
 function isIosDevice(): boolean {
   if (typeof navigator === "undefined") return false;
   return IOS_DEVICE_PATTERN.test(navigator.userAgent);
@@ -37,59 +97,10 @@ export function isIosStandalonePwa(): boolean {
   return isIosDevice() && isStandaloneDisplayMode();
 }
 
+export function useIsStandalonePwa(): boolean {
+  return useStandaloneModeValue(isStandaloneDisplayMode);
+}
+
 export function useIsIosStandalonePwa(): boolean {
-  const [isIosStandalone, setIsIosStandalone] = useState<boolean>(
-    () => isIosStandalonePwa(),
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const syncStandaloneState = () => setIsIosStandalone(isIosStandalonePwa());
-    syncStandaloneState();
-
-    const displayModeMediaQuery =
-      typeof window.matchMedia === "function"
-        ? window.matchMedia(STANDALONE_QUERY)
-        : null;
-    const displayModeMediaQueryCompat =
-      displayModeMediaQuery as MediaQueryListCompat | null;
-    const onDisplayModeChange = () => syncStandaloneState();
-
-    if (
-      displayModeMediaQueryCompat
-      && typeof displayModeMediaQueryCompat.addEventListener === "function"
-      && typeof displayModeMediaQueryCompat.removeEventListener === "function"
-    ) {
-      displayModeMediaQueryCompat.addEventListener("change", onDisplayModeChange);
-    } else if (
-      displayModeMediaQueryCompat
-      && typeof displayModeMediaQueryCompat.addListener === "function"
-      && typeof displayModeMediaQueryCompat.removeListener === "function"
-    ) {
-      displayModeMediaQueryCompat.addListener(onDisplayModeChange);
-    }
-
-    window.addEventListener("focus", syncStandaloneState);
-    window.addEventListener("pageshow", syncStandaloneState);
-
-    return () => {
-      if (
-        displayModeMediaQueryCompat
-        && typeof displayModeMediaQueryCompat.removeEventListener === "function"
-      ) {
-        displayModeMediaQueryCompat.removeEventListener("change", onDisplayModeChange);
-      } else if (
-        displayModeMediaQueryCompat
-        && typeof displayModeMediaQueryCompat.removeListener === "function"
-      ) {
-        displayModeMediaQueryCompat.removeListener(onDisplayModeChange);
-      }
-
-      window.removeEventListener("focus", syncStandaloneState);
-      window.removeEventListener("pageshow", syncStandaloneState);
-    };
-  }, []);
-
-  return isIosStandalone;
+  return useStandaloneModeValue(isIosStandalonePwa);
 }

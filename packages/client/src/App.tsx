@@ -3,7 +3,7 @@ import { APP_COMMIT_ID, APP_VERSION } from "./buildInfo";
 import { usePartySocket } from "./hooks/usePartySocket.js";
 import { useTurnNotification } from "./hooks/useTurnNotification.js";
 import { usePwaInstallPrompt } from "./hooks/usePwaInstallPrompt.js";
-import { useIsIosStandalonePwa } from "./hooks/useStandaloneMode.js";
+import { useIsStandalonePwa } from "./hooks/useStandaloneMode.js";
 import { Lobby } from "./components/Lobby/Lobby.js";
 import { GameBoard } from "./components/Game/GameBoard.js";
 import { EndScreen } from "./components/EndScreen/EndScreen.js";
@@ -93,7 +93,7 @@ function useOnlineStatus(): boolean {
 export default function App() {
   maybeRedirectDebug();
   const isOnline = useOnlineStatus();
-  const isIosStandalonePwa = useIsIosStandalonePwa();
+  const isStandalonePwa = useIsStandalonePwa();
 
   const [roomId, setRoomId] = useState<string | null>(() => {
     // Auto-join if we have a stored session for the URL room
@@ -168,10 +168,10 @@ export default function App() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const className = "ios-standalone-pwa";
+    const className = "standalone-pwa";
     const root = document.documentElement;
 
-    if (isIosStandalonePwa) {
+    if (isStandalonePwa) {
       root.classList.add(className);
     } else {
       root.classList.remove(className);
@@ -180,7 +180,7 @@ export default function App() {
     return () => {
       root.classList.remove(className);
     };
-  }, [isIosStandalonePwa]);
+  }, [isStandalonePwa]);
 
   let content;
   if (roomId) {
@@ -479,7 +479,7 @@ function GameRoom({
   return (
     <div className="flex flex-col h-full">
       {error && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
+        <div className="fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+1rem)] bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse" data-testid="error-banner">
           {error}
         </div>
       )}

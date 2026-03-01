@@ -25,6 +25,9 @@ body {
   overscroll-behavior: none;
 }
 
+html.standalone-pwa,
+html.standalone-pwa body,
+html.standalone-pwa #root,
 html.ios-standalone-pwa,
 html.ios-standalone-pwa body,
 html.ios-standalone-pwa #root {
@@ -32,6 +35,7 @@ html.ios-standalone-pwa #root {
   min-height: 100%;
 }
 
+html.standalone-pwa body,
 html.ios-standalone-pwa body {
   min-height: 100dvh;
   overflow-x: hidden;

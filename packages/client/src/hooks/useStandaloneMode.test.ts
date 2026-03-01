@@ -96,6 +96,7 @@ describe("standalone mode detection", () => {
       userAgent: "Mozilla/5.0 (Linux; Android 15; Pixel 9)",
       displayModeStandalone: true,
     });
+    expect(isStandaloneDisplayMode()).toBe(true);
     expect(isIosStandalonePwa()).toBe(false);
   });
 });

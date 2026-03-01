@@ -145,7 +145,7 @@ export function GameRulesPopup({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/75 px-3 pt-3 pb-16 sm:p-6"
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/75 px-3 pt-[max(env(safe-area-inset-top),0.75rem)] pb-16 sm:p-6"
       data-testid="rules-popup"
       onClick={onClose}
       role="dialog"
