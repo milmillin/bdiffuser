@@ -225,7 +225,7 @@ export function Lobby({
                 key={previewMission}
                 src={`/images/${mission.imageFront}`}
                 alt={`Mission ${previewMission} card`}
-                className="w-full rounded-[1.15rem]"
+                className="w-56 max-w-full mx-auto rounded-[1.15rem] sm:w-full"
               />
 
             </div>
