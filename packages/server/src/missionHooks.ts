@@ -352,7 +352,12 @@ function findNextUncutPlayerIndex(
 
 function getLogPlayerLabel(player: Readonly<Player>): string {
   const trimmedName = player.name.trim();
-  return trimmedName.length > 0 ? trimmedName : player.id;
+  return trimmedName.length > 0 ? trimmedName : "unknown";
+}
+
+function getLogPlayerLabelById(state: Readonly<GameState>, playerId: string): string {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  return player ? getLogPlayerLabel(player) : "unknown";
 }
 
 function skipMission41TripwireTurns(state: GameState): void {
@@ -2616,7 +2621,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
           `cut=${ctx.cutValue}`,
           `moved=${movedToRecipient}`,
           `deficit=${deficit}`,
-          `recipient=${recipientId ?? "none"}`,
+          `recipient=${recipientId ? getLogPlayerLabelById(ctx.state, recipientId) : "none"}`,
         ].join("|"),
         timestamp: Date.now(),
       });
@@ -2952,9 +2957,9 @@ function formatMission18RadarLog(
       const standDetail = perStand
         .map((hasValue, standIndex) => `S${standIndex + 1}:${hasValue ? "yes" : "no"}`)
         .join("|");
-      return `${player.id}=${standDetail}`;
+      return `${getLogPlayerLabel(player)}=${standDetail}`;
     }
-    return `${player.id}=${perStand[0] ? "yes" : "no"}`;
+    return `${getLogPlayerLabel(player)}=${perStand[0] ? "yes" : "no"}`;
   }).join(",");
 }
 
@@ -5089,7 +5094,7 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
       action: "hookEffect",
       detail:
         `upside_down_wire:teammate_flipped_dual_cut` +
-        `|target=${targetPlayerId}` +
+        `|target=${getLogPlayerLabel(targetPlayer)}` +
         `|tile=${targetTileIndex}` +
         `|detonator=${ctx.state.board.detonatorPosition}`,
       timestamp: Date.now(),

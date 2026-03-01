@@ -76,4 +76,19 @@ describe("GameBoard mission 27 token draft forced action", () => {
     expect(html).toContain("to draft a token value");
     expect(html).not.toContain("data-testid=\"waiting-forced-action\"");
   });
+
+  it("renders duplicate draft cards as separate selectable tokens", () => {
+    const state = makeMission27ForcedState("captain");
+    if (state.campaign?.mission27TokenDraftBoard) {
+      state.campaign.mission27TokenDraftBoard.numericTokens = [6, 6];
+      state.campaign.mission27TokenDraftBoard.yellowTokens = 1;
+    }
+
+    const html = renderBoard(state, "captain");
+    const sixButtons = html.match(/data-testid="mission27-token-6"/g) ?? [];
+    const yellowButtons = html.match(/data-testid="mission27-token-0"/g) ?? [];
+
+    expect(sixButtons).toHaveLength(2);
+    expect(yellowButtons).toHaveLength(1);
+  });
 });

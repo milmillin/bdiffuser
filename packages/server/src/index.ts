@@ -150,6 +150,18 @@ function describeInfoTokenLocation(
   return player ? `wire ${wireLabelOf(player, position)}` : `wire ${wireLabel(position)}`;
 }
 
+function getLogPlayerName(player: { name: string } | undefined): string {
+  const trimmedName = player?.name.trim() ?? "";
+  return trimmedName.length > 0 ? trimmedName : "unknown";
+}
+
+function getTokenLogPosition(
+  player: { id: string; hand: readonly { originalOwnerId?: string }[] },
+  position: number,
+): string {
+  return position < 0 ? "stand" : wireLabelOf(player, position);
+}
+
 export class BombBustersServer extends Server<Env> {
   /** In-memory stats map used only by the `__stats__` room. */
   private statsMap = new Map<string, { players: number; updatedAt: number }>();
@@ -1553,7 +1565,7 @@ export class BombBustersServer extends Server<Env> {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m22:token_pass:value=${token.value}|to=${recipient.id}|position=${wireLabelOf(recipient, token.position)}`,
+      detail: `m22:token_pass:value=${token.value}|to=${getLogPlayerName(recipient)}|position=${getTokenLogPosition(recipient, token.position)}`,
       timestamp: Date.now(),
     });
 
@@ -1660,7 +1672,7 @@ export class BombBustersServer extends Server<Env> {
         turn: state.turnNumber,
         playerId: forced.captainId,
         action: "hookEffect",
-        detail: `mission61:constraints_not_rotated|captain=${captain?.name ?? forced.captainId}`,
+        detail: `mission61:constraints_not_rotated|captain=${getLogPlayerName(captain)}`,
         timestamp: Date.now(),
       });
     } else {
@@ -1677,7 +1689,7 @@ export class BombBustersServer extends Server<Env> {
         turn: state.turnNumber,
         playerId: forced.captainId,
         action: "hookEffect",
-        detail: `mission61:constraints_rotated|direction=${direction}|captain=${captain?.name ?? forced.captainId}`,
+        detail: `mission61:constraints_rotated|direction=${direction}|captain=${getLogPlayerName(captain)}`,
         timestamp: Date.now(),
       });
     }
@@ -1798,7 +1810,7 @@ export class BombBustersServer extends Server<Env> {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m22:token_pass:value=${token.value}|to=${recipient.id}|position=${wireLabelOf(recipient, token.position)}`,
+      detail: `m22:token_pass:value=${token.value}|to=${getLogPlayerName(recipient)}|position=${getTokenLogPosition(recipient, token.position)}`,
       timestamp: Date.now(),
     });
 
@@ -1842,7 +1854,7 @@ export class BombBustersServer extends Server<Env> {
       turn: state.turnNumber,
       playerId: forced.currentChooserId,
       action: "hookEffect",
-      detail: `m27:token_draft:value=${token.value}|chooser=${chooser.id}|position=${wireLabelOf(chooser, token.position)}`,
+      detail: `m27:token_draft:value=${token.value}|chooser=${getLogPlayerName(chooser)}|position=${getTokenLogPosition(chooser, token.position)}`,
       timestamp: Date.now(),
     });
 
@@ -2819,7 +2831,7 @@ export class BombBustersServer extends Server<Env> {
             turn: state.turnNumber,
             playerId: forced.captainId,
             action: "hookEffect",
-            detail: `mission61:constraints_not_rotated|captain=${captain?.name ?? forced.captainId}`,
+            detail: `mission61:constraints_not_rotated|captain=${getLogPlayerName(captain)}`,
             timestamp: Date.now(),
           });
         } else {
@@ -2841,7 +2853,7 @@ export class BombBustersServer extends Server<Env> {
             turn: state.turnNumber,
             playerId: forced.captainId,
             action: "hookEffect",
-            detail: `mission61:constraints_rotated|direction=${botAction.direction}|captain=${captain?.name ?? forced.captainId}`,
+            detail: `mission61:constraints_rotated|direction=${botAction.direction}|captain=${getLogPlayerName(captain)}`,
             timestamp: Date.now(),
           });
         }

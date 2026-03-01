@@ -26,13 +26,15 @@ export function Mission27TokenDraftPanel({
   const currentStep = Math.max(1, Math.min(totalSteps, forced.completedCount + 1));
 
   const board = gameState.campaign?.mission27TokenDraftBoard;
-  const boardValues = new Set<number>();
+  const boardValues: number[] = [];
   if (board) {
-    if (board.yellowTokens > 0) boardValues.add(0);
-    for (const value of board.numericTokens) boardValues.add(value);
+    for (let i = 0; i < board.yellowTokens; i++) {
+      boardValues.push(0);
+    }
+    boardValues.push(...board.numericTokens);
   }
 
-  const sortedValues = Array.from(boardValues).sort((a, b) => a - b);
+  const sortedValues = boardValues.sort((a, b) => a - b);
   if (sortedValues.length === 0) {
     return (
       <div
@@ -67,9 +69,9 @@ export function Mission27TokenDraftPanel({
         Choose one token from the draft line.
       </p>
       <div className="flex items-center gap-2 flex-wrap">
-        {sortedValues.map((value) => (
+        {sortedValues.map((value, index) => (
           <button
-            key={value}
+            key={`${value}-${index}`}
             type="button"
             onClick={() => send({ type: "mission27TokenDraftChoice", value })}
             data-testid={`mission27-token-${value}`}
