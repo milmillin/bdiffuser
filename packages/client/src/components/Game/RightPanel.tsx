@@ -33,18 +33,24 @@ export function RightPanel({
   playerId: string;
   missionExtras?: ReactNode;
 }) {
+  const [isBottomPanelExpanded, setIsBottomPanelExpanded] = useState(false);
+
   return (
     <div
       className="hidden w-48 md:grid md:w-60 lg:w-72 xl:w-80 flex-shrink-0 gap-3 overflow-hidden"
-      style={{ gridTemplateRows: "1fr auto" }}
+      style={{
+        gridTemplateRows: isBottomPanelExpanded ? "1fr" : "1fr auto",
+      }}
       data-testid="right-panel"
     >
       {/* Top: scrollable info area */}
-      <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">
-        <MissionCard missionId={missionId} />
-        <RuleStickerBanner mission={missionId} />
-        {missionExtras}
-      </div>
+      {!isBottomPanelExpanded && (
+        <div className="min-h-0 overflow-y-auto overscroll-none space-y-3">
+          <MissionCard missionId={missionId} />
+          <RuleStickerBanner mission={missionId} />
+          {missionExtras}
+        </div>
+      )}
 
       {/* Bottom: action log / chat */}
       <LogChatTabs
@@ -54,6 +60,10 @@ export function RightPanel({
         chatMessages={chatMessages}
         send={send}
         playerId={playerId}
+        isExpanded={isBottomPanelExpanded}
+        onToggleExpanded={() =>
+          setIsBottomPanelExpanded((prev) => !prev)
+        }
       />
     </div>
   );
@@ -87,6 +97,8 @@ function LogChatTabs({
   chatMessages,
   send,
   playerId,
+  isExpanded,
+  onToggleExpanded,
 }: {
   log: GameLogEntry[];
   players: ClientPlayer[];
@@ -94,11 +106,29 @@ function LogChatTabs({
   chatMessages: ChatMessage[];
   send: (msg: ClientMessage) => void;
   playerId: string;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }) {
   const [tab, setTab] = useState<BottomTab>("log");
 
   return (
-    <div className="flex flex-col max-h-[300px] bg-[var(--color-bomb-surface)] rounded-lg border border-gray-700 overflow-hidden">
+    <div
+      className={`group relative flex flex-col bg-[var(--color-bomb-surface)] rounded-lg border border-gray-700 overflow-hidden ${
+        isExpanded ? "h-full min-h-0" : "max-h-[300px]"
+      }`}
+      data-testid="right-panel-log-chat"
+      data-expanded={isExpanded ? "true" : "false"}
+    >
+      <button
+        type="button"
+        onClick={onToggleExpanded}
+        className="absolute right-2 top-2 z-10 inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-500/80 bg-[var(--color-bomb-dark)] text-[10px] text-gray-300 opacity-0 transition-opacity hover:border-gray-300 hover:text-gray-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 group-hover:opacity-100 group-focus-within:opacity-100"
+        aria-label={isExpanded ? "Collapse right panel" : "Expand right panel"}
+        title={isExpanded ? "Collapse right panel" : "Expand right panel"}
+        data-testid="right-panel-expand-toggle"
+      >
+        <span aria-hidden="true">{isExpanded ? "-" : "+"}</span>
+      </button>
       <div className="flex border-b border-gray-700 flex-shrink-0">
         <button
           type="button"

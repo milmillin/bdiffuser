@@ -56,4 +56,12 @@ describe("GameBoard right bar toggle", () => {
 
     expect(html).toContain("data-testid=\"right-panel\"");
   });
+
+  it("renders right panel expand toggle with default expand label", () => {
+    const html = renderBoard(makeBaseClientState("me"), "me");
+
+    expect(html).toContain("data-testid=\"right-panel-expand-toggle\"");
+    expect(html).toContain("aria-label=\"Expand right panel\"");
+    expect(html).toContain("title=\"Expand right panel\"");
+  });
 });
