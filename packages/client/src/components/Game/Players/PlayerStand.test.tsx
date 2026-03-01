@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { ClientPlayer } from "@bomb-busters/shared";
 import { makePlayer, makeTile } from "@bomb-busters/shared/testing";
 import { PlayerStand } from "./PlayerStand.js";
+import { TABLE_WIRE_WIDTH_CSS } from "../wireTileSizing.js";
+
+function escapeForRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 describe("PlayerStand", () => {
   it("renders character avatar using card aspect ratio", () => {
@@ -234,6 +239,34 @@ describe("PlayerStand", () => {
     const rowHeightStyles = html.match(/height:\d+px/g) ?? [];
     expect(rowHeightStyles.length).toBeGreaterThanOrEqual(2);
     expect(new Set(rowHeightStyles).size).toBe(1);
+  });
+
+  it("uses shared table wire width for stand columns", () => {
+    const player = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "t1", color: "blue", gameValue: 5, sortValue: 5 }),
+        makeTile({ id: "t2", color: "blue", gameValue: 8, sortValue: 8 }),
+      ],
+      infoTokens: [],
+    }) as ClientPlayer;
+    player.remainingTiles = 2;
+
+    const html = renderToStaticMarkup(
+      <PlayerStand
+        player={player}
+        isOpponent={false}
+        isCurrentTurn={false}
+        turnOrder={1}
+      />,
+    );
+
+    expect(html).toMatch(
+      new RegExp(
+        `grid-template-columns:repeat\\(2,\\s*${escapeForRegExp(TABLE_WIRE_WIDTH_CSS)}\\)`,
+      ),
+    );
   });
 
   it("keeps two stand segments non-shrinking to avoid overlap on resize", () => {

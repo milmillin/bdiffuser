@@ -2,6 +2,11 @@ import type { ReactNode } from "react";
 import type { ClientPlayer, InfoToken, VisibleTile } from "@bomb-busters/shared";
 import { CHARACTER_IMAGES, WIRE_BACK_IMAGE, wireLabel } from "@bomb-busters/shared";
 import { ScrollableRow } from "../Board/BoardArea";
+import {
+  TABLE_WIRE_IMAGE_HEIGHT,
+  TABLE_WIRE_IMAGE_WIDTH,
+  TABLE_WIRE_WIDTH_CSS,
+} from "../wireTileSizing.js";
 
 type AttentionVariant = "none" | "turn" | "forced";
 
@@ -131,7 +136,7 @@ export function PlayerStand({
 
       {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {
-        const colWidth = "2.25rem";
+        const colWidth = TABLE_WIRE_WIDTH_CSS;
         return (
           <ScrollableRow>
             <div className="flex items-start justify-center mx-auto w-max min-w-full">
@@ -272,7 +277,7 @@ function getTokenRowHeight(player: ClientPlayer): number {
     }
   }
 
-  // Token visuals are rendered at 2.25rem to match tile column width.
+  // Token visuals match table wire column width.
   const tokenHeightPx = 36;
   const tokenGapPx = 6;
   const rowBufferPx = 24;
@@ -381,8 +386,8 @@ function WireTileView({
               <img
                 src={`/images/${tile.image}`}
                 alt={`${tile.color} wire ${tile.gameValue}`}
-                width={158}
-                height={504}
+                width={TABLE_WIRE_IMAGE_WIDTH}
+                height={TABLE_WIRE_IMAGE_HEIGHT}
                 className="w-full h-auto block rounded-sm"
               />
             ) : (
@@ -406,8 +411,8 @@ function WireTileView({
           <img
             src={`/images/${WIRE_BACK_IMAGE}`}
             alt="Wire back"
-            width={158}
-            height={504}
+            width={TABLE_WIRE_IMAGE_WIDTH}
+            height={TABLE_WIRE_IMAGE_HEIGHT}
             className="w-full h-auto block rounded-sm"
           />
         )}

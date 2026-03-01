@@ -19,6 +19,12 @@ import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
 import { mapBunkerCellForDisplay, type CardRotation } from "./cardRotation.js";
 import { useIsMobileViewport } from "./useIsMobileViewport.js";
 import { ScrollableRow } from "./Board/BoardArea.js";
+import {
+  TABLE_WIRE_HEIGHT_CSS,
+  TABLE_WIRE_IMAGE_HEIGHT,
+  TABLE_WIRE_IMAGE_WIDTH,
+  TABLE_WIRE_WIDTH_CSS,
+} from "./wireTileSizing.js";
 
 type EquipmentSecondaryLock = {
   secondaryLockValue?: number;
@@ -111,15 +117,19 @@ function NanoNumberStrip({
           {safePosition + 1}/{safeSlotCount}
         </span>
       </div>
-      <div className="overflow-x-auto pb-1">
-        <div className="flex min-w-max items-stretch gap-1" data-testid={testId}>
+      <div className="w-full pb-1">
+        <div
+          className="grid w-full items-stretch gap-1"
+          style={{ gridTemplateColumns: `repeat(${safeSlotCount}, minmax(0, 1fr))` }}
+          data-testid={testId}
+        >
           {Array.from({ length: safeSlotCount }, (_, idx) => {
             const isCurrent = idx === safePosition;
             return (
               <div
                 key={`${testId}-slot-${idx}`}
                 data-testid={`${testId}-slot-${idx + 1}`}
-                className={`relative h-12 w-8 shrink-0 rounded border ${
+                className={`relative h-12 min-w-0 rounded border ${
                   isCurrent
                     ? "border-emerald-300 bg-emerald-900/45"
                     : "border-emerald-700/50 bg-black/25"
@@ -1160,7 +1170,13 @@ function CampaignObjectsHint({
                             src={`/images/${WIRE_BACK_IMAGE}`}
                             alt=""
                             data-testid="mission-43-nano-wire-back"
-                            className="h-8 w-5 rounded border border-black/40 bg-slate-900 object-cover"
+                            width={TABLE_WIRE_IMAGE_WIDTH}
+                            height={TABLE_WIRE_IMAGE_HEIGHT}
+                            style={{
+                              width: TABLE_WIRE_WIDTH_CSS,
+                              height: TABLE_WIRE_HEIGHT_CSS,
+                            }}
+                            className="block rounded border border-black/40 bg-slate-900 object-cover"
                           />
                         ))
                       ) : (
