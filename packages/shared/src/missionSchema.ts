@@ -45,6 +45,7 @@ export type {
   BunkerFlowRuleDef,
   NanoProgressionRuleDef,
   NanoValueParityRuleDef,
+  Mission43NanoRobotRuleDef,
   NoCharacterCardsRuleDef,
   NoInfoUnlimitedDDRuleDef,
   NoMarkersMemoryModeRuleDef,

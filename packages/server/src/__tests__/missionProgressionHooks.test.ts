@@ -56,7 +56,7 @@ function pickValueForTestConstraints(constraintIds: readonly string[]): number {
 }
 
 describe("mission progression hooks", () => {
-  it("mission 43 setup initializes nano tracker", () => {
+  it("mission 43 setup initializes nano strip tracker and hidden wire pool", () => {
     const state = makeGameState({
       mission: 43,
       log: [],
@@ -64,25 +64,28 @@ describe("mission progression hooks", () => {
 
     dispatchHooks(43, { point: "setup", state });
 
-    expect(state.campaign?.nanoTracker).toEqual({ position: 0, max: 6 });
+    expect(state.campaign?.nanoTracker).toEqual({ position: 0, max: 11 });
+    expect(state.campaign?.mission43NanoDirection).toBe(1);
+    expect(state.campaign?.mission43NanoWires?.length ?? 0).toBeGreaterThanOrEqual(0);
+    expect(state.campaign?.mission43NanoWireCount).toBe(state.campaign?.mission43NanoWires?.length ?? 0);
     expect(
       state.log.some(
-        (entry) => entry.action === "hookSetup" && renderLogDetail(entry.detail).startsWith("nano_progression:"),
+        (entry) => entry.action === "hookSetup" && renderLogDetail(entry.detail).startsWith("mission43:nano_robot:"),
       ),
     ).toBe(true);
   });
 
-  it("mission 43 endTurn advances nano and fails when max is reached", () => {
+  it("mission 43 endTurn advances nano and bounces at strip edges", () => {
     const state = makeGameState({
       mission: 43,
       log: [],
       players: [makePlayer({ id: "p1" })],
-      board: makeBoardState({ detonatorMax: 3 }),
     });
     dispatchHooks(43, { point: "setup", state });
 
     expect(state.campaign?.nanoTracker).toBeDefined();
-    state.campaign!.nanoTracker!.position = 5;
+    state.campaign!.nanoTracker!.position = 11;
+    state.campaign!.mission43NanoDirection = 1;
 
     dispatchHooks(43, {
       point: "endTurn",
@@ -90,9 +93,10 @@ describe("mission progression hooks", () => {
       previousPlayerId: "p1",
     });
 
-    expect(state.campaign?.nanoTracker?.position).toBe(6);
-    expect(state.result).toBe("loss_detonator");
-    expect(state.phase).toBe("finished");
+    expect(state.campaign?.nanoTracker?.position).toBe(10);
+    expect(state.campaign?.mission43NanoDirection).toBe(-1);
+    expect(state.result).toBeNull();
+    expect(state.phase).toBe("playing");
   });
 
   it("mission 44 validate blocks cuts when oxygen is insufficient for wire depth", () => {

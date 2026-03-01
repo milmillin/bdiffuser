@@ -43,6 +43,7 @@ import type {
 } from "@bomb-busters/shared";
 import {
   EQUIPMENT_DEFS,
+  getWireImage,
   getMission66BunkerCell,
   getMission66BunkerTrackPoint,
   MISSION_SCHEMAS,
@@ -645,6 +646,7 @@ import type {
   SevensLastRuleDef,
   BossDesignatesValueRuleDef,
   NoInfoUnlimitedDDRuleDef,
+  Mission43NanoRobotRuleDef,
   RandomSetupInfoTokensRuleDef,
   IberianYellowModeRuleDef,
 } from "@bomb-busters/shared";
@@ -762,6 +764,300 @@ function applyNanoDelta(
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
   }
+}
+
+function getMission43NanoWireTargetCount(playerCount: number): number {
+  if (playerCount <= 2) return 5;
+  if (playerCount <= 4) return 4;
+  return 3;
+}
+
+function getMission43RemainingNanoWireCount(state: Readonly<GameState>): number {
+  const pool = state.campaign?.mission43NanoWires;
+  if (Array.isArray(pool)) return pool.length;
+  const fallbackCount = state.campaign?.mission43NanoWireCount ?? 0;
+  return Math.max(0, Math.floor(fallbackCount));
+}
+
+export function hasMission43RemainingNanoWires(state: Readonly<GameState>): boolean {
+  return state.mission === 43 && getMission43RemainingNanoWireCount(state) > 0;
+}
+
+function syncMission43NanoWireCount(state: GameState): void {
+  if (!state.campaign) return;
+  state.campaign.mission43NanoWireCount = getMission43RemainingNanoWireCount(state);
+}
+
+function classifyMission43SortValue(
+  sortValue: number,
+): { color: WireTile["color"]; gameValue: WireTile["gameValue"]; normalizedSortValue: number } | null {
+  const normalizedSortValue = Math.round(sortValue * 10) / 10;
+  if (Number.isInteger(normalizedSortValue)) {
+    return {
+      color: "blue",
+      gameValue: normalizedSortValue,
+      normalizedSortValue,
+    };
+  }
+  const decimalPart = Math.round((normalizedSortValue - Math.floor(normalizedSortValue)) * 10) / 10;
+  if (Math.abs(decimalPart - 0.5) < 0.0001) {
+    return {
+      color: "red",
+      gameValue: "RED",
+      normalizedSortValue,
+    };
+  }
+  if (Math.abs(decimalPart - 0.1) < 0.0001) {
+    return {
+      color: "yellow",
+      gameValue: "YELLOW",
+      normalizedSortValue,
+    };
+  }
+  return null;
+}
+
+function buildMission43WireTile(
+  wire: { id: string; sortValue: number; originalOwnerId?: string },
+): WireTile | null {
+  const semantics = classifyMission43SortValue(wire.sortValue);
+  if (!semantics) return null;
+  return {
+    id: wire.id,
+    color: semantics.color,
+    sortValue: semantics.normalizedSortValue,
+    gameValue: semantics.gameValue,
+    image: getWireImage(semantics.color, semantics.normalizedSortValue),
+    cut: false,
+    ...(wire.originalOwnerId != null ? { originalOwnerId: wire.originalOwnerId } : {}),
+  };
+}
+
+type StandAwarePlayer = Player & { standSizes?: number[] };
+
+interface MissionHookStandRange {
+  start: number;
+  endExclusive: number;
+}
+
+function getMissionHookStandSizes(player: Readonly<Player>): number[] {
+  const standSizes = (player as Readonly<StandAwarePlayer>).standSizes;
+  if (!Array.isArray(standSizes) || standSizes.length === 0) {
+    return [player.hand.length];
+  }
+  if (!standSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    return [player.hand.length];
+  }
+  const total = standSizes.reduce((sum, size) => sum + size, 0);
+  if (total !== player.hand.length) return [player.hand.length];
+  return standSizes;
+}
+
+function resolveMissionHookStandRange(
+  player: Readonly<Player>,
+  standIndex: number,
+): MissionHookStandRange | null {
+  if (!Number.isInteger(standIndex) || standIndex < 0) return null;
+  const standSizes = getMissionHookStandSizes(player);
+  if (standIndex >= standSizes.length) return null;
+
+  let start = 0;
+  for (let i = 0; i < standSizes.length; i++) {
+    const endExclusive = start + standSizes[i];
+    if (i === standIndex) {
+      return { start, endExclusive };
+    }
+    start = endExclusive;
+  }
+  return null;
+}
+
+function resolveMission43ReceiverStandIndex(
+  actor: Player,
+  requestedStandIndex: unknown,
+): number {
+  const standSizes = getMissionHookStandSizes(actor);
+  if (standSizes.length <= 1) return 0;
+  if (!Number.isInteger(requestedStandIndex)) return 0;
+  const standIndex = requestedStandIndex as number;
+  if (resolveMissionHookStandRange(actor, standIndex) == null) return 0;
+  return standIndex;
+}
+
+function resolveMission43InsertIndex(
+  actor: Player,
+  standIndex: number,
+  sortValue: number,
+): number {
+  const range = resolveMissionHookStandRange(actor, standIndex);
+  if (!range) return actor.hand.length;
+  for (let i = range.start; i < range.endExclusive; i++) {
+    if (actor.hand[i] != null && actor.hand[i].sortValue > sortValue) return i;
+  }
+  return range.endExclusive;
+}
+
+function adjustMission43StandSize(actor: Player, standIndex: number, delta: number): void {
+  if (delta === 0) return;
+  const mutableActor = actor as Player & { standSizes?: number[] };
+  const standSizes = mutableActor.standSizes;
+  if (!Array.isArray(standSizes) || standSizes.length === 0) {
+    mutableActor.standSizes = [actor.hand.length];
+    return;
+  }
+  if (!standSizes.every((size) => Number.isInteger(size) && size >= 0)) {
+    mutableActor.standSizes = [actor.hand.length];
+    return;
+  }
+  if (standIndex < 0 || standIndex >= standSizes.length) {
+    mutableActor.standSizes = [actor.hand.length];
+    return;
+  }
+  standSizes[standIndex] = Math.max(0, standSizes[standIndex] + delta);
+}
+
+function remapMission43InfoTokensAfterInsert(actor: Player, insertIndex: number): void {
+  actor.infoTokens = actor.infoTokens.map((token) => ({
+    ...token,
+    position: token.position >= insertIndex ? token.position + 1 : token.position,
+    ...(token.positionB !== undefined && token.positionB >= insertIndex
+      ? { positionB: token.positionB + 1 }
+      : {}),
+  }));
+}
+
+function initializeMission43NanoWirePool(state: GameState): void {
+  state.campaign ??= {};
+  const candidates = state.players.flatMap((player) =>
+    player.hand.map((tile) => ({
+      playerId: player.id,
+      tileId: tile.id,
+      sortValue: tile.sortValue,
+      originalOwnerId: tile.originalOwnerId,
+    })),
+  );
+
+  if (candidates.length === 0) {
+    state.campaign.mission43NanoWires = [];
+    state.campaign.mission43NanoWireCount = 0;
+    return;
+  }
+
+  const targetCount = Math.min(
+    getMission43NanoWireTargetCount(state.players.length),
+    candidates.length,
+  );
+  const selected = shuffle([...candidates]).slice(0, targetCount);
+  const selectedIdsByPlayer = new Map<string, Set<string>>();
+  for (const entry of selected) {
+    const existing = selectedIdsByPlayer.get(entry.playerId);
+    if (existing) {
+      existing.add(entry.tileId);
+    } else {
+      selectedIdsByPlayer.set(entry.playerId, new Set([entry.tileId]));
+    }
+  }
+
+  for (const player of state.players) {
+    const selectedIds = selectedIdsByPlayer.get(player.id);
+    if (!selectedIds || selectedIds.size === 0) continue;
+
+    const standSizes = getMissionHookStandSizes(player);
+    const originalHand = [...player.hand];
+    const remappedStandTiles: WireTile[][] = [];
+    let cursor = 0;
+    for (const standSize of standSizes) {
+      const start = cursor;
+      const endExclusive = Math.min(start + standSize, originalHand.length);
+      remappedStandTiles.push(
+        originalHand.slice(start, endExclusive).filter((tile) => !selectedIds.has(tile.id)),
+      );
+      cursor = endExclusive;
+    }
+
+    player.hand = remappedStandTiles.flat();
+    player.standSizes = remappedStandTiles.length > 0
+      ? remappedStandTiles.map((stand) => stand.length)
+      : [player.hand.length];
+  }
+
+  state.campaign.mission43NanoWires = selected.map((entry) => ({
+    id: entry.tileId,
+    sortValue: entry.sortValue,
+    ...(entry.originalOwnerId != null ? { originalOwnerId: entry.originalOwnerId } : {}),
+  }));
+  syncMission43NanoWireCount(state);
+}
+
+function advanceMission43Nano(state: GameState, actorId: string): void {
+  const campaign = state.campaign;
+  const tracker = campaign?.nanoTracker;
+  if (!campaign || !tracker) return;
+
+  const max = Math.max(1, Math.floor(tracker.max));
+  tracker.max = max;
+  let position = Math.max(0, Math.min(Math.floor(tracker.position), max));
+  let direction: 1 | -1 = campaign.mission43NanoDirection === -1 ? -1 : 1;
+
+  if (position >= max && direction === 1) direction = -1;
+  if (position <= 0 && direction === -1) direction = 1;
+
+  position = Math.max(0, Math.min(position + direction, max));
+  tracker.position = position;
+  campaign.mission43NanoDirection = direction;
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: `mission43:nano_move:${position + 1}|dir=${direction === 1 ? "right" : "left"}`,
+    timestamp: Date.now(),
+  });
+}
+
+function maybeTransferMission43NanoWire(ctx: ResolveHookContext): void {
+  const state = ctx.state;
+  if (state.mission !== 43) return;
+  if (!ctx.cutSuccess || typeof ctx.cutValue !== "number") return;
+  const transferEligible =
+    (ctx.action as { mission43TransferEligible?: unknown }).mission43TransferEligible;
+  if (transferEligible === false) return;
+
+  const campaign = state.campaign;
+  const tracker = campaign?.nanoTracker;
+  const pool = campaign?.mission43NanoWires;
+  if (!campaign || !tracker || !pool || pool.length === 0) return;
+
+  const currentSpaceValue = Math.floor(tracker.position) + 1;
+  if (ctx.cutValue !== currentSpaceValue) return;
+
+  const actor = state.players.find((player) => player.id === ctx.action.actorId);
+  if (!actor) return;
+
+  const drawn = pool.shift();
+  if (!drawn) return;
+  const tile = buildMission43WireTile(drawn);
+  if (!tile) {
+    syncMission43NanoWireCount(state);
+    return;
+  }
+
+  const requestedStandIndex = (ctx.action as { mission43NanoStandIndex?: unknown })
+    .mission43NanoStandIndex;
+  const receiverStandIndex = resolveMission43ReceiverStandIndex(actor, requestedStandIndex);
+  const insertIndex = resolveMission43InsertIndex(actor, receiverStandIndex, tile.sortValue);
+  actor.hand.splice(insertIndex, 0, tile);
+  adjustMission43StandSize(actor, receiverStandIndex, 1);
+  remapMission43InfoTokensAfterInsert(actor, insertIndex);
+  syncMission43NanoWireCount(state);
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: ctx.action.actorId,
+    action: "hookEffect",
+    detail: `mission43:nano_wire_transfer:stand=${receiverStandIndex + 1}|insert=${insertIndex}|remaining=${campaign.mission43NanoWireCount ?? pool.length}`,
+    timestamp: Date.now(),
+  });
 }
 
 function getMission59NanoState(state: Readonly<GameState>): Mission59NanoState | null {
@@ -2212,6 +2508,43 @@ registerHookHandler<"nano_progression">("nano_progression", {
     if (delta === 0) return;
 
     applyNanoDelta(ctx.state, delta, ctx.previousPlayerId ?? "system", "point=endTurn");
+  },
+});
+
+/**
+ * Mission 43 — Nano the Robot.
+ *
+ * - 12-space ping-pong Nano strip (1..12..1..)
+ * - Hidden Nano wire pool dealt at setup
+ * - Matching successful cut value transfers one hidden Nano wire to actor
+ */
+registerHookHandler<"mission43_nano_robot">("mission43_nano_robot", {
+  setup(_rule: Mission43NanoRobotRuleDef, ctx: SetupHookContext): void {
+    initializeCampaignProgressState(ctx.state);
+    ctx.state.campaign!.nanoTracker = {
+      position: 0,
+      max: 11,
+    };
+    ctx.state.campaign!.mission43NanoDirection = 1;
+    initializeMission43NanoWirePool(ctx.state);
+
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `mission43:nano_robot:start=1,max=12,pool=${ctx.state.campaign?.mission43NanoWireCount ?? 0}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  resolve(_rule: Mission43NanoRobotRuleDef, ctx: ResolveHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    maybeTransferMission43NanoWire(ctx);
+  },
+
+  endTurn(_rule: Mission43NanoRobotRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.phase === "finished") return;
+    advanceMission43Nano(ctx.state, ctx.previousPlayerId ?? "system");
   },
 });
 

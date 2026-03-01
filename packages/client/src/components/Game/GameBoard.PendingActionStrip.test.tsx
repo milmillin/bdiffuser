@@ -63,8 +63,13 @@ describe("GameBoard PendingActionStrip", () => {
           throw new Error("unexpected solo cut action");
         }}
         mission59RotateNano={false}
+        mission43NanoStandIndex={0}
+        showMission43StandSelector={false}
         onMission59RotateNanoChange={() => {
           throw new Error("unexpected nano rotation toggle");
+        }}
+        onMission43NanoStandIndexChange={() => {
+          throw new Error("unexpected mission43 stand selection");
         }}
         onConfirm={() => {
           throw new Error("unexpected confirm");

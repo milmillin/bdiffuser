@@ -18,6 +18,7 @@ import {
   type Mission22TokenPassBoardState,
   type Mission27TokenDraftBoardState,
   type Mission29TurnState,
+  type Mission43NanoWire,
   type SurrenderVoteState,
 } from "@bomb-busters/shared";
 import {
@@ -255,6 +256,28 @@ function normalizeMission29Turn(
     ...(typeof raw.matchedCut === "boolean" ? { matchedCut: raw.matchedCut } : {}),
     ...(typeof raw.skipReveal === "boolean" ? { skipReveal: raw.skipReveal } : {}),
   };
+}
+
+function normalizeMission43NanoWire(raw: unknown): Mission43NanoWire | null {
+  if (!isObject(raw)) return null;
+  if (typeof raw.id !== "string" || raw.id.length === 0) return null;
+  if (typeof raw.sortValue !== "number" || !Number.isFinite(raw.sortValue)) return null;
+  const originalOwnerId =
+    typeof raw.originalOwnerId === "string" && raw.originalOwnerId.length > 0
+      ? raw.originalOwnerId
+      : undefined;
+  return {
+    id: raw.id,
+    sortValue: raw.sortValue,
+    ...(originalOwnerId != null ? { originalOwnerId } : {}),
+  };
+}
+
+function normalizeMission43NanoWires(raw: unknown): Mission43NanoWire[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => normalizeMission43NanoWire(entry))
+    .filter((entry): entry is Mission43NanoWire => entry !== null);
 }
 
 function normalizeNumberCardHands(raw: unknown): Record<string, NumberCard[]> {
@@ -541,6 +564,27 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     const mission29Turn = normalizeMission29Turn(raw.mission29Turn);
     if (mission29Turn) {
       campaign.mission29Turn = mission29Turn;
+    }
+  }
+
+  if (hasOwn(raw, "mission43NanoWires")) {
+    const nanoWires = normalizeMission43NanoWires(raw.mission43NanoWires);
+    if (nanoWires.length > 0) {
+      campaign.mission43NanoWires = nanoWires;
+    }
+  }
+
+  if (hasOwn(raw, "mission43NanoDirection")) {
+    const direction = raw.mission43NanoDirection;
+    if (direction === 1 || direction === -1) {
+      campaign.mission43NanoDirection = direction;
+    }
+  }
+
+  if (hasOwn(raw, "mission43NanoWireCount")) {
+    const count = raw.mission43NanoWireCount;
+    if (typeof count === "number" && Number.isFinite(count) && count >= 0) {
+      campaign.mission43NanoWireCount = Math.floor(count);
     }
   }
 

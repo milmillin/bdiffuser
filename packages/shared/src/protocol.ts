@@ -29,6 +29,7 @@ export type ClientMessage =
       oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
       mission59RotateNano?: boolean;
+      mission43NanoStandIndex?: number;
     }
   | {
       type: "dualCutDoubleDetector";
@@ -39,17 +40,28 @@ export type ClientMessage =
       oxygenRecipientPlayerId?: string;
       actorTileIndex?: number;
       mission59RotateNano?: boolean;
+      mission43NanoStandIndex?: number;
     }
   | {
       type: "soloCut";
       value: number | "YELLOW";
       targetPlayerId?: string;
       mission59RotateNano?: boolean;
+      mission43NanoStandIndex?: number;
     }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
-  | { type: "useEquipment"; equipmentId: AnyEquipmentId; payload: UseEquipmentPayload }
-  | { type: "useCharacterAbility"; payload: UseEquipmentPayload }
+  | {
+      type: "useEquipment";
+      equipmentId: AnyEquipmentId;
+      payload: UseEquipmentPayload;
+      mission43NanoStandIndex?: number;
+    }
+  | {
+      type: "useCharacterAbility";
+      payload: UseEquipmentPayload;
+      mission43NanoStandIndex?: number;
+    }
   | { type: "chooseNextPlayer"; targetPlayerId: string }
   | { type: "designateCutter"; targetPlayerId: string }
   | { type: "simultaneousFourCut"; targets: Array<{ playerId: string; tileIndex: number }> }

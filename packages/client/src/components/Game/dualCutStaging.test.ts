@@ -14,6 +14,7 @@ describe("resetDualCutToDraft", () => {
       pendingAction: null,
       selectedGuessTile: 3,
       mission59RotateNano: false,
+      mission43NanoStandIndex: 0,
     });
   });
 
@@ -27,6 +28,7 @@ describe("resetDualCutToDraft", () => {
     );
 
     expect(result.mission59RotateNano).toBe(true);
+    expect(result.mission43NanoStandIndex).toBe(0);
     expect(result.selectedGuessTile).toBe(1);
     expect(result.pendingAction).toBeNull();
   });
@@ -41,5 +43,18 @@ describe("resetDualCutToDraft", () => {
     );
 
     expect(result.mission59RotateNano).toBe(false);
+    expect(result.mission43NanoStandIndex).toBe(0);
+  });
+
+  it("preserves mission 43 receiving-stand selection from staged dual cut", () => {
+    const result = resetDualCutToDraft(
+      {
+        kind: "dual_cut",
+        mission43NanoStandIndex: 1,
+      },
+      2,
+    );
+
+    expect(result.mission43NanoStandIndex).toBe(1);
   });
 });

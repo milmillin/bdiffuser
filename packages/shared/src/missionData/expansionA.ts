@@ -45,7 +45,7 @@ export function registerExpansionAMissions(setMission: MissionSetter): void {
     },
     behaviorHooks: ["mission_43_nano_track_and_hidden_wire_pool"],
     hookRules: [
-      { kind: "nano_progression", start: 0, max: 6, advanceOn: "end_turn", advanceBy: 1 },
+      { kind: "mission43_nano_robot" },
       { kind: "random_setup_info_tokens", captainOnly: true },
     ],
   });

@@ -45,6 +45,7 @@ import {
   dispatchHooks,
   getHookRules,
   hasActiveConstraint,
+  hasMission43RemainingNanoWires,
   emitMissionFailureTelemetry,
   setMission29SkipRevealForCurrentTurn,
 } from "./missionHooks.js";
@@ -1023,7 +1024,8 @@ function checkEquipUnlock(
 
 /** Check win: all stands empty. */
 function checkWin(state: GameState): boolean {
-  return state.players.every((p) => getUncutTiles(p).length === 0);
+  return state.players.every((p) => getUncutTiles(p).length === 0) &&
+    !hasMission43RemainingNanoWires(state);
 }
 
 /** Update marker confirmed status based on cut tiles. */
@@ -1268,6 +1270,7 @@ export function executeUseEquipment(
   actorId: string,
   equipmentId: AnyEquipmentId,
   payload: UseEquipmentPayload,
+  mission43NanoStandIndex?: number,
 ): GameAction {
   const actor = state.players.find((player) => player.id === actorId)!;
   markEquipmentUsed(state, equipmentId);
@@ -1427,6 +1430,9 @@ export function executeUseEquipment(
         guessValue: payload.guessValue,
         source: "tripleDetector",
         originalTargetTileIndices: payload.targetTileIndices,
+        ...(mission43NanoStandIndex != null
+          ? { mission43NanoStandIndex }
+          : {}),
         equipmentId,
       };
       addLog(
@@ -1464,6 +1470,9 @@ export function executeUseEquipment(
         guessValue: payload.guessValue,
         source: "superDetector",
         originalTargetTileIndices: uncutIndices,
+        ...(mission43NanoStandIndex != null
+          ? { mission43NanoStandIndex }
+          : {}),
         equipmentId,
       };
       addLog(
@@ -1588,7 +1597,16 @@ export function executeUseEquipment(
       const resolveResult = dispatchHooks(state.mission, {
         point: "resolve",
         state,
-        action: { type: "soloCut", actorId, value: payload.value, tilesCut: toCut.length },
+        action: {
+          type: "soloCut",
+          actorId,
+          value: payload.value,
+          tilesCut: toCut.length,
+          mission43TransferEligible: true,
+          ...(mission43NanoStandIndex != null
+            ? { mission43NanoStandIndex }
+            : {}),
+        },
         cutValue: payload.value,
         cutSuccess: true,
       });
@@ -1680,7 +1698,16 @@ export function executeUseEquipment(
         resolveResultDisintegrator = dispatchHooks(state.mission, {
           point: "resolve",
           state,
-          action: { type: "soloCut", actorId, value: drawnValue, tilesCut: totalCut },
+          action: {
+            type: "soloCut",
+            actorId,
+            value: drawnValue,
+            tilesCut: totalCut,
+            mission43TransferEligible: totalCut === 1,
+            ...(mission43NanoStandIndex != null
+              ? { mission43NanoStandIndex }
+              : {}),
+          },
           cutValue: drawnValue,
           cutSuccess: true,
         });
@@ -2036,6 +2063,7 @@ export function executeCharacterAbility(
   state: GameState,
   actorId: string,
   payload: UseEquipmentPayload,
+  mission43NanoStandIndex?: number,
 ): GameAction {
   const actor = state.players.find((player) => player.id === actorId)!;
 
@@ -2097,6 +2125,9 @@ export function executeCharacterAbility(
         guessValue: payload.guessValue,
         source: "tripleDetector",
         originalTargetTileIndices: payload.targetTileIndices,
+        ...(mission43NanoStandIndex != null
+          ? { mission43NanoStandIndex }
+          : {}),
       };
       addLog(
         state,
@@ -2134,6 +2165,11 @@ export function executeCharacterAbility(
         payload.targetPlayerId,
         payload.targetTileIndex,
         guessed,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mission43NanoStandIndex,
       );
     }
 

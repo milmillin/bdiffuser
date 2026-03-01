@@ -6,6 +6,7 @@ import {
   getChallengeCardImage,
   NUMBER_CARD_BACK,
   CONSTRAINT_CARD_BACK,
+  WIRE_BACK_IMAGE,
   CUTTER_CARD_IMAGES,
   BUNKER_CARD_IMAGES,
   MISSION66_BUNKER_CELLS_BY_FLOOR,
@@ -83,6 +84,66 @@ function TrackerBar({ label, position, max }: { label: string; position: number;
             />
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function NanoNumberStrip({
+  label,
+  position,
+  slotCount,
+  testId,
+}: {
+  label: string;
+  position: number;
+  slotCount: number;
+  testId: string;
+}) {
+  const safeSlotCount = Math.max(1, Math.floor(slotCount));
+  const safePosition = Math.max(0, Math.min(Math.floor(position), safeSlotCount - 1));
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <span className="w-12 text-xs text-emerald-300 font-semibold">{label}</span>
+        <span className="ml-auto text-xs font-bold text-emerald-100 tabular-nums">
+          {safePosition + 1}/{safeSlotCount}
+        </span>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-max items-stretch gap-1" data-testid={testId}>
+          {Array.from({ length: safeSlotCount }, (_, idx) => {
+            const isCurrent = idx === safePosition;
+            return (
+              <div
+                key={`${testId}-slot-${idx}`}
+                data-testid={`${testId}-slot-${idx + 1}`}
+                className={`relative h-12 w-8 shrink-0 rounded border ${
+                  isCurrent
+                    ? "border-emerald-300 bg-emerald-900/45"
+                    : "border-emerald-700/50 bg-black/25"
+                }`}
+              >
+                <span
+                  className={`absolute left-1/2 top-1 -translate-x-1/2 text-[10px] font-bold tabular-nums ${
+                    isCurrent ? "text-emerald-100" : "text-emerald-300/90"
+                  }`}
+                >
+                  {idx + 1}
+                </span>
+                {isCurrent && (
+                  <img
+                    src="/images/standee.png"
+                    alt=""
+                    data-testid={`${testId}-robot`}
+                    className="absolute left-1/2 bottom-1 h-6 w-4 -translate-x-1/2 object-contain drop-shadow-[0_2px_2px_rgba(0,0,0,0.7)]"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -531,6 +592,12 @@ function CampaignObjectsHint({
         showDeckCard ||
         discardCount > 0 ||
         numberCardHandsByPlayer.length > 0));
+  const usesNanoNumberStrip =
+    gameState.mission === 43 || gameState.mission === 53 || gameState.mission === 59;
+  const mission43NanoWireCount =
+    gameState.mission === 43
+      ? Math.max(0, Math.floor(campaign.mission43NanoWireCount ?? 0))
+      : 0;
 
   const hasAnyContent =
     hasNumberCardContent ||
@@ -934,12 +1001,51 @@ function CampaignObjectsHint({
         {(campaign.nanoTracker || campaign.bunkerTracker) && (
           <SectionShell>
             {campaign.nanoTracker && (
-              <div className="rounded-lg bg-emerald-950/20 px-2.5 py-2">
-                <TrackerBar
-                  label="Nano"
-                  position={campaign.nanoTracker.position}
-                  max={campaign.nanoTracker.max}
-                />
+              <div className="space-y-2 rounded-lg bg-emerald-950/20 px-2.5 py-2">
+                {usesNanoNumberStrip ? (
+                  <NanoNumberStrip
+                    label="Nano"
+                    position={campaign.nanoTracker.position}
+                    slotCount={gameState.mission === 43 ? 12 : campaign.nanoTracker.max + 1}
+                    testId={`mission-${gameState.mission}-nano-strip`}
+                  />
+                ) : (
+                  <TrackerBar
+                    label="Nano"
+                    position={campaign.nanoTracker.position}
+                    max={campaign.nanoTracker.max}
+                  />
+                )}
+                {gameState.mission === 43 && (
+                  <div className="rounded-lg bg-black/20 border border-emerald-800/60 px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+                        Nano Wires
+                      </span>
+                      <span className="ml-auto text-sm font-black text-emerald-100 tabular-nums">
+                        {mission43NanoWireCount}
+                      </span>
+                    </div>
+                    <div
+                      className="mt-1.5 flex flex-wrap items-center gap-1.5"
+                      data-testid="mission-43-nano-wire-backs"
+                    >
+                      {mission43NanoWireCount > 0 ? (
+                        Array.from({ length: mission43NanoWireCount }, (_, idx) => (
+                          <img
+                            key={`mission-43-nano-wire-${idx}`}
+                            src={`/images/${WIRE_BACK_IMAGE}`}
+                            alt=""
+                            data-testid="mission-43-nano-wire-back"
+                            className="h-8 w-5 rounded border border-black/40 bg-slate-900 object-cover"
+                          />
+                        ))
+                      ) : (
+                        <span className="text-[10px] uppercase text-emerald-300/70">None</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {campaign.bunkerTracker && (

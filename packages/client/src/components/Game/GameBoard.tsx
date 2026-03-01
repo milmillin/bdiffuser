@@ -249,6 +249,7 @@ type PendingAction =
       targetTileIndex: number;
       oxygenRecipientPlayerId?: string;
       mission59RotateNano?: boolean;
+      mission43NanoStandIndex?: number;
     }
   | {
       kind: "solo_cut";
@@ -256,6 +257,7 @@ type PendingAction =
       actorTileIndex: number;
       targetPlayerId?: string;
       mission59RotateNano?: boolean;
+      mission43NanoStandIndex?: number;
     }
   | {
       kind: "reveal_reds";
@@ -288,6 +290,8 @@ export function GameBoard({
   const isFinished = gameState.phase === "finished";
   const isMyTurn = !isFinished && currentPlayer?.id === playerId;
   const me = gameState.players.find((p) => p.id === playerId);
+  const mission43HasMultipleStands =
+    gameState.mission === 43 && (me?.standSizes?.length ?? 1) > 1;
   const nonBotPlayers = useMemo(
     () => gameState.players.filter((player) => !player.isBot),
     [gameState.players],
@@ -338,6 +342,7 @@ export function GameBoard({
     null,
   );
   const [mission59RotateNano, setMission59RotateNano] = useState(false);
+  const [mission43NanoStandIndex, setMission43NanoStandIndex] = useState(0);
 
   // Staged action requiring explicit Confirm / Cancel.
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -829,6 +834,9 @@ export function GameBoard({
         actorTileIndex: selectedGuessTile ?? 0,
         targetPlayerId: mission49DefaultRecipientId,
         mission59RotateNano: mission59RotateNano,
+        ...(mission43HasMultipleStands
+          ? { mission43NanoStandIndex: mission43NanoStandIndex }
+          : {}),
       });
       setSelectedGuessTile(null);
       setSelectedDockCardId(null);
@@ -838,6 +846,9 @@ export function GameBoard({
       type: "soloCut",
       value: selectedGuessValue,
       ...(mission59RotateNano ? { mission59RotateNano: true } : {}),
+      ...(mission43HasMultipleStands
+        ? { mission43NanoStandIndex: mission43NanoStandIndex }
+        : {}),
     });
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
@@ -846,6 +857,8 @@ export function GameBoard({
     canConfirmSoloFromDraft,
     gameState.mission,
     mission59RotateNano,
+    mission43HasMultipleStands,
+    mission43NanoStandIndex,
     mission49DefaultRecipientId,
     send,
     selectedGuessTile,
@@ -928,11 +941,25 @@ export function GameBoard({
     setSelectedGuessTile(null);
     setSelectedDockCardId(null);
     setMission59RotateNano(false);
+    setMission43NanoStandIndex(0);
     setMissionSpecialMode(false);
     setMissionSpecialTargets([]);
     setMissionFourCutMode(false);
     setMissionFourCutTargets([]);
   }, [gameState.turnNumber, gameState.phase]);
+
+  useEffect(() => {
+    if (!mission43HasMultipleStands) {
+      if (mission43NanoStandIndex !== 0) {
+        setMission43NanoStandIndex(0);
+      }
+      return;
+    }
+    const standCount = me?.standSizes?.length ?? 1;
+    if (mission43NanoStandIndex >= standCount) {
+      setMission43NanoStandIndex(0);
+    }
+  }, [mission43HasMultipleStands, mission43NanoStandIndex, me?.standSizes]);
 
   useEffect(() => {
     if (!revealRedsForced || missionSpecialCanBypassForcedReveal) return;
@@ -945,16 +972,34 @@ export function GameBoard({
   // --- Equipment mode tile click handlers (delegated to pure functions) ---
 
   const sendEquipmentModeMessage = useCallback((msg: ClientMessage) => {
+    const withMission43Stand = <T extends ClientMessage>(message: T): T => {
+      if (!mission43HasMultipleStands) return message;
+      if (
+        message.type === "useEquipment" ||
+        message.type === "useCharacterAbility" ||
+        message.type === "dualCutDoubleDetector"
+      ) {
+        return {
+          ...message,
+          mission43NanoStandIndex: mission43NanoStandIndex,
+        } as T;
+      }
+      return message;
+    };
+
     if (
       equipmentMode?.source === "character" &&
       msg.type === "useEquipment" &&
       isCharacterAbilityPayload(msg.payload)
     ) {
-      send({ type: "useCharacterAbility", payload: msg.payload });
+      send(withMission43Stand({
+        type: "useCharacterAbility",
+        payload: msg.payload,
+      }));
       return;
     }
-    send(msg);
-  }, [equipmentMode?.source, send]);
+    send(withMission43Stand(msg));
+  }, [equipmentMode?.source, mission43HasMultipleStands, mission43NanoStandIndex, send]);
 
   const handleOpponentTileClick = (
     oppId: string,
@@ -1364,6 +1409,9 @@ export function GameBoard({
           ...(gameState.mission === 59 && pendingAction.mission59RotateNano
             ? { mission59RotateNano: true }
             : {}),
+          ...(mission43HasMultipleStands && pendingAction.mission43NanoStandIndex != null
+            ? { mission43NanoStandIndex: pendingAction.mission43NanoStandIndex }
+            : {}),
           ...(pendingAction.oxygenRecipientPlayerId
             ? { oxygenRecipientPlayerId: pendingAction.oxygenRecipientPlayerId }
             : {}),
@@ -1376,6 +1424,9 @@ export function GameBoard({
           value: pendingAction.value,
           ...(gameState.mission === 59 && pendingAction.mission59RotateNano
             ? { mission59RotateNano: true }
+            : {}),
+          ...(mission43HasMultipleStands && pendingAction.mission43NanoStandIndex != null
+            ? { mission43NanoStandIndex: pendingAction.mission43NanoStandIndex }
             : {}),
           ...(pendingAction.targetPlayerId
             ? { targetPlayerId: pendingAction.targetPlayerId }
@@ -1527,6 +1578,9 @@ export function GameBoard({
                                 targetTileIndex: tileIndex,
                                 ...(gameState.mission === 59
                                   ? { mission59RotateNano }
+                                  : {}),
+                                ...(mission43HasMultipleStands
+                                  ? { mission43NanoStandIndex: mission43NanoStandIndex }
                                   : {}),
                               });
                                 }
@@ -1960,6 +2014,12 @@ export function GameBoard({
                         ? pendingAction.mission59RotateNano ?? false
                         : mission59RotateNano
                     }
+                    mission43NanoStandIndex={
+                      pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut"
+                        ? pendingAction.mission43NanoStandIndex ?? mission43NanoStandIndex
+                        : mission43NanoStandIndex
+                    }
+                    showMission43StandSelector={mission43HasMultipleStands}
                     onMission11RevealAttempt={stageMission11RevealAttempt}
                     onConfirmSoloFromDraft={confirmSoloFromDraft}
                     onMission59RotateNanoChange={(value) => {
@@ -1975,6 +2035,21 @@ export function GameBoard({
                       }
                       if (gameState.mission === 59 && pendingAction == null) {
                         setMission59RotateNano(value);
+                      }
+                    }}
+                    onMission43NanoStandIndexChange={(value) => {
+                      const normalized = Math.max(0, Math.floor(value));
+                      if (
+                        pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut"
+                      ) {
+                        setPendingAction({
+                          ...pendingAction,
+                          mission43NanoStandIndex: normalized,
+                        });
+                        return;
+                      }
+                      if (mission43HasMultipleStands && pendingAction == null) {
+                        setMission43NanoStandIndex(normalized);
                       }
                     }}
                     onMission49RecipientChange={(targetPlayerId) => {
@@ -2157,6 +2232,7 @@ export function GameBoard({
                                 setPendingAction(reset.pendingAction);
                                 setSelectedGuessTile(reset.selectedGuessTile);
                                 setMission59RotateNano(reset.mission59RotateNano);
+                                setMission43NanoStandIndex(reset.mission43NanoStandIndex);
                                 return;
                               }
                               if (pendingAction) return;
@@ -2754,7 +2830,10 @@ export function PendingActionStrip({
   onMission11RevealAttempt,
   onConfirmSoloFromDraft,
   mission59RotateNano,
+  mission43NanoStandIndex,
+  showMission43StandSelector,
   onMission59RotateNanoChange,
+  onMission43NanoStandIndexChange,
   onConfirm,
   onCancel,
   onMission49RecipientChange,
@@ -2768,12 +2847,15 @@ export function PendingActionStrip({
   mission9ActiveValue?: number;
   mission11RevealAttemptAvailable: boolean;
   mission59RotateNano: boolean;
+  mission43NanoStandIndex: number;
+  showMission43StandSelector: boolean;
   actorId: string;
   mission: number;
   canConfirm: boolean;
   onMission11RevealAttempt: () => void;
   onConfirmSoloFromDraft: () => void;
   onMission59RotateNanoChange: (value: boolean) => void;
+  onMission43NanoStandIndexChange: (value: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
   onMission49RecipientChange?: (targetPlayerId: string) => void;
@@ -2833,6 +2915,21 @@ export function PendingActionStrip({
               }}
             />
             <span>Rotate Nano 180° after this cut</span>
+          </label>
+        )}
+        {mission === 43 && showMission43StandSelector && (
+          <label className="mt-2 flex items-center gap-2 text-xs text-emerald-100/90">
+            <span>Nano wire stand:</span>
+            <select
+              className="rounded bg-emerald-900/60 border border-emerald-400/60 text-emerald-100 px-2 py-1 text-xs"
+              value={mission43NanoStandIndex}
+              onChange={(event) => {
+                onMission43NanoStandIndexChange(Number(event.target.value));
+              }}
+            >
+              <option value={0}>Stand 1</option>
+              <option value={1}>Stand 2</option>
+            </select>
           </label>
         )}
         <div className="mt-2">
@@ -2946,6 +3043,23 @@ export function PendingActionStrip({
           <span>Rotate Nano 180° after this cut</span>
         </label>
       )}
+      {mission === 43 &&
+        showMission43StandSelector &&
+        (pendingAction?.kind === "dual_cut" || pendingAction?.kind === "solo_cut") && (
+          <label className="mt-2 flex items-center gap-2 text-xs text-emerald-100/90">
+            <span>Nano wire stand:</span>
+            <select
+              className="rounded bg-emerald-900/60 border border-emerald-400/60 text-emerald-100 px-2 py-1 text-xs"
+              value={mission43NanoStandIndex}
+              onChange={(event) => {
+                onMission43NanoStandIndexChange(Number(event.target.value));
+              }}
+            >
+              <option value={0}>Stand 1</option>
+              <option value={1}>Stand 2</option>
+            </select>
+          </label>
+        )}
       <div className="flex items-center gap-2">
         {(pendingAction?.kind === "solo_cut" || pendingAction?.kind === "dual_cut") &&
           mission === 49 &&

@@ -321,6 +321,16 @@ export interface Mission59NanoState {
   facing: 1 | -1;
 }
 
+/** Mission 43: hidden Nano wire metadata stored off-board. */
+export interface Mission43NanoWire {
+  /** Stable tile identifier moved into Nano's hidden pool. */
+  id: string;
+  /** Sort value used to reconstruct tile semantics and insertion order. */
+  sortValue: number;
+  /** The player ID who originally owned this tile at mission setup. */
+  originalOwnerId?: string;
+}
+
 /** Mission 29: per-turn hidden Number-card selection and outcome state. */
 export interface Mission29TurnState {
   /** Active player whose turn this hidden-card applies to. */
@@ -371,6 +381,15 @@ export interface CampaignState {
   mission59Nano?: Mission59NanoState;
   /** Mission 29: hidden Number-card turn state. */
   mission29Turn?: Mission29TurnState;
+  /** Mission 43: hidden wires currently held by Nano. */
+  mission43NanoWires?: Mission43NanoWire[];
+  /** Mission 43: Nano movement direction on the 1-12 strip. */
+  mission43NanoDirection?: 1 | -1;
+  /**
+   * Mission 43: public count of hidden Nano wires.
+   * Server authoritative source remains `mission43NanoWires.length`.
+   */
+  mission43NanoWireCount?: number;
 }
 
 // ── Campaign Defaults ───────────────────────────────────────
@@ -489,6 +508,8 @@ export type ForcedAction =
       originalTargetTileIndices?: number[];
       /** Actor's tile index to cut on resolution. */
       actorTileIndex?: number;
+      /** Mission 43: chosen receiving stand for Nano wire transfer. */
+      mission43NanoStandIndex?: number;
       /** Equipment card ID if triggered via equipment (not character ability). */
       equipmentId?: string;
     }

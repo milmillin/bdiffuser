@@ -490,6 +490,14 @@ export interface NanoValueParityRuleDef {
 }
 
 /**
+ * Mission 43: Nano the Robot.
+ * Uses a 12-space ping-pong Nano strip plus a hidden Nano wire pool.
+ */
+export interface Mission43NanoRobotRuleDef {
+  kind: "mission43_nano_robot";
+}
+
+/**
  * Mission 13: Random setup info tokens — during setup, random info
  * tokens are placed instead of player-chosen ones.
  */
@@ -552,6 +560,7 @@ export type MissionHookRuleDef =
   | BossDesignatesValueRuleDef
   | NoInfoUnlimitedDDRuleDef
   | NanoValueParityRuleDef
+  | Mission43NanoRobotRuleDef
   | RandomSetupInfoTokensRuleDef
   | IberianYellowModeRuleDef;
 

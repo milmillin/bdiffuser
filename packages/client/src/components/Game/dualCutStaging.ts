@@ -1,12 +1,14 @@
 export type DualCutPendingActionLike = {
   kind: "dual_cut";
   mission59RotateNano?: boolean;
+  mission43NanoStandIndex?: number;
 };
 
 export type DualCutDraftReset = {
   pendingAction: null;
   selectedGuessTile: number;
   mission59RotateNano: boolean;
+  mission43NanoStandIndex: number;
 };
 
 /**
@@ -21,5 +23,6 @@ export function resetDualCutToDraft(
     pendingAction: null,
     selectedGuessTile: newActorTileIndex,
     mission59RotateNano: pendingAction.mission59RotateNano ?? false,
+    mission43NanoStandIndex: pendingAction.mission43NanoStandIndex ?? 0,
   };
 }

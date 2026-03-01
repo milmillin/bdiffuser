@@ -19,6 +19,7 @@ import {
   emitMissionFailureTelemetry,
   getBlueAsRedValue,
   getHookRules,
+  hasMission43RemainingNanoWires,
   hasActiveConstraint,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
@@ -210,7 +211,8 @@ export function clearSatisfiedSecondaryEquipmentLocks(state: GameState): void {
 
 /** Check win: all stands empty */
 function checkWin(state: GameState): boolean {
-  return state.players.every((p) => getUncutTiles(p).length === 0);
+  return state.players.every((p) => getUncutTiles(p).length === 0) &&
+    !hasMission43RemainingNanoWires(state);
 }
 
 /** Check loss: detonator at max */
@@ -390,6 +392,7 @@ export function executeDualCut(
   guessLabel?: string,
   oxygenRecipientPlayerId?: string,
   mission59RotateNano?: boolean,
+  mission43NanoStandIndex?: number,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -410,6 +413,7 @@ export function executeDualCut(
     // Success: cut the target tile first. The actor tile is cut only if no hook
     // turns this success into an immediate mission loss.
     targetTile.cut = true;
+    const actorTile = resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
 
     // Dispatch resolve hooks (may override equipment unlock threshold, etc.)
     const resolveResult = dispatchHooks(state.mission, {
@@ -422,6 +426,10 @@ export function executeDualCut(
         targetTileIndex,
         guessValue,
         oxygenRecipientPlayerId,
+        mission43TransferEligible: true,
+        ...(mission43NanoStandIndex != null
+          ? { mission43NanoStandIndex }
+          : {}),
         ...(mission59RotateNano === true
           ? { mission59RotateNano: true }
           : {}),
@@ -461,8 +469,7 @@ export function executeDualCut(
       };
     }
 
-    const actorTile = resolveActorDualCutTile(state, actor, guessValue, actorTileIndex);
-    if (actorTile) actorTile.cut = true;
+    if (actorTile && !actorTile.cut) actorTile.cut = true;
 
     // Check validation and equipment unlock
     if (typeof guessValue === "number") {
@@ -757,6 +764,7 @@ export function executeDualCutDoubleDetector(
   actorTileIndex?: number,
   oxygenRecipientPlayerId?: string,
   mission59RotateNano?: boolean,
+  mission43NanoStandIndex?: number,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -793,6 +801,9 @@ export function executeDualCutDoubleDetector(
     originalTileIndex1: tileIndex1,
     originalTileIndex2: tileIndex2,
     ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
+    ...(mission43NanoStandIndex != null
+      ? { mission43NanoStandIndex }
+      : {}),
     oxygenRecipientPlayerId,
     actorTileIndex,
   };
@@ -822,6 +833,7 @@ export function executeSoloCut(
   value: number | "YELLOW",
   targetPlayerId?: string,
   mission59RotateNano?: boolean,
+  mission43NanoStandIndex?: number,
 ): GameAction {
   const actor = state.players.find((p) => p.id === actorId)!;
   const actorUncut = getUncutTiles(actor);
@@ -842,6 +854,10 @@ export function executeSoloCut(
       value,
       targetPlayerId,
       tilesCut: matchingTiles.length,
+      mission43TransferEligible: true,
+      ...(mission43NanoStandIndex != null
+        ? { mission43NanoStandIndex }
+        : {}),
       ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
     },
     cutValue: value,
@@ -1318,6 +1334,7 @@ export function resolveDetectorTileChoice(
     source,
     oxygenRecipientPlayerId,
     mission59RotateNano,
+    mission43NanoStandIndex,
   } = forced;
   const actor = state.players.find((p) => p.id === actorId)!;
   const target = state.players.find((p) => p.id === targetPlayerId)!;
@@ -1381,6 +1398,8 @@ export function resolveDetectorTileChoice(
       undefined,
       undefined,
       oxygenRecipientPlayerId,
+      undefined,
+      mission43NanoStandIndex,
     );
   }
 
@@ -1396,6 +1415,19 @@ export function resolveDetectorTileChoice(
   // Cut the chosen target tile
   chosenTile.cut = true;
 
+  // Resolve actor's matching tile before hooks so mission side-effects that
+  // insert tiles (Mission 43) cannot shift flat indices.
+  let actorTile: WireTile | undefined;
+  if (forced.actorTileIndex != null) {
+    const candidate = getTileByFlatIndex(actor, forced.actorTileIndex);
+    if (candidate && !candidate.cut && actorCanUseTile(candidate)) {
+      actorTile = candidate;
+    }
+  }
+  if (!actorTile) {
+    actorTile = actorUncut.find(actorCanUseTile);
+  }
+
   // Dispatch resolve hooks (e.g. mission 11 blue-as-red explosion)
   const resolveResult = dispatchHooks(state.mission, {
     point: "resolve",
@@ -1407,6 +1439,10 @@ export function resolveDetectorTileChoice(
       targetTileIndex: effectiveTileIndex,
       guessValue,
       oxygenRecipientPlayerId,
+      mission43TransferEligible: true,
+      ...(mission43NanoStandIndex != null
+        ? { mission43NanoStandIndex }
+        : {}),
       ...(mission59RotateNano === true ? { mission59RotateNano: true } : {}),
     },
     cutValue: guessValue,
@@ -1451,18 +1487,8 @@ export function resolveDetectorTileChoice(
     return { type: "gameOver", result: state.result };
   }
 
-  // Cut actor's matching tile
-  let actorTile: WireTile | undefined;
-  if (forced.actorTileIndex != null) {
-    const candidate = getTileByFlatIndex(actor, forced.actorTileIndex);
-    if (candidate && !candidate.cut && actorCanUseTile(candidate)) {
-      actorTile = candidate;
-    }
-  }
-  if (!actorTile) {
-    actorTile = actorUncut.find(actorCanUseTile);
-  }
-  if (actorTile) actorTile.cut = true;
+  // Cut actor's matching tile.
+  if (actorTile && !actorTile.cut) actorTile.cut = true;
 
   // Check validation and equipment unlock
   if (typeof guessValue === "number") {

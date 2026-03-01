@@ -84,6 +84,12 @@ export interface CampaignVisibilityModel {
   falseInfoTokenMode: "public";
   /** Mission 52 all-false setup token mode: visible to all players. */
   falseTokenMode: "public";
+  /** Mission 43 hidden Nano wire pool: hidden from all clients. */
+  mission43NanoWires: "hidden";
+  /** Mission 43 movement direction: hidden from all clients. */
+  mission43NanoDirection: "hidden";
+  /** Mission 43 public Nano wire count. */
+  mission43NanoWireCount: "public";
 }
 
 /**
@@ -117,6 +123,9 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   mission27TokenDraftBoard: "public",
   falseInfoTokenMode: "public",
   falseTokenMode: "public",
+  mission43NanoWires: "hidden",
+  mission43NanoDirection: "hidden",
+  mission43NanoWireCount: "public",
 } as const;
 
 // ── Redaction Helpers ──────────────────────────────────────
@@ -218,6 +227,9 @@ export function filterCampaignState(
       : {}),
     ...(campaign.falseTokenMode !== undefined
       ? { falseTokenMode: campaign.falseTokenMode }
+      : {}),
+    ...(campaign.mission43NanoWireCount !== undefined
+      ? { mission43NanoWireCount: campaign.mission43NanoWireCount }
       : {}),
   };
 }

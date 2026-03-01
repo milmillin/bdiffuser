@@ -402,6 +402,7 @@ export class BombBustersServer extends Server<Env> {
           msg.actorTileIndex,
           msg.oxygenRecipientPlayerId,
           msg.mission59RotateNano,
+          msg.mission43NanoStandIndex,
         );
         break;
       case "dualCutDoubleDetector":
@@ -414,6 +415,7 @@ export class BombBustersServer extends Server<Env> {
           msg.actorTileIndex,
           msg.oxygenRecipientPlayerId,
           msg.mission59RotateNano,
+          msg.mission43NanoStandIndex,
         );
         break;
       case "soloCut":
@@ -422,6 +424,7 @@ export class BombBustersServer extends Server<Env> {
           msg.value,
           msg.targetPlayerId,
           msg.mission59RotateNano,
+          msg.mission43NanoStandIndex,
         );
         break;
       case "revealReds":
@@ -434,10 +437,19 @@ export class BombBustersServer extends Server<Env> {
         this.handleSimultaneousFourCut(connection, msg.targets);
         break;
       case "useEquipment":
-        this.handleUseEquipment(connection, msg.equipmentId, msg.payload);
+        this.handleUseEquipment(
+          connection,
+          msg.equipmentId,
+          msg.payload,
+          msg.mission43NanoStandIndex,
+        );
         break;
       case "useCharacterAbility":
-        this.handleUseCharacterAbility(connection, msg.payload);
+        this.handleUseCharacterAbility(
+          connection,
+          msg.payload,
+          msg.mission43NanoStandIndex,
+        );
         break;
       case "chooseNextPlayer":
         this.handleChooseNextPlayer(connection, msg.targetPlayerId);
@@ -1048,6 +1060,7 @@ export class BombBustersServer extends Server<Env> {
     actorTileIndex?: number,
     oxygenRecipientPlayerId?: string,
     mission59RotateNano?: boolean,
+    mission43NanoStandIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1087,6 +1100,7 @@ export class BombBustersServer extends Server<Env> {
       undefined,
       oxygenRecipientPlayerId,
       mission59RotateNano,
+      mission43NanoStandIndex,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 
@@ -1105,6 +1119,7 @@ export class BombBustersServer extends Server<Env> {
     actorTileIndex?: number,
     oxygenRecipientPlayerId?: string,
     mission59RotateNano?: boolean,
+    mission43NanoStandIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1151,6 +1166,7 @@ export class BombBustersServer extends Server<Env> {
       actorTileIndex,
       oxygenRecipientPlayerId,
       mission59RotateNano,
+      mission43NanoStandIndex,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 
@@ -1165,6 +1181,7 @@ export class BombBustersServer extends Server<Env> {
     value: number | "YELLOW",
     targetPlayerId?: string,
     mission59RotateNano?: boolean,
+    mission43NanoStandIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1198,6 +1215,7 @@ export class BombBustersServer extends Server<Env> {
       value,
       targetPlayerId,
       mission59RotateNano,
+      mission43NanoStandIndex,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 
@@ -1322,6 +1340,7 @@ export class BombBustersServer extends Server<Env> {
     conn: Connection,
     equipmentId: AnyEquipmentId,
     payload: UseEquipmentPayload,
+    mission43NanoStandIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1350,7 +1369,13 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeUseEquipment(state, conn.id, equipmentId, payload);
+    const action = executeUseEquipment(
+      state,
+      conn.id,
+      equipmentId,
+      payload,
+      mission43NanoStandIndex,
+    );
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
@@ -1362,6 +1387,7 @@ export class BombBustersServer extends Server<Env> {
   handleUseCharacterAbility(
     conn: Connection,
     payload: UseEquipmentPayload,
+    mission43NanoStandIndex?: number,
   ) {
     const state = this.room.gameState;
     if (!state) {
@@ -1390,7 +1416,12 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const previousResult = state.result;
-    const action = executeCharacterAbility(state, conn.id, payload);
+    const action = executeCharacterAbility(
+      state,
+      conn.id,
+      payload,
+      mission43NanoStandIndex,
+    );
     this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
