@@ -131,7 +131,7 @@ export function PlayerStand({
 
       {/* Scrollable wire grid: info tokens, wires, labels */}
       {(() => {
-        const colWidth = "1.5rem";
+        const colWidth = "2.25rem";
         return (
           <ScrollableRow>
             <div className="flex items-start justify-center mx-auto w-max min-w-full">
@@ -272,10 +272,10 @@ function getTokenRowHeight(player: ClientPlayer): number {
     }
   }
 
-  // Token visuals are rendered at 1.5rem to match tile column width.
-  const tokenHeightPx = 24;
-  const tokenGapPx = 4;
-  const rowBufferPx = 16;
+  // Token visuals are rendered at 2.25rem to match tile column width.
+  const tokenHeightPx = 36;
+  const tokenGapPx = 6;
+  const rowBufferPx = 24;
   const effectiveTokenStack = Math.max(1, maxTokenStack);
   return (effectiveTokenStack * tokenHeightPx) + ((effectiveTokenStack - 1) * tokenGapPx) + rowBufferPx;
 }
@@ -314,7 +314,7 @@ function InfoTokenView({ token }: { token: InfoToken }) {
     return (
       <div className="w-full">
         <div
-          className={`w-full aspect-square rounded text-[9px] font-black leading-none flex items-center justify-center ${
+          className={`w-full aspect-square rounded text-[14px] font-black leading-none flex items-center justify-center ${
             token.relation === "eq"
               ? "bg-blue-700 text-white"
               : "bg-orange-700 text-white"
@@ -386,7 +386,7 @@ function WireTileView({
                 className="w-full h-auto block rounded-sm"
               />
             ) : (
-              <div className={`${isSmall ? "h-16" : "h-20"} bg-gray-800 flex items-center justify-center`}>
+              <div className={`${isSmall ? "h-24" : "h-[7.5rem]"} bg-gray-800 flex items-center justify-center`}>
                 <span className={`font-bold ${isSmall ? "text-xs" : "text-sm"}`}>
                   {tile.gameValue === "RED"
                     ? "R"

@@ -184,7 +184,7 @@ describe("PlayerStand", () => {
 
     expect(html).toContain("/images/info_x.png");
     expect(html).toContain("/images/info_5.png");
-    expect(html).toContain("height:68px");
+    expect(html).toContain("height:102px");
   });
 
   it("renders off-stand info token text when position is -1", () => {
