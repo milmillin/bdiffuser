@@ -176,10 +176,12 @@ describe("mission progression hooks", () => {
   it("mission 44 endTurn auto-skips players with insufficient oxygen", () => {
     const actor = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
     });
     const next = makePlayer({
       id: "p2",
+      name: "p2",
       hand: [makeTile({ id: "p2-1", gameValue: 4, cut: false })],
     });
     const state = makeGameState({
@@ -680,10 +682,12 @@ describe("mission progression hooks", () => {
   it("mission 49 endTurn does not auto-skip when actor can make a legal yellow dual-cut", () => {
     const actor = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeYellowTile({ id: "p1-1" })],
     });
     const teammate = makePlayer({
       id: "p2",
+      name: "p2",
       hand: [makeYellowTile({ id: "p2-1" })],
     });
     const state = makeGameState({
@@ -864,10 +868,12 @@ describe("mission progression hooks", () => {
   it("mission 54 endTurn does not auto-skip if a low-cost dual-cut guess is possible", () => {
     const actor = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
     });
     const teammate = makePlayer({
       id: "p2",
+      name: "p2",
       hand: [makeTile({ id: "p2-1", gameValue: 4, cut: false })],
     });
     const state = makeGameState({
@@ -907,10 +913,12 @@ describe("mission progression hooks", () => {
   it("mission 54 endTurn auto-skips if constraint blocks all affordable dual-cut guesses", () => {
     const actor = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
     });
     const teammate = makePlayer({
       id: "p2",
+      name: "p2",
       hand: [makeTile({ id: "p2-1", gameValue: 4, cut: false })],
     });
     const state = makeGameState({
@@ -963,15 +971,18 @@ describe("mission progression hooks", () => {
   it("mission 63 endTurn does not auto-skip if a non-owned low-cost dual-cut guess is possible", () => {
     const actor = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeTile({ id: "p1-1", gameValue: 11 })],
     });
     const captain = makePlayer({
       id: "captain",
+      name: "captain",
       isCaptain: true,
       hand: [makeTile({ id: "c-1", gameValue: 2 })],
     });
     const teammate = makePlayer({
       id: "p3",
+      name: "p3",
       hand: [makeTile({ id: "p3-1", gameValue: 1 })],
     });
     const state = makeGameState({
@@ -1012,15 +1023,18 @@ describe("mission progression hooks", () => {
   it("mission 63 captain collects reserve when becoming active in an auto-skip chain", () => {
     const p1 = makePlayer({
       id: "p1",
+      name: "p1",
       hand: [makeTile({ id: "p1-1", gameValue: 11, cut: false })],
     });
     const captain = makePlayer({
       id: "captain",
+      name: "captain",
       isCaptain: true,
       hand: [makeTile({ id: "c-1", gameValue: 4, cut: false })],
     });
     const p3 = makePlayer({
       id: "p3",
+      name: "p3",
       hand: [makeTile({ id: "p3-1", gameValue: 12, cut: false })],
     });
     const state = makeGameState({

@@ -350,6 +350,11 @@ function findNextUncutPlayerIndex(
   return null;
 }
 
+function getLogPlayerLabel(player: Readonly<Player>): string {
+  const trimmedName = player.name.trim();
+  return trimmedName.length > 0 ? trimmedName : player.id;
+}
+
 function skipMission41TripwireTurns(state: GameState): void {
   if (state.mission !== 41 || state.phase === "finished") return;
 
@@ -372,7 +377,7 @@ function skipMission41TripwireTurns(state: GameState): void {
       turn: state.turnNumber,
       playerId: currentPlayer.id,
       action: "hookEffect",
-      detail: `iberian_yellow_mode:auto_skip|player=${currentPlayer.id}`,
+      detail: `iberian_yellow_mode:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
       timestamp: Date.now(),
     });
   }
@@ -973,7 +978,7 @@ function skipMission59NoMatchTurns(state: GameState): void {
       playerId: actor.id,
       action: "hookEffect",
       detail:
-        `mission_59:auto_skip|player=${actor.id}|detonator=${state.board.detonatorPosition}`,
+        `mission_59:auto_skip|player=${getLogPlayerLabel(actor)}|detonator=${state.board.detonatorPosition}`,
       timestamp: Date.now(),
     });
 
@@ -2426,7 +2431,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
           turn: ctx.state.turnNumber,
           playerId: actor.id,
           action: "hookEffect",
-          detail: `oxygen_progression:auto_skip|player=${actor.id}|detonator=${ctx.state.board.detonatorPosition}`,
+          detail: `oxygen_progression:auto_skip|player=${getLogPlayerLabel(actor)}|detonator=${ctx.state.board.detonatorPosition}`,
           timestamp: Date.now(),
         });
 
@@ -2473,7 +2478,7 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
         turn: ctx.state.turnNumber,
         playerId: actor.id,
         action: "hookEffect",
-        detail: `oxygen_progression:auto_skip|player=${actor.id}|detonator=${ctx.state.board.detonatorPosition}`,
+        detail: `oxygen_progression:auto_skip|player=${getLogPlayerLabel(actor)}|detonator=${ctx.state.board.detonatorPosition}`,
         timestamp: Date.now(),
       });
 
@@ -3804,7 +3809,7 @@ export function resolveMission61AfterConstraintDecision(
       turn: state.turnNumber,
       playerId: currentPlayer.id,
       action: "hookEffect",
-      detail: `mission61:auto_skip|player=${currentPlayer.id}`,
+      detail: `mission61:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
       timestamp: Date.now(),
     });
 
@@ -4315,7 +4320,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         turn: ctx.state.turnNumber,
         playerId: currentPlayer.id,
         action: "hookEffect",
-        detail: `mission37:auto_skip|player=${currentPlayer.id}`,
+        detail: `mission37:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
         timestamp: Date.now(),
       });
 
@@ -4467,7 +4472,7 @@ registerHookHandler<"mission_57_constraint_per_validated_value">(
           turn: ctx.state.turnNumber,
           playerId: currentPlayer.id,
           action: "hookEffect",
-          detail: `mission57:auto_skip|player=${currentPlayer.id}`,
+          detail: `mission57:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
           timestamp: Date.now(),
         });
 
@@ -4862,7 +4867,7 @@ registerHookHandler<"x_marked_wire">("x_marked_wire", {
         playerId: actor.id,
         action: "hookEffect",
         detail:
-          `x_marked_wire:auto_skip|player=${actor.id}` +
+          `x_marked_wire:auto_skip|player=${getLogPlayerLabel(actor)}` +
           `|detonator=${ctx.state.board.detonatorPosition}`,
         timestamp: Date.now(),
       });
@@ -5121,7 +5126,7 @@ registerHookHandler<"upside_down_wire">("upside_down_wire", {
         playerId: actor.id,
         action: "hookEffect",
         detail:
-          `upside_down_wire:auto_skip|player=${actor.id}` +
+          `upside_down_wire:auto_skip|player=${getLogPlayerLabel(actor)}` +
           `|detonator=${ctx.state.board.detonatorPosition}`,
         timestamp: Date.now(),
       });
@@ -5421,7 +5426,7 @@ function skipMission26NoMatchTurns(state: GameState): void {
       turn: state.turnNumber,
       playerId: currentPlayer.id,
       action: "hookEffect",
-      detail: `visible_number_card_gate:auto_skip|player=${currentPlayer.id}`,
+      detail: `visible_number_card_gate:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
       timestamp: Date.now(),
     });
   }
@@ -5777,7 +5782,7 @@ registerHookHandler<"add_subtract_number_cards">("add_subtract_number_cards", {
         playerId: actor.id,
         action: "hookEffect",
         detail:
-          `add_subtract_number_cards:auto_skip|player=${actor.id}` +
+          `add_subtract_number_cards:auto_skip|player=${getLogPlayerLabel(actor)}` +
           `|detonator=${ctx.state.board.detonatorPosition}`,
         timestamp: Date.now(),
       });
@@ -6050,7 +6055,7 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
         playerId: actor.id,
         action: "hookEffect",
         detail:
-          `personal_number_cards:auto_skip|player=${actor.id}` +
+          `personal_number_cards:auto_skip|player=${getLogPlayerLabel(actor)}` +
           `|detonator=${ctx.state.board.detonatorPosition}`,
         timestamp: Date.now(),
       });

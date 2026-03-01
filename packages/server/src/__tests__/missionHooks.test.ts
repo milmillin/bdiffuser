@@ -222,6 +222,7 @@ describe("missionHooks dispatcher", () => {
     it("mission 41: skips captain's turn on setup if they only have their tripwire and red wires", () => {
       const skipPlayer = makePlayer({
         id: "p1",
+        name: "p1",
         isCaptain: true,
         hand: [
           makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
@@ -230,6 +231,7 @@ describe("missionHooks dispatcher", () => {
       });
       const activePlayer = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "b2", gameValue: 7 })],
       });
 
@@ -256,11 +258,13 @@ describe("missionHooks dispatcher", () => {
     it("mission 41: skips captain's turn on setup if they only have their tripwire", () => {
       const skipPlayer = makePlayer({
         id: "p1",
+        name: "p1",
         isCaptain: true,
         hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
       });
       const activePlayer = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "b2", gameValue: 7 })],
       });
 
@@ -1864,6 +1868,7 @@ describe("missionHooks dispatcher", () => {
     it("mission 38: auto-skips non-captain when only successful cut target is captain flipped wire", () => {
       const captain = makePlayer({
         id: "captain",
+        name: "captain",
         isCaptain: true,
         hand: [
           makeTile({ id: "captain-flipped", gameValue: 7, cut: false }),
@@ -1874,11 +1879,13 @@ describe("missionHooks dispatcher", () => {
 
       const stuck = makePlayer({
         id: "stuck",
+        name: "stuck",
         hand: [makeTile({ id: "stuck-7", gameValue: 7, cut: false })],
       });
 
       const next = makePlayer({
         id: "next",
+        name: "next",
         hand: [makeTile({ id: "next-2", gameValue: 2, cut: false })],
       });
 
@@ -1904,13 +1911,54 @@ describe("missionHooks dispatcher", () => {
       expect(skipLog).toBeDefined();
     });
 
+    it("mission 35: auto-skip log uses player name instead of id", () => {
+      const actor = makePlayer({
+        id: "78d2df4d-5b21-4ce2-b35e-74db38e34929",
+        name: "T11flame",
+        hand: [makeTile({ id: "actor-1", gameValue: 5, cut: false, isXMarked: true })],
+      });
+      const yellowTeammate = makePlayer({
+        id: "p2",
+        name: "p2",
+        hand: [makeTile({ id: "p2-y", color: "yellow", gameValue: "YELLOW", cut: false })],
+      });
+      const next = makePlayer({
+        id: "p3",
+        name: "p3",
+        hand: [makeTile({ id: "p3-1", gameValue: 2, cut: false })],
+      });
+      const state = makeGameState({
+        mission: 35,
+        players: [actor, yellowTeammate, next],
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        log: [],
+      });
+
+      dispatchHooks(35, { point: "endTurn", state });
+
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(6);
+      expect(state.board.detonatorPosition).toBe(2);
+      const skipLog = state.log.find(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "x_marked_wire:auto_skip|player=T11flame|detonator=2",
+      );
+      expect(skipLog).toBeDefined();
+      expect(renderLogDetail(skipLog!.detail)).not.toContain(actor.id);
+    });
+
     it("mission 26: flips all Number cards faceup when none are visible and auto-skips if no match", () => {
       const skipPlayer = makePlayer({
-        id: "skip",
+        id: "78d2df4d-5b21-4ce2-b35e-74db38e34929",
+        name: "skip",
         hand: [makeTile({ id: "r1", color: "red", gameValue: "RED", cut: false })],
       });
       const nextPlayer = makePlayer({
         id: "next",
+        name: "next",
         hand: [makeTile({ id: "n1", gameValue: 4, cut: false })],
       });
 
@@ -1955,11 +2003,13 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail) === "visible_number_card_gate:auto_skip|player=skip",
       );
       expect(skipLog).toBeDefined();
+      expect(renderLogDetail(skipLog!.detail)).not.toContain(skipPlayer.id);
     });
 
     it("mission 41: auto-skips a player with only their tripwire and red wires", () => {
       const skipPlayer = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [
           makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" }),
           makeTile({ id: "r1", color: "red", gameValue: "RED", sortValue: 2.5 }),
@@ -1967,6 +2017,7 @@ describe("missionHooks dispatcher", () => {
       });
       const activePlayer = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "b2", gameValue: 5 })],
       });
 
@@ -1993,10 +2044,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 41: auto-skips a player with only their tripwire", () => {
       const skipPlayer = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "y1", color: "yellow", gameValue: "YELLOW" })],
       });
       const activePlayer = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "b2", gameValue: 5 })],
       });
 
@@ -2023,10 +2076,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 65: auto-skips a stuck player and advances detonator", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-1", gameValue: 4, cut: false })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [
           makeTile({ id: "p2-1", gameValue: 2, cut: false }),
           makeTile({
@@ -2040,6 +2095,7 @@ describe("missionHooks dispatcher", () => {
       });
       const p3 = makePlayer({
         id: "p3",
+        name: "p3",
         hand: [makeTile({ id: "p3-1", gameValue: 6, cut: false })],
       });
       const state = makeGameState({
@@ -2079,10 +2135,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 59: auto-skips players with no playable uncut wires", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-10", gameValue: 10, cut: true })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: 1, cut: true })],
       });
       const state = makeGameState({
@@ -2136,10 +2194,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 59: does not auto-skip a player who can cut using only Nano's current value", () => {
       const actor = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-7", gameValue: 7, cut: false })],
       });
       const target = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-7", gameValue: 7, cut: false })],
       });
       const state = makeGameState({
@@ -2193,10 +2253,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 59: skips a player with no legal cut target and no legal solo pair", () => {
       const actor = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-10", gameValue: 10, cut: false })],
       });
       const target = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: 1, cut: true })],
       });
       const state = makeGameState({
@@ -2317,14 +2379,17 @@ describe("missionHooks dispatcher", () => {
     it("mission 47: auto-skips a stuck player and advances detonator", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-1", gameValue: 2, cut: true })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: "RED", cut: false })],
       });
       const p3 = makePlayer({
         id: "p3",
+        name: "p3",
         hand: [makeTile({ id: "p3-1", gameValue: 4, cut: false })],
       });
       const state = makeGameState({
@@ -2363,10 +2428,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 47: does not auto-skip when legal Number pairs exist but no hand match", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-1", gameValue: 1, cut: false })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: 9, cut: false })],
       });
       const state = makeGameState({
@@ -2405,10 +2472,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 47: auto-skips when legal Number pairs exist but no valid solo target and no dual-cut target", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-1", gameValue: 2, cut: false })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: 9, cut: true })],
       });
       const state = makeGameState({
@@ -2447,10 +2516,12 @@ describe("missionHooks dispatcher", () => {
     it("mission 47: does not auto-skip when only red wires remain", () => {
       const p1 = makePlayer({
         id: "p1",
+        name: "p1",
         hand: [makeTile({ id: "p1-1", gameValue: "RED", cut: false })],
       });
       const p2 = makePlayer({
         id: "p2",
+        name: "p2",
         hand: [makeTile({ id: "p2-1", gameValue: 4, cut: true })],
       });
       const state = makeGameState({
