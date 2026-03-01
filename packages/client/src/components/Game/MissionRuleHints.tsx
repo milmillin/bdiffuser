@@ -487,10 +487,18 @@ function CampaignObjectsHint({
         : undefined;
 
   const visibleCards = campaign.numberCards?.visible ?? [];
-  const displayVisibleCards =
-    gameState.mission === 26 || gameState.mission === 47
-      ? [...visibleCards].sort((a, b) => a.value - b.value || a.id.localeCompare(b.id))
-      : visibleCards;
+  const visibleCardEntries = visibleCards.map((card, originalIndex) => ({
+    card,
+    originalIndex,
+  }));
+  const shouldSortVisibleCards =
+    gameState.mission === 26 || gameState.mission === 47 || gameState.mission === 57;
+  const displayVisibleCardEntries = shouldSortVisibleCards
+    ? [...visibleCardEntries].sort(
+      (a, b) => a.card.value - b.card.value || a.card.id.localeCompare(b.card.id),
+    )
+    : visibleCardEntries;
+  const displayVisibleCards = displayVisibleCardEntries.map((entry) => entry.card);
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
   const showNumberDeck = gameState.mission !== 36;
@@ -525,6 +533,20 @@ function CampaignObjectsHint({
     gameState.mission === 66 ? (campaign.constraints?.global ?? []) : [];
   const globalConstraints =
     gameState.mission === 66 ? mission66GlobalConstraints : activeGlobalConstraints;
+  const supportsPairedConstraintLayout = gameState.mission === 47 || gameState.mission === 57;
+  const pairedConstraintCandidates = supportsPairedConstraintLayout
+    ? (campaign.constraints?.global ?? [])
+    : [];
+  const pairedNumberConstraintColumns = supportsPairedConstraintLayout
+    ? displayVisibleCardEntries.map(({ card, originalIndex }) => ({
+      card,
+      constraint: pairedConstraintCandidates[originalIndex] ?? null,
+    }))
+    : [];
+  const showPairedNumberConstraintRows =
+    supportsPairedConstraintLayout &&
+    pairedNumberConstraintColumns.length > 0 &&
+    pairedNumberConstraintColumns.some((column) => column.constraint != null);
   const mission66ActionConstraint =
     gameState.mission === 66 ? (campaign.constraints?.deck?.[0] ?? null) : null;
   const mission66ActionPointer =
@@ -555,6 +577,7 @@ function CampaignObjectsHint({
     });
   }
   const showStandaloneConstraints =
+    !showPairedNumberConstraintRows &&
     gameState.mission !== 66 &&
     (globalConstraints.length > 0 || perPlayerConstraints.length > 0 || mission66ActionConstraint != null);
 
@@ -619,138 +642,233 @@ function CampaignObjectsHint({
         {hasNumberCardContent && (
           <SectionShell>
             {(hasCutterCard || displayVisibleCards.length > 0 || showDeckCard || discardCount > 0) && (
-              <CampaignRow>
-                {cutterImage && showLeftCutter && (
-                  <CampaignObjectCard
-                    image={cutterImage}
-                    borderClassName="border-emerald-500"
-                    landscape
-                    rotateCcw90
-                    testId={
-                      mission36CutterPlacement === "left"
-                        ? "mission-hint-thumb-sequence-cutter-left"
-                        : undefined
-                    }
-                    onClick={() =>
-                      setPreviewCard({
-                        name:
-                          sequenceRule?.kind === "sequence_priority"
-                            ? `Sequence Priority (${sequenceRule.variant === "face_a" ? "2 cuts" : "4 cuts"})`
-                            : "Mission 36 Sequence Cutter",
-                        previewImage: cutterImage,
-                        previewAspectRatio: "1037/736",
-                        previewRotation: "ccw90",
-                      })
-                    }
-                  />
-                )}
-                {displayVisibleCards.map((card, idx) => {
-                  const isSequenceCard =
-                    sequencePointer != null &&
-                    (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
-                  let image: string;
-                  let borderClassName: string;
-                  let dimmed = false;
+              showPairedNumberConstraintRows ? (
+                <CampaignRow>
+                  <div
+                    data-testid="mission-hint-paired-number-constraint-row"
+                    className="flex items-start justify-center gap-2"
+                  >
+                    {pairedNumberConstraintColumns.map(({ card, constraint }, idx) => {
+                      const isSequenceCard =
+                        sequencePointer != null &&
+                        (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
+                      let image: string;
+                      let borderClassName: string;
+                      let dimmed = false;
 
-                  if (isSequenceCard) {
-                    if (gameState.mission === 36) {
-                      image = getNumberCardImage(card.value);
-                      borderClassName = idx === sequencePointer
-                        ? "border-emerald-500"
-                        : "border-amber-500";
-                    } else {
-                      if (idx < sequencePointer) {
-                        image = NUMBER_CARD_BACK;
-                        borderClassName = "border-black/75";
-                        dimmed = true;
-                      } else if (idx === sequencePointer) {
-                        image = getNumberCardImage(card.value);
-                        borderClassName = "border-emerald-500";
+                      if (isSequenceCard) {
+                        if (gameState.mission === 36) {
+                          image = getNumberCardImage(card.value);
+                          borderClassName = idx === sequencePointer
+                            ? "border-emerald-500"
+                            : "border-amber-500";
+                        } else {
+                          if (idx < sequencePointer) {
+                            image = NUMBER_CARD_BACK;
+                            borderClassName = "border-black/75";
+                            dimmed = true;
+                          } else if (idx === sequencePointer) {
+                            image = getNumberCardImage(card.value);
+                            borderClassName = "border-emerald-500";
+                          } else {
+                            image = getNumberCardImage(card.value);
+                            borderClassName = "border-amber-500";
+                          }
+                        }
                       } else {
-                        image = getNumberCardImage(card.value);
-                        borderClassName = "border-amber-500";
+                        image = card.faceUp
+                          ? getNumberCardImage(card.value)
+                          : NUMBER_CARD_BACK;
+                        borderClassName = card.faceUp ? "border-sky-500" : "border-black/75";
+                        dimmed = !card.faceUp;
                       }
-                    }
-                  } else {
-                    image = card.faceUp
-                      ? getNumberCardImage(card.value)
-                      : NUMBER_CARD_BACK;
-                    borderClassName = card.faceUp ? "border-sky-500" : "border-black/75";
-                    dimmed = !card.faceUp;
-                  }
 
-                  return (
+                      return (
+                        <div
+                          key={`paired-${card.id}-${idx}`}
+                          data-testid={`mission-hint-paired-column-${idx}`}
+                          className={`flex ${constraintThumbnailSizeClass} shrink-0 flex-col items-center gap-2`}
+                        >
+                          <div className="w-full flex justify-center">
+                            <CampaignObjectCard
+                              image={image}
+                              borderClassName={borderClassName}
+                              sizeClassName={numberThumbnailSizeClass}
+                              testId={`mission-hint-thumb-number-visible-${card.id}`}
+                              dimmed={dimmed}
+                              onClick={() =>
+                                setPreviewCard({
+                                  name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
+                                  previewImage: image,
+                                  detailSubtitle: card.faceUp
+                                    ? `Value: ${card.value}`
+                                    : "This card is face down.",
+                                })
+                              }
+                            />
+                          </div>
+                          {constraint ? (
+                            <CampaignObjectCard
+                              image={getConstraintCardImage(constraint.id)}
+                              borderClassName={constraint.active ? "border-rose-500" : "border-slate-500/70"}
+                              sizeClassName={constraintThumbnailSizeClass}
+                              testId={`mission-hint-thumb-constraint-global-${constraint.id}-${idx}`}
+                              dimmed={!constraint.active}
+                              onClick={() =>
+                                setPreviewCard({
+                                  name: `Constraint ${constraint.id}`,
+                                  previewImage: getConstraintCardImage(constraint.id),
+                                  previewScale: 1.5,
+                                  detailSubtitle: constraint.name || constraint.id,
+                                  detailEffect: constraint.description,
+                                })
+                              }
+                            />
+                          ) : (
+                            <div
+                              aria-hidden
+                              className={`${constraintThumbnailSizeClass} shrink-0 aspect-[739/1040]`}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CampaignRow>
+              ) : (
+                <CampaignRow>
+                  {cutterImage && showLeftCutter && (
                     <CampaignObjectCard
-                      key={card.id}
-                      image={image}
-                      borderClassName={borderClassName}
-                      sizeClassName={numberThumbnailSizeClass}
-                      testId={`mission-hint-thumb-number-visible-${card.id}`}
-                      dimmed={dimmed}
+                      image={cutterImage}
+                      borderClassName="border-emerald-500"
+                      landscape
+                      rotateCcw90
+                      testId={
+                        mission36CutterPlacement === "left"
+                          ? "mission-hint-thumb-sequence-cutter-left"
+                          : undefined
+                      }
                       onClick={() =>
                         setPreviewCard({
-                          name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
-                          previewImage: image,
-                          detailSubtitle: card.faceUp
-                            ? `Value: ${card.value}`
-                            : "This card is face down.",
+                          name:
+                            sequenceRule?.kind === "sequence_priority"
+                              ? `Sequence Priority (${sequenceRule.variant === "face_a" ? "2 cuts" : "4 cuts"})`
+                              : "Mission 36 Sequence Cutter",
+                          previewImage: cutterImage,
+                          previewAspectRatio: "1037/736",
+                          previewRotation: "ccw90",
                         })
                       }
                     />
-                  );
-                })}
-                {cutterImage && showRightCutter && (
-                  <CampaignObjectCard
-                    image={cutterImage}
-                    borderClassName="border-emerald-500"
-                    landscape
-                    rotateCw90
-                    testId="mission-hint-thumb-sequence-cutter-right"
-                    onClick={() =>
-                      setPreviewCard({
-                        name: "Mission 36 Sequence Cutter",
-                        previewImage: cutterImage,
-                        previewAspectRatio: "1037/736",
-                        previewRotation: "cw90",
-                      })
+                  )}
+                  {displayVisibleCards.map((card, idx) => {
+                    const isSequenceCard =
+                      sequencePointer != null &&
+                      (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
+                    let image: string;
+                    let borderClassName: string;
+                    let dimmed = false;
+
+                    if (isSequenceCard) {
+                      if (gameState.mission === 36) {
+                        image = getNumberCardImage(card.value);
+                        borderClassName = idx === sequencePointer
+                          ? "border-emerald-500"
+                          : "border-amber-500";
+                      } else {
+                        if (idx < sequencePointer) {
+                          image = NUMBER_CARD_BACK;
+                          borderClassName = "border-black/75";
+                          dimmed = true;
+                        } else if (idx === sequencePointer) {
+                          image = getNumberCardImage(card.value);
+                          borderClassName = "border-emerald-500";
+                        } else {
+                          image = getNumberCardImage(card.value);
+                          borderClassName = "border-amber-500";
+                        }
+                      }
+                    } else {
+                      image = card.faceUp
+                        ? getNumberCardImage(card.value)
+                        : NUMBER_CARD_BACK;
+                      borderClassName = card.faceUp ? "border-sky-500" : "border-black/75";
+                      dimmed = !card.faceUp;
                     }
-                  />
-                )}
-                {showDeckCard && (
-                  <CampaignObjectCard
-                    image={NUMBER_CARD_BACK}
-                    borderClassName="border-slate-500"
-                    sizeClassName={numberThumbnailSizeClass}
-                    testId="mission-hint-thumb-number-deck"
-                    badgeLabel={String(deckCount)}
-                    onClick={() =>
-                      setPreviewCard({
-                        name: "Number Deck",
-                        previewImage: NUMBER_CARD_BACK,
-                        detailSubtitle: `${deckCount} card${deckCount === 1 ? "" : "s"} remaining`,
-                      })
-                    }
-                  />
-                )}
-                {discardCount > 0 && (
-                  <CampaignObjectCard
-                    image={NUMBER_CARD_BACK}
-                    borderClassName="border-black/75"
-                    sizeClassName={numberThumbnailSizeClass}
-                    testId="mission-hint-thumb-number-discard"
-                    badgeLabel={String(discardCount)}
-                    dimmed
-                    overlayLabel="Used"
-                    onClick={() =>
-                      setPreviewCard({
-                        name: "Number Discard",
-                        previewImage: NUMBER_CARD_BACK,
-                        detailSubtitle: `${discardCount} card${discardCount === 1 ? "" : "s"} in discard`,
-                      })
-                    }
-                  />
-                )}
-              </CampaignRow>
+
+                    return (
+                      <CampaignObjectCard
+                        key={card.id}
+                        image={image}
+                        borderClassName={borderClassName}
+                        sizeClassName={numberThumbnailSizeClass}
+                        testId={`mission-hint-thumb-number-visible-${card.id}`}
+                        dimmed={dimmed}
+                        onClick={() =>
+                          setPreviewCard({
+                            name: card.faceUp ? `Number ${card.value}` : "Number Card (face down)",
+                            previewImage: image,
+                            detailSubtitle: card.faceUp
+                              ? `Value: ${card.value}`
+                              : "This card is face down.",
+                          })
+                        }
+                      />
+                    );
+                  })}
+                  {cutterImage && showRightCutter && (
+                    <CampaignObjectCard
+                      image={cutterImage}
+                      borderClassName="border-emerald-500"
+                      landscape
+                      rotateCw90
+                      testId="mission-hint-thumb-sequence-cutter-right"
+                      onClick={() =>
+                        setPreviewCard({
+                          name: "Mission 36 Sequence Cutter",
+                          previewImage: cutterImage,
+                          previewAspectRatio: "1037/736",
+                          previewRotation: "cw90",
+                        })
+                      }
+                    />
+                  )}
+                  {showDeckCard && (
+                    <CampaignObjectCard
+                      image={NUMBER_CARD_BACK}
+                      borderClassName="border-slate-500"
+                      sizeClassName={numberThumbnailSizeClass}
+                      testId="mission-hint-thumb-number-deck"
+                      badgeLabel={String(deckCount)}
+                      onClick={() =>
+                        setPreviewCard({
+                          name: "Number Deck",
+                          previewImage: NUMBER_CARD_BACK,
+                          detailSubtitle: `${deckCount} card${deckCount === 1 ? "" : "s"} remaining`,
+                        })
+                      }
+                    />
+                  )}
+                  {discardCount > 0 && (
+                    <CampaignObjectCard
+                      image={NUMBER_CARD_BACK}
+                      borderClassName="border-black/75"
+                      sizeClassName={numberThumbnailSizeClass}
+                      testId="mission-hint-thumb-number-discard"
+                      badgeLabel={String(discardCount)}
+                      dimmed
+                      overlayLabel="Used"
+                      onClick={() =>
+                        setPreviewCard({
+                          name: "Number Discard",
+                          previewImage: NUMBER_CARD_BACK,
+                          detailSubtitle: `${discardCount} card${discardCount === 1 ? "" : "s"} in discard`,
+                        })
+                      }
+                    />
+                  )}
+                </CampaignRow>
+              )
             )}
             {numberCardHandsByPlayer.length > 0 && (
               <CampaignRow>
