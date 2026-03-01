@@ -73,4 +73,14 @@ describe("GameBoard scroll mode", () => {
     expect(html).toContain("data-testid=\"game-header\"");
     expect(html).toContain("pt-[calc(env(safe-area-inset-top)+0.375rem)]");
   });
+
+  it("keeps the player's stand anchored below a scrollable game/action area", () => {
+    mockUseIsStandalonePwa.mockReturnValue(true);
+
+    const html = renderBoard(makeBaseClientState("me"), "me");
+
+    expect(html).toContain("style=\"grid-template-rows:1fr auto\"");
+    expect(html).toContain("overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0");
+    expect(html).toContain("max-h-[40dvh] overflow-y-auto overscroll-contain");
+  });
 });

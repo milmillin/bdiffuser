@@ -1351,17 +1351,13 @@ export function GameBoard({
   return (
     <>
       <div
-        className={
-          usePageScroll
-            ? "grid min-h-dvh w-full overflow-visible"
-            : "grid h-dvh w-dvw overflow-hidden"
-        }
-        style={{ gridTemplateRows: usePageScroll ? "auto auto" : "auto 1fr" }}
+        className="grid h-dvh w-full overflow-hidden"
+        style={{ gridTemplateRows: "auto 1fr" }}
         data-testid="game-board"
         data-phase={gameState.phase}
         data-scroll-mode={usePageScroll ? "page" : "fixed"}
       >
-        <div className={usePageScroll ? "overflow-visible" : "min-h-0 overflow-hidden"}>
+        <div className="min-h-0 overflow-hidden">
           <Header
             gameState={gameState}
             playerId={playerId}
@@ -1383,20 +1379,16 @@ export function GameBoard({
         </div>
 
         <div
-          className={`grid grid-cols-[1fr] ${isRightBarHidden ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_auto_auto]"} gap-2 pr-2 py-2 pb-14 md:pb-2 ${usePageScroll ? "overflow-visible" : "overflow-hidden"} min-w-0 min-h-0`}
+          className={`grid grid-cols-[1fr] ${isRightBarHidden ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_auto_auto]"} gap-2 pr-2 py-2 pb-14 md:pb-2 overflow-hidden min-w-0 min-h-0`}
         >
           {/* Game area */}
           <div
             className={`grid gap-2 min-w-0 min-h-0 ${mobileTab !== "game" ? "hidden md:grid" : ""}`}
-            style={{ gridTemplateRows: usePageScroll ? "auto auto" : "1fr auto" }}
+            style={{ gridTemplateRows: "1fr auto" }}
           >
             {/* Scrollable top area */}
             <div
-              className={
-                usePageScroll
-                  ? "overflow-visible overflow-x-hidden min-w-0"
-                  : "overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0"
-              }
+              className="overflow-y-auto overscroll-none overflow-x-hidden min-h-0 min-w-0"
             >
               <div className="w-full min-w-0 flex flex-col gap-2 overflow-x-hidden">
                 {/* Opponents area */}
@@ -1596,7 +1588,11 @@ export function GameBoard({
             </div>
             {/* Player stand + actions — always at the bottom */}
             {me && (
-              <div className="flex flex-col gap-2 min-w-0">
+              <div
+                className="grid min-w-0 gap-2"
+                style={{ gridTemplateRows: "minmax(0, 1fr) auto" }}
+              >
+                <div className="min-h-0 max-h-[40dvh] overflow-y-auto overscroll-contain pr-1 space-y-2">
                 {showTurnConstraintReminder && (
                   <div
                     className="rounded-lg border border-amber-500/50 bg-amber-950/25 px-3 py-2 text-xs text-amber-100"
@@ -1966,6 +1962,7 @@ export function GameBoard({
                     onSelectedTokenValueChange={setSelectedInfoTokenValue}
                   />
                 )}
+                </div>
 
                 <PlayerStand
                   player={me}
@@ -2178,7 +2175,7 @@ export function GameBoard({
           {/* Mobile-only tab content */}
           {mobileTab === "mission" && (
             <div
-              className={`md:hidden ${usePageScroll ? "overflow-visible" : "overflow-y-auto"} min-h-0 space-y-3 px-2`}
+              className="md:hidden overflow-y-auto min-h-0 space-y-3 px-2"
             >
               <MissionCard missionId={gameState.mission} />
               <ActionMissionHints
