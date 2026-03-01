@@ -106,6 +106,7 @@ export function applyMission27TokenDraftChoice(
   state: GameState,
   forced: Extract<ForcedAction, { kind: "mission27TokenDraft" }>,
   value: number,
+  tileIndex?: number,
 ): { ok: true; chooserIndex: number; updatedChooserToken: InfoToken } | { ok: false; message: string } {
   const board = state.campaign?.mission27TokenDraftBoard;
   if (!board) {
@@ -123,36 +124,51 @@ export function applyMission27TokenDraftChoice(
 
   const isYellow = value === 0;
   let sourceToken: { value: number; isYellow: boolean };
+  let numericBoardIndex = -1;
   if (isYellow) {
     if (board.yellowTokens <= 0) {
       return { ok: false, message: "Token value is not available in the draft line" };
     }
-    board.yellowTokens -= 1;
     sourceToken = { value: 0, isYellow: true };
   } else {
     if (!Number.isInteger(value) || value < 1 || value > 12) {
       return { ok: false, message: "Token value is not available in the draft line" };
     }
-    const tokenIndex = board.numericTokens.indexOf(value);
-    if (tokenIndex < 0) {
+    numericBoardIndex = board.numericTokens.indexOf(value);
+    if (numericBoardIndex < 0) {
       return { ok: false, message: "Token value is not available in the draft line" };
     }
-    board.numericTokens.splice(tokenIndex, 1);
     sourceToken = { value, isYellow: false };
   }
 
+  const matchingIndices = chooser.hand
+    .map((tile, index) => ({ tile, index }))
+    .filter(({ tile }) => {
+      if (tile.cut) return false;
+      if (sourceToken.isYellow) return tile.color === "yellow";
+      return typeof tile.gameValue === "number" && tile.gameValue === sourceToken.value;
+    })
+    .map(({ index }) => index);
+
   let position = -1;
+  if (matchingIndices.length === 1) {
+    position = matchingIndices[0];
+  } else if (matchingIndices.length >= 2) {
+    if (tileIndex == null) {
+      // Backward compatibility for older clients that don't send tileIndex.
+      position = matchingIndices[0];
+    } else if (!matchingIndices.includes(tileIndex)) {
+      return { ok: false, message: "Invalid mission 27 token placement choice" };
+    } else {
+      position = tileIndex;
+    }
+  }
+
+  // Consume the draft token only after placement resolution is validated.
   if (sourceToken.isYellow) {
-    const yellowIndex = chooser.hand.findIndex((tile) => !tile.cut && tile.color === "yellow");
-    if (yellowIndex >= 0) position = yellowIndex;
+    board.yellowTokens -= 1;
   } else {
-    const wireIndex = chooser.hand.findIndex(
-      (tile) =>
-        !tile.cut &&
-        typeof tile.gameValue === "number" &&
-        tile.gameValue === sourceToken.value,
-    );
-    if (wireIndex >= 0) position = wireIndex;
+    board.numericTokens.splice(numericBoardIndex, 1);
   }
 
   const token = applyMissionInfoTokenVariant(state, {

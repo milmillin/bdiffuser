@@ -448,7 +448,7 @@ export class BombBustersServer extends Server<Env> {
         this.handleMission22TokenPassChoice(connection, msg.value);
         break;
       case "mission27TokenDraftChoice":
-        this.handleMission27TokenDraftChoice(connection, msg.value);
+        this.handleMission27TokenDraftChoice(connection, msg.value, msg.tileIndex);
         break;
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
@@ -1591,7 +1591,7 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
-  handleMission27TokenDraftChoice(conn: Connection, value: number) {
+  handleMission27TokenDraftChoice(conn: Connection, value: number, tileIndex?: number) {
     const state = this.room.gameState;
     if (!state) {
       this.sendMsg(conn, {
@@ -1623,10 +1623,17 @@ export class BombBustersServer extends Server<Env> {
       this.sendMsg(conn, { type: "error", message: "Token value must be 0 (yellow) or 1-12" });
       return;
     }
+    if (tileIndex != null && (!Number.isInteger(tileIndex) || tileIndex < 0)) {
+      this.sendMsg(conn, { type: "error", message: "Invalid mission 27 token placement choice" });
+      return;
+    }
 
-    const success = this.executeMission27TokenDraft(state, forced, value);
+    const success = this.executeMission27TokenDraft(state, forced, value, tileIndex);
     if (!success) {
-      this.sendMsg(conn, { type: "error", message: "Token value is not available in the draft line" });
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Token value is not available in the draft line or placement is invalid",
+      });
     }
   }
 
@@ -1840,8 +1847,9 @@ export class BombBustersServer extends Server<Env> {
     state: GameState,
     forced: Extract<import("@bomb-busters/shared").ForcedAction, { kind: "mission27TokenDraft" }>,
     value: number,
+    tileIndex?: number,
   ): boolean {
-    const result = applyMission27TokenDraftChoice(state, forced, value);
+    const result = applyMission27TokenDraftChoice(state, forced, value, tileIndex);
     if (!result.ok) {
       return false;
     }

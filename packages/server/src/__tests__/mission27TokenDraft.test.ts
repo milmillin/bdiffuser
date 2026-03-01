@@ -159,4 +159,176 @@ describe("Mission 27 token draft helper", () => {
 
     expect(getMission27TokenDraftAvailableValues(state)).toEqual([0, 3, 7]);
   });
+
+  it("uses explicit tileIndex for multi-match numeric placement", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c4a", gameValue: 4 }),
+        makeTile({ id: "c4b", gameValue: 4 }),
+        makeTile({ id: "c7", gameValue: 7 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 27,
+      phase: "playing",
+      players: [chooser],
+      campaign: {
+        mission27TokenDraftBoard: {
+          numericTokens: [4],
+          yellowTokens: 0,
+        },
+      },
+      pendingForcedAction: {
+        kind: "mission27TokenDraft",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        draftOrder: [0],
+        completedCount: 0,
+      },
+    });
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission27TokenDraft") {
+      throw new Error("Expected mission27 forced action to be set");
+    }
+
+    const result = applyMission27TokenDraftChoice(state, forced, 4, 1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.updatedChooserToken.position).toBe(1);
+    expect(state.campaign?.mission27TokenDraftBoard).toEqual({
+      numericTokens: [],
+      yellowTokens: 0,
+    });
+  });
+
+  it("uses explicit tileIndex for multi-match yellow placement", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeYellowTile({ id: "y1", sortValue: 1.1 }),
+        makeTile({ id: "b5", gameValue: 5 }),
+        makeYellowTile({ id: "y2", sortValue: 8.1 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 27,
+      phase: "playing",
+      players: [chooser],
+      campaign: {
+        mission27TokenDraftBoard: {
+          numericTokens: [],
+          yellowTokens: 1,
+        },
+      },
+      pendingForcedAction: {
+        kind: "mission27TokenDraft",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        draftOrder: [0],
+        completedCount: 0,
+      },
+    });
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission27TokenDraft") {
+      throw new Error("Expected mission27 forced action to be set");
+    }
+
+    const result = applyMission27TokenDraftChoice(state, forced, 0, 2);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.updatedChooserToken.isYellow).toBe(true);
+    expect(result.updatedChooserToken.position).toBe(2);
+    expect(state.campaign?.mission27TokenDraftBoard).toEqual({
+      numericTokens: [],
+      yellowTokens: 0,
+    });
+  });
+
+  it("rejects invalid tileIndex on multi-match without consuming draft token", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c4a", gameValue: 4 }),
+        makeTile({ id: "c4b", gameValue: 4 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 27,
+      phase: "playing",
+      players: [chooser],
+      campaign: {
+        mission27TokenDraftBoard: {
+          numericTokens: [4],
+          yellowTokens: 0,
+        },
+      },
+      pendingForcedAction: {
+        kind: "mission27TokenDraft",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        draftOrder: [0],
+        completedCount: 0,
+      },
+    });
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission27TokenDraft") {
+      throw new Error("Expected mission27 forced action to be set");
+    }
+
+    const result = applyMission27TokenDraftChoice(state, forced, 4, 5);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toContain("Invalid mission 27 token placement choice");
+    expect(state.campaign?.mission27TokenDraftBoard).toEqual({
+      numericTokens: [4],
+      yellowTokens: 0,
+    });
+    expect(state.players[0].infoTokens).toHaveLength(0);
+  });
+
+  it("keeps backward-compatible first-match fallback when tileIndex is omitted", () => {
+    const chooser = makePlayer({
+      id: "captain",
+      isCaptain: true,
+      hand: [
+        makeTile({ id: "c4a", gameValue: 4 }),
+        makeTile({ id: "c4b", gameValue: 4 }),
+      ],
+    });
+    const state = makeGameState({
+      mission: 27,
+      phase: "playing",
+      players: [chooser],
+      campaign: {
+        mission27TokenDraftBoard: {
+          numericTokens: [4],
+          yellowTokens: 0,
+        },
+      },
+      pendingForcedAction: {
+        kind: "mission27TokenDraft",
+        currentChooserIndex: 0,
+        currentChooserId: "captain",
+        draftOrder: [0],
+        completedCount: 0,
+      },
+    });
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission27TokenDraft") {
+      throw new Error("Expected mission27 forced action to be set");
+    }
+
+    const result = applyMission27TokenDraftChoice(state, forced, 4);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.updatedChooserToken.position).toBe(0);
+  });
 });

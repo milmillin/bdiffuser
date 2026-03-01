@@ -30,7 +30,10 @@ import {
   getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
 } from "./Actions/DetectorTileChoicePanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
-import { Mission27TokenDraftPanel } from "./Actions/Mission27TokenDraftPanel.js";
+import {
+  Mission27TokenDraftPanel,
+  getMission27DraftMatchingIndices as _getMission27DraftMatchingIndices,
+} from "./Actions/Mission27TokenDraftPanel.js";
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
@@ -371,6 +374,12 @@ export function GameBoard({
   const [detectorTileChoiceSelection, setDetectorTileChoiceSelection] = useState<
     number | null
   >(null);
+  const [mission27DraftSelectedValue, setMission27DraftSelectedValue] = useState<
+    number | null
+  >(null);
+  const [mission27DraftTileSelection, setMission27DraftTileSelection] = useState<
+    number | null
+  >(null);
   const [talkiesWalkiesSelection, setTalkiesWalkiesSelection] = useState<
     number | null
   >(null);
@@ -392,6 +401,18 @@ export function GameBoard({
       fa.targetPlayerId !== playerId
     ) {
       setDetectorTileChoiceSelection(null);
+    }
+  }, [gameState.pendingForcedAction, playerId]);
+
+  useEffect(() => {
+    const fa = gameState.pendingForcedAction;
+    if (
+      !fa ||
+      fa.kind !== FORCED_ACTION_MISSION27_TOKEN_DRAFT ||
+      fa.currentChooserId !== playerId
+    ) {
+      setMission27DraftSelectedValue(null);
+      setMission27DraftTileSelection(null);
     }
   }, [gameState.pendingForcedAction, playerId]);
 
@@ -453,6 +474,10 @@ export function GameBoard({
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
   const unknownForcedAction = getUnknownForcedAction(gameState);
+  const mission27ForcedForMe =
+    gameState.phase === "playing" &&
+    pendingForcedAction?.kind === FORCED_ACTION_MISSION27_TOKEN_DRAFT &&
+    pendingForcedAction.currentChooserId === playerId;
   const detectorForcedForMe =
     pendingForcedAction?.kind === FORCED_ACTION_DETECTOR_TILE_CHOICE &&
     pendingForcedAction.targetPlayerId === playerId
@@ -502,6 +527,10 @@ export function GameBoard({
       : null;
   const detectorEffectiveSelection =
     detectorTileChoiceSelection ?? detectorAutoSelection;
+  const mission27DraftSelectableIndices =
+    mission27ForcedForMe && me && mission27DraftSelectedValue != null
+      ? _getMission27DraftMatchingIndices(me.hand, mission27DraftSelectedValue)
+      : [];
 
   useEffect(() => {
     if (!mission46ForcedForMe) {
@@ -1003,6 +1032,13 @@ export function GameBoard({
     const fromEquipment = _getOwnSelectedTileIndex(equipmentMode);
     if (fromEquipment !== undefined) return fromEquipment;
     if (equipmentMode) return undefined;
+    if (
+      mission27ForcedForMe &&
+      mission27DraftSelectedValue != null &&
+      mission27DraftSelectableIndices.length >= 2
+    ) {
+      return mission27DraftTileSelection ?? undefined;
+    }
     if (detectorForcedForMe) return detectorEffectiveSelection ?? undefined;
     if (mission46ForcedForMe) return undefined;
     if (talkiesWalkiesSelection != null) return talkiesWalkiesSelection;
@@ -1668,6 +1704,10 @@ export function GameBoard({
                       gameState={gameState}
                       send={send}
                       playerId={playerId}
+                      selectedValue={mission27DraftSelectedValue}
+                      selectedTileIndex={mission27DraftTileSelection}
+                      onSelectedValueChange={setMission27DraftSelectedValue}
+                      onSelectedTileIndexChange={setMission27DraftTileSelection}
                     />
                   )}
 
@@ -2017,6 +2057,19 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? (tileIndex) => handleOwnTileClickEquipment(tileIndex)
+                        : mission27ForcedForMe && me
+                          ? (tileIndex) => {
+                              if (
+                                mission27DraftSelectedValue == null ||
+                                mission27DraftSelectableIndices.length < 2 ||
+                                !mission27DraftSelectableIndices.includes(tileIndex)
+                              ) {
+                                return;
+                              }
+                              setMission27DraftTileSelection((current) =>
+                                current === tileIndex ? null : tileIndex,
+                              );
+                            }
                         : detectorForcedForMe && me
                           ? (tileIndex) => {
                               if (!detectorSelectableIndices.includes(tileIndex))
@@ -2136,6 +2189,11 @@ export function GameBoard({
                         : undefined
                       : equipmentMode && gameState.phase === "playing"
                         ? getOwnTileSelectableFilter()
+                        : mission27ForcedForMe && me
+                          ? (_tile: VisibleTile, idx: number) =>
+                              mission27DraftSelectedValue != null &&
+                              mission27DraftSelectableIndices.length >= 2 &&
+                              mission27DraftSelectableIndices.includes(idx)
                         : detectorForcedForMe && me
                           ? (_tile: VisibleTile, idx: number) =>
                               detectorSelectableIndices.includes(idx)
