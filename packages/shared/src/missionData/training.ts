@@ -38,7 +38,7 @@ export function registerTrainingMissions(setMission: MissionSetter): void {
       blue: blueRange(1, 10),
       red: exact(1, redUpTo9_5),
       yellow: none(),
-      equipment: { mode: "default", excludedUnlockValues: [2, 12] },
+      equipment: { mode: "default", excludedUnlockValues: [2, 11, 12] },
     },
   });
 

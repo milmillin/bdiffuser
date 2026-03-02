@@ -191,6 +191,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       "equipment": {
         "excludedUnlockValues": [
           2,
+          11,
           12,
         ],
         "mode": "default",
@@ -222,6 +223,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       "equipment": {
         "excludedUnlockValues": [
           2,
+          11,
           12,
         ],
         "mode": "default",
@@ -253,6 +255,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       "equipment": {
         "excludedUnlockValues": [
           2,
+          11,
           12,
         ],
         "mode": "default",
@@ -284,6 +287,7 @@ exports[`resolved mission setup snapshots > mission 3 1`] = `
       "equipment": {
         "excludedUnlockValues": [
           2,
+          11,
           12,
         ],
         "mode": "default",
