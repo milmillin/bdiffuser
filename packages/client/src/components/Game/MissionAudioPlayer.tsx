@@ -262,15 +262,25 @@ export function MissionAudioPlayer({
       commitSliderSeek(sliderValue);
     };
 
-    window.addEventListener("pointerup", handleGlobalSliderRelease);
-    window.addEventListener("mouseup", handleGlobalSliderRelease);
-    window.addEventListener("touchend", handleGlobalSliderRelease);
-    window.addEventListener("touchcancel", handleGlobalSliderRelease);
+    const supportsPointerEvents = "PointerEvent" in window;
+    if (supportsPointerEvents) {
+      window.addEventListener("pointerup", handleGlobalSliderRelease);
+      window.addEventListener("pointercancel", handleGlobalSliderRelease);
+    } else {
+      window.addEventListener("mouseup", handleGlobalSliderRelease);
+      window.addEventListener("touchend", handleGlobalSliderRelease);
+      window.addEventListener("touchcancel", handleGlobalSliderRelease);
+    }
+
     return () => {
-      window.removeEventListener("pointerup", handleGlobalSliderRelease);
-      window.removeEventListener("mouseup", handleGlobalSliderRelease);
-      window.removeEventListener("touchend", handleGlobalSliderRelease);
-      window.removeEventListener("touchcancel", handleGlobalSliderRelease);
+      if (supportsPointerEvents) {
+        window.removeEventListener("pointerup", handleGlobalSliderRelease);
+        window.removeEventListener("pointercancel", handleGlobalSliderRelease);
+      } else {
+        window.removeEventListener("mouseup", handleGlobalSliderRelease);
+        window.removeEventListener("touchend", handleGlobalSliderRelease);
+        window.removeEventListener("touchcancel", handleGlobalSliderRelease);
+      }
     };
   }, [clearSliderDragState, commitSliderSeek]);
 
@@ -335,13 +345,6 @@ export function MissionAudioPlayer({
       }
     },
     [missionAudio, parseClampedSliderMs, sendAudioControl],
-  );
-
-  const handleSliderCommit = useCallback(
-    (event: MouseEvent<HTMLInputElement> | TouchEvent<HTMLInputElement>) => {
-      commitSliderSeek(event.currentTarget.value);
-    },
-    [commitSliderSeek],
   );
 
   const handleSliderBlur = useCallback(
@@ -462,8 +465,6 @@ export function MissionAudioPlayer({
         onMouseDown={handleSliderDragStart}
         onTouchStart={handleSliderDragStart}
         onChange={handleSliderChange}
-        onMouseUp={handleSliderCommit}
-        onTouchEnd={handleSliderCommit}
         onBlur={handleSliderBlur}
         className="h-2 w-full cursor-pointer accent-amber-400"
         data-testid="mission-audio-slider"

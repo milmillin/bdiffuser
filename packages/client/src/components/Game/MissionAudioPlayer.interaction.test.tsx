@@ -67,6 +67,15 @@ describe("MissionAudioPlayer interactions", () => {
     cleanup();
   });
 
+  function getSeekMessages(send: ReturnType<typeof vi.fn>) {
+    return send.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .filter(
+        (msg) =>
+          msg.type === "missionAudioControl" && msg.command === "seek",
+      );
+  }
+
   it("commits seek and clears drag state when pointer release happens outside slider", async () => {
     const send = vi.fn();
     render(<MissionAudioPlayer gameState={makeStateWithMissionAudio()} send={send} />);
@@ -84,7 +93,9 @@ describe("MissionAudioPlayer interactions", () => {
       expect(slider.value).toBe("0");
     });
 
-    expect(send).toHaveBeenCalledWith(
+    const seekMessages = getSeekMessages(send);
+    expect(seekMessages).toHaveLength(2);
+    expect(seekMessages[1]).toEqual(
       expect.objectContaining({
         type: "missionAudioControl",
         command: "seek",
@@ -108,11 +119,42 @@ describe("MissionAudioPlayer interactions", () => {
       expect(slider.value).toBe("0");
     });
 
-    expect(send).toHaveBeenCalledWith(
+    const seekMessages = getSeekMessages(send);
+    expect(seekMessages).toHaveLength(2);
+    expect(seekMessages[1]).toEqual(
       expect.objectContaining({
         type: "missionAudioControl",
         command: "seek",
         positionMs: 45_000,
+      }),
+    );
+  });
+
+  it("does not double-commit seek when pointerup and mouseup both fire", async () => {
+    const send = vi.fn();
+    render(<MissionAudioPlayer gameState={makeStateWithMissionAudio()} send={send} />);
+
+    const slider = screen.getByTestId("mission-audio-slider") as HTMLInputElement;
+
+    fireEvent.pointerDown(slider);
+    fireEvent.mouseDown(slider);
+    fireEvent.change(slider, { target: { value: "30000" } });
+    expect(slider.value).toBe("30000");
+
+    fireEvent.pointerUp(window);
+    fireEvent.mouseUp(window);
+
+    await waitFor(() => {
+      expect(slider.value).toBe("0");
+    });
+
+    const seekMessages = getSeekMessages(send);
+    expect(seekMessages).toHaveLength(2);
+    expect(seekMessages[1]).toEqual(
+      expect.objectContaining({
+        type: "missionAudioControl",
+        command: "seek",
+        positionMs: 30_000,
       }),
     );
   });
