@@ -60,6 +60,7 @@ import {
 } from "./equipmentModeLogic.js";
 import { stopMissionAudio } from "../../audio/audio.js";
 import { useIsStandalonePwa } from "../../hooks/useStandaloneMode.js";
+import { getServerSyncedNowMs } from "../../time/serverClock.js";
 import { GameRulesPopup } from "./GameRulesPopup/index.js";
 import { CardStrip } from "./CardStrip.js";
 import { CardPreviewModal, type CardPreviewCard } from "./CardPreviewModal.js";
@@ -280,11 +281,13 @@ export function GameBoard({
   send,
   playerId,
   chatMessages,
+  serverClockOffsetMs = 0,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
   playerId: string;
   chatMessages: ChatMessage[];
+  serverClockOffsetMs?: number;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isFinished = gameState.phase === "finished";
@@ -865,14 +868,20 @@ export function GameBoard({
     selectedGuessValue,
   ]);
 
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() =>
+    getServerSyncedNowMs(serverClockOffsetMs),
+  );
 
   useEffect(() => {
     if (gameState.timerDeadline == null || gameState.phase === "finished")
       return;
-    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    setNowMs(getServerSyncedNowMs(serverClockOffsetMs));
+    const id = window.setInterval(
+      () => setNowMs(getServerSyncedNowMs(serverClockOffsetMs)),
+      1000,
+    );
     return () => window.clearInterval(id);
-  }, [gameState.timerDeadline, gameState.phase]);
+  }, [gameState.timerDeadline, gameState.phase, serverClockOffsetMs]);
 
   const timerDisplay = useMemo(() => {
     if (gameState.timerDeadline == null) return null;
@@ -1689,7 +1698,11 @@ export function GameBoard({
                 <MissionRuleHints gameState={gameState} />
 
                 {gameState.phase !== "finished" && (
-                  <MissionAudioPlayer gameState={gameState} send={send} />
+                  <MissionAudioPlayer
+                    gameState={gameState}
+                    send={send}
+                    serverClockOffsetMs={serverClockOffsetMs}
+                  />
                 )}
 
               </div>

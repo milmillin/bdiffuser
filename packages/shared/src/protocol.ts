@@ -116,7 +116,7 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { type: "lobby"; state: LobbyState }
-  | { type: "gameState"; state: ClientGameState }
+  | { type: "gameState"; state: ClientGameState; serverNowMs: number }
   | { type: "action"; action: GameAction }
   | { type: "error"; message: string; code?: ActionLegalityCode }
   | { type: "kicked" }

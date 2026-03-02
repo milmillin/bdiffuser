@@ -2,6 +2,7 @@ import {
   type ChangeEvent,
   type FocusEvent,
   type MouseEvent,
+  type PointerEvent,
   type TouchEvent,
   useCallback,
   useEffect,
@@ -21,6 +22,7 @@ import {
   stopMissionAudio,
   syncMissionAudioState,
 } from "../../audio/audio.js";
+import { getServerSyncedNowMs } from "../../time/serverClock.js";
 
 function resolveMissionAudioPositionMs(
   missionAudio: MissionAudioState,
@@ -57,12 +59,16 @@ function resolveMissionAudioMuted(missionAudio: MissionAudioState): boolean {
 export function MissionAudioPlayer({
   gameState,
   send,
+  serverClockOffsetMs = 0,
 }: {
   gameState: ClientGameState;
   send: (msg: ClientMessage) => void;
+  serverClockOffsetMs?: number;
 }) {
   const missionAudio = gameState.missionAudio;
-  const [tickNowMs, setTickNowMs] = useState(() => Date.now());
+  const [tickNowMs, setTickNowMs] = useState(() =>
+    getServerSyncedNowMs(serverClockOffsetMs),
+  );
   const [sliderDragMs, setSliderDragMs] = useState<number | null>(null);
   const [localDurationMs, setLocalDurationMs] = useState<number | undefined>(
     undefined,
@@ -75,14 +81,21 @@ export function MissionAudioPlayer({
   );
   const lastSeekSentAtRef = useRef(0);
   const lastVolumeSentAtRef = useRef(0);
+  const sliderInputRef = useRef<HTMLInputElement | null>(null);
+  const sliderDragActiveRef = useRef(false);
+
+  const clearSliderDragState = useCallback(() => {
+    sliderDragActiveRef.current = false;
+    setSliderDragMs(null);
+  }, []);
 
   useEffect(() => {
     if (!missionAudio) {
       stopMissionAudio();
-      setSliderDragMs(null);
+      clearSliderDragState();
       setLocalDurationMs(undefined);
     }
-  }, [missionAudio]);
+  }, [clearSliderDragState, missionAudio]);
 
   useEffect(() => {
     if (!missionAudio) {
@@ -96,13 +109,14 @@ export function MissionAudioPlayer({
 
   useEffect(() => {
     if (!missionAudio) return;
+    setTickNowMs(getServerSyncedNowMs(serverClockOffsetMs));
     const intervalId = window.setInterval(() => {
-      setTickNowMs(Date.now());
+      setTickNowMs(getServerSyncedNowMs(serverClockOffsetMs));
     }, 200);
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [missionAudio?.status, missionAudio?.syncedAtMs]);
+  }, [missionAudio?.status, missionAudio?.syncedAtMs, serverClockOffsetMs]);
 
   const canonicalPositionMs = useMemo(() => {
     if (!missionAudio) return 0;
@@ -196,9 +210,73 @@ export function MissionAudioPlayer({
     sliderMaxMs,
   );
 
+  const parseClampedSliderMs = useCallback(
+    (rawValue: string | number): number | null => {
+      const nextMs = Number(rawValue);
+      if (!Number.isFinite(nextMs)) return null;
+      return Math.min(Math.max(0, Math.round(nextMs)), sliderMaxMs);
+    },
+    [sliderMaxMs],
+  );
+
+  const commitSliderSeek = useCallback(
+    (rawValue: string | number) => {
+      if (!missionAudio) {
+        clearSliderDragState();
+        return;
+      }
+      const clampedMs = parseClampedSliderMs(rawValue);
+      if (clampedMs == null) {
+        clearSliderDragState();
+        return;
+      }
+      syncMissionAudioState(
+        {
+          ...missionAudio,
+          positionMs: clampedMs,
+          syncedAtMs: getServerSyncedNowMs(serverClockOffsetMs),
+        },
+        clampedMs,
+      );
+      sendAudioControl("seek", clampedMs);
+      clearSliderDragState();
+      lastSeekSentAtRef.current = Date.now();
+    },
+    [
+      clearSliderDragState,
+      missionAudio,
+      parseClampedSliderMs,
+      sendAudioControl,
+      serverClockOffsetMs,
+    ],
+  );
+
+  useEffect(() => {
+    const handleGlobalSliderRelease = () => {
+      if (!sliderDragActiveRef.current) return;
+      const sliderValue = sliderInputRef.current?.value;
+      if (sliderValue == null) {
+        clearSliderDragState();
+        return;
+      }
+      commitSliderSeek(sliderValue);
+    };
+
+    window.addEventListener("pointerup", handleGlobalSliderRelease);
+    window.addEventListener("mouseup", handleGlobalSliderRelease);
+    window.addEventListener("touchend", handleGlobalSliderRelease);
+    window.addEventListener("touchcancel", handleGlobalSliderRelease);
+    return () => {
+      window.removeEventListener("pointerup", handleGlobalSliderRelease);
+      window.removeEventListener("mouseup", handleGlobalSliderRelease);
+      window.removeEventListener("touchend", handleGlobalSliderRelease);
+      window.removeEventListener("touchcancel", handleGlobalSliderRelease);
+    };
+  }, [clearSliderDragState, commitSliderSeek]);
+
   const handlePlay = useCallback(() => {
     if (!missionAudio) return;
-    const nowMs = Date.now();
+    const nowMs = getServerSyncedNowMs(serverClockOffsetMs);
     // Prime local playback in direct response to user input to avoid
     // autoplay-policy failures after a page refresh.
     syncMissionAudioState(
@@ -211,7 +289,7 @@ export function MissionAudioPlayer({
       displayPositionMs,
     );
     sendAudioControl("play", displayPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl]);
+  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs]);
 
   const handlePause = useCallback(() => {
     if (!missionAudio) return;
@@ -224,19 +302,30 @@ export function MissionAudioPlayer({
         ...missionAudio,
         status: "paused",
         positionMs: currentPositionMs,
-        syncedAtMs: Date.now(),
+        syncedAtMs: getServerSyncedNowMs(serverClockOffsetMs),
       },
       currentPositionMs,
     );
     sendAudioControl("pause", currentPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl]);
+  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs]);
+
+  const handleSliderDragStart = useCallback(
+    (
+      _event:
+        | MouseEvent<HTMLInputElement>
+        | TouchEvent<HTMLInputElement>
+        | PointerEvent<HTMLInputElement>,
+    ) => {
+      sliderDragActiveRef.current = true;
+    },
+    [],
+  );
 
   const handleSliderChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (!missionAudio) return;
-      const nextMs = Number(event.target.value);
-      if (!Number.isFinite(nextMs)) return;
-      const clampedMs = Math.min(Math.max(0, Math.round(nextMs)), sliderMaxMs);
+      const clampedMs = parseClampedSliderMs(event.target.value);
+      if (clampedMs == null) return;
       setSliderDragMs(clampedMs);
 
       const nowMs = Date.now();
@@ -245,53 +334,21 @@ export function MissionAudioPlayer({
         lastSeekSentAtRef.current = nowMs;
       }
     },
-    [missionAudio, sendAudioControl, sliderMaxMs],
+    [missionAudio, parseClampedSliderMs, sendAudioControl],
   );
 
   const handleSliderCommit = useCallback(
     (event: MouseEvent<HTMLInputElement> | TouchEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
-      const target = event.currentTarget;
-      const nextMs = Number(target.value);
-      if (!Number.isFinite(nextMs)) return;
-      const clampedMs = Math.min(Math.max(0, Math.round(nextMs)), sliderMaxMs);
-      syncMissionAudioState(
-        {
-          ...missionAudio,
-          positionMs: clampedMs,
-          syncedAtMs: Date.now(),
-        },
-        clampedMs,
-      );
-      sendAudioControl("seek", clampedMs);
-      setSliderDragMs(null);
-      lastSeekSentAtRef.current = Date.now();
+      commitSliderSeek(event.currentTarget.value);
     },
-    [missionAudio, sendAudioControl, sliderMaxMs],
+    [commitSliderSeek],
   );
 
   const handleSliderBlur = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
-      const nextMs = Number(event.currentTarget.value);
-      if (!Number.isFinite(nextMs)) {
-        setSliderDragMs(null);
-        return;
-      }
-      const clampedMs = Math.min(Math.max(0, Math.round(nextMs)), sliderMaxMs);
-      syncMissionAudioState(
-        {
-          ...missionAudio,
-          positionMs: clampedMs,
-          syncedAtMs: Date.now(),
-        },
-        clampedMs,
-      );
-      sendAudioControl("seek", clampedMs);
-      setSliderDragMs(null);
-      lastSeekSentAtRef.current = Date.now();
+      commitSliderSeek(event.currentTarget.value);
     },
-    [missionAudio, sendAudioControl, sliderMaxMs],
+    [commitSliderSeek],
   );
 
   const handleVolumeChange = useCallback(
@@ -396,10 +453,14 @@ export function MissionAudioPlayer({
       </div>
 
       <input
+        ref={sliderInputRef}
         type="range"
         min={0}
         max={sliderMaxMs}
         value={displayPositionMs}
+        onPointerDown={handleSliderDragStart}
+        onMouseDown={handleSliderDragStart}
+        onTouchStart={handleSliderDragStart}
         onChange={handleSliderChange}
         onMouseUp={handleSliderCommit}
         onTouchEnd={handleSliderCommit}

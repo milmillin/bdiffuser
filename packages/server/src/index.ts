@@ -1,6 +1,7 @@
 import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
   AnyEquipmentId,
+  ClientGameState,
   ClientMessage,
   ServerMessage,
   Player,
@@ -334,7 +335,7 @@ export class BombBustersServer extends Server<Env> {
       } else {
         // Spectator: not in players list, send omniscient view
         const spectatorView = filterStateForSpectator(this.room.gameState);
-        this.sendMsg(connection, { type: "gameState", state: spectatorView });
+        this.sendGameState(connection, spectatorView);
       }
     } else {
       // In lobby
@@ -679,7 +680,7 @@ export class BombBustersServer extends Server<Env> {
 
       // Late joiner becomes a spectator — send omniscient view
       const spectatorView = filterStateForSpectator(this.room.gameState);
-      this.sendMsg(conn, { type: "gameState", state: spectatorView });
+      this.sendGameState(conn, spectatorView);
       return;
     }
 
@@ -3280,6 +3281,14 @@ export class BombBustersServer extends Server<Env> {
     conn.send(JSON.stringify(msg));
   }
 
+  sendGameState(
+    conn: Connection,
+    state: ClientGameState,
+    serverNowMs = Date.now(),
+  ) {
+    this.sendMsg(conn, { type: "gameState", state, serverNowMs });
+  }
+
   broadcastLobby() {
     const lobbyState = createLobbyState(
       this.name,
@@ -3302,17 +3311,18 @@ export class BombBustersServer extends Server<Env> {
 
     const playerIds = new Set(this.room.players.map((p) => p.id));
     let spectatorView: ReturnType<typeof filterStateForSpectator> | null = null;
+    const serverNowMs = Date.now();
 
     for (const conn of this.getConnections()) {
       if (playerIds.has(conn.id)) {
         const filtered = filterStateForPlayer(state, conn.id);
-        this.sendMsg(conn, { type: "gameState", state: filtered });
+        this.sendGameState(conn, filtered, serverNowMs);
       } else {
         // Spectator — compute once, reuse for all spectator connections
         if (!spectatorView) {
           spectatorView = filterStateForSpectator(state);
         }
-        this.sendMsg(conn, { type: "gameState", state: spectatorView });
+        this.sendGameState(conn, spectatorView, serverNowMs);
       }
     }
   }

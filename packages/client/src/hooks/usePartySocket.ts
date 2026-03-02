@@ -9,6 +9,7 @@ import type {
   GameAction,
   ChatMessage,
 } from "@bomb-busters/shared";
+import { resolveServerClockOffsetMs } from "../time/serverClock.js";
 
 const PARTYKIT_HOST =
   import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
@@ -17,6 +18,7 @@ interface UsePartySocketReturn {
   connected: boolean;
   lobbyState: LobbyState | null;
   gameState: ClientGameState | null;
+  serverClockOffsetMs: number;
   lastAction: GameAction | null;
   chatMessages: ChatMessage[];
   error: string | null;
@@ -35,6 +37,7 @@ export function usePartySocket(
   const [connected, setConnected] = useState(false);
   const [lobbyState, setLobbyState] = useState<LobbyState | null>(null);
   const [gameState, setGameState] = useState<ClientGameState | null>(null);
+  const [serverClockOffsetMs, setServerClockOffsetMs] = useState(0);
   const [lastAction, setLastAction] = useState<GameAction | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,14 @@ export function usePartySocket(
           setGameState(null);
           break;
         case "gameState":
+          {
+            const receivedAtMs = Date.now();
+            const offsetMs = resolveServerClockOffsetMs(
+              msg.serverNowMs,
+              receivedAtMs,
+            );
+            setServerClockOffsetMs(offsetMs);
+          }
           setGameState(msg.state);
           setLobbyState(null);
           setChatMessages(msg.state.chat ?? []);
@@ -131,6 +142,7 @@ export function usePartySocket(
     connected,
     lobbyState,
     gameState,
+    serverClockOffsetMs,
     lastAction,
     chatMessages,
     error,

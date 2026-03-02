@@ -442,7 +442,18 @@ function GameRoom({
     saveSession(roomId, { playerId: id, playerName });
   }, [roomId, playerName]);
 
-  const { connected, lobbyState, gameState, lastAction, chatMessages, error, kicked, send, playerId } =
+  const {
+    connected,
+    lobbyState,
+    gameState,
+    serverClockOffsetMs,
+    lastAction,
+    chatMessages,
+    error,
+    kicked,
+    send,
+    playerId,
+  } =
     usePartySocket(roomId, { id: stableId, onIdReady: handleIdReady });
   useTurnNotification(gameState, playerId);
   const [joined, setJoined] = useState(false);
@@ -485,12 +496,24 @@ function GameRoom({
       )}
 
       {gameState && gameState.phase !== "finished" && (
-        <GameBoard gameState={gameState} send={send} playerId={gameState.playerId} chatMessages={chatMessages} />
+        <GameBoard
+          gameState={gameState}
+          send={send}
+          playerId={gameState.playerId}
+          chatMessages={chatMessages}
+          serverClockOffsetMs={serverClockOffsetMs}
+        />
       )}
 
       {gameState && gameState.phase === "finished" && (
         <>
-          <GameBoard gameState={gameState} send={send} playerId={gameState.playerId} chatMessages={chatMessages} />
+          <GameBoard
+            gameState={gameState}
+            send={send}
+            playerId={gameState.playerId}
+            chatMessages={chatMessages}
+            serverClockOffsetMs={serverClockOffsetMs}
+          />
           <EndScreen gameState={gameState} onPlayAgain={() => send({ type: "playAgain" })} />
         </>
       )}
