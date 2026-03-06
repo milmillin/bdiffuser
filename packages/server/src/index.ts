@@ -141,6 +141,7 @@ type MissionAudioControlCommand = Extract<
 interface Env {
   [key: string]: unknown;
   BombBustersServer: DurableObjectNamespace;
+  McpSession: DurableObjectNamespace;
   ZHIPU_API_KEY: string;
 }
 
@@ -3348,6 +3349,37 @@ export default {
         (await routePartykitRequest(partyReq, env)) ??
         new Response("Not found", { status: 404 })
       );
+    }
+
+    // MCP endpoint — route to McpSession Durable Object
+    if (url.pathname === "/mcp") {
+      // Handle CORS preflight
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Mcp-Session-Id",
+            "Access-Control-Expose-Headers": "Mcp-Session-Id",
+          },
+        });
+      }
+
+      // Get or create session ID
+      let sessionId = request.headers.get("Mcp-Session-Id");
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+      }
+
+      const doId = env.McpSession.idFromName(sessionId);
+      const stub = env.McpSession.get(doId);
+      const response = await stub.fetch(request);
+
+      // Add session ID header to response
+      const newResponse = new Response(response.body, response);
+      newResponse.headers.set("Mcp-Session-Id", sessionId);
+      return newResponse;
     }
 
     return (

@@ -19,12 +19,14 @@
   },
   "durable_objects": {
     "bindings": [
-      { "name": "BombBustersServer", "class_name": "BombBustersServer" }
+      { "name": "BombBustersServer", "class_name": "BombBustersServer" },
+      { "name": "McpSession", "class_name": "McpSession" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["BombBustersServer"] },
     { "tag": "v2", "new_sqlite_classes": ["StatsServer"] },
-    { "tag": "v3", "deleted_classes": ["StatsServer"] }
+    { "tag": "v3", "deleted_classes": ["StatsServer"] },
+    { "tag": "v4", "new_classes": ["McpSession"] }
   ]
 }

@@ -9,6 +9,9 @@ import {
 } from "@bomb-busters/shared";
 import { useState, useCallback } from "react";
 
+const PARTYKIT_HOST =
+  import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
+
 const btnBase = "rounded-xl font-extrabold tracking-wider uppercase cursor-pointer transition-all duration-200 border-b-4 active:border-b-0 active:translate-y-1";
 const btnFull = `${btnBase} px-7 py-3.5 text-base`;
 const btnSmall = `${btnBase} px-4 py-2 text-sm`;
@@ -33,6 +36,7 @@ export function Lobby({
   roomId: string;
   onLeave: () => void;
 }) {
+  const me = lobby.players.find((p) => p.id === playerId);
   const isHost = playerId === lobby.hostId;
   const playerCount = lobby.players.length;
   const allowed = MISSION_SCHEMAS[lobby.mission].allowedPlayerCounts;
@@ -198,6 +202,8 @@ export function Lobby({
                 </p>
               </div>
             )}
+
+            <McpInstructions roomId={roomId} playerName={me?.name ?? ""} />
           </div>
 
           {/* Right column — Mission card preview */}
@@ -576,4 +582,67 @@ function playerConstraintLabel(id: MissionId): string {
   const allowed = MISSION_SCHEMAS[id].allowedPlayerCounts;
   if (!allowed) return "";
   return `${allowed.join("/")}p only`;
+}
+
+function McpInstructions({ roomId, playerName }: { roomId: string; playerName: string }) {
+  const [open, setOpen] = useState(false);
+
+  const protocol = PARTYKIT_HOST.startsWith("localhost") || PARTYKIT_HOST.startsWith("127.") ? "http" : "https";
+  const mcpUrl = `${protocol}://${PARTYKIT_HOST}/mcp`;
+
+  const configSnippet = `{
+  "mcpServers": {
+    "bomb-busters": {
+      "url": "${mcpUrl}"
+    }
+  }
+}`;
+
+  const prompt = `Connect to Bomb Busters room "${roomId}" as "${playerName}" and play the game for me.`;
+
+  return (
+    <div className="bg-[var(--color-bomb-surface)] rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-6 py-3 text-sm text-gray-300 hover:text-white transition-colors cursor-pointer"
+      >
+        <span>Let AI play for you (MCP Setup)</span>
+        <span className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+          &#9660;
+        </span>
+      </button>
+
+      {open && (
+        <div className="px-6 pb-5 space-y-3 text-xs text-gray-300 border-t border-gray-700/50 pt-3">
+          <p>
+            Connect Claude (or any MCP-compatible AI) to play Bomb Busters using the remote MCP server.
+          </p>
+
+          <div>
+            <p className="font-semibold text-gray-200 mb-1">1. Add to your MCP config:</p>
+            <pre className="bg-[var(--color-bomb-dark)] rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-green-400 select-all">
+              {configSnippet}
+            </pre>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-200 mb-1">2. Tell Claude:</p>
+            <pre className="bg-[var(--color-bomb-dark)] rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-blue-300 select-all whitespace-pre-wrap">
+              {prompt}
+            </pre>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-200 mb-1">Available tools:</p>
+            <ul className="space-y-1 ml-3 list-disc text-gray-400">
+              <li><code className="text-gray-200">connect_to_game</code> — Join a room with a username</li>
+              <li><code className="text-gray-200">get_game_state</code> — See all visible game state</li>
+              <li><code className="text-gray-200">send_action</code> — Take any game action</li>
+              <li><code className="text-gray-200">disconnect_from_game</code> — Leave the room</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
