@@ -24,14 +24,15 @@ const MCP_TOOLS = [
   {
     name: "connect_to_game",
     description:
-      "Connect to a Bomb Busters game room and join as a player. Returns the current lobby/game state.",
+      "Connect to a Bomb Busters game room and take over a player's slot. The player must already exist in the room. Returns the current lobby/game state.",
     inputSchema: {
       type: "object" as const,
       properties: {
         roomId: { type: "string", description: "The room ID to connect to" },
-        username: { type: "string", description: "Your display name in the game" },
+        username: { type: "string", description: "The player name to take over (must match an existing player in the room)" },
+        password: { type: "string", description: "The 4-digit MCP password shown in the lobby" },
       },
-      required: ["roomId", "username"],
+      required: ["roomId", "username", "password"],
     },
   },
   {
@@ -181,7 +182,7 @@ export class McpSession extends DurableObject {
     try {
       switch (params.name) {
         case "connect_to_game":
-          text = await this.toolConnect(args.roomId as string, args.username as string);
+          text = await this.toolConnect(args.roomId as string, args.username as string, args.password as string);
           break;
         case "get_game_state":
           text = this.toolGetState();
@@ -214,8 +215,9 @@ export class McpSession extends DurableObject {
 
   // ── Tool implementations ──────────────────────────────────
 
-  private async toolConnect(roomId: string, username: string): Promise<string> {
+  private async toolConnect(roomId: string, username: string, password: string): Promise<string> {
     if (!roomId || !username) throw new Error("roomId and username are required");
+    if (!password) throw new Error("password is required");
 
     // Disconnect existing connection
     if (this.ws) {
@@ -232,7 +234,8 @@ export class McpSession extends DurableObject {
     const url = `${protocol}://${this.serverHost}/parties/bomb-busters-server/${roomId}?_pk=${this.playerId}`;
 
     await this.connectWebSocket(url);
-    this.sendGameMessage({ type: "join", name: username });
+    // Use mcpTakeover to take over the existing player's slot with password auth
+    this.sendGameMessage({ type: "mcpTakeover", name: username, password });
 
     return await this.waitForState(5000);
   }

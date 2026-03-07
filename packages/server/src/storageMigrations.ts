@@ -40,6 +40,7 @@ export interface RoomStateSnapshot {
   failureCounters: FailureCounters;
   finishedAt?: number;
   lastActivityAt?: number;
+  mcpPassword?: string;
 }
 
 const DEFAULT_ROOM_STATE: RoomStateSnapshot = {

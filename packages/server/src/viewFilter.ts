@@ -407,6 +407,7 @@ export function createLobbyState(
   hostId: string,
   captainMode: "random" | "selection" = "random",
   selectedCaptainId: string | null = null,
+  mcpPassword: string = "",
 ): LobbyState {
   return {
     roomId,
@@ -422,5 +423,6 @@ export function createLobbyState(
     hostId,
     captainMode,
     selectedCaptainId,
+    mcpPassword,
   };
 }

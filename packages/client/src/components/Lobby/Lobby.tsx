@@ -203,7 +203,7 @@ export function Lobby({
               </div>
             )}
 
-            <McpInstructions roomId={roomId} playerName={me?.name ?? ""} />
+            <McpInstructions roomId={roomId} playerName={me?.name ?? ""} mcpPassword={lobby.mcpPassword} />
           </div>
 
           {/* Right column — Mission card preview */}
@@ -584,7 +584,7 @@ function playerConstraintLabel(id: MissionId): string {
   return `${allowed.join("/")}p only`;
 }
 
-function McpInstructions({ roomId, playerName }: { roomId: string; playerName: string }) {
+function McpInstructions({ roomId, playerName, mcpPassword }: { roomId: string; playerName: string; mcpPassword: string }) {
   const [open, setOpen] = useState(false);
 
   const protocol = PARTYKIT_HOST.startsWith("localhost") || PARTYKIT_HOST.startsWith("127.") ? "http" : "https";
@@ -598,7 +598,7 @@ function McpInstructions({ roomId, playerName }: { roomId: string; playerName: s
   }
 }`;
 
-  const prompt = `Connect to Bomb Busters room "${roomId}" as "${playerName}" and play the game for me.`;
+  const prompt = `Connect to Bomb Busters room "${roomId}" as "${playerName}" with password "${mcpPassword}" and play the game for me.`;
 
   return (
     <div className="bg-[var(--color-bomb-surface)] rounded-xl overflow-hidden">
@@ -623,6 +623,10 @@ function McpInstructions({ roomId, playerName }: { roomId: string; playerName: s
             <pre className="bg-[var(--color-bomb-dark)] rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-green-400 select-all">
               {configSnippet}
             </pre>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-200 mb-1">MCP Password: <code className="text-yellow-400 text-sm font-mono">{mcpPassword}</code></p>
           </div>
 
           <div>

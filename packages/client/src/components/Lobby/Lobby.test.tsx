@@ -11,6 +11,7 @@ describe("Lobby character selection", () => {
       mission,
       captainMode: "random",
       selectedCaptainId: null,
+      mcpPassword: "1234",
       players: [
         {
           id: "p1",

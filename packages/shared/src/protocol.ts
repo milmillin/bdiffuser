@@ -110,7 +110,8 @@ export type ClientMessage =
   | { type: "surrenderVote"; vote: boolean }
   | { type: "confirmSurrender" }
   | { type: "chat"; text: string }
-  | { type: "playAgain" };
+  | { type: "playAgain" }
+  | { type: "mcpTakeover"; name: string; password: string };
 
 // ── Server → Client Messages ───────────────────────────────
 

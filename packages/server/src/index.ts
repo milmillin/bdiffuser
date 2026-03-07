@@ -165,6 +165,10 @@ function getTokenLogPosition(
   return position < 0 ? "stand" : wireLabelOf(player, position);
 }
 
+function generateMcpPassword(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 export class BombBustersServer extends Server<Env> {
   /** In-memory stats map used only by the `__stats__` room. */
   private statsMap = new Map<string, { players: number; updatedAt: number }>();
@@ -179,6 +183,7 @@ export class BombBustersServer extends Server<Env> {
     botCount: 0,
     botLastActionTurn: {},
     failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
+    mcpPassword: generateMcpPassword(),
   };
 
   async onStart() {
@@ -186,6 +191,9 @@ export class BombBustersServer extends Server<Env> {
       const stored = await this.ctx.storage.get<unknown>("room");
       if (stored) {
         this.room = normalizeRoomState(stored, this.name);
+        if (!this.room.mcpPassword) {
+          this.room.mcpPassword = generateMcpPassword();
+        }
       }
     } catch (e) {
       console.error("Failed to load room state from storage:", e);
@@ -250,6 +258,7 @@ export class BombBustersServer extends Server<Env> {
       botCount: 0,
       botLastActionTurn: {},
       failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
+      mcpPassword: generateMcpPassword(),
     };
   }
 
@@ -372,6 +381,7 @@ export class BombBustersServer extends Server<Env> {
     // Block spectators from performing game actions
     if (
       msg.type !== "join" &&
+      msg.type !== "mcpTakeover" &&
       this.room.gameState &&
       !this.room.players.some((p) => p.id === connection.id)
     ) {
@@ -516,6 +526,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "playAgain":
         this.handlePlayAgain(connection);
+        break;
+      case "mcpTakeover":
+        this.handleMcpTakeover(connection, msg.name, msg.password);
         break;
       default:
         this.sendMsg(connection, { type: "error", message: "Unknown message type" });
@@ -739,6 +752,57 @@ export class BombBustersServer extends Server<Env> {
     this.saveState();
     this.broadcastLobby();
     this.reportStats();
+  }
+
+  handleMcpTakeover(conn: Connection, name: string, password: string) {
+    // Validate password
+    if (!this.room.mcpPassword || password !== this.room.mcpPassword) {
+      this.sendMsg(conn, { type: "error", message: "Invalid MCP password" });
+      return;
+    }
+
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      this.sendMsg(conn, { type: "error", message: "Name cannot be empty" });
+      return;
+    }
+
+    const normalizedName = this.normalizeHumanName(trimmedName);
+
+    // Find the target player by name (connected or disconnected)
+    const target = this.room.players.find(
+      (p) => !p.isBot && this.normalizeHumanName(p.name) === normalizedName,
+    );
+
+    if (!target) {
+      this.sendMsg(conn, { type: "error", message: `Player "${trimmedName}" not found` });
+      return;
+    }
+
+    if (target.id === conn.id) {
+      // Already this connection — just send current state
+      if (this.room.gameState) {
+        this.broadcastGameState();
+      } else {
+        this.broadcastLobby();
+      }
+      return;
+    }
+
+    // Replace the player's connection ID with the MCP's connection ID.
+    // The old connection stays open as a spectator (can still watch).
+    this.replacePlayerId(target.id, conn.id);
+    target.connected = true;
+
+    this.saveState();
+
+    // Broadcast updated state — the MCP connection gets the player view,
+    // the old connection gets the spectator view
+    if (this.room.gameState) {
+      this.broadcastGameState();
+    } else {
+      this.broadcastLobby();
+    }
   }
 
   handleSelectCharacter(conn: Connection, characterId: CharacterId) {
@@ -3298,6 +3362,7 @@ export class BombBustersServer extends Server<Env> {
       this.room.hostId ?? "",
       this.room.captainMode,
       this.room.selectedCaptainId,
+      this.room.mcpPassword ?? "",
     );
     const msg: ServerMessage = { type: "lobby", state: lobbyState };
     const json = JSON.stringify(msg);

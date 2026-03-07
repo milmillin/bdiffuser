@@ -738,6 +738,7 @@ export interface LobbyState {
   hostId: string;
   captainMode: CaptainMode;
   selectedCaptainId: string | null;
+  mcpPassword: string;
 }
 
 export interface LobbyPlayer {
