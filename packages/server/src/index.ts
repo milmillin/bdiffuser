@@ -2844,22 +2844,22 @@ export class BombBustersServer extends Server<Env> {
 
     const botResult = await getBotAction(state, botId, apiKey || "", chatContext);
 
-    // Broadcast bot reasoning as a chat message
-    if (botResult.reasoning) {
-      const reasoningMsg: ChatMessage = {
+    // Broadcast bot communication as a chat message (follows game communication rules)
+    if (botResult.communication) {
+      const chatMsg: ChatMessage = {
         id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         senderId: botId,
         senderName: currentPlayer.name,
-        text: botResult.reasoning,
+        text: botResult.communication,
         timestamp: Date.now(),
         isBotReasoning: true,
         turnNumber: state.turnNumber,
       };
-      state.chat.push(reasoningMsg);
+      state.chat.push(chatMsg);
       if (state.chat.length > 200) {
         state.chat = state.chat.slice(-200);
       }
-      this.broadcastChat(reasoningMsg);
+      this.broadcastChat(chatMsg);
     }
 
     const botAction = botResult.action;

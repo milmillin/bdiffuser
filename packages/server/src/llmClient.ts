@@ -43,15 +43,11 @@ export async function callLLM(
 
   const parsed = JSON.parse(content) as Record<string, unknown>;
 
-  // ZhipuAI thinking models (glm-5 etc.) return chain-of-thought in a
-  // separate `reasoning_content` field.  Inject it so the caller can use it.
-  if (
-    typeof message.reasoning_content === "string" &&
-    message.reasoning_content &&
-    typeof parsed.reasoning !== "string"
-  ) {
-    parsed.reasoning = message.reasoning_content;
-  }
+  // NOTE: ZhipuAI thinking models (glm-5 etc.) return chain-of-thought in
+  // `reasoning_content`, but we intentionally do NOT inject it into the result.
+  // The CoT contains analysis of the bot's own hand which would leak hidden
+  // information if broadcast as chat. Instead, the model provides a separate
+  // `communication` field that follows the game's communication rules.
 
   return parsed;
 }

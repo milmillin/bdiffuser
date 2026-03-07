@@ -59,34 +59,51 @@ export function buildSystemPrompt(): string {
 - The detonator has limited space — every wrong guess brings you closer to losing.
 - If you hold many copies of the same value, consider that opponents may also hold copies.
 
-## Chat
+## Chat & Communication Rules
 - Your teammates may send chat messages with hints or suggestions. Consider them carefully.
-- Your "reasoning" field will be shared with all teammates as a chat message.
-  Write it as if speaking to them — explain your thinking clearly and briefly.
+- Your "communication" field will be shared with ALL players as a chat message.
+
+COMMUNICATION RULES (these match the real board game rules):
+- You MUST NOT reveal or hint at your own tile values, colors, or positions.
+  BAD: "I have a 5 and a 7", "My third tile is red", "I can match that value"
+- You MUST NOT reveal which tile you intend to cut from your own hand.
+- You CAN discuss general strategy and tactics.
+  GOOD: "Let's focus on tiles with info tokens", "Should we use the Rewinder?"
+- You CAN discuss publicly visible information (cut tiles, info tokens, board markers, validation track, equipment).
+  GOOD: "The 3s are at 2/4 on the validation track", "There's an info token showing 5 on your second tile"
+- You CAN suggest which opponent tiles to target based on public info.
+  GOOD: "Your tile at position 2 has an info token — someone should target it"
+- You CAN discuss equipment timing and usage plans.
+- Keep communication brief and helpful.
+- If you have nothing useful to say that follows these rules, set communication to null.
 
 ## Response Format
-You MUST respond with a JSON object. Choose one of these formats:
+You MUST respond with a JSON object. The object has two parts:
+1. "communication": a brief message to your teammates following the rules above, or null if nothing to say.
+2. The action fields for the action you want to take.
+
+Choose one of these formats:
 
 For dualCut:
-{"reasoning": "brief explanation", "action": "dualCut", "targetPlayerId": "player-id", "targetTileIndex": 0, "guessValue": 5}
+{"communication": "Targeting the tile with the info token", "action": "dualCut", "targetPlayerId": "player-id", "targetTileIndex": 0, "guessValue": 5}
 
 For soloCut:
-{"reasoning": "brief explanation", "action": "soloCut", "value": 5}
+{"communication": "I can safely solo cut these", "action": "soloCut", "value": 5}
 
 For revealReds:
-{"reasoning": "brief explanation", "action": "revealReds"}
+{"communication": "All my remaining tiles are red — revealing them", "action": "revealReds"}
 
 For chooseNextPlayer:
-{"reasoning": "brief explanation", "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
+{"communication": null, "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
 
 For simultaneousFourCut:
-{"reasoning": "brief explanation", "action": "simultaneousFourCut"}
+{"communication": null, "action": "simultaneousFourCut"}
 
 For useEquipment:
-{"reasoning": "brief explanation", "action": "useEquipment", "equipmentId": "rewinder", "payload": {}}
+{"communication": "Using the Rewinder to buy us more room", "action": "useEquipment", "equipmentId": "rewinder", "payload": {}}
 
 For dualCutDoubleDetector:
-{"reasoning": "brief explanation", "action": "dualCutDoubleDetector", "targetPlayerId": "player-id", "tileIndex1": 0, "tileIndex2": 1, "guessValue": 5}
+{"communication": "Using double detector on two tiles", "action": "dualCutDoubleDetector", "targetPlayerId": "player-id", "tileIndex1": 0, "tileIndex2": 1, "guessValue": 5}
 
 guessValue can be a number (1-12) or "YELLOW" for yellow wires.
 soloCut value can be a number (1-12) or "YELLOW".`;

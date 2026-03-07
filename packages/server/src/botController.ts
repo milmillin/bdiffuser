@@ -216,7 +216,7 @@ export type BotAction =
 
 export interface BotActionResult {
   action: BotAction;
-  reasoning: string | null;
+  communication: string | null;
 }
 
 const MAX_RETRIES = 2;
@@ -230,34 +230,34 @@ export async function getBotAction(
   // Mission-specific forced actions: handle deterministically and bypass LLM.
   const forcedDesignateCutterAction = getForcedDesignateCutterAction(state, botId);
   if (forcedDesignateCutterAction) {
-    return { action: forcedDesignateCutterAction, reasoning: null };
+    return { action: forcedDesignateCutterAction, communication: null };
   }
 
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
-    return { action: forcedChooseAction, reasoning: null };
+    return { action: forcedChooseAction, communication: null };
   }
 
   const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
   if (forcedMission46Action) {
-    return { action: forcedMission46Action, reasoning: null };
+    return { action: forcedMission46Action, communication: null };
   }
 
   const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
   if (forcedMission61Action) {
-    return { action: forcedMission61Action, reasoning: null };
+    return { action: forcedMission61Action, communication: null };
   }
 
   const forcedMission36Action = getForcedMission36SequencePositionAction(state, botId);
   if (forcedMission36Action) {
-    return { action: forcedMission36Action, reasoning: null };
+    return { action: forcedMission36Action, communication: null };
   }
 
   const filtered = filterStateForPlayer(state, botId);
   const systemPrompt = buildSystemPrompt();
   const userMessage = buildUserMessage(filtered, chatContext || undefined);
 
-  let lastReasoning: string | null = null;
+  let lastCommunication: string | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -266,16 +266,17 @@ export async function getBotAction(
         { role: "user", content: userMessage },
       ]);
 
-      const reasoning = typeof result.reasoning === "string" ? result.reasoning : null;
-      if (reasoning) lastReasoning = reasoning;
-      console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, reasoning: ${reasoning ? `"${reasoning.slice(0, 80)}"` : "null"}`);
+      // Extract the communication field (safe to share with all players)
+      const communication = typeof result.communication === "string" ? result.communication : null;
+      if (communication) lastCommunication = communication;
+      console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, communication: ${communication ? `"${communication.slice(0, 80)}"` : "null"}`);
 
       // Some models return an array — unwrap to find the action object
       const actionObj = extractActionObject(result);
       const parsed = parseLLMAction(state, actionObj, botId);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
-        if (!error) return { action: parsed, reasoning: lastReasoning };
+        if (!error) return { action: parsed, communication: lastCommunication };
         console.log(`Bot action validation failed (attempt ${attempt + 1}): ${error}`);
       } else {
         console.log(`Bot action parse failed (attempt ${attempt + 1}):`, JSON.stringify(result));
@@ -285,8 +286,8 @@ export async function getBotAction(
     }
   }
 
-  // Fallback heuristic — still include reasoning from LLM if we got any
-  return { action: getFallbackAction(state, botId), reasoning: lastReasoning };
+  // Fallback heuristic
+  return { action: getFallbackAction(state, botId), communication: lastCommunication };
 }
 
 /** If the LLM returned an array, find the first element with an `action` key. */
