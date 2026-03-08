@@ -440,7 +440,7 @@ describe("filterStateForPlayer – campaign state", () => {
     });
   });
 
-  it("preserves oxygen ownership map and bunker tracker", () => {
+  it("preserves oxygen ownership map and bunker state", () => {
     const state = makeGameState({
       players: [
         makePlayer({ id: "p1", name: "Alice" }),
@@ -452,6 +452,20 @@ describe("filterStateForPlayer – campaign state", () => {
           playerOxygen: { p1: 2, p2: 1 },
         }),
         bunkerTracker: makeProgressTracker({ position: 3, max: 9 }),
+        mission66Bunker: {
+          position: { floor: "back", row: 2, col: 3 },
+          constraints: {
+            north: makeConstraintCard({ id: "A", active: true }),
+            south: makeConstraintCard({ id: "B", active: true }),
+            east: makeConstraintCard({ id: "C", active: true }),
+            west: makeConstraintCard({ id: "D", active: true }),
+            action: makeConstraintCard({ id: "E", active: true }),
+          },
+          frontKeyActivated: true,
+          frontSkullActivated: true,
+          backAlarmActivated: false,
+          backDetonatorActivated: false,
+        },
       }),
     });
 
@@ -464,6 +478,7 @@ describe("filterStateForPlayer – campaign state", () => {
       position: 3,
       max: 9,
     });
+    expect(filtered.campaign!.mission66Bunker).toEqual(state.campaign!.mission66Bunker);
   });
 
   it("preserves visible/discard number cards and redacts only deck cards", () => {

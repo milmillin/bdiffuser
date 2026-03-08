@@ -34,6 +34,12 @@ import type {
   ActionLegalityCode,
   ConstraintCard,
   GameState,
+  Mission66BunkerActivationTarget,
+  Mission66BunkerBoardRuleDef,
+  Mission66BunkerChoiceOption,
+  Mission66BunkerChoiceSelection,
+  Mission66BunkerDirection,
+  Mission66BunkerState,
   Player,
   MissionId,
   Mission32ConstraintStackRuleDef,
@@ -47,7 +53,7 @@ import {
   EQUIPMENT_DEFS,
   getWireImage,
   getMission66BunkerCell,
-  getMission66BunkerTrackPoint,
+  MISSION66_BUNKER_WALLS,
   MISSION_SCHEMAS,
   isLogTextDetail,
   type MissionHookRuleDef,
@@ -750,7 +756,6 @@ export function getMissionTurnSkipError(
 
 import type {
   AudioPromptRuleDef,
-  BunkerFlowRuleDef,
   ChallengeRewardsRuleDef,
   ConstraintEnforcementRuleDef,
   ForcedGeneralRadarFlowRuleDef,
@@ -846,22 +851,6 @@ function clearSequencePointer(state: GameState): void {
 
 function getMission36CaptainId(state: Readonly<GameState>): string | null {
   return state.players.find((player) => player.isCaptain)?.id ?? null;
-}
-
-function setActionPointer(state: GameState, value: number): void {
-  state.campaign ??= {};
-  const markers = [...(state.campaign.specialMarkers ?? [])];
-  const idx = markers.findIndex((m) => m.kind === "action_pointer");
-  if (idx >= 0) {
-    markers[idx] = { ...markers[idx], value };
-  } else {
-    markers.push({ kind: "action_pointer", value });
-  }
-  state.campaign.specialMarkers = markers;
-}
-
-function getActionPointer(state: Readonly<GameState>): number | undefined {
-  return state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value;
 }
 
 function parseTargetValueFromChallengeId(id: string): number | null {
@@ -3213,111 +3202,436 @@ registerHookHandler<"challenge_rewards">("challenge_rewards", {
 });
 
 /**
- * Mission 66 bunker flow progression.
+ * Mission 66 bunker board progression.
  */
-registerHookHandler<"bunker_flow">("bunker_flow", {
-  setup(rule: BunkerFlowRuleDef, ctx: SetupHookContext): void {
+const MISSION66_DIRECTION_ORDER: readonly Mission66BunkerDirection[] = [
+  "north",
+  "south",
+  "east",
+  "west",
+] as const;
+
+const MISSION66_DIRECTION_DELTAS: Record<
+  Mission66BunkerDirection,
+  { rowDelta: number; colDelta: number; opposite: Mission66BunkerDirection }
+> = {
+  north: { rowDelta: -1, colDelta: 0, opposite: "south" },
+  south: { rowDelta: 1, colDelta: 0, opposite: "north" },
+  east: { rowDelta: 0, colDelta: 1, opposite: "west" },
+  west: { rowDelta: 0, colDelta: -1, opposite: "east" },
+} as const;
+
+function getMission66BunkerState(
+  state: Readonly<GameState>,
+): Mission66BunkerState | undefined {
+  return state.campaign?.mission66Bunker;
+}
+
+function buildMission66ConstraintCard(id: "A" | "B" | "C" | "D" | "E"): ConstraintCard | null {
+  const def = CONSTRAINT_CARD_DEFS.find((card) => card.id === id);
+  if (!def) return null;
+  return {
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    active: true,
+  };
+}
+
+function isMission66DoorEdge(
+  floor: "front" | "back",
+  row: number,
+  col: number,
+  direction: Mission66BunkerDirection,
+): boolean {
+  if (floor !== "front") return false;
+  if (row === 2 && col === 1 && direction === "east") return true;
+  if (row === 2 && col === 2 && direction === "west") return true;
+  return false;
+}
+
+function hasMission66PrintedBlocker(
+  bunker: Readonly<Mission66BunkerState>,
+  floor: "front" | "back",
+  row: number,
+  col: number,
+  direction: Mission66BunkerDirection,
+): boolean {
+  if (isMission66DoorEdge(floor, row, col, direction) && !bunker.frontKeyActivated) {
+    return true;
+  }
+
+  const directBlocker = MISSION66_BUNKER_WALLS.find(
+    (segment) =>
+      segment.floor === floor &&
+      segment.row === row &&
+      segment.col === col &&
+      segment.direction === direction,
+  );
+  if (directBlocker) {
+    return directBlocker.kind === "wall" || !bunker.backAlarmActivated;
+  }
+
+  const { rowDelta, colDelta, opposite } = MISSION66_DIRECTION_DELTAS[direction];
+  const neighborBlocker = MISSION66_BUNKER_WALLS.find(
+    (segment) =>
+      segment.floor === floor &&
+      segment.row === row + rowDelta &&
+      segment.col === col + colDelta &&
+      segment.direction === opposite,
+  );
+  if (!neighborBlocker) return false;
+  return neighborBlocker.kind === "wall" || !bunker.backAlarmActivated;
+}
+
+function getMission66MoveDestination(
+  bunker: Readonly<Mission66BunkerState>,
+  direction: Mission66BunkerDirection,
+): { floor: "front" | "back"; row: number; col: number } | null {
+  const { position } = bunker;
+  const currentCell = getMission66BunkerCell(position.floor, position.row, position.col);
+  if (!currentCell) return null;
+
+  const { rowDelta, colDelta } = MISSION66_DIRECTION_DELTAS[direction];
+  const nextRow = position.row + rowDelta;
+  const nextCol = position.col + colDelta;
+  const nextCell = getMission66BunkerCell(position.floor, nextRow, nextCol);
+  if (!nextCell) return null;
+
+  if (hasMission66PrintedBlocker(bunker, position.floor, position.row, position.col, direction)) {
+    return null;
+  }
+
+  if (nextCell.marker === "stairs") {
+    if (!bunker.frontSkullActivated) return null;
+    return {
+      floor: position.floor === "front" ? "back" : "front",
+      row: nextCell.row,
+      col: nextCell.col,
+    };
+  }
+
+  return {
+    floor: nextCell.floor,
+    row: nextCell.row,
+    col: nextCell.col,
+  };
+}
+
+function getMission66ActivationTarget(
+  bunker: Readonly<Mission66BunkerState>,
+): Mission66BunkerActivationTarget | null {
+  const { floor, row, col } = bunker.position;
+  if (floor === "front" && row === 2 && col === 1 && !bunker.frontKeyActivated) {
+    return "front_key";
+  }
+  if (floor === "front" && row === 1 && col === 3 && !bunker.frontSkullActivated) {
+    return "front_skull";
+  }
+  if (floor === "back" && row === 2 && col === 3 && !bunker.backAlarmActivated) {
+    return "back_alarm";
+  }
+  if (floor === "back" && row === 0 && col === 0 && !bunker.backDetonatorActivated) {
+    return "back_detonator";
+  }
+  return null;
+}
+
+function getMission66ChoiceOptions(
+  state: Readonly<GameState>,
+  cutValue: number,
+): Mission66BunkerChoiceOption[] {
+  const bunker = getMission66BunkerState(state);
+  if (!bunker) return [];
+
+  const options: Mission66BunkerChoiceOption[] = [];
+  const actionTarget = getMission66ActivationTarget(bunker);
+  if (actionTarget && valuePassesConstraint(cutValue, bunker.constraints.action.id)) {
+    options.push({ kind: "activate", target: actionTarget });
+  }
+
+  for (const direction of MISSION66_DIRECTION_ORDER) {
+    const constraintId = bunker.constraints[direction].id;
+    if (!valuePassesConstraint(cutValue, constraintId)) continue;
+    const destination = getMission66MoveDestination(bunker, direction);
+    if (!destination) continue;
+    options.push({ kind: "move", direction, destination });
+  }
+
+  return options;
+}
+
+function queueMission66BunkerChoice(
+  state: GameState,
+  actorId: string,
+  cutValue: number,
+  remainingSteps: number,
+): void {
+  let stepsLeft = remainingSteps;
+  while (stepsLeft > 0 && state.phase !== "finished") {
+    const options = getMission66ChoiceOptions(state, cutValue);
+    if (options.length > 0) {
+      state.pendingForcedAction = {
+        kind: "mission66BunkerChoice",
+        actorId,
+        cutValue,
+        remainingSteps: stepsLeft,
+        options,
+      };
+      return;
+    }
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail: `mission66:stay_put|value=${cutValue}|step=${stepsLeft}`,
+      timestamp: Date.now(),
+    });
+    stepsLeft -= 1;
+  }
+
+  if (state.pendingForcedAction?.kind === "mission66BunkerChoice") {
+    state.pendingForcedAction = undefined;
+  }
+}
+
+function setMission66ActivationFlag(
+  bunker: Mission66BunkerState,
+  target: Mission66BunkerActivationTarget,
+): void {
+  switch (target) {
+    case "front_key":
+      bunker.frontKeyActivated = true;
+      break;
+    case "front_skull":
+      bunker.frontSkullActivated = true;
+      break;
+    case "back_alarm":
+      bunker.backAlarmActivated = true;
+      break;
+    case "back_detonator":
+      bunker.backDetonatorActivated = true;
+      break;
+  }
+}
+
+export function canMissionResolveWin(state: Readonly<GameState>): boolean {
+  if (state.mission !== 66) return true;
+  return state.campaign?.mission66Bunker?.backDetonatorActivated === true;
+}
+
+export function getMission66BotChoice(
+  state: Readonly<GameState>,
+): Mission66BunkerChoiceSelection | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission66BunkerChoice") return null;
+
+  const activationPriority: readonly Mission66BunkerActivationTarget[] = [
+    "back_detonator",
+    "front_skull",
+    "back_alarm",
+    "front_key",
+  ] as const;
+  for (const target of activationPriority) {
+    if (forced.options.some((option) => option.kind === "activate" && option.target === target)) {
+      return { kind: "activate", target };
+    }
+  }
+
+  const bunker = getMission66BunkerState(state);
+  if (!bunker) return null;
+
+  const objective =
+    !bunker.frontKeyActivated
+      ? { floor: "front" as const, row: 2, col: 1 }
+      : !bunker.frontSkullActivated
+        ? { floor: "front" as const, row: 1, col: 3 }
+        : !bunker.backAlarmActivated
+          ? { floor: "back" as const, row: 2, col: 3 }
+          : { floor: "back" as const, row: 0, col: 0 };
+
+  const bestMove = forced.options
+    .filter((option): option is Extract<Mission66BunkerChoiceOption, { kind: "move" }> => option.kind === "move")
+    .sort((a, b) => {
+      const distanceA =
+        Math.abs(a.destination.row - objective.row) +
+        Math.abs(a.destination.col - objective.col) +
+        (a.destination.floor === objective.floor ? 0 : 4);
+      const distanceB =
+        Math.abs(b.destination.row - objective.row) +
+        Math.abs(b.destination.col - objective.col) +
+        (b.destination.floor === objective.floor ? 0 : 4);
+      return distanceA - distanceB;
+    })[0];
+
+  return bestMove ? { kind: "move", direction: bestMove.direction } : null;
+}
+
+export function applyMission66BunkerChoice(
+  state: GameState,
+  actorId: string,
+  choice: Mission66BunkerChoiceSelection,
+): { ok: boolean; message?: string } {
+  if (state.mission !== 66) {
+    return { ok: false, message: "Mission 66 bunker board is not active" };
+  }
+
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission66BunkerChoice") {
+    return { ok: false, message: "No pending Mission 66 bunker choice request" };
+  }
+  if (forced.actorId !== actorId) {
+    return { ok: false, message: "Only the current player can resolve Mission 66 bunker choices" };
+  }
+
+  const bunker = state.campaign?.mission66Bunker;
+  if (!bunker) {
+    state.pendingForcedAction = undefined;
+    return { ok: false, message: "Mission 66 bunker state is missing" };
+  }
+
+  const matchedOption = forced.options.find((option) =>
+    option.kind === choice.kind &&
+    (option.kind === "move"
+      ? choice.kind === "move" && option.direction === choice.direction
+      : choice.kind === "activate" && option.target === choice.target)
+  );
+  if (!matchedOption) {
+    return { ok: false, message: "Illegal Mission 66 bunker choice" };
+  }
+
+  if (matchedOption.kind === "activate") {
+    setMission66ActivationFlag(bunker, matchedOption.target);
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `mission66:activate|target=${matchedOption.target}` +
+        `|value=${forced.cutValue}`,
+      timestamp: Date.now(),
+    });
+  } else {
+    const from = bunker.position;
+    bunker.position = {
+      floor: matchedOption.destination.floor,
+      row: matchedOption.destination.row,
+      col: matchedOption.destination.col,
+    };
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `mission66:move|direction=${matchedOption.direction}` +
+        `|from=${from.floor}:${from.row}:${from.col}` +
+        `|to=${bunker.position.floor}:${bunker.position.row}:${bunker.position.col}` +
+        `|value=${forced.cutValue}`,
+      timestamp: Date.now(),
+    });
+
+    const landedCell = getMission66BunkerCell(
+      bunker.position.floor,
+      bunker.position.row,
+      bunker.position.col,
+    );
+    if (landedCell?.marker === "trap") {
+      state.board.detonatorPosition += 1;
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: actorId,
+        action: "hookEffect",
+        detail:
+          `mission66:trap|cell=${bunker.position.floor}:${bunker.position.row}:${bunker.position.col}` +
+          `|detonator=${state.board.detonatorPosition}`,
+        timestamp: Date.now(),
+      });
+      if (state.board.detonatorPosition >= state.board.detonatorMax) {
+        state.result = "loss_detonator";
+        state.phase = "finished";
+        emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+      }
+    }
+  }
+
+  state.pendingForcedAction = undefined;
+  if (state.phase === "finished") {
+    return { ok: true };
+  }
+
+  if (forced.remainingSteps > 1) {
+    queueMission66BunkerChoice(state, actorId, forced.cutValue, forced.remainingSteps - 1);
+  }
+
+  return { ok: true };
+}
+
+registerHookHandler<"mission_66_bunker_board">("mission_66_bunker_board", {
+  setup(_rule: Mission66BunkerBoardRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
 
-    const max = Math.max(1, Math.floor(rule.max));
-    const position = clampProgress(rule.start, max);
-    ctx.state.campaign!.bunkerTracker = { position, max };
-
-    const bunkerConstraintIds = ["A", "B", "C", "D", "E"] as const;
-    const bunkerConstraints = shuffle(
-      bunkerConstraintIds
-        .map((id) => {
-          const def = CONSTRAINT_CARD_DEFS.find((card) => card.id === id);
-          return def
-            ? {
-                id: def.id,
-                name: def.name,
-                description: def.description,
-                active: false,
-              }
-            : null;
-        })
+    const cards = shuffle(
+      (["A", "B", "C", "D", "E"] as const)
+        .map((id) => buildMission66ConstraintCard(id))
         .filter((card): card is ConstraintCard => card != null),
     );
-    const actionConstraint = bunkerConstraints.pop();
-    ctx.state.campaign!.constraints = {
-      global: bunkerConstraints,
-      perPlayer: {},
-      deck: actionConstraint ? [actionConstraint] : [],
-    };
+    if (cards.length < 5) return;
 
-    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
-    setActionPointer(ctx.state, position % cycle);
+    delete ctx.state.campaign!.constraints;
+    delete ctx.state.campaign!.bunkerTracker;
+    delete ctx.state.campaign!.specialMarkers;
+
+    ctx.state.campaign!.mission66Bunker = {
+      position: { floor: "front", row: 0, col: 0 },
+      constraints: {
+        north: cards[0]!,
+        south: cards[1]!,
+        east: cards[2]!,
+        west: cards[3]!,
+        action: cards[4]!,
+      },
+      frontKeyActivated: false,
+      frontSkullActivated: false,
+      backAlarmActivated: false,
+      backDetonatorActivated: false,
+    };
 
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `bunker_flow:start=${position},max=${max},cycle=${cycle}|constraints=${bunkerConstraints.map((c) => c.id).join(",")}|action=${actionConstraint?.id ?? "none"}`,
+      detail:
+        "mission66:bunker_init" +
+        `|north=${cards[0]!.id}` +
+        `|south=${cards[1]!.id}` +
+        `|east=${cards[2]!.id}` +
+        `|west=${cards[3]!.id}` +
+        `|action=${cards[4]!.id}`,
       timestamp: Date.now(),
     });
   },
 
-  resolve(rule: BunkerFlowRuleDef, ctx: ResolveHookContext): void {
+  resolve(_rule: Mission66BunkerBoardRuleDef, ctx: ResolveHookContext): void {
     if (ctx.action.type !== "soloCut" && ctx.action.type !== "dualCut") return;
-    const tracker = ctx.state.campaign?.bunkerTracker;
-    if (!tracker) return;
-    if (typeof ctx.cutValue !== "number") return;
-
-    const cycle = Math.max(1, Math.floor(rule.actionCycleLength ?? 4));
-    const pointer = getActionPointer(ctx.state) ?? (tracker.position % cycle);
-    const directionalConstraint = ctx.state.campaign?.constraints?.global?.[pointer];
-
-    const point = getMission66BunkerTrackPoint(tracker.position, tracker.max);
-    const currentCell = getMission66BunkerCell(point.floor, point.row, point.col);
-    const actionConstraint = ctx.state.campaign?.constraints?.deck?.[0];
-    const onActionCell = currentCell?.marker === "action";
-    if (onActionCell) {
-      if (actionConstraint && !valuePassesConstraint(ctx.cutValue, actionConstraint.id)) {
+    if (!ctx.cutSuccess) return;
+    const cutStepCount =
+      ctx.action.type === "soloCut" && typeof ctx.action.tilesCut === "number" && ctx.action.tilesCut === 4
+        ? 2
+        : 1;
+    if (typeof ctx.cutValue !== "number") {
+      for (let step = cutStepCount; step >= 1; step -= 1) {
         pushGameLog(ctx.state, {
           turn: ctx.state.turnNumber,
           playerId: ctx.action.actorId,
           action: "hookEffect",
-          detail:
-            `bunker_flow:blocked:action|constraint=${actionConstraint.id}|value=${ctx.cutValue}|cell=${point.floor}:${point.row}:${point.col}`,
+          detail: `mission66:stay_put|value=${String(ctx.cutValue)}|step=${step}`,
           timestamp: Date.now(),
         });
-        return;
       }
-    } else if (directionalConstraint && !valuePassesConstraint(ctx.cutValue, directionalConstraint.id)) {
-      pushGameLog(ctx.state, {
-        turn: ctx.state.turnNumber,
-        playerId: ctx.action.actorId,
-        action: "hookEffect",
-        detail:
-          `bunker_flow:blocked:direction|pointer=${pointer}|constraint=${directionalConstraint.id}|value=${ctx.cutValue}`,
-        timestamp: Date.now(),
-      });
       return;
     }
-
-    const advanceBy = Math.max(0, Math.floor(rule.advanceBy));
-    if (advanceBy === 0) return;
-
-    const tilesCut =
-      ctx.action.type === "soloCut" && typeof ctx.action.tilesCut === "number"
-        ? Math.floor(ctx.action.tilesCut)
-        : null;
-    // Mission 66 rulebook: solo cutting 4 identical wires counts as two cuts.
-    const cutStepMultiplier = tilesCut === 4 ? 2 : 1;
-    const effectiveAdvanceBy = advanceBy * cutStepMultiplier;
-
-    const before = tracker.position;
-    tracker.position = clampProgress(before + effectiveAdvanceBy, tracker.max);
-    setActionPointer(ctx.state, tracker.position % cycle);
-
-    pushGameLog(ctx.state, {
-      turn: ctx.state.turnNumber,
-      playerId: ctx.action.actorId,
-      action: "hookEffect",
-      detail: `bunker_flow:${before}->${tracker.position}|cycle=${cycle}|steps=${cutStepMultiplier}`,
-      timestamp: Date.now(),
-    });
+    queueMission66BunkerChoice(ctx.state, ctx.action.actorId, ctx.cutValue, cutStepCount);
   },
 });
 

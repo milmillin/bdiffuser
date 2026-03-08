@@ -55,6 +55,7 @@ describe("CAMPAIGN_VISIBILITY", () => {
   it("marks trackers and markers as public", () => {
     expect(CAMPAIGN_VISIBILITY.nanoTracker).toBe("public");
     expect(CAMPAIGN_VISIBILITY.bunkerTracker).toBe("public");
+    expect(CAMPAIGN_VISIBILITY.mission66Bunker).toBe("public");
     expect(CAMPAIGN_VISIBILITY.specialMarkers).toBe("public");
   });
 
@@ -303,10 +304,25 @@ describe("filterCampaignState", () => {
     const campaign = makeCampaignState({
       nanoTracker: nano,
       bunkerTracker: bunker,
+      mission66Bunker: {
+        position: { floor: "front", row: 0, col: 0 },
+        constraints: {
+          north: makeConstraintCard({ id: "A", active: true }),
+          south: makeConstraintCard({ id: "B", active: true }),
+          east: makeConstraintCard({ id: "C", active: true }),
+          west: makeConstraintCard({ id: "D", active: true }),
+          action: makeConstraintCard({ id: "E", active: true }),
+        },
+        frontKeyActivated: false,
+        frontSkullActivated: false,
+        backAlarmActivated: false,
+        backDetonatorActivated: false,
+      },
     });
     const filtered = filterCampaignState(campaign, "p1");
     expect(filtered.nanoTracker).toBe(nano);
     expect(filtered.bunkerTracker).toBe(bunker);
+    expect(filtered.mission66Bunker).toEqual(campaign.mission66Bunker);
   });
 
   it("passes specialMarkers through unchanged", () => {

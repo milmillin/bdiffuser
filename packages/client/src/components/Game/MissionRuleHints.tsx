@@ -11,7 +11,6 @@ import {
   BUNKER_CARD_IMAGES,
   MISSION66_BUNKER_CELLS_BY_FLOOR,
   MISSION66_BUNKER_GRID_SIZE,
-  MISSION66_BUNKER_TRACK_PATH,
   getMission66BunkerTrackPoint,
   MISSION_SCHEMAS,
 } from "@bomb-busters/shared";
@@ -548,10 +547,9 @@ function CampaignObjectsHint({
 
   const activeGlobalConstraints =
     campaign.constraints?.global.filter((constraint) => constraint.active) ?? [];
-  const mission66GlobalConstraints =
-    gameState.mission === 66 ? (campaign.constraints?.global ?? []) : [];
-  const globalConstraints =
-    gameState.mission === 66 ? mission66GlobalConstraints : activeGlobalConstraints;
+  const globalConstraints = activeGlobalConstraints;
+  const mission66Bunker =
+    gameState.mission === 66 ? (campaign.mission66Bunker ?? null) : null;
   const supportsPairedConstraintLayout = gameState.mission === 47 || gameState.mission === 57;
   const pairedConstraintCandidates = supportsPairedConstraintLayout
     ? (campaign.constraints?.global ?? [])
@@ -566,20 +564,14 @@ function CampaignObjectsHint({
     supportsPairedConstraintLayout &&
     pairedNumberConstraintColumns.length > 0 &&
     pairedNumberConstraintColumns.some((column) => column.constraint != null);
-  const mission66ActionConstraint =
-    gameState.mission === 66 ? (campaign.constraints?.deck?.[0] ?? null) : null;
-  const mission66ActionPointer =
-    gameState.mission === 66
-      ? campaign.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value
-      : undefined;
   const mission66ConstraintSlots =
-    gameState.mission === 66
+    mission66Bunker
       ? [
-          { label: "North", card: globalConstraints[0] ?? null, slotIndex: 0 },
-          { label: "South", card: globalConstraints[1] ?? null, slotIndex: 1 },
-          { label: "East", card: globalConstraints[2] ?? null, slotIndex: 2 },
-          { label: "West", card: globalConstraints[3] ?? null, slotIndex: 3 },
-          { label: "Action", card: mission66ActionConstraint, slotIndex: null },
+          { label: "North", card: mission66Bunker.constraints.north },
+          { label: "South", card: mission66Bunker.constraints.south },
+          { label: "East", card: mission66Bunker.constraints.east },
+          { label: "West", card: mission66Bunker.constraints.west },
+          { label: "Action", card: mission66Bunker.constraints.action },
         ]
       : [];
   const mission61RingSlots =
@@ -600,7 +592,7 @@ function CampaignObjectsHint({
   const showStandaloneConstraints =
     !showPairedNumberConstraintRows &&
     gameState.mission !== 66 &&
-    (globalConstraints.length > 0 || perPlayerConstraints.length > 0 || mission66ActionConstraint != null);
+    (globalConstraints.length > 0 || perPlayerConstraints.length > 0);
   const showMission61ConstraintRing = mission61RingSlots.length > 0;
 
   const activeChallenges = campaign.challenges?.active ?? [];
@@ -1033,25 +1025,6 @@ function CampaignObjectsHint({
                   );
                 }),
               )}
-              {mission66ActionConstraint && (
-                <CampaignObjectCard
-                  key={`mission66-action-${mission66ActionConstraint.id}`}
-                  image={getConstraintCardImage(mission66ActionConstraint.id)}
-                  borderClassName="border-fuchsia-500"
-                  sizeClassName={constraintThumbnailSizeClass}
-                  testId={`mission-hint-thumb-constraint-action-${mission66ActionConstraint.id}`}
-                  badgeLabel="ACT"
-                  onClick={() =>
-                    setPreviewCard({
-                      name: `Constraint ${mission66ActionConstraint.id} (ACTION)`,
-                      previewImage: getConstraintCardImage(mission66ActionConstraint.id),
-                      previewScale: 1.5,
-                      detailSubtitle: mission66ActionConstraint.name || mission66ActionConstraint.id,
-                      detailEffect: mission66ActionConstraint.description,
-                    })
-                  }
-                />
-              )}
             </CampaignRow>
           </SectionShell>
         )}
@@ -1247,20 +1220,22 @@ function CampaignObjectsHint({
                 )}
               </div>
             )}
-            {campaign.bunkerTracker && (
+            {(campaign.bunkerTracker || campaign.mission66Bunker) && (
               <div className="space-y-2 rounded-lg bg-blue-950/20 px-2.5 py-2">
                 {(() => {
                   const mission66TrackPoint =
                     gameState.mission === 66
-                      ? getMission66BunkerTrackPoint(
-                          campaign.bunkerTracker!.position,
-                          campaign.bunkerTracker!.max,
-                        )
-                      : null;
+                      ? campaign.mission66Bunker?.position ?? null
+                      : campaign.bunkerTracker
+                        ? getMission66BunkerTrackPoint(
+                            campaign.bunkerTracker.position,
+                            campaign.bunkerTracker.max,
+                          )
+                        : null;
                   const isBackFace =
                     mission66TrackPoint != null
                       ? mission66TrackPoint.floor === "back"
-                      : campaign.bunkerTracker!.position > Math.floor(campaign.bunkerTracker!.max / 2);
+                      : false;
                   const image = isBackFace
                     ? BUNKER_CARD_IMAGES.back
                     : BUNKER_CARD_IMAGES.front;
@@ -1302,93 +1277,52 @@ function CampaignObjectsHint({
                       )
                       : null;
                   const mission66VisibleConstraintSlots = mission66ConstraintSlots.filter(
-                    (slot): slot is {
-                      label: string;
-                      card: NonNullable<typeof slot.card>;
-                      slotIndex: number | null;
-                    } => slot.card != null,
+                    (slot): slot is { label: string; card: NonNullable<typeof slot.card> } =>
+                      slot.card != null,
                   );
                   const mission66ItemStatuses =
-                    mission66TrackPoint != null
+                    mission66TrackPoint != null && campaign.mission66Bunker
                       ? (() => {
                           const currentKey =
                             `${mission66TrackPoint.floor}:${mission66TrackPoint.row}:${mission66TrackPoint.col}`;
-                          const visitedKeys = new Set(
-                            MISSION66_BUNKER_TRACK_PATH
-                              .filter((point) => point.index <= mission66TrackPoint.index)
-                              .map((point) => `${point.floor}:${point.row}:${point.col}`),
-                          );
-                          const frontAction =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "action")
-                              ?? null;
-                          const backAction =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "action")
-                              ?? null;
-                          const frontStairs =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "stairs")
-                              ?? null;
-                          const backStairs =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "stairs")
-                              ?? null;
-                          const goal =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.front.find((cell) => cell.marker === "goal")
-                              ?? null;
-                          const detonator =
-                            MISSION66_BUNKER_CELLS_BY_FLOOR.back.find((cell) => cell.marker === "detonator")
-                              ?? null;
-
                           const resolveStatus = (
-                            floor: "front" | "back",
-                            row: number,
-                            col: number,
+                            targetKey: string,
+                            activated: boolean,
                           ): "Current" | "Reached" | "Pending" => {
-                            const key = `${floor}:${row}:${col}`;
-                            if (key === currentKey) return "Current";
-                            if (visitedKeys.has(key)) return "Reached";
-                            return "Pending";
+                            if (targetKey === currentKey) return "Current";
+                            return activated ? "Reached" : "Pending";
                           };
 
                           return [
-                            frontAction
-                              ? {
-                                  label: "Key",
-                                  status: resolveStatus(frontAction.floor, frontAction.row, frontAction.col),
-                                }
-                              : null,
-                            frontStairs
-                              ? {
-                                  label: "Stairs",
-                                  status: (() => {
-                                    const frontStatus = resolveStatus(
-                                      frontStairs.floor,
-                                      frontStairs.row,
-                                      frontStairs.col,
-                                    );
-                                    if (frontStatus !== "Pending") return frontStatus;
-                                    if (!backStairs) return frontStatus;
-                                    return resolveStatus(backStairs.floor, backStairs.row, backStairs.col);
-                                  })(),
-                                }
-                              : null,
-                            goal
-                              ? {
-                                  label: "Skull",
-                                  status: resolveStatus(goal.floor, goal.row, goal.col),
-                                }
-                              : null,
-                            backAction
-                              ? {
-                                  label: "Alarm",
-                                  status: resolveStatus(backAction.floor, backAction.row, backAction.col),
-                                }
-                              : null,
-                            detonator
-                              ? {
-                                  label: "Detonator",
-                                  status: resolveStatus(detonator.floor, detonator.row, detonator.col),
-                                }
-                              : null,
-                          ].filter((entry): entry is { label: string; status: "Current" | "Reached" | "Pending" } => entry != null);
+                            {
+                              label: "Key",
+                              status: resolveStatus(
+                                "front:2:1",
+                                campaign.mission66Bunker.frontKeyActivated,
+                              ),
+                            },
+                            {
+                              label: "Skull",
+                              status: resolveStatus(
+                                "front:1:3",
+                                campaign.mission66Bunker.frontSkullActivated,
+                              ),
+                            },
+                            {
+                              label: "Alarm",
+                              status: resolveStatus(
+                                "back:2:3",
+                                campaign.mission66Bunker.backAlarmActivated,
+                              ),
+                            },
+                            {
+                              label: "Detonator",
+                              status: resolveStatus(
+                                "back:0:0",
+                                campaign.mission66Bunker.backDetonatorActivated,
+                              ),
+                            },
+                          ];
                         })()
                       : [];
                   const mission66ActivatedItems = mission66ItemStatuses.filter(
@@ -1422,11 +1356,13 @@ function CampaignObjectsHint({
                             })}
                           />
                         </div>
-                        <TrackerBar
-                          label="Bunker"
-                          position={campaign.bunkerTracker.position}
-                          max={campaign.bunkerTracker.max}
-                        />
+                        {campaign.bunkerTracker && gameState.mission !== 66 && (
+                          <TrackerBar
+                            label="Bunker"
+                            position={campaign.bunkerTracker.position}
+                            max={campaign.bunkerTracker.max}
+                          />
+                        )}
                       </div>
                       {gameState.mission === 66 && mission66VisibleConstraintSlots.length > 0 && (
                         <div className="space-y-2">
@@ -1437,8 +1373,6 @@ function CampaignObjectsHint({
                             <div className="mt-1.5 flex flex-wrap justify-center gap-2">
                               {mission66VisibleConstraintSlots.map((slot) => {
                                 const image = getConstraintCardImage(slot.card.id);
-                                const isMission66ActionTarget =
-                                  slot.slotIndex != null && mission66ActionPointer === slot.slotIndex;
                                 const isActionSlot = slot.label === "Action";
                                 return (
                                   <div
@@ -1455,9 +1389,7 @@ function CampaignObjectsHint({
                                       borderClassName={
                                         isActionSlot
                                           ? "border-fuchsia-500"
-                                          : isMission66ActionTarget
-                                            ? "border-cyan-500"
-                                            : "border-rose-500"
+                                          : "border-rose-500"
                                       }
                                       sizeClassName={constraintThumbnailSizeClass}
                                       testId={`mission-hint-thumb-constraint-slot-${slot.label}-${slot.card.id}`}

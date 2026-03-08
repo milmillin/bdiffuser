@@ -4,6 +4,7 @@ import type {
   BaseEquipmentId,
   CaptainMode,
   Mission32ConstraintDecision,
+  Mission66BunkerChoiceSelection,
   Mission61ConstraintRotationDirection,
   CharacterId,
   ChatMessage,
@@ -71,6 +72,7 @@ export type ClientMessage =
   | { type: "mission29HiddenNumberCardChoice"; cardIndex: number }
   | { type: "mission34GuessWeakestLink"; targetPlayerId: string; constraintId: string }
   | { type: "mission61ReplaceOwnConstraint" }
+  | { type: "mission66BunkerChoice"; choice: Mission66BunkerChoiceSelection }
   | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
   | { type: "talkiesWalkiesChoice"; tileIndex: number }
   | {

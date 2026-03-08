@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getMission66BunkerTrackPoint, renderLogDetail } from "@bomb-busters/shared";
+import { renderLogDetail } from "@bomb-busters/shared";
 import {
   makeBoardState,
   makeGameState,
@@ -8,8 +8,9 @@ import {
   makeYellowTile,
   makePlayer,
 } from "@bomb-busters/shared/testing";
-import { dispatchHooks } from "../missionHooks";
+import { applyMission66BunkerChoice, dispatchHooks } from "../missionHooks";
 import {
+  advanceTurn,
   executeDualCut,
   executeDualCutDoubleDetector,
   executeSoloCut,
@@ -26,33 +27,26 @@ function parseChallengeValue(id: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function valuePassesTestConstraint(value: number, constraintId: string): boolean {
-  const normalized = Math.floor(value);
-  switch (constraintId) {
-    case "A":
-      return normalized % 2 === 0;
-    case "B":
-      return normalized % 2 === 1;
-    case "C":
-      return normalized >= 1 && normalized <= 6;
-    case "D":
-      return normalized >= 7 && normalized <= 12;
-    case "E":
-      return normalized >= 4 && normalized <= 9;
-    case "F":
-      return normalized < 4 || normalized > 9;
-    default:
-      return true;
+function setMission66TestConstraints(
+  state: ReturnType<typeof makeGameState>,
+  ids: {
+    north: string;
+    south: string;
+    east: string;
+    west: string;
+    action: string;
+  },
+) {
+  if (!state.campaign?.mission66Bunker) {
+    throw new Error("mission 66 should initialize bunker state");
   }
-}
-
-function pickValueForTestConstraints(constraintIds: readonly string[]): number {
-  for (let value = 1; value <= 12; value++) {
-    if (constraintIds.every((id) => valuePassesTestConstraint(value, id))) {
-      return value;
-    }
-  }
-  throw new Error(`No valid cut value for constraints: ${constraintIds.join(",")}`);
+  state.campaign.mission66Bunker.constraints = {
+    north: makeConstraintCard({ id: ids.north, active: true }),
+    south: makeConstraintCard({ id: ids.south, active: true }),
+    east: makeConstraintCard({ id: ids.east, active: true }),
+    west: makeConstraintCard({ id: ids.west, active: true }),
+    action: makeConstraintCard({ id: ids.action, active: true }),
+  };
 }
 
 describe("mission progression hooks", () => {
@@ -1827,7 +1821,7 @@ describe("mission progression hooks", () => {
     expect(state.campaign?.numberCards?.discard.some((card) => card.value === target)).toBe(true);
   });
 
-  it("mission 66 bunker flow setup + resolve advances bunker tracker and action pointer", () => {
+  it("mission 66 bunker setup creates explicit bunker board state", () => {
     const state = makeGameState({
       mission: 66,
       log: [],
@@ -1835,30 +1829,153 @@ describe("mission progression hooks", () => {
     });
     dispatchHooks(66, { point: "setup", state });
 
-    expect(state.campaign?.bunkerTracker).toEqual({ position: 0, max: 10 });
+    expect(state.campaign?.mission66Bunker?.position).toEqual({
+      floor: "front",
+      row: 0,
+      col: 0,
+    });
     expect(
-      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-    ).toBe(0);
+      Object.values(state.campaign!.mission66Bunker!.constraints)
+        .map((card) => card.id)
+        .sort(),
+    ).toEqual(["A", "B", "C", "D", "E"]);
+    expect(state.campaign?.constraints).toBeUndefined();
+    expect(state.campaign?.specialMarkers).toBeUndefined();
+  });
 
-    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
-    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
-    const cutValue = pickValueForTestConstraints([directionalConstraintId]);
+  it("mission 66 queues a bunker choice instead of moving immediately", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1", hand: [makeTile({ id: "p1-2", gameValue: 2, sortValue: 2 })] })],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+    setMission66TestConstraints(state, {
+      north: "B",
+      south: "A",
+      east: "D",
+      west: "C",
+      action: "E",
+    });
+
+    executeSoloCut(state, "p1", 2);
+
+    expect(state.campaign?.mission66Bunker?.position).toEqual({
+      floor: "front",
+      row: 0,
+      col: 0,
+    });
+    expect(state.pendingForcedAction).toMatchObject({
+      kind: "mission66BunkerChoice",
+      actorId: "p1",
+      cutValue: 2,
+      remainingSteps: 1,
+    });
+    if (!state.pendingForcedAction || state.pendingForcedAction.kind !== "mission66BunkerChoice") {
+      throw new Error("mission 66 should queue a bunker choice");
+    }
+    expect(state.pendingForcedAction.options).toEqual([
+      {
+        kind: "move",
+        direction: "south",
+        destination: { floor: "front", row: 1, col: 0 },
+      },
+    ]);
+  });
+
+  it("mission 66 front key activation is stationary and unlocks the right-side door", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1" })],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+    setMission66TestConstraints(state, {
+      north: "D",
+      south: "D",
+      east: "A",
+      west: "D",
+      action: "E",
+    });
+    if (!state.campaign?.mission66Bunker) throw new Error("mission 66 should initialize bunker state");
+    state.campaign.mission66Bunker.position = { floor: "front", row: 2, col: 1 };
 
     dispatchHooks(66, {
       point: "resolve",
       state,
-      action: { type: "soloCut", actorId: "p1", value: cutValue },
-      cutValue,
+      action: { type: "soloCut", actorId: "p1", value: 5 },
+      cutValue: 5,
       cutSuccess: true,
     });
+    expect(state.pendingForcedAction).toMatchObject({
+      kind: "mission66BunkerChoice",
+      options: [{ kind: "activate", target: "front_key" }],
+    });
 
-    expect(state.campaign?.bunkerTracker?.position).toBe(1);
+    const activateResult = applyMission66BunkerChoice(state, "p1", {
+      kind: "activate",
+      target: "front_key",
+    });
+    expect(activateResult.ok).toBe(true);
+    expect(state.campaign.mission66Bunker.position).toEqual({
+      floor: "front",
+      row: 2,
+      col: 1,
+    });
+    expect(state.campaign.mission66Bunker.frontKeyActivated).toBe(true);
+
+    dispatchHooks(66, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 2 },
+      cutValue: 2,
+      cutSuccess: true,
+    });
+    if (!state.pendingForcedAction || state.pendingForcedAction.kind !== "mission66BunkerChoice") {
+      throw new Error("mission 66 should queue a bunker move choice");
+    }
     expect(
-      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-    ).toBe(1);
+      state.pendingForcedAction.options.some(
+        (option) => option.kind === "move" && option.direction === "east",
+      ),
+    ).toBe(true);
   });
 
-  it("mission 66: solo cut of 4 wires advances bunker flow as two cuts", () => {
+  it("mission 66 failed dual cuts do not queue bunker choices", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [
+        makePlayer({ id: "p1", hand: [makeTile({ id: "p1-4", gameValue: 4, sortValue: 4 })] }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-9", gameValue: 9, sortValue: 9 })] }),
+      ],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+    setMission66TestConstraints(state, {
+      north: "B",
+      south: "A",
+      east: "D",
+      west: "C",
+      action: "E",
+    });
+
+    executeDualCut(state, "p1", "p2", 0, 4);
+
+    expect(state.pendingForcedAction).toBeUndefined();
+    expect(state.campaign?.mission66Bunker?.position).toEqual({
+      floor: "front",
+      row: 0,
+      col: 0,
+    });
+  });
+
+  it("mission 66 solo cutting four identical wires queues two bunker steps", () => {
     const state = makeGameState({
       mission: 66,
       log: [],
@@ -1866,265 +1983,123 @@ describe("mission progression hooks", () => {
         makePlayer({
           id: "p1",
           hand: [
-            makeTile({ id: "p1-5a", gameValue: 5, sortValue: 5 }),
-            makeTile({ id: "p1-5b", gameValue: 5, sortValue: 5 }),
-            makeTile({ id: "p1-5c", gameValue: 5, sortValue: 5 }),
-            makeTile({ id: "p1-5d", gameValue: 5, sortValue: 5 }),
+            makeTile({ id: "p1-2a", gameValue: 2, sortValue: 2 }),
+            makeTile({ id: "p1-2b", gameValue: 2, sortValue: 2 }),
+            makeTile({ id: "p1-2c", gameValue: 2, sortValue: 2 }),
+            makeTile({ id: "p1-2d", gameValue: 2, sortValue: 2 }),
           ],
         }),
-        makePlayer({
-          id: "p2",
-          hand: [makeTile({ id: "p2-2a", gameValue: 2, sortValue: 2 })],
-        }),
+        makePlayer({ id: "p2", hand: [makeTile({ id: "p2-9", gameValue: 9, sortValue: 9 })] }),
       ],
       currentPlayerIndex: 0,
     });
 
     dispatchHooks(66, { point: "setup", state });
-    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
-    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
-    const cutValue = pickValueForTestConstraints([directionalConstraintId]);
-    state.players[0]!.hand = [
-      makeTile({ id: "p1-m66-a", gameValue: cutValue, sortValue: cutValue }),
-      makeTile({ id: "p1-m66-b", gameValue: cutValue, sortValue: cutValue }),
-      makeTile({ id: "p1-m66-c", gameValue: cutValue, sortValue: cutValue }),
-      makeTile({ id: "p1-m66-d", gameValue: cutValue, sortValue: cutValue }),
-    ];
-    executeSoloCut(state, "p1", cutValue);
-
-    expect(state.campaign?.bunkerTracker?.position).toBe(2);
-    expect(
-      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-    ).toBe(2);
-  });
-
-  it("mission 66 dual cut failure advances bunker tracker and action pointer", () => {
-    const state = makeGameState({
-      mission: 66,
-      log: [],
-      players: [
-        makePlayer({
-          id: "p1",
-          hand: [makeTile({ id: "p1-4a", gameValue: 4, sortValue: 4 })],
-        }),
-        makePlayer({
-          id: "p2",
-          hand: [makeTile({ id: "p2-2", gameValue: 2, sortValue: 2 })],
-        }),
-      ],
-      currentPlayerIndex: 0,
+    setMission66TestConstraints(state, {
+      north: "B",
+      south: "A",
+      east: "D",
+      west: "C",
+      action: "E",
     });
 
-    dispatchHooks(66, { point: "setup", state });
-    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
-    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
-    const guessValue = pickValueForTestConstraints([directionalConstraintId]);
-    const mismatchValue = guessValue === 12 ? 11 : 12;
-    state.players[0]!.hand = [makeTile({ id: "p1-m66-dual", gameValue: guessValue, sortValue: guessValue })];
-    state.players[1]!.hand = [makeTile({ id: "p2-m66-dual", gameValue: mismatchValue, sortValue: mismatchValue })];
+    executeSoloCut(state, "p1", 2);
 
-    executeDualCut(state, "p1", "p2", 0, guessValue);
-
-    expect(state.campaign?.bunkerTracker?.position).toBe(1);
-    expect(
-      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-    ).toBe(1);
+    expect(state.pendingForcedAction).toMatchObject({
+      kind: "mission66BunkerChoice",
+      actorId: "p1",
+      cutValue: 2,
+      remainingSteps: 2,
+    });
   });
 
-  it("mission 66 blocks bunker movement when directional constraint is not satisfied", () => {
+  it("mission 66 trap entry advances the detonator", () => {
     const state = makeGameState({
       mission: 66,
       log: [],
       players: [makePlayer({ id: "p1" })],
-    });
-    dispatchHooks(66, { point: "setup", state });
-
-    const directionalConstraintId = state.campaign?.constraints?.global[0]?.id;
-    if (!directionalConstraintId) throw new Error("mission 66 should initialize directional constraints");
-    const invalidValue = (() => {
-      for (let value = 1; value <= 12; value++) {
-        if (!valuePassesTestConstraint(value, directionalConstraintId)) return value;
-      }
-      return null;
-    })();
-    if (invalidValue == null) throw new Error("expected a value that violates directional constraint");
-
-    dispatchHooks(66, {
-      point: "resolve",
-      state,
-      action: { type: "soloCut", actorId: "p1", value: invalidValue },
-      cutValue: invalidValue,
-      cutSuccess: true,
-    });
-
-    expect(state.campaign?.bunkerTracker?.position).toBe(0);
-    expect(
-      state.log.some((entry) => renderLogDetail(entry.detail).startsWith("bunker_flow:blocked:direction")),
-    ).toBe(true);
-  });
-
-  it("mission 66 blocks bunker action-cell movement when ACTION constraint is not satisfied", () => {
-    const state = makeGameState({
-      mission: 66,
-      log: [],
-      players: [makePlayer({ id: "p1" })],
-    });
-    dispatchHooks(66, { point: "setup", state });
-    if (!state.campaign?.bunkerTracker) throw new Error("mission 66 should initialize bunker tracker");
-    if (!state.campaign?.constraints) throw new Error("mission 66 should initialize constraints");
-
-    // Move to the front ACTION cell on the canonical path.
-    state.campaign.bunkerTracker.position = 3;
-    const pointer = state.campaign.bunkerTracker.position % 4;
-    state.campaign.specialMarkers = [{ kind: "action_pointer", value: pointer }];
-
-    const directionalConstraintId = state.campaign.constraints.global[pointer]?.id;
-    const actionConstraintId = state.campaign.constraints.deck?.[0]?.id;
-    if (!directionalConstraintId || !actionConstraintId) {
-      throw new Error("mission 66 should initialize directional + action constraints");
-    }
-
-    const invalidActionValue = (() => {
-      for (let value = 1; value <= 12; value++) {
-        if (
-          valuePassesTestConstraint(value, directionalConstraintId)
-          && !valuePassesTestConstraint(value, actionConstraintId)
-        ) {
-          return value;
-        }
-      }
-      return null;
-    })();
-    if (invalidActionValue == null) {
-      throw new Error("expected a value that passes directional and fails action constraint");
-    }
-
-    dispatchHooks(66, {
-      point: "resolve",
-      state,
-      action: { type: "soloCut", actorId: "p1", value: invalidActionValue },
-      cutValue: invalidActionValue,
-      cutSuccess: true,
-    });
-
-    expect(state.campaign.bunkerTracker.position).toBe(3);
-    expect(
-      state.log.some((entry) => renderLogDetail(entry.detail).startsWith("bunker_flow:blocked:action")),
-    ).toBe(true);
-  });
-
-  it("mission 66 end-to-end simulation follows full bunker path and rotating constraints", () => {
-    const state = makeGameState({
-      mission: 66,
-      log: [],
-      players: [
-        makePlayer({ id: "p1", hand: [] }),
-        makePlayer({
-          id: "p2",
-          hand: [makeTile({ id: "p2-hold", gameValue: 12, sortValue: 12 })],
-        }),
-      ],
       currentPlayerIndex: 0,
     });
 
     dispatchHooks(66, { point: "setup", state });
+    setMission66TestConstraints(state, {
+      north: "D",
+      south: "A",
+      east: "D",
+      west: "D",
+      action: "E",
+    });
+    if (!state.campaign?.mission66Bunker) throw new Error("mission 66 should initialize bunker state");
+    state.campaign.mission66Bunker.position = { floor: "back", row: 1, col: 1 };
+    state.campaign.mission66Bunker.frontKeyActivated = true;
+    state.campaign.mission66Bunker.frontSkullActivated = true;
+    state.campaign.mission66Bunker.backAlarmActivated = true;
 
-    const constraints = state.campaign?.constraints;
-    expect(constraints).toBeDefined();
-    expect(constraints?.global).toHaveLength(4);
-    expect(constraints?.deck).toHaveLength(1);
-    const globalConstraintIds = constraints?.global.map((constraint) => constraint.id) ?? [];
-    const actionConstraintId = constraints?.deck?.[0]?.id;
-    const bunkerConstraintIds = [
-      ...globalConstraintIds,
-      actionConstraintId,
-    ]
-      .filter((id): id is string => typeof id === "string")
-      .sort();
-    expect(bunkerConstraintIds).toEqual(["A", "B", "C", "D", "E"]);
-
-    expect(state.campaign?.bunkerTracker).toEqual({ position: 0, max: 10 });
-    expect(
-      state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-    ).toBe(0);
-    expect(getMission66BunkerTrackPoint(0, 10)).toMatchObject({
-      index: 0,
-      floor: "front",
-      row: 0,
-      col: 0,
+    dispatchHooks(66, {
+      point: "resolve",
+      state,
+      action: { type: "soloCut", actorId: "p1", value: 2 },
+      cutValue: 2,
+      cutSuccess: true,
+    });
+    const moveResult = applyMission66BunkerChoice(state, "p1", {
+      kind: "move",
+      direction: "south",
     });
 
-    for (let step = 1; step <= 10; step++) {
-      const tracker = state.campaign?.bunkerTracker;
-      const constraintsState = state.campaign?.constraints;
-      if (!tracker || !constraintsState) {
-        throw new Error("mission 66 should keep bunker tracker/constraints initialized");
-      }
-      const pointer =
-        state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value
-          ?? (tracker.position % 4);
-      const directionalConstraintId = constraintsState.global[pointer]?.id;
-      if (!directionalConstraintId) throw new Error("expected active directional constraint");
-      const currentPoint = getMission66BunkerTrackPoint(tracker.position, tracker.max);
-      const requiredConstraintIds: string[] = [];
-      if (currentPoint.floor === "front" && currentPoint.row === 2 && currentPoint.col === 1) {
-        const actionConstraintId = constraintsState.deck?.[0]?.id;
-        if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
-      } else if (currentPoint.floor === "back" && currentPoint.row === 2 && currentPoint.col === 3) {
-        const actionConstraintId = constraintsState.deck?.[0]?.id;
-        if (actionConstraintId) requiredConstraintIds.push(actionConstraintId);
-      } else {
-        requiredConstraintIds.push(directionalConstraintId);
-      }
-      const cutValue = pickValueForTestConstraints(requiredConstraintIds);
-      state.players[0]!.hand.push(
-        makeTile({
-          id: `p1-m66-step-${step}`,
-          gameValue: cutValue,
-          sortValue: cutValue,
-        }),
-      );
-
-      const result = executeSoloCut(state, "p1", cutValue);
-      expect(result.type).toBe("soloCutResult");
-      expect(state.campaign?.bunkerTracker?.position).toBe(step);
-      expect(
-        state.campaign?.specialMarkers?.find((marker) => marker.kind === "action_pointer")?.value,
-      ).toBe(step % 4);
-
-      const trackerAfterCut = state.campaign?.bunkerTracker;
-      if (!trackerAfterCut) {
-        throw new Error("mission 66 should keep bunker tracker initialized");
-      }
-      const point = getMission66BunkerTrackPoint(trackerAfterCut.position, trackerAfterCut.max);
-      expect(point.index).toBe(step);
-      if (step === 7) {
-        expect(point).toMatchObject({ floor: "back", row: 0, col: 3 });
-      }
-      if (step === 8) {
-        expect(point).toMatchObject({ floor: "back", row: 1, col: 3 });
-      }
-    }
-
-    const finalTracker = state.campaign?.bunkerTracker;
-    if (!finalTracker) {
-      throw new Error("mission 66 should keep bunker tracker initialized");
-    }
-    expect(getMission66BunkerTrackPoint(finalTracker.position, finalTracker.max)).toMatchObject({
-      index: 10,
+    expect(moveResult.ok).toBe(true);
+    expect(state.campaign.mission66Bunker.position).toEqual({
       floor: "back",
       row: 2,
-      col: 2,
+      col: 1,
     });
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail).startsWith("mission66:trap|cell=back:2:1")),
+    ).toBe(true);
+  });
+
+  it("mission 66 does not auto-win until the bunker detonator is activated", () => {
+    const state = makeGameState({
+      mission: 66,
+      log: [],
+      players: [makePlayer({ id: "p1", hand: [makeTile({ id: "p1-11", gameValue: 11, sortValue: 11 })] })],
+      currentPlayerIndex: 0,
+    });
+
+    dispatchHooks(66, { point: "setup", state });
+    setMission66TestConstraints(state, {
+      north: "A",
+      south: "A",
+      east: "A",
+      west: "A",
+      action: "E",
+    });
+
+    executeSoloCut(state, "p1", 11);
     expect(state.phase).toBe("playing");
     expect(state.result).toBeNull();
 
-    const bunkerProgressLogs = state.log.filter(
-      (entry) =>
-        entry.action === "hookEffect"
-        && renderLogDetail(entry.detail).startsWith("bunker_flow:"),
-    );
-    expect(bunkerProgressLogs).toHaveLength(10);
+    if (!state.campaign?.mission66Bunker) throw new Error("mission 66 should initialize bunker state");
+    state.players[0]!.hand = [makeTile({ id: "p1-5", gameValue: 5, sortValue: 5 })];
+    state.currentPlayerIndex = 0;
+    state.campaign.mission66Bunker.position = { floor: "back", row: 0, col: 0 };
+    state.campaign.mission66Bunker.frontKeyActivated = true;
+    state.campaign.mission66Bunker.frontSkullActivated = true;
+    state.campaign.mission66Bunker.backAlarmActivated = true;
+
+    executeSoloCut(state, "p1", 5);
+    const activateResult = applyMission66BunkerChoice(state, "p1", {
+      kind: "activate",
+      target: "back_detonator",
+    });
+    expect(activateResult.ok).toBe(true);
+
+    advanceTurn(state);
+
+    expect(state.campaign.mission66Bunker.backDetonatorActivated).toBe(true);
+    expect(state.phase).toBe("finished");
+    expect(state.result).toBe("win");
   });
 
   it("mission 59: rotates Nano after a solo cut when requested", () => {

@@ -1,3 +1,5 @@
+import type { Mission66BunkerFloor } from "./bunkerMap.js";
+
 // ── Wire Tiles ──────────────────────────────────────────────
 
 export type WireColor = "blue" | "red" | "yellow";
@@ -379,6 +381,52 @@ export interface Mission61ConstraintRingState {
   replacementPool?: ConstraintCard[];
 }
 
+export type Mission66BunkerDirection = "north" | "south" | "east" | "west";
+
+export type Mission66BunkerActivationTarget =
+  | "front_key"
+  | "front_skull"
+  | "back_alarm"
+  | "back_detonator";
+
+export interface Mission66BunkerPosition {
+  floor: Mission66BunkerFloor;
+  row: number;
+  col: number;
+}
+
+export interface Mission66BunkerConstraintState {
+  north: ConstraintCard;
+  south: ConstraintCard;
+  east: ConstraintCard;
+  west: ConstraintCard;
+  action: ConstraintCard;
+}
+
+export interface Mission66BunkerState {
+  position: Mission66BunkerPosition;
+  constraints: Mission66BunkerConstraintState;
+  frontKeyActivated: boolean;
+  frontSkullActivated: boolean;
+  backAlarmActivated: boolean;
+  backDetonatorActivated: boolean;
+}
+
+export type Mission66BunkerChoiceOption =
+  | {
+      kind: "move";
+      direction: Mission66BunkerDirection;
+      destination: Mission66BunkerPosition;
+    }
+  | {
+      kind: "activate";
+      target: Mission66BunkerActivationTarget;
+    };
+
+export type Mission66BunkerChoiceSelection =
+  | { kind: "move"; direction: Mission66BunkerDirection }
+  | { kind: "activate"; target: Mission66BunkerActivationTarget };
+
 /**
  * All campaign-specific state, attached optionally to GameState.
  * Each sub-object is present only when the active mission uses that mechanic.
@@ -419,6 +467,8 @@ export interface CampaignState {
   mission34Hidden?: Mission34HiddenState;
   /** Mission 61: public rotating constraint ring. */
   mission61Ring?: Mission61ConstraintRingState;
+  /** Mission 66: public bunker board state and fixed directional/ACTION constraints. */
+  mission66Bunker?: Mission66BunkerState;
   /** Mission 31: constraint card selection state (active during select_constraints phase). */
   constraintSelection?: ConstraintSelectionState;
   /** Mission 43: hidden wires currently held by Nano. */
@@ -581,6 +631,17 @@ export type ForcedAction =
       actorId: string;
       /** Current captain decision selection. */
       decision: Mission32ConstraintDecision;
+    }
+  | {
+      kind: "mission66BunkerChoice";
+      /** The current player who must resolve the bunker choice for this cut step. */
+      actorId: string;
+      /** Numeric value cut by the action that triggered this bunker step. */
+      cutValue: number;
+      /** Remaining Mission 66 bunker steps including this one. */
+      remainingSteps: number;
+      /** Legal bunker options for this cut step. */
+      options: Mission66BunkerChoiceOption[];
     }
   | {
       kind: "mission36SequencePosition";

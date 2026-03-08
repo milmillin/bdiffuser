@@ -44,7 +44,7 @@ export type {
   HiddenNumberCardPenaltyRuleDef,
   IberianYellowModeRuleDef,
   InternFailureExplodesRuleDef,
-  BunkerFlowRuleDef,
+  Mission66BunkerBoardRuleDef,
   NanoProgressionRuleDef,
   NanoValueParityRuleDef,
   Mission43NanoRobotRuleDef,

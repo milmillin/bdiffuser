@@ -189,18 +189,11 @@ export interface ChallengeRewardsRuleDef {
 }
 
 /**
- * Mission 66 bunker flow: a linear progression track with action pointer.
+ * Mission 66 bunker board: explicit bunker standee state with per-cut move or
+ * ACTION resolution on the printed bunker map.
  */
-export interface BunkerFlowRuleDef {
-  kind: "bunker_flow";
-  /** Initial bunker tracker position. */
-  start: number;
-  /** Inclusive max bunker tracker position. */
-  max: number;
-  /** Progress increment for each successful cut. */
-  advanceBy: number;
-  /** Pointer cycle used for action-marker rotation (defaults to 4). */
-  actionCycleLength?: number;
+export interface Mission66BunkerBoardRuleDef {
+  kind: "mission_66_bunker_board";
 }
 
 /**
@@ -558,7 +551,7 @@ export type MissionHookRuleDef =
   | NanoProgressionRuleDef
   | OxygenProgressionRuleDef
   | ChallengeRewardsRuleDef
-  | BunkerFlowRuleDef
+  | Mission66BunkerBoardRuleDef
   | SequencePriorityRuleDef
   | SequenceCardRepositionRuleDef
   | InternFailureExplodesRuleDef

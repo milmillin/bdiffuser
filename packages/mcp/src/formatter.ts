@@ -224,6 +224,8 @@ function formatForcedAction(fa: ForcedAction, state: ClientGameState): string {
       return `FORCED ACTION: ${nameOf(fa.captainId)} must choose whether to keep or replace the visible constraint for ${nameOf(fa.actorId)}`;
     case "mission61ConstraintRotate":
       return `FORCED ACTION: ${nameOf(fa.captainId)} must choose constraint rotation direction`;
+    case "mission66BunkerChoice":
+      return `FORCED ACTION: ${nameOf(fa.actorId)} must resolve a bunker choice for cut value ${fa.cutValue}`;
     case "mission36SequencePosition":
       return `FORCED ACTION: ${nameOf(fa.captainId)} must choose sequence card side (${fa.reason})`;
   }

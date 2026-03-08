@@ -135,9 +135,9 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
       red: exact(2),
       yellow: exact(2),
     },
-    behaviorHooks: ["mission_66_bunker_flow", "mission_66_audio_prompt"],
+    behaviorHooks: ["mission_66_bunker_board", "mission_66_audio_prompt"],
     hookRules: [
-      { kind: "bunker_flow", start: 0, max: 10, advanceBy: 1, actionCycleLength: 4 },
+      { kind: "mission_66_bunker_board" },
       { kind: "audio_prompt", audioFile: "mission_66" },
     ],
     notes: ["FAQ: Standee must move after every cut. On hash squares, must perform successful cut matching ACTION constraint to trigger action."],

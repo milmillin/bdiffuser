@@ -86,6 +86,8 @@ export interface CampaignVisibilityModel {
   mission34Hidden: "owner_only";
   /** Mission 61 ring slots are public; replacement pool is filtered separately. */
   mission61Ring: "public";
+  /** Mission 66 bunker board state is public. */
+  mission66Bunker: "public";
   /** Mission 17 captain false setup token mode: visible to all players. */
   falseInfoTokenMode: "public";
   /** Mission 52 all-false setup token mode: visible to all players. */
@@ -129,6 +131,7 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   mission27TokenDraftBoard: "public",
   mission34Hidden: "owner_only",
   mission61Ring: "public",
+  mission66Bunker: "public",
   falseInfoTokenMode: "public",
   falseTokenMode: "public",
   mission43NanoWires: "hidden",
@@ -265,6 +268,9 @@ export function filterCampaignState(
       : {}),
     ...(campaign.mission61Ring
       ? { mission61Ring: filterMission61Ring(campaign.mission61Ring) }
+      : {}),
+    ...(campaign.mission66Bunker
+      ? { mission66Bunker: campaign.mission66Bunker }
       : {}),
     ...(campaign.falseInfoTokenMode !== undefined
       ? { falseInfoTokenMode: campaign.falseInfoTokenMode }

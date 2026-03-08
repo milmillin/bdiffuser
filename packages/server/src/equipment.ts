@@ -41,6 +41,7 @@ import {
   executeDualCut,
 } from "./gameLogic.js";
 import {
+  canMissionResolveWin,
   dispatchHooks,
   getHookRules,
   hasActiveConstraint,
@@ -1031,6 +1032,10 @@ function checkWin(state: GameState): boolean {
     !hasMission43RemainingNanoWires(state);
 }
 
+function hasPendingMission66BunkerChoice(state: Readonly<GameState>): boolean {
+  return state.pendingForcedAction?.kind === "mission66BunkerChoice";
+}
+
 /** Update marker confirmed status based on cut tiles. */
 function updateMarkerConfirmations(state: GameState): void {
   for (const marker of state.board.markers) {
@@ -1661,10 +1666,20 @@ export function executeUseEquipment(
         `used Fast Pass — solo cut ${toCut.length} wire(s) of value ${payload.value}`,
       );
 
-      if (checkWin(state)) {
+      if (checkWin(state) && canMissionResolveWin(state)) {
         state.result = "win";
         state.phase = "finished";
         return { type: "gameOver", result: "win" };
+      }
+
+      if (hasPendingMission66BunkerChoice(state)) {
+        return {
+          type: "equipmentUsed",
+          equipmentId,
+          playerId: actorId,
+          effect: "fast_pass",
+          detail: `Cut ${toCut.length} wire(s) of value ${payload.value}`,
+        };
       }
 
       advanceTurn(state);
@@ -1758,10 +1773,20 @@ export function executeUseEquipment(
         `used Disintegrator — drew value ${drawnValue}, cut ${totalCut} wire(s)`,
       );
 
-      if (checkWin(state)) {
+      if (checkWin(state) && canMissionResolveWin(state)) {
         state.result = "win";
         state.phase = "finished";
         return { type: "gameOver", result: "win" };
+      }
+
+      if (hasPendingMission66BunkerChoice(state)) {
+        return {
+          type: "equipmentUsed",
+          equipmentId,
+          playerId: actorId,
+          effect: "disintegrator",
+          detail: `Drew ${drawnValue}, cut ${totalCut} wire(s)`,
+        };
       }
 
       return {

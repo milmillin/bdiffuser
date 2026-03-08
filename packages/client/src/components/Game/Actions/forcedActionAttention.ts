@@ -88,6 +88,8 @@ function getPendingForcedMetadata(
       return { kind: forced.kind, actorId: asString(forced.targetPlayerId) };
     case "talkiesWalkiesTileChoice":
       return { kind: forced.kind, actorId: asString(forced.targetPlayerId) };
+    case "mission66BunkerChoice":
+      return { kind: forced.kind, actorId: asString(forced.actorId) };
     case "mission61ConstraintRotate":
       return { kind: forced.kind, actorId: asString(forced.captainId) };
     case "mission36SequencePosition":

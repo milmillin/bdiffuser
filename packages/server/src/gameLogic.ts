@@ -15,6 +15,7 @@ import {
   getTileByFlatIndex,
 } from "./validation.js";
 import {
+  canMissionResolveWin,
   dispatchHooks,
   emitMissionFailureTelemetry,
   getBlueAsRedValue,
@@ -48,9 +49,10 @@ export function advanceTurn(state: GameState): void {
   }
 
   if (attempts >= playerCount) {
-    // All stands empty — win!
-    state.result = "win";
-    state.phase = "finished";
+    if (canMissionResolveWin(state)) {
+      state.result = "win";
+      state.phase = "finished";
+    }
     return;
   }
 
@@ -213,6 +215,10 @@ export function clearSatisfiedSecondaryEquipmentLocks(state: GameState): void {
 function checkWin(state: GameState): boolean {
   return state.players.every((p) => getUncutTiles(p).length === 0) &&
     !hasMission43RemainingNanoWires(state);
+}
+
+function hasPendingMission66BunkerChoice(state: Readonly<GameState>): boolean {
+  return state.pendingForcedAction?.kind === "mission66BunkerChoice";
 }
 
 /** Check loss: detonator at max */
@@ -503,12 +509,23 @@ export function executeDualCut(
     addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✓`);
 
     // Check win
-    if (checkWin(state)) {
+    if (checkWin(state) && canMissionResolveWin(state)) {
       state.result = "win";
       state.phase = "finished";
       return {
         type: "gameOver",
         result: "win",
+      };
+    }
+
+    if (hasPendingMission66BunkerChoice(state)) {
+      return {
+        type: "dualCutResult",
+        actorId,
+        targetId: targetPlayerId,
+        targetTileIndex,
+        guessValue,
+        success: true,
       };
     }
 
@@ -894,10 +911,19 @@ export function executeSoloCut(
 
   addLog(state, actorId, "soloCut", `solo cut ${matchingTiles.length} wire(s) of value ${value}`);
 
-  if (checkWin(state)) {
+  if (checkWin(state) && canMissionResolveWin(state)) {
     state.result = "win";
     state.phase = "finished";
     return { type: "gameOver", result: "win" };
+  }
+
+  if (hasPendingMission66BunkerChoice(state)) {
+    return {
+      type: "soloCutResult",
+      actorId,
+      value,
+      tilesCut: matchingTiles.length,
+    };
   }
 
   advanceTurn(state);
@@ -1080,7 +1106,7 @@ export function executeSimultaneousRedCut(
     `designated ${cuts.length} wires for ${actionLabel} — all were ${requiredColor}`,
   );
 
-  if (checkWin(state)) {
+  if (checkWin(state) && canMissionResolveWin(state)) {
     state.result = "win";
     state.phase = "finished";
     return { type: "gameOver", result: "win" };
@@ -1235,7 +1261,7 @@ export function executeSimultaneousFourCut(
           : `designated 4 wires of value ${targetValue} — all match! Equipment unlocked.`,
     );
 
-    if (checkWin(state)) {
+    if (checkWin(state) && canMissionResolveWin(state)) {
       state.result = "win";
       state.phase = "finished";
       return { type: "gameOver", result: "win" };
@@ -1294,7 +1320,7 @@ export function executeRevealReds(
     addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
   }
 
-  if (checkWin(state)) {
+  if (checkWin(state) && canMissionResolveWin(state)) {
     state.result = "win";
     state.phase = "finished";
     return { type: "gameOver", result: "win" };

@@ -36,6 +36,7 @@ import {
 } from "./Actions/Mission27TokenDraftPanel.js";
 import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberCardPanel.js";
 import { Mission34GuessPanel } from "./Actions/Mission34GuessPanel.js";
+import { Mission66BunkerChoicePanel } from "./Actions/Mission66BunkerChoicePanel.js";
 import { Mission32ConstraintDecisionPanel } from "./Actions/Mission32ConstraintDecisionPanel.js";
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
@@ -121,6 +122,7 @@ const FORCED_ACTION_MISSION29_HIDDEN_CARD = "mission29HiddenNumberCard";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
 const FORCED_ACTION_MISSION32_CONSTRAINT_DECISION = "mission32ConstraintDecision";
+const FORCED_ACTION_MISSION66_BUNKER_CHOICE = "mission66BunkerChoice";
 const FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE = "mission61ConstraintRotate";
 const FORCED_ACTION_MISSION36_SEQUENCE_POSITION = "mission36SequencePosition";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
@@ -133,6 +135,7 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
   FORCED_ACTION_MISSION32_CONSTRAINT_DECISION,
+  FORCED_ACTION_MISSION66_BUNKER_CHOICE,
   FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE,
   FORCED_ACTION_MISSION36_SEQUENCE_POSITION,
 ]);
@@ -564,6 +567,8 @@ export function GameBoard({
         ? pendingForcedAction.targetPlayerId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION32_CONSTRAINT_DECISION
         ? pendingForcedAction.captainId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION66_BUNKER_CHOICE
+        ? pendingForcedAction.actorId
       : pendingForcedAction?.kind === "mission61ConstraintRotate"
         ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION36_SEQUENCE_POSITION
@@ -1952,6 +1957,19 @@ export function GameBoard({
                   gameState.pendingForcedAction.captainId === playerId &&
                   me && (
                     <Mission32ConstraintDecisionPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {/* Playing phase: forced action (mission 66 bunker choice) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION66_BUNKER_CHOICE &&
+                  gameState.pendingForcedAction.actorId === playerId &&
+                  me && (
+                    <Mission66BunkerChoicePanel
                       gameState={gameState}
                       send={send}
                       playerId={playerId}

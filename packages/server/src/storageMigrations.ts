@@ -1,6 +1,7 @@
 import {
   ALL_MISSION_IDS,
   EQUIPMENT_DEFS,
+  getMission66BunkerTrackPoint,
   type GameState,
   type GamePhase,
   type GameResult,
@@ -18,6 +19,7 @@ import {
   type Mission22TokenPassBoardState,
   type Mission27TokenDraftBoardState,
   type Mission29TurnState,
+  type Mission66BunkerChoiceOption,
   type Mission43NanoWire,
   type SurrenderVoteState,
 } from "@bomb-busters/shared";
@@ -623,6 +625,77 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     }
   }
 
+  if (
+    hasOwn(raw, "mission66Bunker") ||
+    (
+      campaign.bunkerTracker != null &&
+      (campaign.constraints?.global.length ?? 0) >= 4 &&
+      campaign.constraints?.deck?.[0] != null
+    )
+  ) {
+    const mission66Bunker = hasOwn(raw, "mission66Bunker") && isObject(raw.mission66Bunker)
+      ? raw.mission66Bunker
+      : {};
+    const rawPosition = isObject(mission66Bunker.position) ? mission66Bunker.position : {};
+    const legacyPoint =
+      campaign.bunkerTracker != null
+        ? getMission66BunkerTrackPoint(campaign.bunkerTracker.position, campaign.bunkerTracker.max)
+        : null;
+    const position = {
+      floor:
+        rawPosition.floor === "back" || rawPosition.floor === "front"
+          ? rawPosition.floor
+          : (legacyPoint?.floor ?? "front"),
+      row: toFiniteNumber(rawPosition.row, legacyPoint?.row ?? 0),
+      col: toFiniteNumber(rawPosition.col, legacyPoint?.col ?? 0),
+    } as const;
+
+    const rawConstraints = isObject(mission66Bunker.constraints) ? mission66Bunker.constraints : {};
+    const legacyGlobal = campaign.constraints?.global ?? [];
+    const legacyAction = campaign.constraints?.deck?.[0];
+    const pickConstraint = (
+      rawCard: unknown,
+      legacyCard: ConstraintCard | undefined,
+    ): ConstraintCard | undefined => {
+      const normalized = normalizeConstraintCardArray(rawCard == null ? [] : [rawCard]);
+      return normalized[0] ?? (legacyCard ? { ...legacyCard, active: true } : undefined);
+    };
+    const north = pickConstraint(rawConstraints.north, legacyGlobal[0]);
+    const south = pickConstraint(rawConstraints.south, legacyGlobal[1]);
+    const east = pickConstraint(rawConstraints.east, legacyGlobal[2]);
+    const west = pickConstraint(rawConstraints.west, legacyGlobal[3]);
+    const action = pickConstraint(rawConstraints.action, legacyAction);
+
+    if (north && south && east && west && action) {
+      const inferredFrontKeyActivated =
+        position.floor === "back" ||
+        (position.floor === "front" && (position.col >= 2 || (position.row === 1 && position.col === 3)));
+      const inferredFrontSkullActivated = position.floor === "back";
+      const inferredBackAlarmActivated = position.floor === "back" && position.col <= 1;
+
+      campaign.mission66Bunker = {
+        position,
+        constraints: { north, south, east, west, action },
+        frontKeyActivated:
+          typeof mission66Bunker.frontKeyActivated === "boolean"
+            ? mission66Bunker.frontKeyActivated
+            : inferredFrontKeyActivated,
+        frontSkullActivated:
+          typeof mission66Bunker.frontSkullActivated === "boolean"
+            ? mission66Bunker.frontSkullActivated
+            : inferredFrontSkullActivated,
+        backAlarmActivated:
+          typeof mission66Bunker.backAlarmActivated === "boolean"
+            ? mission66Bunker.backAlarmActivated
+            : inferredBackAlarmActivated,
+        backDetonatorActivated:
+          typeof mission66Bunker.backDetonatorActivated === "boolean"
+            ? mission66Bunker.backDetonatorActivated
+            : false,
+      };
+    }
+  }
+
   if (hasOwn(raw, "mission43NanoWires")) {
     const nanoWires = normalizeMission43NanoWires(raw.mission43NanoWires);
     if (nanoWires.length > 0) {
@@ -797,8 +870,62 @@ function normalizeGameState(
             : "clockwise",
         ...(typeof obj.pendingForcedAction.previousPlayerId === "string"
           && obj.pendingForcedAction.previousPlayerId
-            ? { previousPlayerId: obj.pendingForcedAction.previousPlayerId }
-            : {}),
+          ? { previousPlayerId: obj.pendingForcedAction.previousPlayerId }
+          : {}),
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission66BunkerChoice"
+      && typeof obj.pendingForcedAction.actorId === "string"
+      && obj.pendingForcedAction.actorId
+      && typeof obj.pendingForcedAction.cutValue === "number"
+      && Number.isFinite(obj.pendingForcedAction.cutValue)
+      && typeof obj.pendingForcedAction.remainingSteps === "number"
+      && Number.isFinite(obj.pendingForcedAction.remainingSteps)
+      && Array.isArray(obj.pendingForcedAction.options)
+    ) {
+      const options: Mission66BunkerChoiceOption[] = [];
+      for (const rawOption of obj.pendingForcedAction.options) {
+        if (!isObject(rawOption) || typeof rawOption.kind !== "string") continue;
+        if (
+          rawOption.kind === "move" &&
+          (rawOption.direction === "north"
+            || rawOption.direction === "south"
+            || rawOption.direction === "east"
+            || rawOption.direction === "west") &&
+          isObject(rawOption.destination) &&
+          (rawOption.destination.floor === "front" || rawOption.destination.floor === "back")
+        ) {
+          options.push({
+            kind: "move" as const,
+            direction: rawOption.direction,
+            destination: {
+              floor: rawOption.destination.floor,
+              row: toFiniteNumber(rawOption.destination.row, 0),
+              col: toFiniteNumber(rawOption.destination.col, 0),
+            },
+          });
+          continue;
+        }
+        if (
+          rawOption.kind === "activate" &&
+          (rawOption.target === "front_key" ||
+            rawOption.target === "front_skull" ||
+            rawOption.target === "back_alarm" ||
+            rawOption.target === "back_detonator")
+        ) {
+          options.push({
+            kind: "activate" as const,
+            target: rawOption.target,
+          });
+          continue;
+        }
+      }
+      pendingForcedAction = {
+        kind: "mission66BunkerChoice" as const,
+        actorId: obj.pendingForcedAction.actorId,
+        cutValue: obj.pendingForcedAction.cutValue,
+        remainingSteps: obj.pendingForcedAction.remainingSteps,
+        options,
       };
     } else if (
       obj.pendingForcedAction.kind === "mission36SequencePosition"

@@ -62,12 +62,14 @@ import {
   resolveTalkiesWalkiesTileChoice,
 } from "./equipment.js";
 import {
+  applyMission66BunkerChoice,
   applyMission34WeakestLinkGuess,
   applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   emitMissionFailureTelemetry,
+  getMission66BotChoice,
   getMissionTurnSkipError,
   queueMission32ConstraintDecision,
   rotateMission61Constraint,
@@ -494,6 +496,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission61ReplaceOwnConstraint":
         this.handleMission61ReplaceOwnConstraint(connection);
         break;
+      case "mission66BunkerChoice":
+        this.handleMission66BunkerChoice(connection, msg.choice);
+        break;
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
@@ -635,6 +640,10 @@ export class BombBustersServer extends Server<Env> {
           }
           if (gs.pendingForcedAction.previousPlayerId === oldId) {
             gs.pendingForcedAction.previousPlayerId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission66BunkerChoice") {
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "mission32ConstraintDecision") {
           if (gs.pendingForcedAction.captainId === oldId) {
@@ -1949,6 +1958,44 @@ export class BombBustersServer extends Server<Env> {
     return;
   }
 
+  handleMission66BunkerChoice(
+    conn: Connection,
+    choice: import("@bomb-busters/shared").Mission66BunkerChoiceSelection,
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot resolve bunker choice: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 66 bunker choices are only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const result = applyMission66BunkerChoice(state, conn.id, choice);
+    if (!result.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: result.message ?? "Mission 66 bunker choice failed.",
+      });
+      return;
+    }
+
+    if (state.result == null && !state.pendingForcedAction) {
+      advanceTurn(state);
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
   handleMission32ConstraintDecision(
     conn: Connection,
     decision: "keep" | "replace",
@@ -3090,6 +3137,7 @@ export class BombBustersServer extends Server<Env> {
           !forced
           || forced.kind === "chooseNextPlayer"
           || forced.kind === "designateCutter"
+          || forced.kind === "mission66BunkerChoice"
           || forced.kind === "mission61ConstraintRotate"
           || forced.kind === "mission32ConstraintDecision"
         )
@@ -3242,6 +3290,30 @@ export class BombBustersServer extends Server<Env> {
           console.log(
             `Bot ${captain.id} mission32ConstraintDecision rejected: ${result.message ?? "unknown error"}`,
           );
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
+
+    const mission66Forced = state.pendingForcedAction;
+    if (mission66Forced?.kind === "mission66BunkerChoice") {
+      const actor = state.players.find((p) => p.id === mission66Forced.actorId);
+      if (actor?.isBot) {
+        const choice = getMission66BotChoice(state);
+        if (choice) {
+          const result = applyMission66BunkerChoice(state, mission66Forced.actorId, choice);
+          if (!result.ok) {
+            console.log(
+              `Bot ${actor.id} mission66BunkerChoice rejected: ${result.message ?? "unknown error"}`,
+            );
+          }
+        }
+        if (state.result == null && !state.pendingForcedAction) {
+          advanceTurn(state);
         }
         this.saveState();
         this.broadcastGameState();
