@@ -16,6 +16,7 @@ import {
 } from "./validation.js";
 import {
   applyMissionChallengeTurnEvent,
+  applyMission53FailedCutPenalty,
   canMissionResolveWin,
   dispatchHooks,
   emitMissionFailureTelemetry,
@@ -226,6 +227,7 @@ function hasPendingMission66BunkerChoice(state: Readonly<GameState>): boolean {
 
 /** Check loss: detonator at max */
 function checkDetonatorLoss(state: GameState): boolean {
+  if (state.mission === 53) return false;
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 
@@ -600,6 +602,40 @@ export function executeDualCut(
       // Red wire cut — explosion!
       targetTile.cut = true;
       updateMarkerConfirmations(state);
+      if (state.mission === 53) {
+        applyMission53FailedCutPenalty(
+          state,
+          actorId,
+          `point=failedCut|action=dualCut|target=${wireLabelOf(target, targetTileIndex)}`,
+        );
+        addLog(
+          state,
+          actorId,
+          "dualCut",
+          targetTile.color === "red"
+            ? `cut a RED wire (${wireLabelOf(target, targetTileIndex)}) on ${target.name}'s stand. Mission 53: Nano +2`
+            : `cut a RED-like hidden wire (${wireLabelOf(target, targetTileIndex)}) on ${target.name}'s stand. Mission 53: Nano +2`,
+        );
+        applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
+
+        if (state.phase === "finished" && state.result) {
+          return { type: "gameOver", result: state.result };
+        }
+
+        advanceTurn(state);
+
+        return {
+          type: "dualCutResult",
+          actorId,
+          targetId: targetPlayerId,
+          targetTileIndex,
+          guessValue,
+          success: false,
+          revealedColor: "red",
+          revealedValue: targetTile.gameValue,
+          explosion: false,
+        };
+      }
       state.result = "loss_red_wire";
       state.phase = "finished";
       emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
@@ -705,7 +741,14 @@ export function executeDualCut(
     }
 
     // Blue or yellow wire — wrong guess, wire stays uncut.
-    if (!stabilizerActive) {
+    const mission53FailedCut = state.mission === 53 && !stabilizerActive;
+    if (mission53FailedCut) {
+      applyMission53FailedCutPenalty(
+        state,
+        actorId,
+        `point=failedCut|action=dualCut|target=${wireLabelOf(target, targetTileIndex)}`,
+      );
+    } else if (!stabilizerActive) {
       state.board.detonatorPosition++;
     }
 
@@ -744,13 +787,18 @@ export function executeDualCut(
       actorId,
       "dualCut",
       `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✗` +
+        `${mission53FailedCut ? " (Mission 53: Nano +2)" : ""}` +
         `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
         `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
     );
     applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
 
+    if (mission53FailedCut && state.phase === "finished" && state.result) {
+      return { type: "gameOver", result: state.result };
+    }
+
     // Check detonator loss
-    if (!stabilizerActive && checkDetonatorLoss(state)) {
+    if (!mission53FailedCut && !stabilizerActive && checkDetonatorLoss(state)) {
       state.result = "loss_detonator";
       state.phase = "finished";
       emitMissionFailureTelemetry(state, "loss_detonator", actorId, targetPlayerId);
@@ -1707,7 +1755,8 @@ function resolveDoubleDetectorNoMatch(
     stabilizer != null &&
     stabilizer.playerId === actorId &&
     stabilizer.turnNumber === state.turnNumber;
-  const detonatorAdvanced = !stabilizerActive;
+  const mission53FailedCut = state.mission === 53 && !stabilizerActive;
+  const detonatorAdvanced = !stabilizerActive && !mission53FailedCut;
   const detonatorPositionBeforeFailure = state.board.detonatorPosition;
   if (detonatorAdvanced) {
     state.board.detonatorPosition++;
@@ -1725,6 +1774,41 @@ function resolveDoubleDetectorNoMatch(
   // Both red (or hidden-red-like) → bomb explodes (FAQ)
   if (tile1IsRed && tile2IsRed) {
     updateMarkerConfirmations(state);
+    if (state.mission === 53) {
+      applyMission53FailedCutPenalty(
+        state,
+        actorId,
+        `point=failedCut|action=dualCutDoubleDetector|target=${target.name}`,
+      );
+      const bothActualRed = tile1.color === "red" && tile2.color === "red";
+      addLog(
+        state,
+        actorId,
+        "dualCutDoubleDetector",
+        bothActualRed
+          ? `${target.name} confirmed — both RED. Mission 53: Nano +2`
+          : `${target.name} confirmed — both RED-like hidden wires. Mission 53: Nano +2`,
+      );
+      applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
+
+      if (state.phase === "finished" && state.result) {
+        return { type: "gameOver", result: state.result };
+      }
+
+      advanceTurn(state);
+
+      return {
+        type: "dualCutDoubleDetectorResult",
+        actorId,
+        targetId: targetPlayerId,
+        tileIndex1,
+        tileIndex2,
+        guessValue,
+        outcome: "no_match" as const,
+        detonatorAdvanced: false,
+        explosion: false,
+      };
+    }
     state.result = "loss_red_wire";
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
@@ -1824,15 +1908,28 @@ function resolveDoubleDetectorNoMatch(
 
   updateMarkerConfirmations(state);
 
+  if (mission53FailedCut) {
+    applyMission53FailedCutPenalty(
+      state,
+      actorId,
+      `point=failedCut|action=dualCutDoubleDetector|target=${target.name}`,
+    );
+  }
+
   addLog(
     state,
     actorId,
     "dualCutDoubleDetector",
     `${target.name} confirmed — no match ✗` +
+      `${mission53FailedCut ? " (Mission 53: Nano +2)" : ""}` +
       `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
       `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
   );
   applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
+
+  if (mission53FailedCut && state.phase === "finished" && state.result) {
+    return { type: "gameOver", result: state.result };
+  }
 
   if (checkDetonatorLoss(state)) {
     state.result = "loss_detonator";

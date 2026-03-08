@@ -99,21 +99,28 @@ function NanoNumberStrip({
   position,
   slotCount,
   testId,
+  slotLabels,
+  positionLabel,
 }: {
   label: string;
   position: number;
   slotCount: number;
   testId: string;
+  slotLabels?: string[];
+  positionLabel?: string;
 }) {
   const safeSlotCount = Math.max(1, Math.floor(slotCount));
   const safePosition = Math.max(0, Math.min(Math.floor(position), safeSlotCount - 1));
+  const resolvedSlotLabels = slotLabels && slotLabels.length === safeSlotCount
+    ? slotLabels
+    : Array.from({ length: safeSlotCount }, (_, idx) => `${idx + 1}`);
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
         <span className="w-12 text-xs text-emerald-300 font-semibold">{label}</span>
         <span className="ml-auto text-xs font-bold text-emerald-100 tabular-nums">
-          {safePosition + 1}/{safeSlotCount}
+          {positionLabel ?? `${safePosition + 1}/${safeSlotCount}`}
         </span>
       </div>
       <div className="w-full pb-1">
@@ -139,7 +146,7 @@ function NanoNumberStrip({
                     isCurrent ? "text-emerald-100" : "text-emerald-300/90"
                   }`}
                 >
-                  {idx + 1}
+                  {resolvedSlotLabels[idx] ?? `${idx + 1}`}
                 </span>
                 {isCurrent && (
                   <img
@@ -1180,6 +1187,14 @@ function CampaignObjectsHint({
                     position={campaign.nanoTracker.position}
                     slotCount={gameState.mission === 43 ? 12 : campaign.nanoTracker.max + 1}
                     testId={`mission-${gameState.mission}-nano-strip`}
+                    slotLabels={gameState.mission === 53
+                      ? ["Start", ...Array.from({ length: campaign.nanoTracker.max }, (_, idx) => `${idx + 1}`)]
+                      : undefined}
+                    positionLabel={gameState.mission === 53
+                      ? (campaign.nanoTracker.position === 0
+                        ? "Before 1"
+                        : `${campaign.nanoTracker.position}/12`)
+                      : undefined}
                   />
                 ) : (
                   <TrackerBar

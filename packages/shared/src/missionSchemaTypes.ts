@@ -144,6 +144,13 @@ export interface NanoProgressionRuleDef {
 }
 
 /**
+ * Mission 53: Nano fully replaces the detonator dial.
+ */
+export interface Mission53NanoReplacesDetonatorRuleDef {
+  kind: "mission53_nano_replaces_detonator";
+}
+
+/**
  * Campaign oxygen missions: shared pool + optional per-player oxygen rotation.
  */
 export interface OxygenProgressionRuleDef {
@@ -540,6 +547,7 @@ export type MissionHookRuleDef =
   | NumberDeckEquipmentRevealRuleDef
   | HiddenEquipmentPileRuleDef
   | NanoProgressionRuleDef
+  | Mission53NanoReplacesDetonatorRuleDef
   | OxygenProgressionRuleDef
   | ChallengeCardsRuleDef
   | Mission66BunkerBoardRuleDef

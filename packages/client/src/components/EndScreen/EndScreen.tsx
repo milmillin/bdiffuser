@@ -90,7 +90,9 @@ export function EndScreen({
           {gameState.result === "loss_red_wire" &&
             "A red wire was cut and the bomb exploded!"}
           {gameState.result === "loss_detonator" &&
-            "The detonator hit zero. No survivors."}
+            (gameState.mission === 53
+              ? "Nano reached 12. No survivors."
+              : "The detonator hit zero. No survivors.")}
           {gameState.result === "loss_timer" &&
             "The mission timer expired!"}
           {gameState.result === "loss_surrender" &&

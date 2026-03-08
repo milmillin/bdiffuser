@@ -45,6 +45,7 @@ export type {
   IberianYellowModeRuleDef,
   InternFailureExplodesRuleDef,
   Mission66BunkerBoardRuleDef,
+  Mission53NanoReplacesDetonatorRuleDef,
   NanoProgressionRuleDef,
   NanoValueParityRuleDef,
   Mission43NanoRobotRuleDef,

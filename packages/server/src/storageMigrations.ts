@@ -820,6 +820,15 @@ function normalizeGameState(
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
   if (
+    mission === 53 &&
+    phase !== "lobby" &&
+    campaign?.nanoTracker?.max === 8
+  ) {
+    throw new Error(
+      "Legacy Mission 53 saves using the old 8-step Nano tracker are not supported.",
+    );
+  }
+  if (
     (mission === 55 || mission === 60) &&
     campaign?.challenges &&
     [...campaign.challenges.deck, ...campaign.challenges.active, ...campaign.challenges.completed]

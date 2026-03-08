@@ -84,7 +84,7 @@ export function registerExpansionBMissions(setMission: MissionSetter): void {
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_53_nano_replaces_detonator"],
     hookRules: [
-      { kind: "nano_progression", start: 0, max: 8, advanceOn: "end_turn", advanceBy: 1 },
+      { kind: "mission53_nano_replaces_detonator" },
     ],
   });
 

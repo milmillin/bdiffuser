@@ -1059,6 +1059,7 @@ function updateMarkerConfirmations(state: GameState): void {
 
 /** Check loss: detonator at max. */
 function checkDetonatorLoss(state: GameState): boolean {
+  if (state.mission === 53) return false;
   return state.board.detonatorPosition >= state.board.detonatorMax;
 }
 

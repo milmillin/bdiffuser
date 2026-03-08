@@ -2590,6 +2590,7 @@ export function GameBoard({
                 log={gameState.log}
                 players={gameState.players}
                 result={gameState.result}
+                missionId={gameState.mission}
               />
             </div>
           )}
@@ -3555,10 +3556,21 @@ function Header({
 
       {/* Row 2: Gameplay-critical status */}
       <div className="flex items-center gap-2 md:gap-4 text-sm">
-        <DetonatorDial
-          position={gameState.board.detonatorPosition}
-          max={gameState.board.detonatorMax}
-        />
+        {gameState.mission === 53 && gameState.campaign?.nanoTracker ? (
+          <div
+            data-testid="mission-53-nano-status"
+            className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-emerald-100"
+          >
+            Nano {gameState.campaign.nanoTracker.position === 0
+              ? "Before 1"
+              : `${gameState.campaign.nanoTracker.position}/12`}
+          </div>
+        ) : (
+          <DetonatorDial
+            position={gameState.board.detonatorPosition}
+            max={gameState.board.detonatorMax}
+          />
+        )}
         {timerDisplay && (
           <div
             data-testid="mission-timer"

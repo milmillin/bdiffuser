@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { renderLogDetail } from "@bomb-busters/shared";
-import type { GameLogEntry, ClientPlayer, GameResult } from "@bomb-busters/shared";
+import type { GameLogEntry, ClientPlayer, GameResult, MissionId } from "@bomb-busters/shared";
 
 const UUID_PATTERN =
   /(^|[^A-Za-z0-9_-])[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?=$|[^A-Za-z0-9_-])/i;
@@ -9,10 +9,12 @@ export function ActionLog({
   log,
   players,
   result,
+  missionId,
 }: {
   log: GameLogEntry[];
   players: ClientPlayer[];
   result?: GameResult | null;
+  missionId?: MissionId;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +62,8 @@ export function ActionLog({
           <div className={`text-xs font-bold mt-1 pt-1 border-t border-gray-700 ${result === "win" ? "text-green-400" : "text-red-400"}`}>
             {result === "win" && "MISSION COMPLETE — all wires safely cut!"}
             {result === "loss_red_wire" && "BOOM — a red wire was cut!"}
-            {result === "loss_detonator" && "BOOM — detonator reached the end!"}
+            {result === "loss_detonator" &&
+              (missionId === 53 ? "BOOM — Nano reached 12!" : "BOOM — detonator reached the end!")}
             {result === "loss_timer" && "TIME'S UP — mission timer expired!"}
             {result === "loss_surrender" && "MISSION ABORTED — team surrendered."}
           </div>

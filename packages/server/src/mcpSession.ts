@@ -417,7 +417,11 @@ function formatGameState(state: ClientGameState): string {
 
   lines.push("");
   lines.push("-- Board --");
-  lines.push(`Detonator: ${state.board.detonatorPosition}/${state.board.detonatorMax}`);
+  if (state.mission === 53 && state.campaign?.nanoTracker) {
+    lines.push(`Nano: ${state.campaign.nanoTracker.position === 0 ? "before 1" : state.campaign.nanoTracker.position}/12`);
+  } else {
+    lines.push(`Detonator: ${state.board.detonatorPosition}/${state.board.detonatorMax}`);
+  }
 
   const validationEntries = Object.entries(state.board.validationTrack)
     .filter(([, count]) => count > 0)
@@ -496,7 +500,15 @@ function formatGameState(state: ClientGameState): string {
     lines.push("");
     lines.push("-- Campaign --");
     const c = state.campaign;
-    if (c.nanoTracker) lines.push(`  Nano: ${c.nanoTracker.position}/${c.nanoTracker.max}`);
+    if (c.nanoTracker) {
+      lines.push(
+        `  Nano: ${
+          state.mission === 53
+            ? `${c.nanoTracker.position === 0 ? "before 1" : c.nanoTracker.position}/12`
+            : `${c.nanoTracker.position}/${c.nanoTracker.max}`
+        }`,
+      );
+    }
     if (c.bunkerTracker) lines.push(`  Bunker: ${c.bunkerTracker.position}/${c.bunkerTracker.max}`);
     if (c.oxygen) lines.push(`  Oxygen Pool: ${c.oxygen.pool}`);
     if (c.numberCards?.visible?.length) {

@@ -195,9 +195,15 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
 
   // Board state
   lines.push("## Board State:");
-  lines.push(
-    `  Detonator: ${state.board.detonatorPosition} / ${state.board.detonatorMax} (game over at max!)`,
-  );
+  if (state.mission === 53 && state.campaign?.nanoTracker) {
+    lines.push(
+      `  Nano: ${state.campaign.nanoTracker.position === 0 ? "before 1" : state.campaign.nanoTracker.position} / 12 (game over at 12!)`,
+    );
+  } else {
+    lines.push(
+      `  Detonator: ${state.board.detonatorPosition} / ${state.board.detonatorMax} (game over at max!)`,
+    );
+  }
   if (state.timerDeadline != null) {
     const remainingSeconds = Math.max(
       0,
@@ -323,7 +329,11 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
 
   if (state.campaign?.nanoTracker) {
     lines.push(
-      `  Nano tracker: ${state.campaign.nanoTracker.position}/${state.campaign.nanoTracker.max}`,
+      `  Nano tracker: ${
+        state.mission === 53
+          ? `${state.campaign.nanoTracker.position === 0 ? "before 1" : state.campaign.nanoTracker.position}/12`
+          : `${state.campaign.nanoTracker.position}/${state.campaign.nanoTracker.max}`
+      }`,
     );
   }
 

@@ -54,6 +54,7 @@ export function RightPanel({
 
       {/* Bottom: action log / chat */}
       <LogChatTabs
+        missionId={missionId}
         log={log}
         players={players}
         result={result}
@@ -91,6 +92,7 @@ export function MissionCard({ missionId }: { missionId: MissionId }) {
 }
 
 function LogChatTabs({
+  missionId,
   log,
   players,
   result,
@@ -100,6 +102,7 @@ function LogChatTabs({
   isExpanded,
   onToggleExpanded,
 }: {
+  missionId: MissionId;
   log: GameLogEntry[];
   players: ClientPlayer[];
   result?: GameResult | null;
@@ -155,7 +158,7 @@ function LogChatTabs({
       </div>
       <div className="flex-1 min-h-0 flex flex-col">
         {tab === "log" ? (
-          <ActionLog log={log} players={players} result={result} />
+          <ActionLog log={log} players={players} result={result} missionId={missionId} />
         ) : (
           <ChatPanel messages={chatMessages} send={send} playerId={playerId} />
         )}

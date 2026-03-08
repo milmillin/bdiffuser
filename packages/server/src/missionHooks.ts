@@ -776,6 +776,7 @@ import type {
   BlueAsRedRuleDef,
   EquipmentDoubleLockRuleDef,
   HiddenEquipmentPileRuleDef,
+  Mission53NanoReplacesDetonatorRuleDef,
   NanoProgressionRuleDef,
   NumberDeckEquipmentRevealRuleDef,
   OxygenProgressionRuleDef,
@@ -894,6 +895,57 @@ function applyNanoDelta(
     state.phase = "finished";
     emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
   }
+}
+
+const MISSION53_NANO_MAX = 12;
+
+function formatMission53NanoPosition(position: number): string {
+  return position <= 0 ? "before_1" : `${position}`;
+}
+
+function getMission53CurrentNanoValue(state: Readonly<GameState>): number | null {
+  const position = state.campaign?.nanoTracker?.position ?? null;
+  if (state.mission !== 53 || position == null || !Number.isInteger(position)) return null;
+  if (position <= 0 || position >= MISSION53_NANO_MAX) return null;
+  return position;
+}
+
+function applyMission53NanoDelta(
+  state: GameState,
+  delta: number,
+  actorId: string,
+  logDetail: string,
+): void {
+  const tracker = state.campaign?.nanoTracker;
+  if (!tracker) return;
+
+  const before = tracker.position;
+  tracker.position = clampProgress(before + delta, MISSION53_NANO_MAX);
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail:
+      `mission53:nano:${formatMission53NanoPosition(before)}->${formatMission53NanoPosition(tracker.position)}` +
+      `|${logDetail}`,
+    timestamp: Date.now(),
+  });
+
+  if (tracker.position >= MISSION53_NANO_MAX && state.phase !== "finished") {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+  }
+}
+
+export function applyMission53FailedCutPenalty(
+  state: GameState,
+  actorId: string,
+  logDetail: string,
+): void {
+  if (state.mission !== 53) return;
+  applyMission53NanoDelta(state, 2, actorId, logDetail);
 }
 
 function getMission43NanoWireTargetCount(playerCount: number): number {
@@ -2883,6 +2935,43 @@ registerHookHandler<"nano_progression">("nano_progression", {
     applyNanoDelta(ctx.state, delta, ctx.previousPlayerId ?? "system", "point=endTurn");
   },
 });
+
+registerHookHandler<"mission53_nano_replaces_detonator">(
+  "mission53_nano_replaces_detonator",
+  {
+    setup(_rule: Mission53NanoReplacesDetonatorRuleDef, ctx: SetupHookContext): void {
+      initializeCampaignProgressState(ctx.state);
+      ctx.state.campaign!.nanoTracker = { position: 0, max: MISSION53_NANO_MAX };
+
+      pushGameLog(ctx.state, {
+        turn: 0,
+        playerId: "system",
+        action: "hookSetup",
+        detail: "mission53:nano:start=before_1|max=12",
+        timestamp: Date.now(),
+      });
+    },
+
+    resolve(_rule: Mission53NanoReplacesDetonatorRuleDef, ctx: ResolveHookContext): void {
+      if (ctx.state.phase === "finished" || !ctx.cutSuccess) return;
+
+      const currentNanoValue = getMission53CurrentNanoValue(ctx.state);
+      const matchedCurrentValue =
+        typeof ctx.cutValue === "number" &&
+        currentNanoValue != null &&
+        ctx.cutValue === currentNanoValue;
+      const delta = matchedCurrentValue ? -1 : 1;
+      const cutLabel = typeof ctx.cutValue === "number" ? `${ctx.cutValue}` : String(ctx.cutValue ?? "unknown");
+
+      applyMission53NanoDelta(
+        ctx.state,
+        delta,
+        ctx.action.actorId,
+        `point=resolve|cut=${cutLabel}|result=${matchedCurrentValue ? "current_match" : "success"}`,
+      );
+    },
+  },
+);
 
 /**
  * Mission 43 — Nano the Robot.

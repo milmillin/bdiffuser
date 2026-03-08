@@ -91,13 +91,15 @@ describe("MissionRuleHints nano number strips", () => {
 
   it("mission 53 renders the nano number strip", () => {
     const html = renderMission(53, {
-      nanoTracker: { position: 2, max: 8 },
+      nanoTracker: { position: 0, max: 12 },
     });
 
     expect(html).toContain('data-testid="mission-53-nano-strip"');
-    expect(html).toContain('data-testid="mission-53-nano-strip-slot-9"');
+    expect(html).toContain('data-testid="mission-53-nano-strip-slot-13"');
     expect(html).toContain('data-testid="mission-53-nano-strip-robot"');
-    expectGridColumns(styleForTestId(html, "mission-53-nano-strip"), 9);
+    expect(html).toContain("Before 1");
+    expect(html).toContain("Start");
+    expectGridColumns(styleForTestId(html, "mission-53-nano-strip"), 13);
   });
 
   it("mission 59 renders the nano number strip", () => {
