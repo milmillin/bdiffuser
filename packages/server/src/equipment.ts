@@ -55,6 +55,7 @@ import {
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
 import { getEquipmentUnlockCutsRequiredById } from "./equipmentUnlockRules.js";
+import { validateMission30Equipment } from "./mission30.js";
 
 const BASE_EQUIPMENT_IDS: readonly BaseEquipmentId[] = [
   "label_neq",
@@ -391,6 +392,11 @@ export function validateUseEquipment(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
     );
+  }
+
+  const mission30Error = validateMission30Equipment(state, equipmentId, payload);
+  if (mission30Error) {
+    return legalityError("MISSION_RULE_VIOLATION", mission30Error);
   }
 
   if (hasActiveConstraint(state, actorId, "G")) {
@@ -1932,6 +1938,15 @@ export function validateCharacterAbility(
       "FORCED_REVEAL_REDS_REQUIRED",
       "You must reveal your remaining red-like wires before taking another action",
     );
+  }
+
+  const mission30Error = validateMission30Equipment(
+    state,
+    payload.kind as AnyEquipmentId,
+    payload,
+  );
+  if (mission30Error) {
+    return legalityError("MISSION_RULE_VIOLATION", mission30Error);
   }
 
   if (hasActiveConstraint(state, actorId, "G")) {

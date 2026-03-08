@@ -72,8 +72,11 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
       red: outOf(1, 2),
       yellow: exact(4),
     },
-    behaviorHooks: ["mission_30_audio_prompt"],
-    hookRules: [{ kind: "audio_prompt", audioFile: "mission_30" }],
+    behaviorHooks: ["mission_30_audio_prompt", "mission_30_scripted_audio"],
+    hookRules: [
+      { kind: "audio_prompt", audioFile: "mission_30" },
+      { kind: "mission_30_scripted_audio", audioFile: "mission_30" },
+    ],
   });
 
   setMission(31, {

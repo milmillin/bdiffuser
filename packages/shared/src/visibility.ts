@@ -4,6 +4,7 @@ import type {
   NumberCardState,
   ChallengeCard,
   ChallengeCardState,
+  Mission30State,
   Mission34HiddenState,
   Mission61ConstraintRingState,
 } from "./types.js";
@@ -92,6 +93,8 @@ export interface CampaignVisibilityModel {
   mission34Hidden: "owner_only";
   /** Mission 61 ring slots are public; replacement pool is filtered separately. */
   mission61Ring: "public";
+  /** Mission 30 scripted state is public and shared. */
+  mission30: "public";
   /** Mission 66 bunker board state is public. */
   mission66Bunker: "public";
   /** Mission 17 captain false setup token mode: visible to all players. */
@@ -140,6 +143,7 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   mission45Turn: "public",
   mission34Hidden: "owner_only",
   mission61Ring: "public",
+  mission30: "public",
   mission66Bunker: "public",
   falseInfoTokenMode: "public",
   falseTokenMode: "public",
@@ -242,6 +246,21 @@ export function filterMission61Ring(
   };
 }
 
+export function filterMission30(state: Mission30State): Mission30State {
+  return {
+    ...state,
+    ...(state.publicYellowCountsByPlayerId
+      ? { publicYellowCountsByPlayerId: { ...state.publicYellowCountsByPlayerId } }
+      : {}),
+    ...(state.visibleTargetValues
+      ? { visibleTargetValues: [...state.visibleTargetValues] }
+      : {}),
+    ...(state.lastYesNoReveal
+      ? { lastYesNoReveal: { ...state.lastYesNoReveal } }
+      : {}),
+  };
+}
+
 /**
  * Apply visibility rules to campaign state for a specific player.
  * Returns a filtered copy safe to send to the client.
@@ -287,6 +306,7 @@ export function filterCampaignState(
     ...(campaign.mission61Ring
       ? { mission61Ring: filterMission61Ring(campaign.mission61Ring) }
       : {}),
+    ...(campaign.mission30 ? { mission30: filterMission30(campaign.mission30) } : {}),
     ...(campaign.mission66Bunker
       ? { mission66Bunker: campaign.mission66Bunker }
       : {}),

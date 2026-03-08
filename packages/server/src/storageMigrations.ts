@@ -532,6 +532,22 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
       ? Math.min(1, Math.max(0, raw.volume))
       : 1;
   const muted = typeof raw.muted === "boolean" ? raw.muted : false;
+  const clipId = typeof raw.clipId === "string" && raw.clipId ? raw.clipId : undefined;
+  const segmentStartMs =
+    typeof raw.segmentStartMs === "number" &&
+    Number.isFinite(raw.segmentStartMs) &&
+    raw.segmentStartMs >= 0
+      ? Math.round(raw.segmentStartMs)
+      : undefined;
+  const segmentEndMs =
+    typeof raw.segmentEndMs === "number" &&
+    Number.isFinite(raw.segmentEndMs) &&
+    raw.segmentEndMs >= 0
+      ? Math.round(raw.segmentEndMs)
+      : undefined;
+  const loopSegment = typeof raw.loopSegment === "boolean" ? raw.loopSegment : undefined;
+  const transportLocked =
+    typeof raw.transportLocked === "boolean" ? raw.transportLocked : undefined;
 
   let positionMs =
     typeof raw.positionMs === "number" && Number.isFinite(raw.positionMs)
@@ -547,9 +563,123 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
     status,
     positionMs,
     syncedAtMs,
+    ...(clipId ? { clipId } : {}),
+    ...(segmentStartMs != null ? { segmentStartMs } : {}),
+    ...(segmentEndMs != null ? { segmentEndMs } : {}),
+    ...(loopSegment !== undefined ? { loopSegment } : {}),
+    ...(transportLocked !== undefined ? { transportLocked } : {}),
     volume,
     muted,
     ...(durationMs != null ? { durationMs } : {}),
+  };
+}
+
+function normalizeMission30(
+  raw: unknown,
+): CampaignState["mission30"] | undefined {
+  if (!isObject(raw)) return undefined;
+
+  const phase =
+    raw.phase === "briefing_locked" ||
+    raw.phase === "prologue_free_play" ||
+    raw.phase === "round_a1" ||
+    raw.phase === "round_a2" ||
+    raw.phase === "round_b1" ||
+    raw.phase === "round_b2" ||
+    raw.phase === "mime_intro" ||
+    raw.phase === "round_c1" ||
+    raw.phase === "round_c2" ||
+    raw.phase === "triple_lock_intro" ||
+    raw.phase === "triple_lock" ||
+    raw.phase === "yellow_sweep" ||
+    raw.phase === "final_cleanup" ||
+    raw.phase === "completed" ||
+    raw.phase === "failed"
+      ? raw.phase
+      : undefined;
+  if (!phase) return undefined;
+
+  const mode =
+    raw.mode === "instruction" ||
+    raw.mode === "action" ||
+    raw.mode === "resolving" ||
+    raw.mode === "paused"
+      ? raw.mode
+      : "instruction";
+
+  const currentClipId =
+    typeof raw.currentClipId === "string" && raw.currentClipId
+      ? raw.currentClipId
+      : "briefing";
+
+  const publicYellowCountsByPlayerId = isObject(raw.publicYellowCountsByPlayerId)
+    ? Object.fromEntries(
+        Object.entries(raw.publicYellowCountsByPlayerId)
+          .filter(
+            ([playerId, value]) =>
+              typeof playerId === "string"
+              && playerId.length > 0
+              && typeof value === "number"
+              && Number.isFinite(value),
+          )
+          .map(([playerId, value]) => [
+            playerId,
+            Math.max(0, Math.floor(value as number)),
+          ]),
+      )
+    : undefined;
+
+  const visibleTargetValues = Array.isArray(raw.visibleTargetValues)
+    ? raw.visibleTargetValues
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+        .map((value) => Math.max(1, Math.min(12, Math.floor(value))))
+    : undefined;
+
+  const lastYesNoReveal =
+    isObject(raw.lastYesNoReveal)
+    && typeof raw.lastYesNoReveal.actorId === "string"
+    && raw.lastYesNoReveal.actorId
+    && typeof raw.lastYesNoReveal.value === "number"
+    && Number.isFinite(raw.lastYesNoReveal.value)
+    && typeof raw.lastYesNoReveal.hasValue === "boolean"
+      ? {
+          actorId: raw.lastYesNoReveal.actorId,
+          value: Math.max(1, Math.min(12, Math.floor(raw.lastYesNoReveal.value))),
+          hasValue: raw.lastYesNoReveal.hasValue,
+        }
+      : undefined;
+
+  return {
+    phase,
+    mode,
+    currentClipId,
+    mimeMode: toBool(raw.mimeMode, false),
+    yellowCountsRevealed: toBool(raw.yellowCountsRevealed, false),
+    ...(typeof raw.cueEndsAtMs === "number" && Number.isFinite(raw.cueEndsAtMs)
+      ? { cueEndsAtMs: Math.round(raw.cueEndsAtMs) }
+      : {}),
+    ...(typeof raw.visibleDeadlineMs === "number" && Number.isFinite(raw.visibleDeadlineMs)
+      ? { visibleDeadlineMs: Math.round(raw.visibleDeadlineMs) }
+      : {}),
+    ...(typeof raw.hardDeadlineMs === "number" && Number.isFinite(raw.hardDeadlineMs)
+      ? { hardDeadlineMs: Math.round(raw.hardDeadlineMs) }
+      : {}),
+    ...(typeof raw.pausedAtMs === "number" && Number.isFinite(raw.pausedAtMs)
+      ? { pausedAtMs: Math.round(raw.pausedAtMs) }
+      : {}),
+    ...(typeof raw.currentTargetValue === "number" && Number.isFinite(raw.currentTargetValue)
+      ? { currentTargetValue: Math.max(1, Math.min(12, Math.floor(raw.currentTargetValue))) }
+      : {}),
+    ...(visibleTargetValues && visibleTargetValues.length > 0
+      ? { visibleTargetValues }
+      : {}),
+    ...(publicYellowCountsByPlayerId && Object.keys(publicYellowCountsByPlayerId).length > 0
+      ? { publicYellowCountsByPlayerId }
+      : {}),
+    ...(lastYesNoReveal ? { lastYesNoReveal } : {}),
+    ...(typeof raw.roundB1Succeeded === "boolean"
+      ? { roundB1Succeeded: raw.roundB1Succeeded }
+      : {}),
   };
 }
 
@@ -686,6 +816,13 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
         ...(weakestLinkPlayerId ? { weakestLinkPlayerId } : {}),
         constraintsByPlayerId,
       };
+    }
+  }
+
+  if (hasOwn(raw, "mission30")) {
+    const mission30 = normalizeMission30(raw.mission30);
+    if (mission30) {
+      campaign.mission30 = mission30;
     }
   }
 

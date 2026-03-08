@@ -85,4 +85,22 @@ describe("MissionAudioPlayer", () => {
     const html = renderMissionAudioPlayer(state);
     expect(html).toBe("");
   });
+
+  it("renders locked transport copy instead of seek/play controls for scripted audio", () => {
+    const html = renderMissionAudioPlayer(
+      makeStateWithMissionAudio("me", {
+        audioFile: "mission_30",
+        transportLocked: true,
+        clipId: "briefing",
+        segmentStartMs: 2_630,
+        segmentEndMs: 54_320,
+      }),
+    );
+
+    expect(html).toContain("data-testid=\"mission-audio-locked\"");
+    expect(html).not.toContain("data-testid=\"mission-audio-slider\"");
+    expect(html).not.toContain("data-testid=\"mission-audio-play\"");
+    expect(html).not.toContain("data-testid=\"mission-audio-pause\"");
+    expect(html).toContain("data-testid=\"mission-audio-volume-slider\"");
+  });
 });

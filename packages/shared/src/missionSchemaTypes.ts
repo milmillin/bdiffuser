@@ -330,6 +330,15 @@ export interface AudioPromptRuleDef {
 }
 
 /**
+ * Mission 30: segmented scripted audio mission with server-owned phase logic.
+ */
+export interface Mission30ScriptedAudioRuleDef {
+  kind: "mission_30_scripted_audio";
+  /** Mission-specific audio file identifier. */
+  audioFile: string;
+}
+
+/**
  * Mission 25: No spoken numbers.
  * Players cannot say any numbers aloud during the mission.
  */
@@ -563,6 +572,7 @@ export type MissionHookRuleDef =
   | Mission61ConstraintRingRuleDef
   | Mission57ConstraintPerValidatedValueRuleDef
   | AudioPromptRuleDef
+  | Mission30ScriptedAudioRuleDef
   | NoSpokenNumbersRuleDef
   | NoMarkersMemoryModeRuleDef
   | EvenOddTokensRuleDef

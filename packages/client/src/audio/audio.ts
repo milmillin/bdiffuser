@@ -5,6 +5,56 @@ export { synthBoom as playExplosionBoom };
 
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioFile: string | null = null;
+let currentMissionAudioState: MissionAudioState | null = null;
+let boundaryAudio: HTMLAudioElement | null = null;
+
+function handleMissionAudioBoundaryUpdate(): void {
+  if (!boundaryAudio || !currentMissionAudioState) return;
+
+  const startMs = Math.max(0, currentMissionAudioState.segmentStartMs ?? 0);
+  const endMs = currentMissionAudioState.segmentEndMs;
+  if (endMs == null) return;
+
+  const currentMs = Math.max(0, Math.round(boundaryAudio.currentTime * 1000));
+  const endThresholdMs = Math.max(startMs, endMs - 40);
+
+  if (currentMissionAudioState.loopSegment) {
+    if (currentMs >= endThresholdMs) {
+      maybeSeek(boundaryAudio, startMs);
+      if (
+        currentMissionAudioState.status === "playing" &&
+        boundaryAudio.paused
+      ) {
+        boundaryAudio.play().catch(() => {
+          // Autoplay may be blocked until user interaction.
+        });
+      }
+    }
+    return;
+  }
+
+  if (currentMs > endMs) {
+    maybeSeek(boundaryAudio, endMs);
+    if (!boundaryAudio.paused) {
+      boundaryAudio.pause();
+    }
+  }
+}
+
+function attachMissionAudioBoundaryHandlers(audio: HTMLAudioElement): void {
+  if (boundaryAudio === audio) return;
+
+  if (boundaryAudio) {
+    boundaryAudio.removeEventListener("timeupdate", handleMissionAudioBoundaryUpdate);
+    boundaryAudio.removeEventListener("seeking", handleMissionAudioBoundaryUpdate);
+    boundaryAudio.removeEventListener("ended", handleMissionAudioBoundaryUpdate);
+  }
+
+  boundaryAudio = audio;
+  boundaryAudio.addEventListener("timeupdate", handleMissionAudioBoundaryUpdate);
+  boundaryAudio.addEventListener("seeking", handleMissionAudioBoundaryUpdate);
+  boundaryAudio.addEventListener("ended", handleMissionAudioBoundaryUpdate);
+}
 
 function ensureMissionAudio(audioFile: string): HTMLAudioElement {
   if (!currentAudio || currentAudioFile !== audioFile) {
@@ -15,6 +65,7 @@ function ensureMissionAudio(audioFile: string): HTMLAudioElement {
     currentAudio.preload = "auto";
     currentAudioFile = audioFile;
   }
+  attachMissionAudioBoundaryHandlers(currentAudio);
   return currentAudio;
 }
 
@@ -43,8 +94,11 @@ export function syncMissionAudioState(
   resolvedPositionMs: number,
 ): void {
   const audio = ensureMissionAudio(missionAudio.audioFile);
+  currentMissionAudioState = missionAudio;
+  audio.loop = false;
   audio.volume = getEffectiveMissionAudioVolume(missionAudio);
   maybeSeek(audio, resolvedPositionMs);
+  handleMissionAudioBoundaryUpdate();
 
   if (missionAudio.status === "playing") {
     audio.play().catch(() => {
@@ -67,6 +121,12 @@ export function playMissionAudio(audioFile: string): void {
 /** Stop any currently playing mission audio. */
 export function stopMissionAudio(): void {
   if (currentAudio) {
+    if (boundaryAudio === currentAudio) {
+      boundaryAudio.removeEventListener("timeupdate", handleMissionAudioBoundaryUpdate);
+      boundaryAudio.removeEventListener("seeking", handleMissionAudioBoundaryUpdate);
+      boundaryAudio.removeEventListener("ended", handleMissionAudioBoundaryUpdate);
+      boundaryAudio = null;
+    }
     currentAudio.pause();
     try {
       currentAudio.currentTime = 0;
@@ -76,6 +136,7 @@ export function stopMissionAudio(): void {
     currentAudio = null;
     currentAudioFile = null;
   }
+  currentMissionAudioState = null;
 }
 
 /** Check whether mission audio is currently playing. */

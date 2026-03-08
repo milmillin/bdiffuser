@@ -124,6 +124,7 @@ export type ClientMessage =
     }
   | { type: "mission30ManualDetonatorAdvance" }
   | { type: "mission30ManualSkipTurn" }
+  | { type: "mission30CutRemainingYellows" }
   | { type: "selectConstraintCard"; constraintId: string }
   | { type: "setCaptainMode"; mode: CaptainMode }
   | { type: "selectCaptain"; playerId: string }

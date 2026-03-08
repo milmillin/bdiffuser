@@ -1199,6 +1199,16 @@ describe("equipment validation matrix across shared game states", () => {
       unlockedEquipmentCard("rewinder", "Rewinder", 4),
     );
     state.mission = 30;
+    state.campaign = {
+      mission30: {
+        phase: "triple_lock",
+        mode: "action",
+        currentClipId: "tripleLockBed",
+        visibleTargetValues: [5, 6, 7],
+        mimeMode: false,
+        yellowCountsRevealed: false,
+      },
+    };
 
     const error = validateUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
 

@@ -129,6 +129,20 @@ import {
   getMission22TokenPassBoardState,
 } from "./mission22TokenPass.js";
 import {
+  canMission30PassTurn,
+  executeMission30CutRemainingYellows,
+  executeMission30Mistake,
+  getMission30AlarmDeadline,
+  getMission30State,
+  handleMission30CueEnd,
+  handleMission30Deadline,
+  initializeMission30AudioTransport,
+  isMission30Scripted,
+  pauseMission30,
+  resumeMission30,
+  startMission30Gameplay,
+} from "./mission30.js";
+import {
   applyMission27TokenDraftChoice,
   getMission27TokenDraftAvailableValues,
 } from "./mission27TokenDraft.js";
@@ -333,6 +347,10 @@ export class BombBustersServer extends Server<Env> {
       volume: 1,
       muted: false,
     };
+
+    if (isMission30Scripted(state)) {
+      initializeMission30AudioTransport(state, Date.now());
+    }
   }
 
   private clampMissionAudioPosition(
@@ -563,6 +581,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "mission30ManualSkipTurn":
         this.handleMission30ManualSkipTurn(connection);
+        break;
+      case "mission30CutRemainingYellows":
+        this.handleMission30CutRemainingYellows(connection);
         break;
       case "selectConstraintCard":
         this.handleSelectConstraintCard(connection, msg.constraintId);
@@ -1207,6 +1228,10 @@ export class BombBustersServer extends Server<Env> {
 
       if (state.mission === 51) {
         queueMission51TurnStart(state);
+      }
+
+      if (isMission30Scripted(state)) {
+        startMission30Gameplay(state, Date.now());
       }
     }
   }
@@ -3190,6 +3215,43 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const nowMs = Date.now();
+    if (isMission30Scripted(state)) {
+      if (command === "seek") {
+        this.sendMsg(conn, {
+          type: "error",
+          message: "Mission 30 audio seeking is disabled once the scripted mission begins.",
+        });
+        return;
+      }
+      if ((command === "play" || command === "pause") && conn.id !== this.room.hostId) {
+        this.sendMsg(conn, {
+          type: "error",
+          message: "Only the host can pause or resume Mission 30 audio.",
+        });
+        return;
+      }
+
+      if (parsedVolume !== undefined) {
+        missionAudio.volume = parsedVolume;
+      }
+      if (muted !== undefined) {
+        missionAudio.muted = muted;
+      }
+
+      if (command === "pause") {
+        pauseMission30(state, nowMs);
+      } else if (command === "play") {
+        resumeMission30(state, nowMs);
+      } else {
+        missionAudio.syncedAtMs = nowMs;
+      }
+
+      this.saveState();
+      this.broadcastGameState();
+      this.scheduleBotTurnIfNeeded();
+      return;
+    }
+
     const currentPosition = this.getMissionAudioCurrentPosition(
       missionAudio,
       nowMs,
@@ -3241,10 +3303,11 @@ export class BombBustersServer extends Server<Env> {
       });
       return;
     }
-    if (!state.players.some((player) => player.id === conn.id)) {
+    const actor = state.players.find((player) => player.id === conn.id);
+    if (!actor || actor.isBot) {
       this.sendMsg(conn, {
         type: "error",
-        message: "Only players in the game can trigger manual detonator advancement.",
+        message: "Only human players in the game can record a Mission 30 mistake.",
       });
       return;
     }
@@ -3255,25 +3318,28 @@ export class BombBustersServer extends Server<Env> {
       });
       return;
     }
+    const mission30 = getMission30State(state);
+    if (!mission30?.mimeMode) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 30 mistake tracking is only available during mime-only phases.",
+      });
+      return;
+    }
 
     const previousResult = state.result;
     const previousPosition = state.board.detonatorPosition;
-    state.board.detonatorPosition = Math.min(
-      previousPosition + 1,
-      state.board.detonatorMax,
-    );
+    const result = executeMission30Mistake(state);
 
     pushGameLog(state, {
       turn: state.turnNumber,
       playerId: conn.id,
       action: "mission30ManualDetonatorAdvance",
-      detail: `mission30:manual_detonator_advance|before=${previousPosition}|after=${state.board.detonatorPosition}`,
+      detail: `mission30:mistake|before=${previousPosition}|after=${state.board.detonatorPosition}`,
       timestamp: Date.now(),
     });
 
-    if (state.board.detonatorPosition >= state.board.detonatorMax) {
-      state.phase = "finished";
-      state.result = "loss_detonator";
+    if (result === "loss_detonator") {
       emitMissionFailureTelemetry(state, "loss_detonator", conn.id, null);
     }
 
@@ -3329,11 +3395,10 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    const missionTurnSkipError = getMissionTurnSkipError(state, actor);
-    if (missionTurnSkipError !== "Mission 30: player must skip your turn") {
+    if (!canMission30PassTurn(state, actor)) {
       this.sendMsg(conn, {
         type: "error",
-        message: "Manual skip is only allowed when mission rules require you to skip your turn.",
+        message: "Mission 30 pass is only allowed during triple lock when you have no legal move.",
       });
       return;
     }
@@ -3350,6 +3415,65 @@ export class BombBustersServer extends Server<Env> {
     advanceTurn(state);
     this.maybeRecordMissionFailure(previousResult, state);
     this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission30CutRemainingYellows(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot resolve yellow sweep: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 30) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Yellow sweep is only available during Mission 30 gameplay.",
+      });
+      return;
+    }
+    const actor = state.players.find((player) => player.id === conn.id);
+    if (!actor || actor.isBot) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only human players can resolve the yellow sweep action.",
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const outcome = executeMission30CutRemainingYellows(state, conn.id, Date.now());
+    if (!outcome.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: outcome.error ?? "Yellow sweep could not be resolved.",
+      });
+      return;
+    }
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "mission30CutRemainingYellows",
+      detail:
+        outcome.result === "loss_detonator"
+          ? "mission30:yellow_sweep_failed"
+          : `mission30:yellow_sweep_success|tiles=${outcome.tilesCut ?? 0}`,
+      timestamp: Date.now(),
+    });
+
+    if (outcome.result === "loss_detonator") {
+      emitMissionFailureTelemetry(state, "loss_detonator", conn.id, null);
+    }
+
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    if (outcome.result) {
+      this.broadcastAction({ type: "gameOver", result: outcome.result });
+    }
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
   }
@@ -3890,6 +4014,9 @@ export class BombBustersServer extends Server<Env> {
       state.phase !== "finished" &&
       (state.phase === "playing" || state.phase === "setup_info_tokens" || state.phase === "select_constraints")
     ) {
+      const mission30Deadline = getMission30AlarmDeadline(state);
+      nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, mission30Deadline);
+
       // Bot constraint selection alarm
       if (state.phase === "select_constraints") {
         const currentPlayer = state.players[state.currentPlayerIndex];
@@ -3918,6 +4045,7 @@ export class BombBustersServer extends Server<Env> {
         )
       ) {
         const currentPlayer = state.players[state.currentPlayerIndex];
+        const mission30 = getMission30State(state);
         const mission45VolunteerBot = forced?.kind === "mission45VolunteerWindow"
           ? (() => {
             const currentValue = getMission45CurrentValue(state);
@@ -3940,8 +4068,12 @@ export class BombBustersServer extends Server<Env> {
             ? forcedCaptain?.isBot === true
             : currentPlayer?.isBot === true;
         if (shouldScheduleBot) {
-          const botMs = Date.now() + 1500;
-          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          if (mission30 && mission30.mode !== "action") {
+            // Instruction playback / mission pause blocks bot actions.
+          } else {
+            const botMs = Date.now() + 1500;
+            nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+          }
         }
       }
 
@@ -4069,6 +4201,27 @@ export class BombBustersServer extends Server<Env> {
         return;
       }
 
+      const mission30Deadline = getMission30AlarmDeadline(state);
+      if (mission30Deadline != null && nowMs >= mission30Deadline) {
+        const previousResult = state.result;
+        const mission30State = getMission30State(state);
+        const result =
+          mission30State?.cueEndsAtMs != null
+            ? (handleMission30CueEnd(state, nowMs), null)
+            : handleMission30Deadline(state, nowMs);
+        this.maybeRecordMissionFailure(previousResult, state);
+        this.saveState();
+        if (result) {
+          if (result !== "win" && result !== "loss_surrender") {
+            emitMissionFailureTelemetry(state, result, "system");
+          }
+          this.broadcastAction({ type: "gameOver", result });
+          this.broadcastGameState();
+          return;
+        }
+        this.broadcastGameState();
+      }
+
       // Otherwise handle bot turn (playing phase only)
       if (state.phase === "playing") {
         await this.executeBotTurn();
@@ -4083,6 +4236,59 @@ export class BombBustersServer extends Server<Env> {
   async executeBotTurn() {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
+
+    const mission30 = getMission30State(state);
+    if (mission30) {
+      if (mission30.mode !== "action") {
+        return;
+      }
+
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      if (currentPlayer?.isBot) {
+        if (mission30.phase === "yellow_sweep") {
+          const previousResult = state.result;
+          const outcome = executeMission30CutRemainingYellows(state, currentPlayer.id, Date.now());
+          if (outcome.ok) {
+            pushGameLog(state, {
+              turn: state.turnNumber,
+              playerId: currentPlayer.id,
+              action: "mission30CutRemainingYellows",
+              detail:
+                outcome.result === "loss_detonator"
+                  ? "mission30:yellow_sweep_failed"
+                  : `mission30:yellow_sweep_success|tiles=${outcome.tilesCut ?? 0}`,
+              timestamp: Date.now(),
+            });
+            if (outcome.result === "loss_detonator") {
+              emitMissionFailureTelemetry(state, "loss_detonator", currentPlayer.id, null);
+            }
+            this.maybeRecordMissionFailure(previousResult, state);
+            this.saveState();
+            if (outcome.result) {
+              this.broadcastAction({ type: "gameOver", result: outcome.result });
+            }
+            this.broadcastGameState();
+            this.scheduleBotTurnIfNeeded();
+          }
+          return;
+        }
+
+        if (mission30.phase === "triple_lock" && canMission30PassTurn(state, currentPlayer)) {
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: currentPlayer.id,
+            action: "mission30ManualSkipTurn",
+            detail: "mission30:triple_lock_pass|reason=no_legal_move",
+            timestamp: Date.now(),
+          });
+          advanceTurn(state);
+          this.saveState();
+          this.broadcastGameState();
+          this.scheduleBotTurnIfNeeded();
+          return;
+        }
+      }
+    }
 
     const mission45PenaltyForced = state.pendingForcedAction;
     if (mission45PenaltyForced?.kind === "mission45PenaltyTokenChoice") {

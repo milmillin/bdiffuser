@@ -33,6 +33,17 @@ function resolveMissionAudioPositionMs(
       ? Math.max(0, nowMs - missionAudio.syncedAtMs)
       : 0;
   const rawPosition = missionAudio.positionMs + elapsedMs;
+  const segmentStartMs = Math.max(0, missionAudio.segmentStartMs ?? 0);
+  const segmentEndMs = missionAudio.segmentEndMs;
+  if (segmentEndMs != null) {
+    if (missionAudio.loopSegment) {
+      const lengthMs = Math.max(1, segmentEndMs - segmentStartMs);
+      const normalized = Math.max(segmentStartMs, rawPosition);
+      return segmentStartMs + ((normalized - segmentStartMs) % lengthMs);
+    }
+    return Math.max(segmentStartMs, Math.min(Math.max(0, rawPosition), segmentEndMs));
+  }
+
   const clampedMin = Math.max(0, rawPosition);
   if (missionAudio.durationMs == null) return clampedMin;
   return Math.min(clampedMin, missionAudio.durationMs);
@@ -209,13 +220,21 @@ export function MissionAudioPlayer({
   );
 
   const isPlaying = missionAudio?.status === "playing";
-  const effectiveDurationMs =
+  const transportLocked = missionAudio?.transportLocked === true;
+  const segmentStartMs = Math.max(0, missionAudio?.segmentStartMs ?? 0);
+  const absoluteDurationMs =
     missionAudio?.durationMs ?? localDurationMs ?? Math.max(canonicalPositionMs, 1);
-  const sliderMaxMs = Math.max(effectiveDurationMs, 1);
-  const displayPositionMs = Math.min(
+  const absoluteDisplayPositionMs = Math.min(
     sliderDragMs ?? canonicalPositionMs,
-    sliderMaxMs,
+    Math.max(absoluteDurationMs, 1),
   );
+  const lockedDurationMs = missionAudio?.segmentEndMs != null
+    ? Math.max(1, missionAudio.segmentEndMs - segmentStartMs)
+    : Math.max(absoluteDurationMs, 1);
+  const sliderMaxMs = transportLocked ? lockedDurationMs : Math.max(absoluteDurationMs, 1);
+  const displayPositionMs = transportLocked
+    ? Math.min(Math.max(0, absoluteDisplayPositionMs - segmentStartMs), sliderMaxMs)
+    : absoluteDisplayPositionMs;
 
   const parseClampedSliderMs = useCallback(
     (rawValue: string | number): number | null => {
@@ -229,6 +248,10 @@ export function MissionAudioPlayer({
   const commitSliderSeek = useCallback(
     (rawValue: string | number) => {
       if (!missionAudio) {
+        clearSliderDragState();
+        return;
+      }
+      if (transportLocked) {
         clearSliderDragState();
         return;
       }
@@ -260,6 +283,7 @@ export function MissionAudioPlayer({
       parseClampedSliderMs,
       sendAudioControl,
       serverClockOffsetMs,
+      transportLocked,
     ],
   );
 
@@ -297,7 +321,7 @@ export function MissionAudioPlayer({
   }, [clearSliderDragState, commitSliderSeek]);
 
   const handlePlay = useCallback(() => {
-    if (!missionAudio) return;
+    if (!missionAudio || transportLocked) return;
     const nowMs = getServerSyncedNowMs(serverClockOffsetMs);
     // Prime local playback in direct response to user input to avoid
     // autoplay-policy failures after a page refresh.
@@ -311,10 +335,10 @@ export function MissionAudioPlayer({
       displayPositionMs,
     );
     sendAudioControl("play", displayPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs]);
+  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs, transportLocked]);
 
   const handlePause = useCallback(() => {
-    if (!missionAudio) return;
+    if (!missionAudio || transportLocked) return;
     const currentPositionMs = Math.max(
       displayPositionMs,
       getMissionAudioPositionMs(),
@@ -329,7 +353,7 @@ export function MissionAudioPlayer({
       currentPositionMs,
     );
     sendAudioControl("pause", currentPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs]);
+  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs, transportLocked]);
 
   const handleSliderDragStart = useCallback(
     (
@@ -338,15 +362,16 @@ export function MissionAudioPlayer({
         | TouchEvent<HTMLInputElement>
         | PointerEvent<HTMLInputElement>,
     ) => {
+      if (transportLocked) return;
       sliderDragActiveRef.current = true;
       statusAtDragStartRef.current = missionAudio?.status ?? null;
     },
-    [missionAudio?.status],
+    [missionAudio?.status, transportLocked],
   );
 
   const handleSliderChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
+      if (!missionAudio || transportLocked) return;
       const clampedMs = parseClampedSliderMs(event.target.value);
       if (clampedMs == null) return;
       if (sliderDragActiveRef.current) {
@@ -359,14 +384,15 @@ export function MissionAudioPlayer({
         lastSeekSentAtRef.current = nowMs;
       }
     },
-    [missionAudio, parseClampedSliderMs, sendAudioControl],
+    [missionAudio, parseClampedSliderMs, sendAudioControl, transportLocked],
   );
 
   const handleSliderBlur = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
+      if (transportLocked) return;
       commitSliderSeek(event.currentTarget.value);
     },
-    [commitSliderSeek],
+    [commitSliderSeek, transportLocked],
   );
 
   const handleVolumeChange = useCallback(
@@ -470,41 +496,52 @@ export function MissionAudioPlayer({
         </span>
       </div>
 
-      <input
-        ref={sliderInputRef}
-        type="range"
-        min={0}
-        max={sliderMaxMs}
-        value={displayPositionMs}
-        onPointerDown={handleSliderDragStart}
-        onMouseDown={handleSliderDragStart}
-        onTouchStart={handleSliderDragStart}
-        onChange={handleSliderChange}
-        onBlur={handleSliderBlur}
-        className="h-2 w-full cursor-pointer accent-amber-400"
-        data-testid="mission-audio-slider"
-      />
+      {transportLocked ? (
+        <div
+          className="rounded-md border border-amber-500/40 bg-amber-950/20 px-2 py-2 text-xs text-amber-100/90"
+          data-testid="mission-audio-locked"
+        >
+          Mission 30 controls playback from the server. Volume and mute stay shared.
+        </div>
+      ) : (
+        <>
+          <input
+            ref={sliderInputRef}
+            type="range"
+            min={0}
+            max={sliderMaxMs}
+            value={displayPositionMs}
+            onPointerDown={handleSliderDragStart}
+            onMouseDown={handleSliderDragStart}
+            onTouchStart={handleSliderDragStart}
+            onChange={handleSliderChange}
+            onBlur={handleSliderBlur}
+            className="h-2 w-full cursor-pointer accent-amber-400"
+            data-testid="mission-audio-slider"
+          />
 
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handlePlay}
-          disabled={isPlaying}
-          className="rounded-md border border-emerald-500/60 bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-200 transition-colors enabled:hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-50"
-          data-testid="mission-audio-play"
-        >
-          Play
-        </button>
-        <button
-          type="button"
-          onClick={handlePause}
-          disabled={!isPlaying}
-          className="rounded-md border border-amber-500/60 bg-amber-950/35 px-2 py-1 text-xs font-semibold text-amber-200 transition-colors enabled:hover:bg-amber-950/55 disabled:cursor-not-allowed disabled:opacity-50"
-          data-testid="mission-audio-pause"
-        >
-          Pause
-        </button>
-      </div>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePlay}
+              disabled={isPlaying}
+              className="rounded-md border border-emerald-500/60 bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-200 transition-colors enabled:hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="mission-audio-play"
+            >
+              Play
+            </button>
+            <button
+              type="button"
+              onClick={handlePause}
+              disabled={!isPlaying}
+              className="rounded-md border border-amber-500/60 bg-amber-950/35 px-2 py-1 text-xs font-semibold text-amber-200 transition-colors enabled:hover:bg-amber-950/55 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="mission-audio-pause"
+            >
+              Pause
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="mt-2 flex items-center gap-2">
         <span className="text-[10px] uppercase tracking-wide text-gray-400">

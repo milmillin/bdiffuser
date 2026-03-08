@@ -17,3 +17,4 @@ export * from "./infoTokenSupply.js";
 export * from "./bunkerMap.js";
 export * from "./logDetail.js";
 export * from "./missionRestrictions.js";
+export * from "./mission30Audio.js";

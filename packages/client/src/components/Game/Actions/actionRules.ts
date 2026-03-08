@@ -40,6 +40,46 @@ export function isBaseEquipmentId(id: string): id is BaseEquipmentId {
   return BASE_EQUIPMENT_SET.has(id);
 }
 
+function getMission30State(
+  state: Pick<ClientGameState, "mission" | "campaign">,
+) {
+  if (state.mission !== 30) return null;
+  return state.campaign?.mission30 ?? null;
+}
+
+export function isMission30ActionLocked(
+  state: Pick<ClientGameState, "mission" | "campaign">,
+): boolean {
+  const mission30 = getMission30State(state);
+  if (!mission30) return false;
+  return mission30.mode !== "action" || mission30.phase === "yellow_sweep";
+}
+
+export function isMission30TripleLockValueAllowed(
+  state: Pick<ClientGameState, "mission" | "campaign">,
+  value: unknown,
+): value is number | "YELLOW" {
+  const mission30 = getMission30State(state);
+  if (mission30?.phase !== "triple_lock" || mission30.mode !== "action") {
+    return value === "YELLOW" || typeof value === "number";
+  }
+  return typeof value === "number" && (mission30.visibleTargetValues ?? []).includes(value);
+}
+
+export function isMission30TripleLockTargetTileAllowed(
+  state: Pick<ClientGameState, "mission" | "campaign">,
+  tile: Pick<ClientPlayer["hand"][number], "cut" | "color" | "gameValue"> | undefined,
+): boolean {
+  const mission30 = getMission30State(state);
+  if (mission30?.phase !== "triple_lock" || mission30.mode !== "action") {
+    return tile?.cut !== true;
+  }
+
+  return tile?.cut !== true
+    && tile?.color === "blue"
+    && isMission30TripleLockValueAllowed(state, tile?.gameValue);
+}
+
 function getMission45RequiredCutValue(
   state: Pick<ClientGameState, "mission" | "campaign">,
   playerId?: string,
@@ -169,6 +209,7 @@ export function canStageEquipmentCardFromCardStrip(
   if (state.pendingForcedAction) return false;
   if (options.revealRedsForcedForActor) return false;
   if (isMission41PlayerSkippingTurn(state, actor)) return false;
+  if (isMission30ActionLocked(state)) return false;
   if (hasActiveConstraint(state, actorId, "G")) return false;
   if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
   if (state.mission === 18 && equipmentId === "general_radar") return false;
@@ -203,6 +244,7 @@ export function canStagePersonalSkillFromCardStrip(
   if (state.pendingForcedAction) return false;
   if (options.revealRedsForcedForActor) return false;
   if (isMission41PlayerSkippingTurn(state, actor)) return false;
+  if (isMission30ActionLocked(state)) return false;
   if (hasActiveConstraint(state, actorId, "G")) return false;
   if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
   if (actor.characterUsed && state.mission !== 58) return false;
@@ -444,6 +486,9 @@ export function getSoloCutValues(
 
   const availableOxygen = getMissionOxygenAvailability(state, playerId);
   const filteredValues = values.filter((value): value is number | "YELLOW" => {
+    if (!isMission30TripleLockValueAllowed(state, value)) {
+      return false;
+    }
     if (value === "YELLOW") return true;
     if (
       activeValueConstraintIds.length > 0 &&

@@ -1112,6 +1112,16 @@ describe("mission 41 Iberian yellow mode validation", () => {
       mission: 30,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      campaign: {
+        mission30: {
+          phase: "triple_lock",
+          mode: "action",
+          currentClipId: "tripleLockBed",
+          visibleTargetValues: [5, 6, 7],
+          mimeMode: false,
+          yellowCountsRevealed: false,
+        },
+      },
     });
 
     const error = validateActionWithHooks(state, {

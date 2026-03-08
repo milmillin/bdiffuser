@@ -54,6 +54,7 @@ import { ChatPanel } from "./Chat/ChatPanel.js";
 import { MobileTabBar, type MobileTab } from "./MobileTabBar.js";
 import { MissionRuleHints } from "./MissionRuleHints.js";
 import { MissionAudioPlayer } from "./MissionAudioPlayer.js";
+import { Mission30ScriptedPanel } from "./Mission30ScriptedPanel.js";
 import { EquipmentModePanel } from "./Actions/EquipmentModePanel.js";
 import type { EquipmentMode } from "./Actions/EquipmentModePanel.js";
 import { APP_COMMIT_ID, APP_VERSION } from "../../buildInfo.js";
@@ -86,6 +87,9 @@ import {
   getInitialEquipmentMode,
   getSoloCutValues,
   isBaseEquipmentId,
+  isMission30ActionLocked,
+  isMission30TripleLockTargetTileAllowed,
+  isMission30TripleLockValueAllowed,
 } from "./Actions/actionRules.js";
 import {
   getMission9SequenceGate,
@@ -356,34 +360,6 @@ export function GameBoard({
     if (!canConfirmSurrender) return;
     send({ type: "confirmSurrender" });
   }, [canConfirmSurrender, send]);
-  const mission30CanManualDetonatorAdvance =
-    !isFinished &&
-    gameState.phase === "playing" &&
-    gameState.mission === 30 &&
-    gameState.result == null &&
-    !!me &&
-    !gameState.isSpectator &&
-    !me.isBot &&
-    me.id === playerId;
-  const mission30CanManualDetonatorAdvanceStep =
-    gameState.board.detonatorPosition < gameState.board.detonatorMax;
-  const sendMission30ManualDetonatorAdvance = useCallback(() => {
-    if (!mission30CanManualDetonatorAdvance) return;
-    send({ type: "mission30ManualDetonatorAdvance" });
-  }, [mission30CanManualDetonatorAdvance, send]);
-  const mission30CanManualSkipTurn =
-    !isFinished &&
-    gameState.phase === "playing" &&
-    gameState.mission === 30 &&
-    gameState.result == null &&
-    !!me &&
-    !gameState.isSpectator &&
-    !me.isBot &&
-    isMyTurn;
-  const sendMission30ManualSkipTurn = useCallback(() => {
-    if (!mission30CanManualSkipTurn) return;
-    send({ type: "mission30ManualSkipTurn" });
-  }, [mission30CanManualSkipTurn, send]);
   const opponentsWithOrder = gameState.players
     .map((p, i) => ({ player: p, turnOrder: i + 1 }))
     .filter((entry) => entry.player.id !== playerId);
@@ -434,6 +410,23 @@ export function GameBoard({
       return reset ? { ...reset, source: prev.source } : prev;
     });
   }, []);
+  const mission30State =
+    gameState.mission === 30 ? gameState.campaign?.mission30 : undefined;
+  const mission30ActionLocked = isMission30ActionLocked(gameState);
+  const mission30VisibleValuesKey = (mission30State?.visibleTargetValues ?? []).join(",");
+
+  useEffect(() => {
+    if (!mission30State) return;
+    cancelEquipmentMode();
+    setPendingAction(null);
+    setSelectedGuessTile(null);
+  }, [
+    cancelEquipmentMode,
+    mission30State?.phase,
+    mission30State?.mode,
+    mission30State?.currentTargetValue,
+    mission30VisibleValuesKey,
+  ]);
 
   // Talkies-Walkies forced-action: teammate picks their own wire on the stand
   const [detectorTileChoiceSelection, setDetectorTileChoiceSelection] = useState<
@@ -674,7 +667,8 @@ export function GameBoard({
     gameState.phase === "playing" &&
     !gameState.pendingForcedAction &&
     !equipmentMode &&
-    !!me;
+    !!me &&
+    !mission30ActionLocked;
 
   const mission22SetupBoardValues = useMemo(() => {
     if (!isSetup || gameState.mission !== 22) return undefined;
@@ -853,9 +847,11 @@ export function GameBoard({
     value: unknown,
   ): value is number | "YELLOW" => {
     if (mission45RequiredCutValue != null) {
-      return value === mission45RequiredCutValue;
+      return value === mission45RequiredCutValue
+        && isMission30TripleLockValueAllowed(gameState, value);
     }
-    return isMission59DualCutActorTileValueAllowed(gameState, value);
+    return isMission59DualCutActorTileValueAllowed(gameState, value)
+      && isMission30TripleLockValueAllowed(gameState, value);
   };
   const selectedGuessValue =
     selectedGuessTile != null
@@ -881,6 +877,7 @@ export function GameBoard({
     selectedGuessValue != null &&
     selectedGuessValue !== "RED" &&
     soloValueSet.has(selectedGuessValue) &&
+    isMission30TripleLockValueAllowed(gameState, selectedGuessValue) &&
     !isMission9BlockedValue(selectedGuessValue);
   const soloCandidateIndices =
     selectedGuessTile != null && me
@@ -892,6 +889,7 @@ export function GameBoard({
             return (
               tile.gameValue === selectedGuessValue &&
               soloValueSet.has(tile.gameValue) &&
+              isMission30TripleLockValueAllowed(gameState, tile.gameValue) &&
               !isMission9BlockedValue(tile.gameValue)
             );
           })
@@ -1627,6 +1625,7 @@ export function GameBoard({
                                     oppTile.color,
                                     oppTile.isXMarked,
                                   )
+                                  || !isMission30TripleLockTargetTileAllowed(gameState, oppTile)
                                 ) return;
                               setPendingAction({
                                 ...pendingAction,
@@ -1683,13 +1682,14 @@ export function GameBoard({
                           : mission46ForcedForMe
                             ? (tile: VisibleTile) => !tile.cut
                           : pendingAction?.kind === "dual_cut"
-                                ? (tile: VisibleTile) =>
+                            ? (tile: VisibleTile) =>
                                 !tile.cut &&
                                 isDualCutTargetAllowed(
                                   gameState,
                                   tile.color,
                                   tile.isXMarked,
                                 )
+                                && isMission30TripleLockTargetTileAllowed(gameState, tile)
                             : playingInteractionEnabled &&
                                 isMyTurn &&
                                 selectedGuessTile != null &&
@@ -1702,6 +1702,7 @@ export function GameBoard({
                                     tile.color,
                                     tile.isXMarked,
                                   )
+                                  && isMission30TripleLockTargetTileAllowed(gameState, tile)
                               : undefined
                       }
                     />
@@ -1781,35 +1782,12 @@ export function GameBoard({
                       send={send}
                       serverClockOffsetMs={serverClockOffsetMs}
                     />
-                    {mission30CanManualDetonatorAdvance && (
-                      <div className="rounded-lg border border-emerald-600/60 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100">
-                        <div className="font-bold uppercase tracking-wide text-emerald-200">
-                          Mission 30 — Flip Equipment Card
-                        </div>
-                        <p className="text-emerald-100/90 mb-2">
-                          Use this when the audio indicates the equipment card should be flipped
-                          face-down.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={sendMission30ManualDetonatorAdvance}
-                          className={BUTTON_PRIMARY_CLASS}
-                          disabled={!mission30CanManualDetonatorAdvanceStep}
-                          data-testid="mission30-manual-advance-button"
-                        >
-                          Flip Equipment Card Down
-                        </button>
-                      </div>
-                    )}
-                    {mission30CanManualSkipTurn && (
-                      <button
-                        type="button"
-                        onClick={sendMission30ManualSkipTurn}
-                        className={BUTTON_SECONDARY_CLASS}
-                        data-testid="mission30-manual-skip-button"
-                      >
-                        Skip Turn (Mission 30)
-                      </button>
+                    {mission30State && (
+                      <Mission30ScriptedPanel
+                        gameState={gameState}
+                        send={send}
+                        serverClockOffsetMs={serverClockOffsetMs}
+                      />
                     )}
                   </>
                 )}

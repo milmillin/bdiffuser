@@ -429,6 +429,48 @@ export interface Mission61ConstraintRingState {
   replacementPool?: ConstraintCard[];
 }
 
+export type Mission30Phase =
+  | "briefing_locked"
+  | "prologue_free_play"
+  | "round_a1"
+  | "round_a2"
+  | "round_b1"
+  | "round_b2"
+  | "mime_intro"
+  | "round_c1"
+  | "round_c2"
+  | "triple_lock_intro"
+  | "triple_lock"
+  | "yellow_sweep"
+  | "final_cleanup"
+  | "completed"
+  | "failed";
+
+export type Mission30Mode = "instruction" | "action" | "resolving" | "paused";
+
+export interface Mission30YesNoReveal {
+  actorId: string;
+  value: number;
+  hasValue: boolean;
+}
+
+export interface Mission30State {
+  phase: Mission30Phase;
+  mode: Mission30Mode;
+  currentClipId: string;
+  cueEndsAtMs?: number;
+  visibleDeadlineMs?: number;
+  hardDeadlineMs?: number;
+  pausedAtMs?: number;
+  currentTargetValue?: number;
+  visibleTargetValues?: number[];
+  mimeMode: boolean;
+  yellowCountsRevealed: boolean;
+  publicYellowCountsByPlayerId?: Record<string, number>;
+  lastYesNoReveal?: Mission30YesNoReveal;
+  roundB1Succeeded?: boolean;
+}
+
 export type Mission66BunkerDirection = "north" | "south" | "east" | "west";
 
 export type Mission66BunkerActivationTarget =
@@ -518,6 +560,8 @@ export interface CampaignState {
   mission45Turn?: Mission45TurnState;
   /** Mission 34: hidden weakest-link role and hidden dealt constraints. */
   mission34Hidden?: Mission34HiddenState;
+  /** Mission 30: scripted audio-first mission runtime state. */
+  mission30?: Mission30State;
   /** Mission 61: public rotating constraint ring. */
   mission61Ring?: Mission61ConstraintRingState;
   /** Mission 66: public bunker board state and fixed directional/ACTION constraints. */
@@ -816,6 +860,16 @@ export interface MissionAudioState {
   syncedAtMs: number;
   /** Optional known duration in milliseconds. */
   durationMs?: number;
+  /** Optional current scripted-clip identifier for segmented missions. */
+  clipId?: string;
+  /** Inclusive segment start bound in milliseconds. */
+  segmentStartMs?: number;
+  /** Exclusive segment end bound in milliseconds. */
+  segmentEndMs?: number;
+  /** Whether playback should wrap between `segmentStartMs` and `segmentEndMs`. */
+  loopSegment?: boolean;
+  /** Whether timeline seeking is disabled by mission rules. */
+  transportLocked?: boolean;
   /** Shared output volume in the range 0..1 (global for the room). */
   volume?: number;
   /** Shared mute flag (global for the room). */

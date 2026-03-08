@@ -69,6 +69,12 @@ import { getMission22TokenPassBoardState } from "./mission22TokenPass.js";
 import { buildMission27TokenDraftBoard } from "./mission27TokenDraft.js";
 import { isMission46SevenTile } from "./mission46.js";
 import { isMission41PlayerSkippingTurn } from "./missionGuards.js";
+import {
+  canMission30PassTurn,
+  handleMission30TurnAdvanced,
+  initializeMission30Setup,
+  validateMission30Action,
+} from "./mission30.js";
 
 // ── Hook Point ─────────────────────────────────────────────
 
@@ -656,24 +662,6 @@ function canCurrentPlayerPlayMission65(
 }
 
 /**
- * Mission 30 has no special card-driven rule on cut values, but players can only
- * skip their turn here when their remaining moves are effectively blocked under
- * normal cut legality (and all remaining wires are not reveal-only reds).
- */
-function canCurrentPlayerPlayMission30(
-  state: Readonly<GameState>,
-  actor: Readonly<Player>,
-): boolean {
-  const uncutTiles = actor.hand.filter((tile) => !tile.cut);
-  if (uncutTiles.length === 0) return false;
-
-  const hasNonRedUncut = uncutTiles.some((tile) => tile.gameValue !== "RED");
-  if (!hasNonRedUncut) return true;
-
-  return hasAnyDualCutTarget(state, actor.id);
-}
-
-/**
  * Return a mission-specific skip-the-turn error when the actor has no legal
  * non-red action path available in their mission's turn-skipping rules.
  */
@@ -690,7 +678,7 @@ export function getMissionTurnSkipError(
       : "Mission 26: player must skip their turn";
   }
 
-  if (state.mission === 30 && !canCurrentPlayerPlayMission30(state, actor)) {
+  if (state.mission === 30 && canMission30PassTurn(state, actor)) {
     return "Mission 30: player must skip your turn";
   }
 
@@ -763,6 +751,7 @@ export function getMissionTurnSkipError(
 
 import type {
   AudioPromptRuleDef,
+  Mission30ScriptedAudioRuleDef,
   ChallengeCardsRuleDef,
   ConstraintEnforcementRuleDef,
   ForcedGeneralRadarFlowRuleDef,
@@ -6515,6 +6504,32 @@ registerHookHandler<"audio_prompt">("audio_prompt", {
       detail: `audio_prompt:${_rule.audioFile}:play_sound_file`,
       timestamp: Date.now(),
     });
+  },
+});
+
+registerHookHandler<"mission_30_scripted_audio">("mission_30_scripted_audio", {
+  setup(_rule: Mission30ScriptedAudioRuleDef, ctx: SetupHookContext): void {
+    initializeMission30Setup(ctx.state);
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: "mission30:scripted_audio:init",
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: Mission30ScriptedAudioRuleDef, ctx: ValidateHookContext): HookResult | void {
+    const validationError = validateMission30Action(ctx.state, ctx.action);
+    if (!validationError) return;
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError,
+    };
+  },
+
+  endTurn(_rule: Mission30ScriptedAudioRuleDef, ctx: EndTurnHookContext): void {
+    handleMission30TurnAdvanced(ctx.state, Date.now());
   },
 });
 
