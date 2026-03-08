@@ -15,7 +15,7 @@ import {
   resolveDetectorTileChoice,
 } from "../gameLogic";
 
-const GLOBAL_CONSTRAINT_MISSION_ID = 37;
+const GLOBAL_CONSTRAINT_MISSION_ID = 61;
 const PER_PLAYER_CONSTRAINT_MISSION_ID = 31;
 
 type Scope = "global" | "perPlayer";
@@ -26,7 +26,7 @@ interface StateWithConstraintOptions {
   targetHandValues?: Array<number | "YELLOW">;
 }
 
-// Mission 37 has the full A-L constraint_enforcement hook rule (global scope).
+// Mission 61 uses the generic global constraint_enforcement hook path.
 // Mission 31 also has constraint_enforcement (per-player scope).
 function stateWithConstraint(
   constraintId: string,
@@ -101,6 +101,20 @@ function validateSoloCut(
       type: "soloCut",
       actorId: "player-1",
       value,
+    },
+  });
+}
+
+function validateRevealReds(
+  state: ReturnType<typeof makeGameState>,
+  actorId = "player-1",
+) {
+  return dispatchHooks(state.mission, {
+    point: "validate",
+    state,
+    action: {
+      type: "revealReds",
+      actorId,
     },
   });
 }
@@ -501,6 +515,80 @@ describe("constraint enforcement validation", () => {
     ).toBe(true);
     expect(
       state.campaign?.constraints?.global.find((constraint) => constraint.id === "K")?.active,
+    ).toBe(false);
+  });
+
+  it("Mission 37 does not auto-flip a blocked global constraint during validation", () => {
+    const state = makeGameState({
+      mission: 37,
+      players: [
+        makePlayer({
+          id: "player-1",
+          hand: [makeTile({ id: "p1-0", gameValue: 2 })],
+        }),
+        makePlayer({
+          id: "player-2",
+          hand: [makeTile({ id: "p2-0", gameValue: 4 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: makeCampaignState({
+        constraints: {
+          global: [makeConstraintCard({ id: "B", name: "Constraint B", active: true })],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "A", name: "Constraint A", active: false })],
+        },
+      }),
+    });
+
+    const result = dispatchHooks(state.mission, {
+      point: "validate",
+      state,
+      action: {
+        type: "dualCut",
+        actorId: "player-1",
+        targetPlayerId: "player-2",
+        targetTileIndex: 0,
+        guessValue: 2,
+      },
+    });
+
+    expect(result.validationError).toBe("Constraint B: You must cut only odd wires");
+    expect(state.campaign?.constraints?.global[0]?.active).toBe(true);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:B:stuck"),
+    ).toBe(false);
+  });
+
+  it("Mission 37 allows revealReds without applying the visible constraint", () => {
+    const state = makeGameState({
+      mission: 37,
+      players: [
+        makePlayer({
+          id: "player-1",
+          hand: [makeTile({ id: "p1-r", gameValue: "RED", color: "red" })],
+        }),
+        makePlayer({
+          id: "player-2",
+          hand: [makeTile({ id: "p2-0", gameValue: 4 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      campaign: makeCampaignState({
+        constraints: {
+          global: [makeConstraintCard({ id: "B", name: "Constraint B", active: true })],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "A", name: "Constraint A", active: false })],
+        },
+      }),
+    });
+
+    const result = validateRevealReds(state);
+
+    expect(result.validationError).toBeUndefined();
+    expect(state.campaign?.constraints?.global[0]?.active).toBe(true);
+    expect(
+      state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:B:stuck"),
     ).toBe(false);
   });
 

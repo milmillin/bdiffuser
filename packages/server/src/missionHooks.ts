@@ -5052,6 +5052,14 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   validate(_rule: ConstraintEnforcementRuleDef, ctx: ValidateHookContext): HookResult | void {
     const actorId = ctx.action.actorId;
 
+    if (ctx.state.mission === 37) {
+      if (ctx.action.type === "revealReds") return;
+
+      const active = getActiveConstraints(ctx.state, actorId);
+      if (active.length === 0) return;
+      return validateConstraintAction(ctx, actorId, active);
+    }
+
     // Auto-flip: if the player's constraint blocks ALL their remaining tiles,
     // deactivate it (matches physical game rule: flip constraint when stuck).
     autoFlipStuckConstraints(ctx.state as GameState, actorId);
