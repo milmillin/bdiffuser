@@ -110,6 +110,7 @@ describe("MissionAudioPlayer interactions", () => {
 
     const slider = screen.getByTestId("mission-audio-slider") as HTMLInputElement;
 
+    fireEvent.pointerDown(slider);
     fireEvent.change(slider, { target: { value: "45000" } });
     expect(slider.value).toBe("45000");
 

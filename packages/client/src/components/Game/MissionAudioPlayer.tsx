@@ -83,9 +83,11 @@ export function MissionAudioPlayer({
   const lastVolumeSentAtRef = useRef(0);
   const sliderInputRef = useRef<HTMLInputElement | null>(null);
   const sliderDragActiveRef = useRef(false);
+  const statusAtDragStartRef = useRef<"playing" | "paused" | null>(null);
 
   const clearSliderDragState = useCallback(() => {
     sliderDragActiveRef.current = false;
+    statusAtDragStartRef.current = null;
     setSliderDragMs(null);
   }, []);
 
@@ -125,6 +127,7 @@ export function MissionAudioPlayer({
 
   useEffect(() => {
     if (!missionAudio) return;
+    if (sliderDragActiveRef.current) return;
     syncMissionAudioState(missionAudio, canonicalPositionMs);
     const durationMs = getMissionAudioDurationMs();
     if (durationMs != null) {
@@ -142,6 +145,7 @@ export function MissionAudioPlayer({
   useEffect(() => {
     if (!missionAudio) return;
     return onMissionAudioEnded(() => {
+      if (sliderDragActiveRef.current) return;
       const durationMs =
         getMissionAudioDurationMs() ??
         missionAudio.durationMs ??
@@ -238,7 +242,11 @@ export function MissionAudioPlayer({
         },
         clampedMs,
       );
-      sendAudioControl("seek", clampedMs);
+      if (statusAtDragStartRef.current === "playing") {
+        sendAudioControl("play", clampedMs);
+      } else {
+        sendAudioControl("seek", clampedMs);
+      }
       clearSliderDragState();
       lastSeekSentAtRef.current = Date.now();
     },
@@ -327,8 +335,9 @@ export function MissionAudioPlayer({
         | PointerEvent<HTMLInputElement>,
     ) => {
       sliderDragActiveRef.current = true;
+      statusAtDragStartRef.current = missionAudio?.status ?? null;
     },
-    [],
+    [missionAudio?.status],
   );
 
   const handleSliderChange = useCallback(
@@ -336,7 +345,9 @@ export function MissionAudioPlayer({
       if (!missionAudio) return;
       const clampedMs = parseClampedSliderMs(event.target.value);
       if (clampedMs == null) return;
-      setSliderDragMs(clampedMs);
+      if (sliderDragActiveRef.current) {
+        setSliderDragMs(clampedMs);
+      }
 
       const nowMs = Date.now();
       if (nowMs - lastSeekSentAtRef.current >= 80) {

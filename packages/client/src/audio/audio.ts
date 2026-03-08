@@ -47,11 +47,9 @@ export function syncMissionAudioState(
   maybeSeek(audio, resolvedPositionMs);
 
   if (missionAudio.status === "playing") {
-    if (audio.paused) {
-      audio.play().catch(() => {
-        // Autoplay may be blocked until user interaction.
-      });
-    }
+    audio.play().catch(() => {
+      // Autoplay may be blocked until user interaction.
+    });
   } else if (!audio.paused) {
     audio.pause();
   }
