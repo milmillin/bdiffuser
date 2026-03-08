@@ -63,12 +63,14 @@ import {
 } from "./equipment.js";
 import {
   applyMission66BunkerChoice,
+  applyMission65CardHandoff,
   applyMission34WeakestLinkGuess,
   applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   emitMissionFailureTelemetry,
+  getMission65BotHandoff,
   getMission66BotChoice,
   getMissionTurnSkipError,
   queueMission32ConstraintDecision,
@@ -490,6 +492,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission29HiddenNumberCardChoice":
         this.handleMission29HiddenNumberCardChoice(connection, msg.cardIndex);
         break;
+      case "mission65CardHandoff":
+        this.handleMission65CardHandoff(connection, msg.cardId, msg.recipientPlayerId);
+        break;
       case "mission34GuessWeakestLink":
         this.handleMission34GuessWeakestLink(connection, msg.targetPlayerId, msg.constraintId);
         break;
@@ -614,6 +619,10 @@ export class BombBustersServer extends Server<Env> {
           if (gs.pendingForcedAction.chooserId === oldId) {
             gs.pendingForcedAction.chooserId = newId;
           }
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission65CardHandoff") {
           if (gs.pendingForcedAction.actorId === oldId) {
             gs.pendingForcedAction.actorId = newId;
           }
@@ -1878,6 +1887,55 @@ export class BombBustersServer extends Server<Env> {
     const result = applyMission29HiddenNumberCardChoice(state, conn.id, cardIndex);
     if (!result.ok) {
       this.sendMsg(conn, { type: "error", message: result.message ?? "Invalid Mission 29 hidden Number card choice" });
+      return;
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission65CardHandoff(
+    conn: Connection,
+    cardId: string,
+    recipientPlayerId: string,
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot hand off Mission 65 card: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 65 card handoff is only allowed during the playing phase.",
+      });
+      return;
+    }
+    if (typeof cardId !== "string" || cardId.length === 0) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 65 card handoff requires a valid card ID.",
+      });
+      return;
+    }
+    if (typeof recipientPlayerId !== "string" || recipientPlayerId.length === 0) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 65 card handoff requires a valid recipient player ID.",
+      });
+      return;
+    }
+
+    const result = applyMission65CardHandoff(state, conn.id, cardId, recipientPlayerId);
+    if (!result.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: result.message ?? "Invalid Mission 65 card handoff",
+      });
       return;
     }
 
@@ -3169,6 +3227,12 @@ export class BombBustersServer extends Server<Env> {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
+      } else if (forced?.kind === "mission65CardHandoff") {
+        const actor = state.players.find((p) => p.id === forced.actorId);
+        if (actor?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
       } else if (forced?.kind === "mission36SequencePosition") {
         const captain = state.players.find((p) => p.id === forced.captainId);
         if (captain?.isBot) {
@@ -3290,6 +3354,32 @@ export class BombBustersServer extends Server<Env> {
           console.log(
             `Bot ${captain.id} mission32ConstraintDecision rejected: ${result.message ?? "unknown error"}`,
           );
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
+
+    const mission65Forced = state.pendingForcedAction;
+    if (mission65Forced?.kind === "mission65CardHandoff") {
+      const actor = state.players.find((p) => p.id === mission65Forced.actorId);
+      if (actor?.isBot) {
+        const choice = getMission65BotHandoff(state);
+        if (choice) {
+          const result = applyMission65CardHandoff(
+            state,
+            mission65Forced.actorId,
+            choice.cardId,
+            choice.recipientPlayerId,
+          );
+          if (!result.ok) {
+            console.log(
+              `Bot ${actor.id} mission65CardHandoff rejected: ${result.message ?? "unknown error"}`,
+            );
+          }
         }
         this.saveState();
         this.broadcastGameState();

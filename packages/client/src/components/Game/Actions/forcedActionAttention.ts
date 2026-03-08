@@ -84,6 +84,8 @@ function getPendingForcedMetadata(
     }
     case "mission29HiddenNumberCard":
       return { kind: forced.kind, actorId: asString(forced.chooserId) };
+    case "mission65CardHandoff":
+      return { kind: forced.kind, actorId: asString(forced.actorId) };
     case "detectorTileChoice":
       return { kind: forced.kind, actorId: asString(forced.targetPlayerId) };
     case "talkiesWalkiesTileChoice":

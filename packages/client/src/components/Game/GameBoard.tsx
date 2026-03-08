@@ -35,6 +35,7 @@ import {
   getMission27DraftMatchingIndices as _getMission27DraftMatchingIndices,
 } from "./Actions/Mission27TokenDraftPanel.js";
 import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberCardPanel.js";
+import { Mission65CardHandoffPanel } from "./Actions/Mission65CardHandoffPanel.js";
 import { Mission34GuessPanel } from "./Actions/Mission34GuessPanel.js";
 import { Mission66BunkerChoicePanel } from "./Actions/Mission66BunkerChoicePanel.js";
 import { Mission32ConstraintDecisionPanel } from "./Actions/Mission32ConstraintDecisionPanel.js";
@@ -119,6 +120,7 @@ const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
 const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_MISSION27_TOKEN_DRAFT = "mission27TokenDraft";
 const FORCED_ACTION_MISSION29_HIDDEN_CARD = "mission29HiddenNumberCard";
+const FORCED_ACTION_MISSION65_CARD_HANDOFF = "mission65CardHandoff";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
 const FORCED_ACTION_MISSION32_CONSTRAINT_DECISION = "mission32ConstraintDecision";
@@ -132,6 +134,7 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_MISSION22_TOKEN_PASS,
   FORCED_ACTION_MISSION27_TOKEN_DRAFT,
   FORCED_ACTION_MISSION29_HIDDEN_CARD,
+  FORCED_ACTION_MISSION65_CARD_HANDOFF,
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
   FORCED_ACTION_MISSION32_CONSTRAINT_DECISION,
@@ -563,6 +566,8 @@ export function GameBoard({
         ? pendingForcedAction.currentChooserId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION29_HIDDEN_CARD
         ? pendingForcedAction.chooserId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION65_CARD_HANDOFF
+        ? pendingForcedAction.actorId
       : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
         ? pendingForcedAction.targetPlayerId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION32_CONSTRAINT_DECISION
@@ -1936,6 +1941,18 @@ export function GameBoard({
                     />
                   )}
 
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION65_CARD_HANDOFF &&
+                  gameState.pendingForcedAction.actorId === playerId &&
+                  me && (
+                    <Mission65CardHandoffPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {/* Playing phase: forced action (walkies target chooses wire) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -2741,6 +2758,9 @@ function getStatusContent(
         case "mission29HiddenNumberCard":
           forcedText = "Choose a hidden Number card.";
           break;
+        case FORCED_ACTION_MISSION65_CARD_HANDOFF:
+          forcedText = "Choose a Number card to hand to a teammate.";
+          break;
         case "detectorTileChoice":
           forcedText = "Resolve detector confirmation.";
           break;
@@ -2791,6 +2811,9 @@ function getStatusContent(
           break;
         case "mission29HiddenNumberCard":
           waitingText = "to choose a hidden Number card";
+          break;
+        case FORCED_ACTION_MISSION65_CARD_HANDOFF:
+          waitingText = "to hand off a Number card";
           break;
         case "detectorTileChoice":
           waitingText = "to resolve detector confirmation";

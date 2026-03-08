@@ -218,6 +218,8 @@ function formatForcedAction(fa: ForcedAction, state: ClientGameState): string {
       return `FORCED ACTION: ${nameOf(fa.currentChooserId)} must draft a token (mission 27)`;
     case "mission29HiddenNumberCard":
       return `FORCED ACTION: ${nameOf(fa.chooserId)} must choose a hidden number card for ${nameOf(fa.actorId)}`;
+    case "mission65CardHandoff":
+      return `FORCED ACTION: ${nameOf(fa.actorId)} must give one Number card to a teammate`;
     case "mission46SevensCut":
       return `FORCED ACTION: ${nameOf(fa.playerId)} must trigger simultaneous sevens cut`;
     case "mission32ConstraintDecision":

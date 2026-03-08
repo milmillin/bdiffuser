@@ -21,6 +21,7 @@ import {
   setTelemetrySink,
   clearTelemetrySink,
   emitMissionFailureTelemetry,
+  applyMission65CardHandoff,
   applyMission29HiddenNumberCardChoice,
   setMission29SkipRevealForCurrentTurn,
   UnknownHookError,
@@ -918,6 +919,117 @@ describe("missionHooks dispatcher", () => {
           && renderLogDetail(entry.detail).startsWith("personal_number_cards:completed=5|flipped=1"),
       );
       expect(completionLog).toBeDefined();
+    });
+
+    it("mission 65: queues mandatory card handoff before next-player skip logic", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        name: "p1",
+        hand: [makeTile({ id: "p1-done", gameValue: 8, cut: true })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        name: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6, cut: false })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        name: "p3",
+        hand: [makeTile({ id: "p3-4", gameValue: 4, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 65,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 8,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [],
+            discard: [],
+            playerHands: {
+              p1: [
+                { id: "c-p1-6-up", value: 6, faceUp: true },
+                { id: "c-p1-11-down", value: 11, faceUp: false },
+              ],
+              p2: [{ id: "c-p2-9", value: 9, faceUp: true }],
+              p3: [{ id: "c-p3-4", value: 4, faceUp: true }],
+            },
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(65, { point: "endTurn", state, previousPlayerId: "p1" });
+
+      expect(state.pendingForcedAction).toEqual({
+        kind: "mission65CardHandoff",
+        actorId: "p1",
+      });
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(8);
+      expect(state.board.detonatorPosition).toBe(1);
+    });
+
+    it("mission 65: resolving a handoff can unblock the next player without a skip", () => {
+      const p1 = makePlayer({
+        id: "p1",
+        name: "p1",
+        hand: [makeTile({ id: "p1-done", gameValue: 8, cut: true })],
+      });
+      const p2 = makePlayer({
+        id: "p2",
+        name: "p2",
+        hand: [makeTile({ id: "p2-6", gameValue: 6, cut: false })],
+      });
+      const p3 = makePlayer({
+        id: "p3",
+        name: "p3",
+        hand: [makeTile({ id: "p3-4", gameValue: 4, cut: false })],
+      });
+
+      const state = makeGameState({
+        mission: 65,
+        players: [p1, p2, p3],
+        currentPlayerIndex: 1,
+        turnNumber: 8,
+        board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
+        campaign: {
+          numberCards: {
+            visible: [],
+            deck: [],
+            discard: [],
+            playerHands: {
+              p1: [
+                { id: "c-p1-6-up", value: 6, faceUp: true },
+                { id: "c-p1-11-down", value: 11, faceUp: false },
+              ],
+              p2: [{ id: "c-p2-9", value: 9, faceUp: true }],
+              p3: [{ id: "c-p3-4", value: 4, faceUp: true }],
+            },
+          },
+        },
+        log: [],
+      });
+
+      dispatchHooks(65, { point: "endTurn", state, previousPlayerId: "p1" });
+      const result = applyMission65CardHandoff(state, "p1", "c-p1-6-up", "p2");
+
+      expect(result.ok).toBe(true);
+      expect(state.pendingForcedAction).toBeUndefined();
+      expect(state.board.detonatorPosition).toBe(1);
+      expect(state.currentPlayerIndex).toBe(1);
+      expect(state.turnNumber).toBe(8);
+      expect(state.campaign?.numberCards?.playerHands["p1"]?.map((card) => card.id)).toEqual([
+        "c-p1-11-down",
+      ]);
+      expect(state.campaign?.numberCards?.playerHands["p2"]?.map((card) => card.id)).toEqual([
+        "c-p1-6-up",
+        "c-p2-9",
+      ]);
+      expect(state.campaign?.numberCards?.playerHands["p2"]?.[0]?.faceUp).toBe(true);
     });
 
     it("mission 26: removes Number card after 4 matching wires are cut", () => {

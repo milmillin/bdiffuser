@@ -571,6 +571,11 @@ export type ForcedAction =
       chooserId: string;
     }
   | {
+      kind: "mission65CardHandoff";
+      /** The player who must give one Number card to a teammate. */
+      actorId: string;
+    }
+  | {
       kind: "mission46SevensCut";
       /** Player ID required to perform the simultaneous four-cut of all 7s. */
       playerId: string;

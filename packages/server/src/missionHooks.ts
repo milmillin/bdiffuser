@@ -8191,60 +8191,265 @@ registerHookHandler<"personal_number_cards">("personal_number_cards", {
     const playerHands = numberCards?.playerHands;
     if (!numberCards || !playerHands) return;
 
-    const playerCount = ctx.state.players.length;
-    const maxAutoSkips = ctx.state.board.detonatorMax + playerCount;
-
-    for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
-      if (ctx.state.result != null) return;
-
-      const actor = ctx.state.players[ctx.state.currentPlayerIndex];
-      if (!actor) return;
-
-      const uncutTiles = actor.hand.filter((tile) => !tile.cut);
-      const hasUncutNonRed = uncutTiles.some((tile) => tile.gameValue !== "RED");
-      if (!hasUncutNonRed) return;
-
-      const actorCards = playerHands[actor.id] ?? [];
-      const faceUpValues = new Set(
-        actorCards.filter((card) => card.faceUp).map((card) => card.value),
-      );
-      const hasMatchingFaceUpValue = uncutTiles.some(
-        (tile) => typeof tile.gameValue === "number" && faceUpValues.has(tile.gameValue),
-      );
-      if (hasMatchingFaceUpValue) return;
-
-      ctx.state.board.detonatorPosition += 1;
-      pushGameLog(ctx.state, {
-        turn: ctx.state.turnNumber,
-        playerId: actor.id,
-        action: "hookEffect",
-        detail:
-          `personal_number_cards:auto_skip|player=${getLogPlayerLabel(actor)}` +
-          `|detonator=${ctx.state.board.detonatorPosition}`,
-        timestamp: Date.now(),
-      });
-
-      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
-        ctx.state.phase = "finished";
-        ctx.state.result = "loss_detonator";
-        return;
-      }
-
-      let nextPlayerIndex = ctx.state.currentPlayerIndex;
-      for (let offset = 1; offset <= playerCount; offset++) {
-        const candidateIndex = (ctx.state.currentPlayerIndex + offset) % playerCount;
-        const candidate = ctx.state.players[candidateIndex];
-        if (candidate?.hand.some((tile) => !tile.cut)) {
-          nextPlayerIndex = candidateIndex;
-          break;
-        }
-      }
-
-      ctx.state.currentPlayerIndex = nextPlayerIndex;
-      ctx.state.turnNumber += 1;
+    if (ctx.previousPlayerId && queueMission65CardHandoff(ctx.state, ctx.previousPlayerId)) {
+      return;
     }
+
+    continueMission65TurnStart(ctx.state);
   },
 });
+
+function sortMission65Hand(hand: NumberCardState["playerHands"][string]): void {
+  hand.sort((a, b) => a.value - b.value || a.id.localeCompare(b.id));
+}
+
+function findMission65NextPlayerIndex(state: Readonly<GameState>, fromIndex: number): number {
+  const playerCount = state.players.length;
+  let nextPlayerIndex = fromIndex;
+  for (let offset = 1; offset <= playerCount; offset++) {
+    const candidateIndex = (fromIndex + offset) % playerCount;
+    const candidate = state.players[candidateIndex];
+    if (candidate?.hand.some((tile) => !tile.cut)) {
+      nextPlayerIndex = candidateIndex;
+      break;
+    }
+  }
+  return nextPlayerIndex;
+}
+
+function getMission65EligibleRecipientIds(
+  state: Readonly<GameState>,
+  actorId: string,
+): string[] {
+  return state.players
+    .filter((player) => player.id !== actorId && player.hand.some((tile) => !tile.cut))
+    .map((player) => player.id);
+}
+
+function queueMission65CardHandoff(state: GameState, actorId: string): boolean {
+  if (state.phase === "finished") return false;
+  if (state.pendingForcedAction) return true;
+
+  const playerHands = state.campaign?.numberCards?.playerHands;
+  if (!playerHands) return false;
+
+  const actorHand = playerHands[actorId] ?? [];
+  if (actorHand.length === 0) {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `personal_number_cards:handoff_none|player=${getLogPlayerLabelById(state, actorId)}` +
+        `|reason=no_cards`,
+      timestamp: Date.now(),
+    });
+    return false;
+  }
+
+  const recipientIds = getMission65EligibleRecipientIds(state, actorId);
+  if (recipientIds.length === 0) {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `personal_number_cards:handoff_none|player=${getLogPlayerLabelById(state, actorId)}` +
+        `|reason=no_recipient`,
+      timestamp: Date.now(),
+    });
+    return false;
+  }
+
+  state.pendingForcedAction = {
+    kind: "mission65CardHandoff",
+    actorId,
+  };
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail:
+      `personal_number_cards:handoff_required|player=${getLogPlayerLabelById(state, actorId)}` +
+      `|cards=${actorHand.length}|recipients=${recipientIds.length}`,
+    timestamp: Date.now(),
+  });
+  return true;
+}
+
+function continueMission65TurnStart(state: GameState): void {
+  if (state.phase === "finished" || state.pendingForcedAction) return;
+
+  const playerHands = state.campaign?.numberCards?.playerHands;
+  if (!playerHands) return;
+
+  const playerCount = state.players.length;
+  const maxAutoSkips = state.board.detonatorMax + playerCount;
+
+  for (let autoSkipCount = 0; autoSkipCount < maxAutoSkips; autoSkipCount++) {
+    if (state.result != null || state.pendingForcedAction) return;
+
+    const actor = state.players[state.currentPlayerIndex];
+    if (!actor) return;
+
+    const uncutTiles = actor.hand.filter((tile) => !tile.cut);
+    const hasUncutNonRed = uncutTiles.some((tile) => tile.gameValue !== "RED");
+    if (!hasUncutNonRed) return;
+
+    const actorCards = playerHands[actor.id] ?? [];
+    const faceUpValues = new Set(
+      actorCards.filter((card) => card.faceUp).map((card) => card.value),
+    );
+    const hasMatchingFaceUpValue = uncutTiles.some(
+      (tile) => typeof tile.gameValue === "number" && faceUpValues.has(tile.gameValue),
+    );
+    if (hasMatchingFaceUpValue) return;
+
+    state.board.detonatorPosition += 1;
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actor.id,
+      action: "hookEffect",
+      detail:
+        `personal_number_cards:auto_skip|player=${getLogPlayerLabel(actor)}` +
+        `|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.phase = "finished";
+      state.result = "loss_detonator";
+      return;
+    }
+
+    const skippedPlayerId = actor.id;
+    state.currentPlayerIndex = findMission65NextPlayerIndex(state, state.currentPlayerIndex);
+    state.turnNumber += 1;
+
+    if (queueMission65CardHandoff(state, skippedPlayerId)) {
+      return;
+    }
+  }
+}
+
+function getMission65ClockwiseDistance(
+  state: Readonly<GameState>,
+  fromPlayerId: string,
+  toPlayerId: string,
+): number {
+  const playerCount = state.players.length;
+  const fromIndex = state.players.findIndex((player) => player.id === fromPlayerId);
+  const toIndex = state.players.findIndex((player) => player.id === toPlayerId);
+  if (fromIndex === -1 || toIndex === -1) return Number.POSITIVE_INFINITY;
+  const distance = (toIndex - fromIndex + playerCount) % playerCount;
+  return distance === 0 ? playerCount : distance;
+}
+
+export function getMission65BotHandoff(
+  state: Readonly<GameState>,
+): { cardId: string; recipientPlayerId: string } | null {
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission65CardHandoff") return null;
+
+  const playerHands = state.campaign?.numberCards?.playerHands;
+  if (!playerHands) return null;
+
+  const actorHand = [...(playerHands[forced.actorId] ?? [])];
+  const recipientIds = getMission65EligibleRecipientIds(state, forced.actorId);
+  if (actorHand.length === 0 || recipientIds.length === 0) return null;
+
+  sortMission65Hand(actorHand);
+  const orderedRecipients = recipientIds
+    .map((recipientPlayerId) => ({
+      recipientPlayerId,
+      distance: getMission65ClockwiseDistance(state, forced.actorId, recipientPlayerId),
+    }))
+    .sort((a, b) => a.distance - b.distance || a.recipientPlayerId.localeCompare(b.recipientPlayerId));
+
+  for (const { recipientPlayerId } of orderedRecipients) {
+    const recipient = state.players.find((player) => player.id === recipientPlayerId);
+    if (!recipient) continue;
+
+    const matchingCard = actorHand.find((card) =>
+      card.faceUp &&
+      recipient.hand.some(
+        (tile) =>
+          !tile.cut &&
+          typeof tile.gameValue === "number" &&
+          tile.gameValue === card.value,
+      )
+    );
+    if (matchingCard) {
+      return { cardId: matchingCard.id, recipientPlayerId };
+    }
+  }
+
+  return {
+    cardId: actorHand[0].id,
+    recipientPlayerId: orderedRecipients[0].recipientPlayerId,
+  };
+}
+
+export function applyMission65CardHandoff(
+  state: GameState,
+  actorId: string,
+  cardId: string,
+  recipientPlayerId: string,
+): { ok: boolean; message?: string } {
+  if (state.mission !== 65) {
+    return { ok: false, message: "Mission 65 card handoff is not active" };
+  }
+
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission65CardHandoff") {
+    return { ok: false, message: "No pending Mission 65 card handoff" };
+  }
+  if (forced.actorId !== actorId) {
+    return {
+      ok: false,
+      message: "Only the designated player can resolve the Mission 65 handoff",
+    };
+  }
+
+  const playerHands = state.campaign?.numberCards?.playerHands;
+  if (!playerHands) {
+    state.pendingForcedAction = undefined;
+    return { ok: false, message: "Mission 65 Number cards are not initialized" };
+  }
+
+  const eligibleRecipientIds = getMission65EligibleRecipientIds(state, actorId);
+  if (!eligibleRecipientIds.includes(recipientPlayerId)) {
+    return { ok: false, message: "Mission 65 recipient must be a teammate with uncut wires" };
+  }
+
+  const actorHand = playerHands[actorId] ?? [];
+  const cardIndex = actorHand.findIndex((card) => card.id === cardId);
+  if (cardIndex === -1) {
+    return { ok: false, message: "Mission 65 chosen Number card is not in your hand" };
+  }
+
+  const movedCard = actorHand.splice(cardIndex, 1)[0];
+  const recipientHand = playerHands[recipientPlayerId] ?? [];
+  recipientHand.push(movedCard);
+  playerHands[recipientPlayerId] = recipientHand;
+  sortMission65Hand(actorHand);
+  sortMission65Hand(recipientHand);
+
+  state.pendingForcedAction = undefined;
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail:
+      `personal_number_cards:handoff|from=${getLogPlayerLabelById(state, actorId)}` +
+      `|to=${getLogPlayerLabelById(state, recipientPlayerId)}` +
+      `|value=${movedCard.value}|faceUp=${movedCard.faceUp ? 1 : 0}`,
+    timestamp: Date.now(),
+  });
+
+  continueMission65TurnStart(state);
+  return { ok: true };
+}
 
 // ── Unique mission hooks ──────────────────────────────────────────
 

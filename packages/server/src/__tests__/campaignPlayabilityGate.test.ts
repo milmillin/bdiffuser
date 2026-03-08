@@ -27,10 +27,12 @@ import {
 } from "../mission27TokenDraft";
 import {
   applyMission66BunkerChoice,
+  applyMission65CardHandoff,
   applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
+  getMission65BotHandoff,
   getMission66BotChoice,
   getMission32BotDecision,
   rotateMission61Constraint,
@@ -563,6 +565,30 @@ function resolveForcedAction(state: GameState): boolean {
       throw new Error(
         `Mission ${state.mission}: mission29HiddenNumberCard choice failed ` +
         `for ${forced.chooserId}: ${applyResult.message ?? "unknown error"}`,
+      );
+    }
+    return true;
+  }
+
+  if (forced.kind === "mission65CardHandoff") {
+    const choice = getMission65BotHandoff(state);
+    if (!choice) {
+      throw new Error(
+        `Mission ${state.mission}: mission65CardHandoff had no legal transfer ` +
+        `for ${forced.actorId} (turn=${state.turnNumber})`,
+      );
+    }
+
+    const applyResult = applyMission65CardHandoff(
+      state,
+      forced.actorId,
+      choice.cardId,
+      choice.recipientPlayerId,
+    );
+    if (!applyResult.ok) {
+      throw new Error(
+        `Mission ${state.mission}: mission65CardHandoff failed ` +
+        `for ${forced.actorId}: ${applyResult.message ?? "unknown error"}`,
       );
     }
     return true;

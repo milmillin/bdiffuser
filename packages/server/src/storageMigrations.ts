@@ -846,6 +846,15 @@ function normalizeGameState(
         chooserId: obj.pendingForcedAction.chooserId,
       };
     } else if (
+      obj.pendingForcedAction.kind === "mission65CardHandoff"
+      && typeof obj.pendingForcedAction.actorId === "string"
+      && obj.pendingForcedAction.actorId
+    ) {
+      pendingForcedAction = {
+        kind: "mission65CardHandoff" as const,
+        actorId: obj.pendingForcedAction.actorId,
+      };
+    } else if (
       obj.pendingForcedAction.kind === "mission46SevensCut"
       && typeof obj.pendingForcedAction.playerId === "string"
       && obj.pendingForcedAction.playerId

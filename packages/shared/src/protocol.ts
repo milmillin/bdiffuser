@@ -70,6 +70,7 @@ export type ClientMessage =
   | { type: "mission22TokenPassChoice"; value: number }
   | { type: "mission27TokenDraftChoice"; value: number; tileIndex?: number }
   | { type: "mission29HiddenNumberCardChoice"; cardIndex: number }
+  | { type: "mission65CardHandoff"; cardId: string; recipientPlayerId: string }
   | { type: "mission34GuessWeakestLink"; targetPlayerId: string; constraintId: string }
   | { type: "mission61ReplaceOwnConstraint" }
   | { type: "mission66BunkerChoice"; choice: Mission66BunkerChoiceSelection }
