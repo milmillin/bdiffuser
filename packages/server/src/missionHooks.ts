@@ -53,6 +53,7 @@ import {
   EQUIPMENT_DEFS,
   getWireImage,
   getMission66BunkerCell,
+  getNumberCardDef,
   MISSION66_BUNKER_WALLS,
   MISSION_SCHEMAS,
   isLogTextDetail,
@@ -7974,22 +7975,38 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
     const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
     const visibleCount = Math.max(1, Math.min(ctx.state.players.length, deckValues.length));
     const visibleValues = deckValues.splice(0, visibleCount);
+    const createMission62Card = (value: number, id: string, faceUp: boolean) => {
+      const def = getNumberCardDef(value);
+      return {
+        id,
+        value,
+        faceUp,
+        ...(def
+          ? {
+              mission62StartingDetonatorDistanceFromLoss:
+                def.mission62StartingDetonatorDistanceFromLoss,
+            }
+          : {}),
+      };
+    };
 
     ctx.state.campaign ??= {};
     ctx.state.campaign.numberCards = {
-      visible: visibleValues.map((value, idx) => ({
-        id: `m62-visible-${idx}-${value}`,
-        value,
-        faceUp: true,
-      })),
-      deck: deckValues.map((value, idx) => ({
-        id: `m62-deck-${idx}-${value}`,
-        value,
-        faceUp: false,
-      })),
+      visible: visibleValues.map((value, idx) =>
+        createMission62Card(value, `m62-visible-${idx}-${value}`, true),
+      ),
+      deck: deckValues.map((value, idx) =>
+        createMission62Card(value, `m62-deck-${idx}-${value}`, false),
+      ),
       discard: [],
       playerHands: {},
     };
+    const startDistance =
+      ctx.state.campaign.numberCards.visible[0]?.mission62StartingDetonatorDistanceFromLoss ?? 1;
+    ctx.state.board.detonatorPosition = Math.max(
+      0,
+      ctx.state.board.detonatorMax - startDistance,
+    );
 
     pushGameLog(ctx.state, {
       turn: 0,
@@ -7997,7 +8014,8 @@ registerHookHandler<"number_card_completions">("number_card_completions", {
       action: "hookSetup",
       detail:
         `number_card_completions:init:` +
-        `${visibleValues.join(",") || "none"}|players=${ctx.state.players.length}`,
+        `${visibleValues.join(",") || "none"}|players=${ctx.state.players.length}` +
+        `|detonator=${ctx.state.board.detonatorPosition}`,
       timestamp: Date.now(),
     });
   },

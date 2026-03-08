@@ -223,6 +223,11 @@ export interface NumberCard {
   value: number;
   /** Whether this card is face-up (visible to all players). */
   faceUp: boolean;
+  /**
+   * Mission 62 setup metadata: how many spaces before explosion the
+   * detonator should start when this Number card is used.
+   */
+  mission62StartingDetonatorDistanceFromLoss?: number;
 }
 
 /** Tracks the number-card deck, discard pile, and visible/hidden hands. */

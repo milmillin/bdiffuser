@@ -147,7 +147,7 @@ describe("mission progression hooks", () => {
       cutSuccess: true,
     });
     expect(state.campaign?.oxygen?.pool).toBe(0);
-    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.board.detonatorPosition).toBe(state.board.detonatorMax - 2);
     expect(state.result).toBeNull();
     expect(state.phase).toBe("playing");
   });
@@ -168,7 +168,7 @@ describe("mission progression hooks", () => {
     });
 
     expect(state.campaign?.oxygen?.pool).toBe(4);
-    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.board.detonatorPosition).toBe(state.board.detonatorMax - 2);
   });
 
   it("mission 44 endTurn auto-skips players with insufficient oxygen", () => {
@@ -1761,6 +1761,29 @@ describe("mission progression hooks", () => {
     expect(numberCards?.visible.length).toBe(4);
     expect(numberCards?.visible.every((card) => card.faceUp)).toBe(true);
     expect(numberCards?.deck.length).toBe(8);
+    expect(state.board.detonatorPosition).toBe(state.board.detonatorMax - 1);
+  });
+
+  it("mission 62 setup starts the detonator one space from loss for every player count", () => {
+    for (const [playerCount, detonatorMax] of [
+      [2, 2],
+      [3, 3],
+      [4, 4],
+      [5, 5],
+    ] as const) {
+      const state = makeGameState({
+        mission: 62,
+        log: [],
+        players: Array.from({ length: playerCount }, (_unused, index) =>
+          makePlayer({ id: `p${index + 1}` }),
+        ),
+        board: makeBoardState({ detonatorPosition: 0, detonatorMax }),
+      });
+
+      dispatchHooks(62, { point: "setup", state });
+
+      expect(state.board.detonatorPosition).toBe(detonatorMax - 1);
+    }
   });
 
   it("mission 62 completion removes only the matched face-up card without refilling", () => {
@@ -1814,7 +1837,7 @@ describe("mission progression hooks", () => {
       cutSuccess: true,
     });
 
-    expect(state.board.detonatorPosition).toBe(1);
+    expect(state.board.detonatorPosition).toBe(state.board.detonatorMax - 2);
     expect(state.campaign?.numberCards?.visible.length).toBe(beforeVisibleLength - 1);
     expect(state.campaign?.numberCards?.deck.length).toBe(beforeDeckLength);
     expect(state.campaign?.numberCards?.visible.some((card) => card.value === target)).toBe(false);
