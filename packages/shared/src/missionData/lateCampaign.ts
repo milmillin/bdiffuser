@@ -95,7 +95,7 @@ export function registerLateCampaignMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(3) } },
     behaviorHooks: ["mission_32_global_constraint_stack"],
-    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], scope: "global" }],
+    hookRules: [{ kind: "mission_32_constraint_stack", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"] }],
     notes: ["FAQ: If the Restraint card pile is empty, players continue without any restraint."],
   });
 }

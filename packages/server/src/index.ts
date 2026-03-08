@@ -62,11 +62,14 @@ import {
   resolveTalkiesWalkiesTileChoice,
 } from "./equipment.js";
 import {
+  applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   emitMissionFailureTelemetry,
   getMissionTurnSkipError,
+  queueMission32ConstraintDecision,
   rotateMission61Constraint,
+  getMission32BotDecision,
   resolveMission61AfterConstraintDecision,
 } from "./missionHooks.js";
 import {
@@ -487,6 +490,9 @@ export class BombBustersServer extends Server<Env> {
       case "talkiesWalkiesChoice":
         this.handleTalkiesWalkiesChoice(connection, msg.tileIndex);
         break;
+      case "mission32ConstraintDecision":
+        this.handleMission32ConstraintDecision(connection, msg.decision);
+        break;
       case "mission61ConstraintRotate":
         this.handleMission61ConstraintRotate(connection, msg.direction);
         break;
@@ -619,6 +625,13 @@ export class BombBustersServer extends Server<Env> {
           }
           if (gs.pendingForcedAction.previousPlayerId === oldId) {
             gs.pendingForcedAction.previousPlayerId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission32ConstraintDecision") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
+          }
+          if (gs.pendingForcedAction.actorId === oldId) {
+            gs.pendingForcedAction.actorId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "mission36SequencePosition") {
           if (gs.pendingForcedAction.captainId === oldId) {
@@ -1044,6 +1057,10 @@ export class BombBustersServer extends Server<Env> {
       state.phase = "playing";
       state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
       state.turnNumber = 1;
+
+      if (state.mission === 32) {
+        queueMission32ConstraintDecision(state);
+      }
 
       if (state.mission === 36) {
         const visibleCards = state.campaign?.numberCards?.visible ?? [];
@@ -1890,6 +1907,40 @@ export class BombBustersServer extends Server<Env> {
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
     return;
+  }
+
+  handleMission32ConstraintDecision(
+    conn: Connection,
+    decision: "keep" | "replace",
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot decide constraint: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 32 constraint decisions are only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const result = applyMission32ConstraintDecision(state, conn.id, decision);
+    if (!result.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: result.message ?? "Mission 32 constraint decision could not be completed.",
+      });
+      return;
+    }
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   private applyMission36SequencePositionChoice(
@@ -2914,10 +2965,18 @@ export class BombBustersServer extends Server<Env> {
           || forced.kind === "chooseNextPlayer"
           || forced.kind === "designateCutter"
           || forced.kind === "mission61ConstraintRotate"
+          || forced.kind === "mission32ConstraintDecision"
         )
       ) {
         const currentPlayer = state.players[state.currentPlayerIndex];
-        if (currentPlayer?.isBot) {
+        const forcedCaptain = forced?.kind === "mission32ConstraintDecision"
+          ? state.players.find((player) => player.id === forced.captainId)
+          : null;
+        const shouldScheduleBot =
+          forced?.kind === "mission32ConstraintDecision"
+            ? forcedCaptain?.isBot === true
+            : currentPlayer?.isBot === true;
+        if (shouldScheduleBot) {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
         }
@@ -3043,6 +3102,28 @@ export class BombBustersServer extends Server<Env> {
   async executeBotTurn() {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
+
+    const mission32Forced = state.pendingForcedAction;
+    if (mission32Forced?.kind === "mission32ConstraintDecision") {
+      const captain = state.players.find((p) => p.id === mission32Forced.captainId);
+      if (captain?.isBot) {
+        const result = applyMission32ConstraintDecision(
+          state,
+          mission32Forced.captainId,
+          getMission32BotDecision(state),
+        );
+        if (!result.ok) {
+          console.log(
+            `Bot ${captain.id} mission32ConstraintDecision rejected: ${result.message ?? "unknown error"}`,
+          );
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
 
     const mission36Forced = state.pendingForcedAction;
     if (mission36Forced?.kind === "mission36SequencePosition") {

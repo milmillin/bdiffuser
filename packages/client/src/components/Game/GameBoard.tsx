@@ -35,6 +35,7 @@ import {
   getMission27DraftMatchingIndices as _getMission27DraftMatchingIndices,
 } from "./Actions/Mission27TokenDraftPanel.js";
 import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberCardPanel.js";
+import { Mission32ConstraintDecisionPanel } from "./Actions/Mission32ConstraintDecisionPanel.js";
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
@@ -117,6 +118,7 @@ const FORCED_ACTION_MISSION27_TOKEN_DRAFT = "mission27TokenDraft";
 const FORCED_ACTION_MISSION29_HIDDEN_CARD = "mission29HiddenNumberCard";
 const FORCED_ACTION_TALKIES_WALKIES_CHOICE = "talkiesWalkiesTileChoice";
 const FORCED_ACTION_MISSION46_SEVENS_CUT = "mission46SevensCut";
+const FORCED_ACTION_MISSION32_CONSTRAINT_DECISION = "mission32ConstraintDecision";
 const FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE = "mission61ConstraintRotate";
 const FORCED_ACTION_MISSION36_SEQUENCE_POSITION = "mission36SequencePosition";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
@@ -128,6 +130,7 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_MISSION29_HIDDEN_CARD,
   FORCED_ACTION_TALKIES_WALKIES_CHOICE,
   FORCED_ACTION_MISSION46_SEVENS_CUT,
+  FORCED_ACTION_MISSION32_CONSTRAINT_DECISION,
   FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE,
   FORCED_ACTION_MISSION36_SEQUENCE_POSITION,
 ]);
@@ -548,6 +551,8 @@ export function GameBoard({
         ? pendingForcedAction.chooserId
       : pendingForcedAction?.kind === "talkiesWalkiesTileChoice"
         ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION32_CONSTRAINT_DECISION
+        ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === "mission61ConstraintRotate"
         ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION36_SEQUENCE_POSITION
@@ -1884,6 +1889,19 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Playing phase: forced action (mission 32 constraint decision) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION32_CONSTRAINT_DECISION &&
+                  gameState.pendingForcedAction.captainId === playerId &&
+                  me && (
+                    <Mission32ConstraintDecisionPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {/* Playing phase: forced action (mission 61 constraint rotation) */}
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
@@ -2640,6 +2658,9 @@ function getStatusContent(
           break;
         case FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE:
           forcedText = "Choose the Mission 61 constraint rotation.";
+          break;
+        case FORCED_ACTION_MISSION32_CONSTRAINT_DECISION:
+          forcedText = "Choose whether to keep or replace the Mission 32 constraint.";
           break;
         case FORCED_ACTION_MISSION36_SEQUENCE_POSITION:
           forcedText = "Choose the active Mission 36 sequence edge.";

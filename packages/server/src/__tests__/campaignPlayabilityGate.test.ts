@@ -26,8 +26,10 @@ import {
   getMission27TokenDraftAvailableValues,
 } from "../mission27TokenDraft";
 import {
+  applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
+  getMission32BotDecision,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
 } from "../missionHooks";
@@ -313,7 +315,7 @@ function pickAction(state: GameState, actor: Player): ChosenAction | null {
   // Fallback path: intentionally incorrect guesses are legal in some dual-cut missions.
   // In those cases, try all numeric guesses against all actor-owned numeric wires.
   const actorTileIndexes = [...new Set(actorValueToTileIndex.values())];
-  const shouldTryAllNumericGuesses = [35, 44, 46, 47, 49, 54, 63].includes(state.mission);
+  const shouldTryAllNumericGuesses = [32, 35, 44, 46, 47, 49, 54, 63].includes(state.mission);
   const fallbackGuessValues: Array<number | "YELLOW"> = shouldTryAllNumericGuesses
     ? Array.from({ length: 12 }, (_, i) => i + 1)
     : [...actorValueToTileIndex.keys()].filter((value): value is number => typeof value === "number");
@@ -604,6 +606,21 @@ function resolveForcedAction(state: GameState): boolean {
     rotateMission61Constraint(state, "clockwise");
     state.pendingForcedAction = undefined;
     resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+    return true;
+  }
+
+  if (forced.kind === "mission32ConstraintDecision") {
+    const result = applyMission32ConstraintDecision(
+      state,
+      forced.captainId,
+      getMission32BotDecision(state),
+    );
+    if (!result.ok) {
+      throw new Error(
+        `Mission ${state.mission}: mission32ConstraintDecision failed ` +
+        `for ${forced.captainId}: ${result.message ?? "unknown error"}`,
+      );
+    }
     return true;
   }
 

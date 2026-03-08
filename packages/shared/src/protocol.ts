@@ -3,6 +3,7 @@ import type {
   AnyEquipmentId,
   BaseEquipmentId,
   CaptainMode,
+  Mission32ConstraintDecision,
   Mission61ConstraintRotationDirection,
   CharacterId,
   ChatMessage,
@@ -70,6 +71,10 @@ export type ClientMessage =
   | { type: "mission29HiddenNumberCardChoice"; cardIndex: number }
   | { type: "detectorTileChoice"; tileIndex?: number; infoTokenTileIndex?: number }
   | { type: "talkiesWalkiesChoice"; tileIndex: number }
+  | {
+      type: "mission32ConstraintDecision";
+      decision: Mission32ConstraintDecision;
+    }
   | {
       type: "mission61ConstraintRotate";
       direction: Mission61ConstraintRotationDirection;

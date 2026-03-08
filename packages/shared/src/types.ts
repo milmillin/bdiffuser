@@ -540,6 +540,15 @@ export type ForcedAction =
       previousPlayerId?: string;
     }
   | {
+      kind: "mission32ConstraintDecision";
+      /** The captain who must choose whether to keep or replace the visible constraint. */
+      captainId: string;
+      /** The player whose turn is about to begin. */
+      actorId: string;
+      /** Current captain decision selection. */
+      decision: Mission32ConstraintDecision;
+    }
+  | {
       kind: "mission36SequencePosition";
       /** The captain who must choose the sequence-card side on Mission 36. */
       captainId: string;
@@ -759,3 +768,4 @@ export type Mission61ConstraintRotationDirection =
   | "clockwise"
   | "counter_clockwise"
   | "skip";
+export type Mission32ConstraintDecision = "keep" | "replace";

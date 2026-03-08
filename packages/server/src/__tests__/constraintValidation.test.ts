@@ -15,7 +15,7 @@ import {
   resolveDetectorTileChoice,
 } from "../gameLogic";
 
-const GLOBAL_CONSTRAINT_MISSION_ID = 32;
+const GLOBAL_CONSTRAINT_MISSION_ID = 37;
 const PER_PLAYER_CONSTRAINT_MISSION_ID = 31;
 
 type Scope = "global" | "perPlayer";
@@ -26,7 +26,7 @@ interface StateWithConstraintOptions {
   targetHandValues?: Array<number | "YELLOW">;
 }
 
-// Mission 32 has the full A-L constraint_enforcement hook rule (global scope).
+// Mission 37 has the full A-L constraint_enforcement hook rule (global scope).
 // Mission 31 also has constraint_enforcement (per-player scope).
 function stateWithConstraint(
   constraintId: string,

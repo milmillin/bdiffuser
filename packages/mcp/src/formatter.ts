@@ -220,6 +220,8 @@ function formatForcedAction(fa: ForcedAction, state: ClientGameState): string {
       return `FORCED ACTION: ${nameOf(fa.chooserId)} must choose a hidden number card for ${nameOf(fa.actorId)}`;
     case "mission46SevensCut":
       return `FORCED ACTION: ${nameOf(fa.playerId)} must trigger simultaneous sevens cut`;
+    case "mission32ConstraintDecision":
+      return `FORCED ACTION: ${nameOf(fa.captainId)} must choose whether to keep or replace the visible constraint for ${nameOf(fa.actorId)}`;
     case "mission61ConstraintRotate":
       return `FORCED ACTION: ${nameOf(fa.captainId)} must choose constraint rotation direction`;
     case "mission36SequencePosition":

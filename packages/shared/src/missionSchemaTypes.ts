@@ -290,6 +290,15 @@ export interface ConstraintEnforcementRuleDef {
 }
 
 /**
+ * Mission 32 — one shared visible constraint and a replacement deck.
+ */
+export interface Mission32ConstraintStackRuleDef {
+  kind: "mission_32_constraint_stack";
+  /** Which constraint cards are in the shared visible/deck pool. */
+  constraintIds: readonly string[];
+}
+
+/**
  * Mission 57: constrain valid cut actions to the constraint attached to the most
  * recently validated number card.
  */
@@ -537,6 +546,7 @@ export type MissionHookRuleDef =
   | SimultaneousFourCutRuleDef
   | YellowTriggerTokenPassRuleDef
   | ConstraintEnforcementRuleDef
+  | Mission32ConstraintStackRuleDef
   | Mission57ConstraintPerValidatedValueRuleDef
   | AudioPromptRuleDef
   | NoSpokenNumbersRuleDef

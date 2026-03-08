@@ -36,6 +36,7 @@ import type {
   GameState,
   Player,
   MissionId,
+  Mission32ConstraintStackRuleDef,
   NumberCardState,
   Mission57ConstraintPerValidatedValueRuleDef,
   Mission59NanoState,
@@ -4373,6 +4374,661 @@ function canPlayerPlayMission61(
   return hasAnyDualCutTarget(state, player.id);
 }
 
+function buildConstraintCards(constraintIds: readonly string[]): ConstraintCard[] {
+  return shuffle(
+    constraintIds
+      .map((id) => {
+        const def = CONSTRAINT_CARD_DEFS.find((c) => c.id === id);
+        return def
+          ? { id: def.id, name: def.name, description: def.description, active: false }
+          : null;
+      })
+      .filter((c): c is ConstraintCard => c != null),
+  );
+}
+
+function setupConstraintState(
+  state: GameState,
+  constraintIds: readonly string[],
+  scope: "global" | "per_player",
+): void {
+  state.campaign ??= {};
+
+  const allCards = buildConstraintCards(constraintIds);
+
+  if (scope === "global") {
+    const first = allCards.shift();
+    if (first) first.active = true;
+    state.campaign.constraints = {
+      global: first ? [first] : [],
+      perPlayer: {},
+      deck: allCards,
+    };
+    return;
+  }
+
+  const perPlayer: Record<string, typeof allCards> = {};
+  for (const player of state.players) {
+    perPlayer[player.id] = [];
+  }
+  state.campaign.constraints = {
+    global: [],
+    perPlayer,
+    deck: [],
+  };
+  state.campaign.constraintSelection = {
+    availableCardIds: allCards.map((c) => c.id),
+  };
+}
+
+function isConstraintTargetMarkedByInfoToken(
+  state: Readonly<GameState>,
+  targetPlayerId: string,
+  tileIndex: number,
+): boolean {
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId);
+  if (!targetPlayer) return false;
+
+  return targetPlayer.infoTokens.some(
+    (token) => token.position === tileIndex || token.positionB === tileIndex,
+  );
+}
+
+function targetsRestrictedStandEdge(
+  state: Readonly<GameState>,
+  targetPlayerId: string,
+  targetTileIndices: readonly number[],
+  edge: "left" | "right",
+): boolean {
+  const target = state.players.find((p) => p.id === targetPlayerId);
+  if (!target) return false;
+
+  for (const targetTileIndex of targetTileIndices) {
+    const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
+    const standRange = targetStandIndex == null
+      ? null
+      : resolveHookStandRange(target, targetStandIndex);
+    if (!standRange) {
+      continue;
+    }
+
+    const uncutIndices = target.hand
+      .map((_, i) => i)
+      .filter(
+        (i) =>
+          i >= standRange.start &&
+          i < standRange.endExclusive &&
+          !target.hand[i].cut,
+      );
+    if (uncutIndices.length === 0) {
+      continue;
+    }
+
+    const edgeIndex =
+      edge === "right" ? Math.max(...uncutIndices) : Math.min(...uncutIndices);
+    if (targetTileIndex === edgeIndex) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function validateConstraintAction(
+  ctx: ValidateHookContext,
+  actorId: string,
+  active: readonly string[],
+): HookResult | void {
+  const cutValue = extractCutValue(ctx.action);
+  const targetsMarkedByInfoToken = (): boolean => {
+    const targetIndicesByPlayer = new Map<string, Set<number>>();
+    const addTargetIndex = (playerId: string, tileIndex: number): void => {
+      if (!Number.isInteger(tileIndex) || tileIndex < 0) return;
+      const existing = targetIndicesByPlayer.get(playerId);
+      if (existing) {
+        existing.add(tileIndex);
+        return;
+      }
+      targetIndicesByPlayer.set(playerId, new Set([tileIndex]));
+    };
+
+    if (ctx.action.type === "dualCut") {
+      if (typeof ctx.action.targetPlayerId === "string" && typeof ctx.action.targetTileIndex === "number") {
+        addTargetIndex(ctx.action.targetPlayerId, ctx.action.targetTileIndex);
+      }
+    } else if (ctx.action.type === "dualCutDoubleDetector") {
+      if (
+        typeof ctx.action.targetPlayerId === "string" &&
+        typeof ctx.action.tileIndex1 === "number" &&
+        typeof ctx.action.tileIndex2 === "number"
+      ) {
+        addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex1);
+        addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex2);
+      }
+    } else if (ctx.action.type === "simultaneousCut") {
+      const cuts = Array.isArray(ctx.action.cuts) ? ctx.action.cuts : [];
+      for (const cut of cuts) {
+        const targetPlayerId = (cut as { targetPlayerId?: unknown }).targetPlayerId;
+        const targetTileIndex = (cut as { targetTileIndex?: unknown }).targetTileIndex;
+        if (typeof targetPlayerId === "string" && typeof targetTileIndex === "number") {
+          addTargetIndex(targetPlayerId, targetTileIndex);
+        }
+      }
+    } else if (ctx.action.type === "simultaneousRedCut" || ctx.action.type === "simultaneousFourCut") {
+      const targets = Array.isArray(ctx.action.targets) ? ctx.action.targets : [];
+      for (const target of targets) {
+        const playerId = (target as { playerId?: unknown }).playerId;
+        const tileIndex = (target as { tileIndex?: unknown }).tileIndex;
+        if (typeof playerId === "string" && typeof tileIndex === "number") {
+          addTargetIndex(playerId, tileIndex);
+        }
+      }
+    } else if (ctx.action.type === "soloCut") {
+      const soloCutValue = ctx.action.value;
+      if (typeof soloCutValue === "number" || soloCutValue === "YELLOW") {
+        const actor = ctx.state.players.find((p) => p.id === actorId);
+        if (actor) {
+          actor.hand.forEach((tile, index) => {
+            if (!tile.cut && tile.gameValue === soloCutValue) {
+              addTargetIndex(actor.id, index);
+            }
+          });
+        }
+      }
+    }
+
+    for (const [targetPlayerId, tileIndices] of targetIndicesByPlayer) {
+      for (const tileIndex of tileIndices) {
+        if (isConstraintTargetMarkedByInfoToken(ctx.state, targetPlayerId, tileIndex)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  for (const constraintId of active) {
+    switch (constraintId) {
+      case "A":
+        if (typeof cutValue === "number" && cutValue % 2 !== 0) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint A: You must cut only even wires",
+          };
+        }
+        break;
+
+      case "B":
+        if (typeof cutValue === "number" && cutValue % 2 === 0) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint B: You must cut only odd wires",
+          };
+        }
+        break;
+
+      case "C":
+        if (typeof cutValue === "number" && (cutValue < 1 || cutValue > 6)) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint C: You must cut only wires 1 to 6",
+          };
+        }
+        break;
+
+      case "D":
+        if (typeof cutValue === "number" && (cutValue < 7 || cutValue > 12)) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint D: You must cut only wires 7 to 12",
+          };
+        }
+        break;
+
+      case "E":
+        if (typeof cutValue === "number" && (cutValue < 4 || cutValue > 9)) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint E: You must cut only wires 4 to 9",
+          };
+        }
+        break;
+
+      case "F":
+        if (typeof cutValue === "number" && cutValue >= 4 && cutValue <= 9) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint F: You cannot cut wires 4 to 9",
+          };
+        }
+        break;
+
+      case "H":
+        if (targetsMarkedByInfoToken()) {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint H: You cannot cut a wire indicated by an Info token",
+          };
+        }
+        break;
+
+      case "I":
+        if (ctx.action.type === "dualCut") {
+          if (
+            targetsRestrictedStandEdge(
+              ctx.state,
+              ctx.action.targetPlayerId as string,
+              [ctx.action.targetTileIndex as number],
+              "right",
+            )
+          ) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint I: You cannot cut the far-right wire",
+            };
+          }
+        } else if (ctx.action.type === "dualCutDoubleDetector") {
+          if (
+            targetsRestrictedStandEdge(
+              ctx.state,
+              ctx.action.targetPlayerId as string,
+              [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
+              "right",
+            )
+          ) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint I: You cannot cut the far-right wire",
+            };
+          }
+        }
+        break;
+
+      case "J":
+        if (ctx.action.type === "dualCut") {
+          if (
+            targetsRestrictedStandEdge(
+              ctx.state,
+              ctx.action.targetPlayerId as string,
+              [ctx.action.targetTileIndex as number],
+              "left",
+            )
+          ) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint J: You cannot cut the far-left wire",
+            };
+          }
+        } else if (ctx.action.type === "dualCutDoubleDetector") {
+          if (
+            targetsRestrictedStandEdge(
+              ctx.state,
+              ctx.action.targetPlayerId as string,
+              [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
+              "left",
+            )
+          ) {
+            return {
+              validationCode: "MISSION_RULE_VIOLATION",
+              validationError: "Constraint J: You cannot cut the far-left wire",
+            };
+          }
+        }
+        break;
+
+      case "K":
+        if (ctx.action.type === "soloCut") {
+          return {
+            validationCode: "MISSION_RULE_VIOLATION",
+            validationError: "Constraint K: You cannot do a Solo Cut action",
+          };
+        }
+        break;
+    }
+  }
+}
+
+function resolveConstraintLFailurePenalty(ctx: ResolveHookContext): HookResult | void {
+  if (ctx.action.type !== "dualCut") return;
+  if (ctx.cutSuccess) return;
+
+  const actorId = ctx.action.actorId;
+  const active = getActiveConstraints(ctx.state, actorId);
+  if (!active.includes("L")) return;
+
+  ctx.state.board.detonatorPosition += 1;
+
+  pushGameLog(ctx.state, {
+    turn: ctx.state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: "constraint_L:double_detonator:+1_extra",
+    timestamp: Date.now(),
+  });
+
+  if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
+    ctx.state.result = "loss_detonator";
+    ctx.state.phase = "finished";
+    emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
+  }
+}
+
+function getMission32ActiveConstraint(state: Readonly<GameState>): Readonly<ConstraintCard> | undefined {
+  return state.campaign?.constraints?.global.find((constraint) => constraint.active);
+}
+
+function soloCutValuePassesMission32Constraint(
+  player: Readonly<Player>,
+  value: number | "YELLOW",
+  activeConstraintIds: readonly string[],
+): boolean {
+  for (const constraintId of activeConstraintIds) {
+    switch (constraintId) {
+      case "A":
+        if (typeof value === "number" && value % 2 !== 0) return false;
+        break;
+      case "B":
+        if (typeof value === "number" && value % 2 === 0) return false;
+        break;
+      case "C":
+        if (typeof value === "number" && (value < 1 || value > 6)) return false;
+        break;
+      case "D":
+        if (typeof value === "number" && (value < 7 || value > 12)) return false;
+        break;
+      case "E":
+        if (typeof value === "number" && (value < 4 || value > 9)) return false;
+        break;
+      case "F":
+        if (typeof value === "number" && value >= 4 && value <= 9) return false;
+        break;
+      case "H":
+        if (
+          player.hand.some(
+            (tile, index) =>
+              !tile.cut &&
+              tile.gameValue === value &&
+              player.infoTokens.some(
+                (token) => token.position === index || token.positionB === index,
+              ),
+          )
+        ) {
+          return false;
+        }
+        break;
+      case "K":
+        return false;
+    }
+  }
+
+  return true;
+}
+
+function dualCutValuePassesMission32Constraint(
+  value: number | "YELLOW",
+  activeConstraintIds: readonly string[],
+): boolean {
+  for (const constraintId of activeConstraintIds) {
+    switch (constraintId) {
+      case "A":
+        if (typeof value === "number" && value % 2 !== 0) return false;
+        break;
+      case "B":
+        if (typeof value === "number" && value % 2 === 0) return false;
+        break;
+      case "C":
+        if (typeof value === "number" && (value < 1 || value > 6)) return false;
+        break;
+      case "D":
+        if (typeof value === "number" && (value < 7 || value > 12)) return false;
+        break;
+      case "E":
+        if (typeof value === "number" && (value < 4 || value > 9)) return false;
+        break;
+      case "F":
+        if (typeof value === "number" && value >= 4 && value <= 9) return false;
+        break;
+    }
+  }
+
+  return true;
+}
+
+function canPlayerPlayMission32(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  if (state.mission !== 32) return true;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  if (uncutTiles.every((tile) => tile.gameValue === "RED")) {
+    return true;
+  }
+
+  const activeConstraintIds = getActiveConstraints(state, player.id);
+  if (activeConstraintIds.length === 0) {
+    return true;
+  }
+
+  const soloCutValues = new Set<number | "YELLOW">();
+  for (const tile of uncutTiles) {
+    if (typeof tile.gameValue === "number" || tile.gameValue === "YELLOW") {
+      soloCutValues.add(tile.gameValue);
+    }
+  }
+  for (const value of soloCutValues) {
+    if (soloCutValuePassesMission32Constraint(player, value, activeConstraintIds)) {
+      return true;
+    }
+  }
+
+  const canDeclareLegalDualCutValue = uncutTiles.some((tile) => {
+    if (tile.gameValue === "RED") return false;
+    if (tile.gameValue !== "YELLOW" && typeof tile.gameValue !== "number") return false;
+    return dualCutValuePassesMission32Constraint(tile.gameValue, activeConstraintIds);
+  });
+  if (!canDeclareLegalDualCutValue) {
+    return false;
+  }
+
+  for (const targetPlayer of state.players) {
+    if (targetPlayer.id === player.id) continue;
+    for (let i = 0; i < targetPlayer.hand.length; i += 1) {
+      const tile = targetPlayer.hand[i];
+      if (tile.cut) continue;
+      if (isDualCutTargetTileAllowed(targetPlayer, i, [...activeConstraintIds])) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function getMission32BotDecision(state: Readonly<GameState>): "keep" | "replace" {
+  if (state.mission !== 32) return "keep";
+
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return "keep";
+
+  return canPlayerPlayMission32(state, currentPlayer) ? "keep" : "replace";
+}
+
+function clearMission32ActiveConstraint(state: GameState): string | null {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) return null;
+
+  const activeIndex = constraints.global.findIndex((constraint) => constraint.active);
+  if (activeIndex < 0) return null;
+
+  const previousId = constraints.global[activeIndex]?.id ?? null;
+  constraints.global.splice(activeIndex, 1);
+  return previousId;
+}
+
+function replaceMission32Constraint(
+  state: GameState,
+): { previousId: string | null; nextId: string | null; cleared: boolean } {
+  const constraints = state.campaign?.constraints;
+  if (!constraints) {
+    return { previousId: null, nextId: null, cleared: false };
+  }
+
+  const activeIndex = constraints.global.findIndex((constraint) => constraint.active);
+  if (activeIndex < 0) {
+    return { previousId: null, nextId: null, cleared: false };
+  }
+
+  const previousId = constraints.global[activeIndex]?.id ?? null;
+  const deck = constraints.deck;
+  if (!Array.isArray(deck) || deck.length === 0) {
+    clearMission32ActiveConstraint(state);
+    return { previousId, nextId: null, cleared: true };
+  }
+
+  const nextConstraint = deck.shift();
+  if (!nextConstraint) {
+    clearMission32ActiveConstraint(state);
+    return { previousId, nextId: null, cleared: true };
+  }
+
+  constraints.global[activeIndex] = {
+    ...nextConstraint,
+    active: true,
+  };
+  return { previousId, nextId: nextConstraint.id, cleared: false };
+}
+
+export function queueMission32ConstraintDecision(state: GameState): void {
+  if (state.mission !== 32 || state.phase === "finished") return;
+
+  const activeConstraint = getMission32ActiveConstraint(state);
+  if (!activeConstraint) {
+    if (state.pendingForcedAction?.kind === "mission32ConstraintDecision") {
+      state.pendingForcedAction = undefined;
+    }
+    return;
+  }
+
+  const actor = state.players[state.currentPlayerIndex];
+  const captain = state.players.find((player) => player.isCaptain);
+  if (!actor || !captain || !actor.hand.some((tile) => !tile.cut)) return;
+
+  state.pendingForcedAction = {
+    kind: "mission32ConstraintDecision",
+    captainId: captain.id,
+    actorId: actor.id,
+    decision: "keep",
+  };
+}
+
+export function resolveMission32AfterConstraintDecision(state: GameState): void {
+  if (state.mission !== 32 || state.phase === "finished") return;
+
+  const activeConstraint = getMission32ActiveConstraint(state);
+  if (!activeConstraint) return;
+
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return;
+
+  if (canPlayerPlayMission32(state, currentPlayer)) {
+    return;
+  }
+
+  state.turnNumber += 1;
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: currentPlayer.id,
+    action: "hookEffect",
+    detail:
+      `mission32:auto_skip|player=${getLogPlayerLabel(currentPlayer)}` +
+      `|constraint=${activeConstraint.id}`,
+    timestamp: Date.now(),
+  });
+
+  const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+  if (nextPlayerIndex == null) return;
+
+  state.currentPlayerIndex = nextPlayerIndex;
+  queueMission32ConstraintDecision(state);
+}
+
+export function applyMission32ConstraintDecision(
+  state: GameState,
+  captainId: string,
+  decision: "keep" | "replace",
+): { ok: boolean; message?: string } {
+  if (state.mission !== 32) {
+    return { ok: false, message: "Mission 32 constraint decision is not active" };
+  }
+
+  const forced = state.pendingForcedAction;
+  if (!forced || forced.kind !== "mission32ConstraintDecision") {
+    return { ok: false, message: "No pending Mission 32 constraint decision request" };
+  }
+  if (forced.captainId !== captainId) {
+    return { ok: false, message: "Only the captain can decide constraints on Mission 32" };
+  }
+
+  const captain = state.players.find((player) => player.id === captainId);
+  const actor = state.players.find((player) => player.id === forced.actorId);
+  const captainLabel = captain ? getLogPlayerLabel(captain) : captainId;
+  const actorLabel = actor ? getLogPlayerLabel(actor) : forced.actorId;
+  const activeConstraint = getMission32ActiveConstraint(state);
+  if (!activeConstraint) {
+    state.pendingForcedAction = undefined;
+    return { ok: true };
+  }
+
+  if (decision === "keep") {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: captainId,
+      action: "hookEffect",
+      detail:
+        `mission32:constraint_kept|constraint=${activeConstraint.id}` +
+        `|captain=${captainLabel}` +
+        `|actor=${actorLabel}`,
+      timestamp: Date.now(),
+    });
+  } else if (decision === "replace") {
+    const result = replaceMission32Constraint(state);
+    if (result.cleared) {
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: captainId,
+        action: "hookEffect",
+        detail:
+          `mission32:constraint_cleared|previous=${result.previousId ?? "none"}` +
+          `|captain=${captainLabel}` +
+          `|actor=${actorLabel}`,
+        timestamp: Date.now(),
+      });
+    } else {
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: captainId,
+        action: "hookEffect",
+        detail:
+          `mission32:constraint_replaced|previous=${result.previousId ?? "none"}` +
+          `|next=${result.nextId ?? "none"}` +
+          `|captain=${captainLabel}` +
+          `|actor=${actorLabel}`,
+        timestamp: Date.now(),
+      });
+    }
+  } else {
+    return { ok: false, message: "Invalid Mission 32 constraint decision" };
+  }
+
+  state.pendingForcedAction = undefined;
+  resolveMission32AfterConstraintDecision(state);
+  return { ok: true };
+}
+
 /**
  * Constraint enforcement for campaign missions.
  *
@@ -4382,44 +5038,7 @@ function canPlayerPlayMission61(
  */
 registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   setup(rule: ConstraintEnforcementRuleDef, ctx: SetupHookContext): void {
-    ctx.state.campaign ??= {};
-
-    const allCards = shuffle(
-      rule.constraintIds
-        .map((id) => {
-          const def = CONSTRAINT_CARD_DEFS.find((c) => c.id === id);
-          return def
-            ? { id: def.id, name: def.name, description: def.description, active: false }
-            : null;
-        })
-        .filter((c): c is NonNullable<typeof c> => c != null),
-    );
-
-    if (rule.scope === "global") {
-      // Global: activate only the first constraint; the rest form a draw deck.
-      const first = allCards.shift();
-      if (first) first.active = true;
-      ctx.state.campaign.constraints = {
-        global: first ? [first] : [],
-        perPlayer: {},
-        deck: allCards,
-      };
-    } else {
-      // Per-player: set up constraint selection phase so players choose their own card.
-      // Initialize empty perPlayer maps and populate availableCardIds for the selection phase.
-      const perPlayer: Record<string, typeof allCards> = {};
-      for (const player of ctx.state.players) {
-        perPlayer[player.id] = [];
-      }
-      ctx.state.campaign.constraints = {
-        global: [],
-        perPlayer,
-        deck: [],
-      };
-      ctx.state.campaign.constraintSelection = {
-        availableCardIds: allCards.map((c) => c.id),
-      };
-    }
+    setupConstraintState(ctx.state, rule.constraintIds, rule.scope);
 
     pushGameLog(ctx.state, {
       turn: 0,
@@ -4439,260 +5058,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
 
     const active = getActiveConstraints(ctx.state, actorId);
     if (active.length === 0) return;
-
-    const targetsRestrictedStandEdge = (
-      targetPlayerId: string,
-      targetTileIndices: readonly number[],
-      edge: "left" | "right",
-    ): boolean => {
-      const target = ctx.state.players.find((p) => p.id === targetPlayerId);
-      if (!target) return false;
-
-      for (const targetTileIndex of targetTileIndices) {
-        const targetStandIndex = hookFlatIndexToStandIndex(target, targetTileIndex);
-        const standRange = targetStandIndex == null
-          ? null
-          : resolveHookStandRange(target, targetStandIndex);
-        if (!standRange) {
-          continue;
-        }
-
-        const uncutIndices = target.hand
-          .map((_, i) => i)
-          .filter(
-            (i) =>
-              i >= standRange.start &&
-              i < standRange.endExclusive &&
-              !target.hand[i].cut,
-          );
-        if (uncutIndices.length === 0) {
-          continue;
-        }
-
-        const edgeIndex =
-          edge === "right" ? Math.max(...uncutIndices) : Math.min(...uncutIndices);
-        if (targetTileIndex === edgeIndex) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    const cutValue = extractCutValue(ctx.action);
-    const targetsMarkedByInfoToken = (): boolean => {
-      const targetIndicesByPlayer = new Map<string, Set<number>>();
-      const addTargetIndex = (playerId: string, tileIndex: number): void => {
-        if (!Number.isInteger(tileIndex) || tileIndex < 0) return;
-        const existing = targetIndicesByPlayer.get(playerId);
-        if (existing) {
-          existing.add(tileIndex);
-          return;
-        }
-        targetIndicesByPlayer.set(playerId, new Set([tileIndex]));
-      };
-
-      if (ctx.action.type === "dualCut") {
-        if (typeof ctx.action.targetPlayerId === "string" && typeof ctx.action.targetTileIndex === "number") {
-          addTargetIndex(ctx.action.targetPlayerId, ctx.action.targetTileIndex);
-        }
-      } else if (ctx.action.type === "dualCutDoubleDetector") {
-        if (
-          typeof ctx.action.targetPlayerId === "string" &&
-          typeof ctx.action.tileIndex1 === "number" &&
-          typeof ctx.action.tileIndex2 === "number"
-        ) {
-          addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex1);
-          addTargetIndex(ctx.action.targetPlayerId, ctx.action.tileIndex2);
-        }
-      } else if (ctx.action.type === "simultaneousCut") {
-        const cuts = Array.isArray(ctx.action.cuts) ? ctx.action.cuts : [];
-        for (const cut of cuts) {
-          const targetPlayerId = (cut as { targetPlayerId?: unknown }).targetPlayerId;
-          const targetTileIndex = (cut as { targetTileIndex?: unknown }).targetTileIndex;
-          if (typeof targetPlayerId === "string" && typeof targetTileIndex === "number") {
-            addTargetIndex(targetPlayerId, targetTileIndex);
-          }
-        }
-      } else if (ctx.action.type === "simultaneousRedCut" || ctx.action.type === "simultaneousFourCut") {
-        const targets = Array.isArray(ctx.action.targets) ? ctx.action.targets : [];
-        for (const target of targets) {
-          const playerId = (target as { playerId?: unknown }).playerId;
-          const tileIndex = (target as { tileIndex?: unknown }).tileIndex;
-          if (typeof playerId === "string" && typeof tileIndex === "number") {
-            addTargetIndex(playerId, tileIndex);
-          }
-        }
-      } else if (ctx.action.type === "soloCut") {
-        const cutValue = ctx.action.value;
-        if (typeof cutValue === "number" || cutValue === "YELLOW") {
-          const actor = ctx.state.players.find((p) => p.id === actorId);
-          if (actor) {
-            actor.hand.forEach((tile, index) => {
-              if (!tile.cut && tile.gameValue === cutValue) {
-                addTargetIndex(actor.id, index);
-              }
-            });
-          }
-        }
-      }
-
-      for (const [targetPlayerId, tileIndices] of targetIndicesByPlayer) {
-        const targetPlayer = ctx.state.players.find((p) => p.id === targetPlayerId);
-        if (!targetPlayer) continue;
-        for (const tileIndex of tileIndices) {
-          if (
-            targetPlayer.infoTokens.some(
-              (token) => token.position === tileIndex || token.positionB === tileIndex,
-            )
-          ) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    };
-
-    for (const constraintId of active) {
-      switch (constraintId) {
-        case "A": // Even Wires Only
-          if (typeof cutValue === "number" && cutValue % 2 !== 0) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint A: You must cut only even wires",
-            };
-          }
-          break;
-
-        case "B": // Odd Wires Only
-          if (typeof cutValue === "number" && cutValue % 2 === 0) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint B: You must cut only odd wires",
-            };
-          }
-          break;
-
-        case "C": // Wires 1–6 Only
-          if (typeof cutValue === "number" && (cutValue < 1 || cutValue > 6)) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint C: You must cut only wires 1 to 6",
-            };
-          }
-          break;
-
-        case "D": // Wires 7–12 Only
-          if (typeof cutValue === "number" && (cutValue < 7 || cutValue > 12)) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint D: You must cut only wires 7 to 12",
-            };
-          }
-          break;
-
-        case "E": // Wires 4–9 Only
-          if (typeof cutValue === "number" && (cutValue < 4 || cutValue > 9)) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint E: You must cut only wires 4 to 9",
-            };
-          }
-          break;
-
-        case "F": // No Wires 4–9
-          if (typeof cutValue === "number" && cutValue >= 4 && cutValue <= 9) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint F: You cannot cut wires 4 to 9",
-            };
-          }
-          break;
-
-        case "H": // No cuts on info-token-marked wires
-          if (targetsMarkedByInfoToken()) {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint H: You cannot cut a wire indicated by an Info token",
-            };
-          }
-          break;
-
-        case "I": // No Far-Right Wire
-          if (ctx.action.type === "dualCut") {
-            if (
-              targetsRestrictedStandEdge(
-                ctx.action.targetPlayerId as string,
-                [ctx.action.targetTileIndex as number],
-                "right",
-              )
-            ) {
-              return {
-                validationCode: "MISSION_RULE_VIOLATION",
-                validationError: "Constraint I: You cannot cut the far-right wire",
-              };
-            }
-          } else if (ctx.action.type === "dualCutDoubleDetector") {
-            if (
-              targetsRestrictedStandEdge(
-                ctx.action.targetPlayerId as string,
-                [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
-                "right",
-              )
-            ) {
-              return {
-                validationCode: "MISSION_RULE_VIOLATION",
-                validationError: "Constraint I: You cannot cut the far-right wire",
-              };
-            }
-          }
-          break;
-
-        case "J": // No Far-Left Wire
-          if (ctx.action.type === "dualCut") {
-            if (
-              targetsRestrictedStandEdge(
-                ctx.action.targetPlayerId as string,
-                [ctx.action.targetTileIndex as number],
-                "left",
-              )
-            ) {
-              return {
-                validationCode: "MISSION_RULE_VIOLATION",
-                validationError: "Constraint J: You cannot cut the far-left wire",
-              };
-            }
-          } else if (ctx.action.type === "dualCutDoubleDetector") {
-            if (
-              targetsRestrictedStandEdge(
-                ctx.action.targetPlayerId as string,
-                [ctx.action.tileIndex1 as number, ctx.action.tileIndex2 as number],
-                "left",
-              )
-            ) {
-              return {
-                validationCode: "MISSION_RULE_VIOLATION",
-                validationError: "Constraint J: You cannot cut the far-left wire",
-              };
-            }
-          }
-          break;
-
-        case "K": // No Solo Cut
-          if (ctx.action.type === "soloCut") {
-            return {
-              validationCode: "MISSION_RULE_VIOLATION",
-              validationError: "Constraint K: You cannot do a Solo Cut action",
-            };
-          }
-          break;
-
-        // G (No Equipment) is enforced in equipment.ts validation
-        // H (No Info on Fail) and Post-it prohibition are not enforced here
-        // L (Double Detonator) is enforced at resolve time
-      }
-    }
+    return validateConstraintAction(ctx, actorId, active);
   },
 
   resolve(_rule: ConstraintEnforcementRuleDef, ctx: ResolveHookContext): HookResult | void {
@@ -4711,32 +5077,7 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
       }
     }
 
-    if (ctx.action.type !== "dualCut") return;
-
-    if (ctx.cutSuccess) return;
-
-    const actorId = ctx.action.actorId;
-    const active = getActiveConstraints(ctx.state, actorId);
-
-    // Constraint L: double detonator advance on failed dual cut
-    if (active.includes("L")) {
-      // The base game already advanced detonator by 1; advance by 1 more
-      ctx.state.board.detonatorPosition += 1;
-
-      pushGameLog(ctx.state, {
-        turn: ctx.state.turnNumber,
-        playerId: actorId,
-        action: "hookEffect",
-        detail: "constraint_L:double_detonator:+1_extra",
-        timestamp: Date.now(),
-      });
-
-      if (ctx.state.board.detonatorPosition >= ctx.state.board.detonatorMax) {
-        ctx.state.result = "loss_detonator";
-        ctx.state.phase = "finished";
-        emitMissionFailureTelemetry(ctx.state, "loss_detonator", actorId, null);
-      }
-    }
+    return resolveConstraintLFailurePenalty(ctx);
   },
 
   endTurn(_rule: ConstraintEnforcementRuleDef, ctx: EndTurnHookContext): void {
@@ -4828,6 +5169,39 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
       }
     }
+  },
+});
+
+registerHookHandler<"mission_32_constraint_stack">("mission_32_constraint_stack", {
+  setup(rule: Mission32ConstraintStackRuleDef, ctx: SetupHookContext): void {
+    setupConstraintState(ctx.state, rule.constraintIds, "global");
+
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `mission_32_constraint_stack:ids=${rule.constraintIds.join(",")}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: Mission32ConstraintStackRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.action.type === "revealReds") return;
+
+    const active = getActiveConstraints(ctx.state, ctx.action.actorId);
+    if (active.length === 0) return;
+
+    return validateConstraintAction(ctx, ctx.action.actorId, active);
+  },
+
+  resolve(_rule: Mission32ConstraintStackRuleDef, ctx: ResolveHookContext): HookResult | void {
+    return resolveConstraintLFailurePenalty(ctx);
+  },
+
+  endTurn(_rule: Mission32ConstraintStackRuleDef, ctx: EndTurnHookContext): void {
+    if (ctx.state.mission !== 32 || ctx.state.phase === "finished") return;
+    if (ctx.state.pendingForcedAction?.kind === "mission32ConstraintDecision") return;
+    queueMission32ConstraintDecision(ctx.state);
   },
 });
 
