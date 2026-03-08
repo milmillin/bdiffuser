@@ -1,7 +1,5 @@
 import {
-  INFO_TOKEN_VALUES,
-  TOTAL_INFO_TOKENS,
-  YELLOW_INFO_TOKENS,
+  getAvailableInfoTokenChoiceValues,
   type ClientGameState,
   type ClientMessage,
 } from "@bomb-busters/shared";
@@ -36,51 +34,13 @@ export function Mission22TokenPassPanel({
   const recipientName =
     recipient?.id === playerId ? "yourself" : (recipient?.name ?? "the next player");
 
-  const boardValues = new Set<number>();
-  const numericTokenCopiesPerValue =
-    (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
   const board = gameState.campaign?.mission22TokenPassBoard;
-  if (board) {
-    if (board.yellowTokens > 0) {
-      boardValues.add(0);
-    }
-    for (const value of board.numericTokens) {
-      boardValues.add(value);
-    }
-  } else {
-    const usedNumericCounts = new Map<number, number>();
-    let usedYellowTokens = 0;
-
-    for (const player of gameState.players) {
-      for (const token of player.infoTokens) {
-        if (token.isYellow) {
-          usedYellowTokens += 1;
-          continue;
-        }
-
-        if (!Number.isInteger(token.value) || token.value < 1 || token.value > 12) {
-          continue;
-        }
-
-        usedNumericCounts.set(
-          token.value,
-          (usedNumericCounts.get(token.value) ?? 0) + 1,
-        );
-      }
-    }
-
-    for (const value of INFO_TOKEN_VALUES) {
-      if ((usedNumericCounts.get(value) ?? 0) < numericTokenCopiesPerValue) {
-        boardValues.add(value);
-      }
-    }
-
-    if (usedYellowTokens < YELLOW_INFO_TOKENS) {
-      boardValues.add(0);
-    }
-  }
-
-  const sortedValues = Array.from(boardValues).sort((a, b) => a - b);
+  const sortedValues = board
+    ? [...new Set([
+      ...board.numericTokens,
+      ...(board.yellowTokens > 0 ? [0] : []),
+    ])].sort((a, b) => a - b)
+    : getAvailableInfoTokenChoiceValues(gameState.players);
   if (sortedValues.length === 0) {
     return (
       <div

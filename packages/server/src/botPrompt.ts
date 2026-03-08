@@ -212,6 +212,26 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
     lines.push(`  Mission timer: ${remainingSeconds}s remaining`);
   }
 
+  const mission45Turn = state.campaign?.mission45Turn;
+  if (state.mission === 45 && mission45Turn) {
+    const currentValue =
+      typeof mission45Turn.currentValue === "number"
+        ? mission45Turn.currentValue
+        : null;
+    const selectedCutterName =
+      mission45Turn.selectedCutterId != null
+        ? state.players.find((p) => p.id === mission45Turn.selectedCutterId)?.name ??
+          mission45Turn.selectedCutterId
+        : null;
+    if (mission45Turn.stage === "awaiting_cut" && currentValue != null) {
+      lines.push(
+        `  Mission 45: only ${selectedCutterName ?? "the selected cutter"} may act, and they must cut value ${currentValue}`,
+      );
+    } else if (currentValue != null) {
+      lines.push(`  Mission 45 current Number card: ${currentValue}`);
+    }
+  }
+
   const forcedAction = state.pendingForcedAction;
   if (forcedAction?.kind === "chooseNextPlayer") {
     const captain =
@@ -223,6 +243,12 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
       state.players.find((p) => p.id === forcedAction.designatorId)
         ?.name ?? forcedAction.designatorId;
     lines.push(`  Forced action pending: ${designator} must designate who cuts (number card: ${forcedAction.value})`);
+  } else if (forcedAction?.kind === "mission45VolunteerWindow") {
+    lines.push("  Forced action pending: Mission 45 volunteer window is open for Snip!");
+  } else if (forcedAction?.kind === "mission45CaptainChoice") {
+    lines.push("  Forced action pending: the captain must choose who cuts on Mission 45");
+  } else if (forcedAction?.kind === "mission45PenaltyTokenChoice") {
+    lines.push("  Forced action pending: the penalized player must choose a stand-side info token");
   }
 
   const validated = Object.entries(state.board.validationTrack)

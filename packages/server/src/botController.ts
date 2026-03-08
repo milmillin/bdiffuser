@@ -718,6 +718,40 @@ function getFallbackAction(state: GameState, botId: string): BotAction {
     return forcedMission36Action;
   }
 
+  const mission45RequiredValue =
+    state.mission === 45 &&
+    state.campaign?.mission45Turn?.stage === "awaiting_cut" &&
+    state.campaign.mission45Turn.selectedCutterId === botId &&
+    typeof state.campaign.mission45Turn.currentValue === "number"
+      ? state.campaign.mission45Turn.currentValue
+      : null;
+  if (mission45RequiredValue != null) {
+    if (!validateSoloCutWithHooks(state, botId, mission45RequiredValue)) {
+      return { action: "soloCut", value: mission45RequiredValue };
+    }
+
+    for (const opponent of state.players) {
+      if (opponent.id === botId) continue;
+      for (let tileIndex = 0; tileIndex < opponent.hand.length; tileIndex++) {
+        const error = validateDualCutWithHooks(
+          state,
+          botId,
+          opponent.id,
+          tileIndex,
+          mission45RequiredValue,
+        );
+        if (!error) {
+          return {
+            action: "dualCut",
+            targetPlayerId: opponent.id,
+            targetTileIndex: tileIndex,
+            guessValue: mission45RequiredValue,
+          };
+        }
+      }
+    }
+  }
+
   const bot = state.players.find((p) => p.id === botId)!;
   const uncutTiles = getUncutTiles(bot);
   const guessValues = collectBotGuessValues(uncutTiles);

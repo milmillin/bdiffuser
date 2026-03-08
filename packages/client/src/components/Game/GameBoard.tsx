@@ -13,12 +13,10 @@ import {
   CHARACTER_CARD_TEXT,
   CHARACTER_IMAGES,
   DOUBLE_DETECTOR_CHARACTERS,
-  INFO_TOKEN_VALUES,
   EQUIPMENT_DEFS,
+  getRemainingInfoTokenSupply,
   requiredSetupInfoTokenCountForMissionAndHand,
   hasXMarkedWireTalkiesRestriction,
-  TOTAL_INFO_TOKENS,
-  YELLOW_INFO_TOKENS,
   wireLabel,
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
@@ -29,6 +27,9 @@ import {
   DetectorTileChoicePanel,
   getDetectorChoiceSelectableIndices as _getDetectorChoiceSelectableIndices,
 } from "./Actions/DetectorTileChoicePanel.js";
+import { Mission45VolunteerPanel } from "./Actions/Mission45VolunteerPanel.js";
+import { Mission45CaptainChoicePanel } from "./Actions/Mission45CaptainChoicePanel.js";
+import { Mission45PenaltyTokenPanel } from "./Actions/Mission45PenaltyTokenPanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import {
   Mission27TokenDraftPanel,
@@ -118,6 +119,9 @@ type UnknownForcedAction = {
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
 const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
+const FORCED_ACTION_MISSION45_VOLUNTEER_WINDOW = "mission45VolunteerWindow";
+const FORCED_ACTION_MISSION45_CAPTAIN_CHOICE = "mission45CaptainChoice";
+const FORCED_ACTION_MISSION45_PENALTY_TOKEN = "mission45PenaltyTokenChoice";
 const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_MISSION27_TOKEN_DRAFT = "mission27TokenDraft";
 const FORCED_ACTION_MISSION29_HIDDEN_CARD = "mission29HiddenNumberCard";
@@ -132,6 +136,9 @@ const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
   FORCED_ACTION_DETECTOR_TILE_CHOICE,
+  FORCED_ACTION_MISSION45_VOLUNTEER_WINDOW,
+  FORCED_ACTION_MISSION45_CAPTAIN_CHOICE,
+  FORCED_ACTION_MISSION45_PENALTY_TOKEN,
   FORCED_ACTION_MISSION22_TOKEN_PASS,
   FORCED_ACTION_MISSION27_TOKEN_DRAFT,
   FORCED_ACTION_MISSION29_HIDDEN_CARD,
@@ -526,6 +533,7 @@ export function GameBoard({
     return gameState.players.find((p) => p.id === fa.lastPlayerId)?.name;
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
+  const mission45Turn = gameState.campaign?.mission45Turn;
   const mission34HiddenActive = gameState.mission === 34 && !!gameState.campaign?.mission34Hidden;
   const mission34OwnHiddenConstraint =
     gameState.campaign?.mission34Hidden?.constraintsByPlayerId?.[playerId]?.[0];
@@ -561,6 +569,10 @@ export function GameBoard({
         ? pendingForcedAction.designatorId
       : pendingForcedAction?.kind === "detectorTileChoice"
         ? pendingForcedAction.targetPlayerId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION45_CAPTAIN_CHOICE
+        ? pendingForcedAction.captainId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION45_PENALTY_TOKEN
+        ? pendingForcedAction.playerId
       : pendingForcedAction?.kind === "mission22TokenPass"
         ? pendingForcedAction.currentChooserId
       : pendingForcedAction?.kind === "mission27TokenDraft"
@@ -601,6 +613,13 @@ export function GameBoard({
     mission27ForcedForMe && me && mission27DraftSelectedValue != null
       ? _getMission27DraftMatchingIndices(me.hand, mission27DraftSelectedValue)
       : [];
+  const mission45RequiredCutValue =
+    gameState.mission === 45 &&
+    mission45Turn?.stage === "awaiting_cut" &&
+    mission45Turn.selectedCutterId === playerId &&
+    typeof mission45Turn.currentValue === "number"
+      ? mission45Turn.currentValue
+      : null;
 
   useEffect(() => {
     if (!mission46ForcedForMe) {
@@ -658,37 +677,11 @@ export function GameBoard({
       return values;
     }
 
-    const numericTokenCopiesPerValue =
-      (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
-    const usedNumericCounts = new Map<number, number>();
-    let usedYellowTokens = 0;
-    for (const player of gameState.players) {
-      for (const token of player.infoTokens) {
-        if (token.isYellow) {
-          usedYellowTokens += 1;
-        } else {
-          const numericValue = token.value;
-          if (!Number.isInteger(numericValue) || numericValue < 1 || numericValue > 12) {
-            continue;
-          }
-          usedNumericCounts.set(
-            numericValue,
-            (usedNumericCounts.get(numericValue) ?? 0) + 1,
-          );
-        }
-      }
-    }
-
-    const numericValues = INFO_TOKEN_VALUES.flatMap((value) => {
-      const usedCount = usedNumericCounts.get(value) ?? 0;
-      const availableCount = Math.max(0, numericTokenCopiesPerValue - usedCount);
-      return Array.from({ length: availableCount }, () => value);
-    });
-    const yellowValues = new Array<number>();
-    if (Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens) > 0) {
-      yellowValues.push(0);
-    }
-    return [...numericValues, ...yellowValues];
+    const remaining = getRemainingInfoTokenSupply(gameState.players);
+    return [
+      ...remaining.numericTokens,
+      ...(remaining.yellowTokens > 0 ? [0] : []),
+    ];
   }, [gameState.mission, isSetup, gameState.players, gameState.campaign?.mission22TokenPassBoard]);
   const revealRedsAvailable = me ? canRevealReds(gameState, playerId) : false;
   const forceRevealReds = isMyTurn && revealRedsAvailable;
@@ -727,6 +720,7 @@ export function GameBoard({
     pendingAction == null &&
     !missionSpecialMode &&
     !mission46ForcedForMe &&
+    mission45RequiredCutValue == null &&
     !revealRedsForced;
   const missionSupportsSimultaneousThreeCut =
     gameState.mission === 13 || gameState.mission === 48 || gameState.mission === 41;
@@ -808,6 +802,7 @@ export function GameBoard({
     pendingAction == null &&
     !missionFourCutMode &&
     !mission46ForcedForMe &&
+    mission45RequiredCutValue == null &&
     (!revealRedsForced || missionSpecialCanBypassForcedReveal);
   const mission11RevealBlockedHint =
     isMyTurn && gameState.mission === 11 && !revealRedsAvailable;
@@ -819,6 +814,7 @@ export function GameBoard({
     !equipmentMode &&
     pendingAction == null &&
     selectedGuessTile == null &&
+    mission45RequiredCutValue == null &&
     !forceRevealReds &&
     !!me &&
     me.hand.some((tile) => !tile.cut);
@@ -847,6 +843,9 @@ export function GameBoard({
   const isDualCutActorTileValueAllowed = (
     value: unknown,
   ): value is number | "YELLOW" => {
+    if (mission45RequiredCutValue != null) {
+      return value === mission45RequiredCutValue;
+    }
     return isMission59DualCutActorTileValueAllowed(gameState, value);
   };
   const selectedGuessValue =
@@ -1708,7 +1707,12 @@ export function GameBoard({
                         character={me.character}
                         characterUsed={me.characterUsed}
                         isMyTurn={isMyTurn}
-                        canSelectCards={!isSetup && !missionSpecialMode && !missionFourCutMode}
+                        canSelectCards={
+                          !isSetup &&
+                          !missionSpecialMode &&
+                          !missionFourCutMode &&
+                          mission45RequiredCutValue == null
+                        }
                         selectedCardId={selectedDockCardId}
                         onSelectCard={setSelectedDockCardId}
                         onDeselectCard={cancelSelectedDockCard}
@@ -1858,6 +1862,7 @@ export function GameBoard({
                   !equipmentMode &&
                   !missionSpecialMode &&
                   !missionFourCutMode &&
+                  mission45RequiredCutValue == null &&
                   gameState.campaign?.challenges?.active.some((challenge) => challenge.id === "1") &&
                   me && (
                     <MissionChallengeRedCutPanel
@@ -1889,6 +1894,41 @@ export function GameBoard({
                   </div>
                 )}
                 {/* Playing phase: forced action (captain chooses next player) */}
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION45_VOLUNTEER_WINDOW &&
+                  me && (
+                    <Mission45VolunteerPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION45_CAPTAIN_CHOICE &&
+                  gameState.pendingForcedAction.captainId === playerId &&
+                  me && (
+                    <Mission45CaptainChoicePanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION45_PENALTY_TOKEN &&
+                  gameState.pendingForcedAction.playerId === playerId &&
+                  me && (
+                    <Mission45PenaltyTokenPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
                     FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
@@ -2051,6 +2091,7 @@ export function GameBoard({
                   !equipmentMode &&
                   !missionSpecialMode &&
                   !missionFourCutMode &&
+                  mission45RequiredCutValue == null &&
                   me?.character !== "double_detector" &&
                   me && (
                     <Mission34GuessPanel
@@ -2756,6 +2797,11 @@ function getStatusContent(
       progressStep != null && progressTotal != null
         ? ` (step ${progressStep}/${progressTotal})`
         : "";
+    const mission45Turn = gameState.campaign?.mission45Turn;
+    const mission45CurrentValue =
+      typeof mission45Turn?.currentValue === "number"
+        ? mission45Turn.currentValue
+        : null;
 
     if (actionAttention.state === "forced_actor" || actionAttention.state === "forced_reveal_reds") {
       let forcedText = "Resolve the mission-required action.";
@@ -2780,6 +2826,15 @@ function getStatusContent(
           break;
         case "detectorTileChoice":
           forcedText = "Resolve detector confirmation.";
+          break;
+        case FORCED_ACTION_MISSION45_CAPTAIN_CHOICE:
+          forcedText =
+            mission45CurrentValue != null
+              ? `Choose who must cut Number ${mission45CurrentValue}.`
+              : "Choose who must act for Mission 45.";
+          break;
+        case FORCED_ACTION_MISSION45_PENALTY_TOKEN:
+          forcedText = "Choose a stand-side info token penalty.";
           break;
         case "talkiesWalkiesTileChoice":
           forcedText = "Choose your swap wire.";
@@ -2810,6 +2865,21 @@ function getStatusContent(
       );
     }
 
+    if (actionAttention.state === "forced_shared") {
+      return (
+        <span className="inline-flex items-center gap-2">
+          <span className="bg-red-500 text-white font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+            Mission 45
+          </span>
+          <span className="text-red-100 font-bold">
+            {mission45CurrentValue != null
+              ? `Number ${mission45CurrentValue} is live. Say Snip! to volunteer.`
+              : "Snip! is open for the Reveal Reds branch."}
+          </span>
+        </span>
+      );
+    }
+
     if (actionAttention.state === "forced_waiting") {
       const waitingFor = forcedActorName ?? "a teammate";
       let waitingText = "to resolve a mission action";
@@ -2835,6 +2905,15 @@ function getStatusContent(
         case "detectorTileChoice":
           waitingText = "to resolve detector confirmation";
           break;
+        case FORCED_ACTION_MISSION45_CAPTAIN_CHOICE:
+          waitingText =
+            mission45CurrentValue != null
+              ? `to choose who must cut Number ${mission45CurrentValue}`
+              : "to choose who must act for Mission 45";
+          break;
+        case FORCED_ACTION_MISSION45_PENALTY_TOKEN:
+          waitingText = "to choose a Mission 45 penalty token";
+          break;
         case "talkiesWalkiesTileChoice":
           waitingText = "to choose a wire for Walkie-Talkies";
           break;
@@ -2854,6 +2933,34 @@ function getStatusContent(
           Waiting for{" "}
           <span className="text-red-300 font-bold">{waitingFor}</span>{" "}
           {waitingText}...
+        </span>
+      );
+    }
+
+    if (mission45Turn?.stage === "awaiting_cut" && mission45CurrentValue != null) {
+      const selectedCutterName =
+        mission45Turn.selectedCutterId != null
+          ? gameState.players.find((player) => player.id === mission45Turn.selectedCutterId)?.name
+          : undefined;
+      if (mission45Turn.selectedCutterId === playerId) {
+        return (
+          <span className="inline-flex items-center gap-2">
+            <span className="bg-red-500 text-white font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+              Mission 45
+            </span>
+            <span className="text-red-100 font-bold">
+              Cut Number {mission45CurrentValue} now.
+            </span>
+          </span>
+        );
+      }
+      return (
+        <span className="text-gray-300">
+          Waiting for{" "}
+          <span className="text-red-300 font-bold">
+            {selectedCutterName ?? "the selected cutter"}
+          </span>{" "}
+          to cut Number {mission45CurrentValue}...
         </span>
       );
     }

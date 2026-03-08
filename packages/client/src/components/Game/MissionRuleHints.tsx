@@ -515,6 +515,8 @@ function CampaignObjectsHint({
     )
     : visibleCardEntries;
   const displayVisibleCards = displayVisibleCardEntries.map((entry) => entry.card);
+  const mission45CurrentCardId =
+    gameState.mission === 45 ? campaign.mission45Turn?.currentCardId : undefined;
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
   const hideNumberDeckAndDiscard =
@@ -675,6 +677,7 @@ function CampaignObjectsHint({
                       const isSequenceCard =
                         sequencePointer != null &&
                         (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
+                      const isMission45CurrentCard = mission45CurrentCardId === card.id;
                       let image: string;
                       let borderClassName: string;
                       let dimmed = false;
@@ -702,7 +705,11 @@ function CampaignObjectsHint({
                         image = card.faceUp
                           ? getNumberCardImage(card.value)
                           : NUMBER_CARD_BACK;
-                        borderClassName = card.faceUp ? "border-sky-500" : "border-black/75";
+                        borderClassName = card.faceUp
+                          ? isMission45CurrentCard
+                            ? "border-red-400"
+                            : "border-sky-500"
+                          : "border-black/75";
                         dimmed = !card.faceUp;
                       }
 
@@ -718,6 +725,7 @@ function CampaignObjectsHint({
                               borderClassName={borderClassName}
                               sizeClassName={numberThumbnailSizeClass}
                               testId={`mission-hint-thumb-number-visible-${card.id}`}
+                              badgeLabel={isMission45CurrentCard ? "Current" : undefined}
                               dimmed={dimmed}
                               onClick={() =>
                                 setPreviewCard({
@@ -788,6 +796,7 @@ function CampaignObjectsHint({
                     const isSequenceCard =
                       sequencePointer != null &&
                       (gameState.mission === 36 ? idx < displayVisibleCards.length : idx < 3);
+                    const isMission45CurrentCard = mission45CurrentCardId === card.id;
                     let image: string;
                     let borderClassName: string;
                     let dimmed = false;
@@ -815,7 +824,11 @@ function CampaignObjectsHint({
                       image = card.faceUp
                         ? getNumberCardImage(card.value)
                         : NUMBER_CARD_BACK;
-                      borderClassName = card.faceUp ? "border-sky-500" : "border-black/75";
+                      borderClassName = card.faceUp
+                        ? isMission45CurrentCard
+                          ? "border-red-400"
+                          : "border-sky-500"
+                        : "border-black/75";
                       dimmed = !card.faceUp;
                     }
 
@@ -826,6 +839,7 @@ function CampaignObjectsHint({
                         borderClassName={borderClassName}
                         sizeClassName={numberThumbnailSizeClass}
                         testId={`mission-hint-thumb-number-visible-${card.id}`}
+                        badgeLabel={isMission45CurrentCard ? "Current" : undefined}
                         dimmed={dimmed}
                         onClick={() =>
                           setPreviewCard({

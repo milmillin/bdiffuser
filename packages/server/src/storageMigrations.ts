@@ -19,6 +19,7 @@ import {
   type Mission22TokenPassBoardState,
   type Mission27TokenDraftBoardState,
   type Mission29TurnState,
+  type Mission45TurnState,
   type Mission66BunkerChoiceOption,
   type Mission43NanoWire,
   type SurrenderVoteState,
@@ -303,6 +304,50 @@ function normalizeMission29Turn(
     chooserId: raw.chooserId,
     ...(typeof raw.matchedCut === "boolean" ? { matchedCut: raw.matchedCut } : {}),
     ...(typeof raw.skipReveal === "boolean" ? { skipReveal: raw.skipReveal } : {}),
+  };
+}
+
+function normalizeMission45Turn(
+  raw: unknown,
+): Mission45TurnState | undefined {
+  if (!isObject(raw)) return undefined;
+  if (typeof raw.captainId !== "string" || raw.captainId.length === 0) return undefined;
+  if (
+    raw.stage !== "awaiting_volunteer" &&
+    raw.stage !== "awaiting_captain_choice" &&
+    raw.stage !== "awaiting_penalty_token" &&
+    raw.stage !== "awaiting_cut"
+  ) {
+    return undefined;
+  }
+
+  const currentCardId =
+    typeof raw.currentCardId === "string" && raw.currentCardId.length > 0
+      ? raw.currentCardId
+      : undefined;
+  const currentValue =
+    typeof raw.currentValue === "number" &&
+      Number.isInteger(raw.currentValue) &&
+      raw.currentValue >= 1 &&
+      raw.currentValue <= 12
+      ? raw.currentValue
+      : undefined;
+  const selectedCutterId =
+    typeof raw.selectedCutterId === "string" && raw.selectedCutterId.length > 0
+      ? raw.selectedCutterId
+      : undefined;
+  const penaltyPlayerId =
+    typeof raw.penaltyPlayerId === "string" && raw.penaltyPlayerId.length > 0
+      ? raw.penaltyPlayerId
+      : undefined;
+
+  return {
+    stage: raw.stage,
+    captainId: raw.captainId,
+    ...(currentCardId != null ? { currentCardId } : {}),
+    ...(currentValue != null ? { currentValue } : {}),
+    ...(selectedCutterId != null ? { selectedCutterId } : {}),
+    ...(penaltyPlayerId != null ? { penaltyPlayerId } : {}),
   };
 }
 
@@ -619,6 +664,13 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     }
   }
 
+  if (hasOwn(raw, "mission45Turn")) {
+    const mission45Turn = normalizeMission45Turn(raw.mission45Turn);
+    if (mission45Turn) {
+      campaign.mission45Turn = mission45Turn;
+    }
+  }
+
   if (hasOwn(raw, "mission34Hidden")) {
     const mission34Hidden = isObject(raw.mission34Hidden) ? raw.mission34Hidden : {};
     const constraintsByPlayerId = normalizeConstraintPerPlayer(
@@ -844,6 +896,33 @@ function normalizeGameState(
   let pendingForcedAction: import("@bomb-busters/shared").ForcedAction | undefined;
   if (isObject(obj.pendingForcedAction)) {
     if (
+      obj.pendingForcedAction.kind === "mission45VolunteerWindow"
+      && typeof obj.pendingForcedAction.captainId === "string"
+      && obj.pendingForcedAction.captainId
+    ) {
+      pendingForcedAction = {
+        kind: "mission45VolunteerWindow" as const,
+        captainId: obj.pendingForcedAction.captainId,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission45CaptainChoice"
+      && typeof obj.pendingForcedAction.captainId === "string"
+      && obj.pendingForcedAction.captainId
+    ) {
+      pendingForcedAction = {
+        kind: "mission45CaptainChoice" as const,
+        captainId: obj.pendingForcedAction.captainId,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission45PenaltyTokenChoice"
+      && typeof obj.pendingForcedAction.playerId === "string"
+      && obj.pendingForcedAction.playerId
+    ) {
+      pendingForcedAction = {
+        kind: "mission45PenaltyTokenChoice" as const,
+        playerId: obj.pendingForcedAction.playerId,
+      };
+    } else if (
       obj.pendingForcedAction.kind === "chooseNextPlayer"
       && typeof obj.pendingForcedAction.captainId === "string"
       && obj.pendingForcedAction.captainId

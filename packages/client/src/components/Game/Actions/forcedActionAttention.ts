@@ -5,6 +5,7 @@ export type ActionAttentionState =
   | "normal_waiting"
   | "forced_actor"
   | "forced_waiting"
+  | "forced_shared"
   | "forced_reveal_reds";
 
 export type ActionAttention = {
@@ -62,6 +63,12 @@ function getPendingForcedMetadata(
       return { kind: forced.kind, actorId: asString(forced.captainId) };
     case "designateCutter":
       return { kind: forced.kind, actorId: asString(forced.designatorId) };
+    case "mission45VolunteerWindow":
+      return { kind: forced.kind };
+    case "mission45CaptainChoice":
+      return { kind: forced.kind, actorId: asString(forced.captainId) };
+    case "mission45PenaltyTokenChoice":
+      return { kind: forced.kind, actorId: asString(forced.playerId) };
     case "mission22TokenPass": {
       const total = asArrayLength(forced.passingOrder);
       const completedCount = asNumber(forced.completedCount) ?? 0;
@@ -117,6 +124,12 @@ export function deriveActionAttentionState({
     const forcedActorName = forcedMeta.actorId
       ? gameState.players.find((player) => player.id === forcedMeta.actorId)?.name
       : undefined;
+    if (forcedMeta.kind === "mission45VolunteerWindow") {
+      return {
+        state: "forced_shared",
+        forcedKind: forcedMeta.kind,
+      };
+    }
     return {
       state: forcedMeta.actorId === playerId ? "forced_actor" : "forced_waiting",
       forcedKind: forcedMeta.kind,

@@ -383,6 +383,22 @@ export interface Mission29TurnState {
   skipReveal?: boolean;
 }
 
+/** Mission 45: current volunteer/fallback/cut state for the active Number card. */
+export interface Mission45TurnState {
+  /** Current step in the mission's volunteer-selection flow. */
+  stage: "awaiting_volunteer" | "awaiting_captain_choice" | "awaiting_penalty_token" | "awaiting_cut";
+  /** Captain responsible for revealing the current Number card each turn. */
+  captainId: string;
+  /** Active visible Number card, if any incomplete numeric values remain. */
+  currentCardId?: string;
+  /** Value printed on the active Number card, if any. */
+  currentValue?: number;
+  /** Selected cutter for the current Number card. */
+  selectedCutterId?: string;
+  /** Player who must choose a penalty info token after a bad fallback target. */
+  penaltyPlayerId?: string;
+}
+
 /** Mission 34: hidden weakest-link role and hidden personal constraints. */
 export interface Mission34HiddenState {
   /** Server-only hidden weakest-link identity; omitted in filtered client views. */
@@ -496,6 +512,8 @@ export interface CampaignState {
   mission59Nano?: Mission59NanoState;
   /** Mission 29: hidden Number-card turn state. */
   mission29Turn?: Mission29TurnState;
+  /** Mission 45: volunteer/fallback/cut state for the current Number card. */
+  mission45Turn?: Mission45TurnState;
   /** Mission 34: hidden weakest-link role and hidden dealt constraints. */
   mission34Hidden?: Mission34HiddenState;
   /** Mission 61: public rotating constraint ring. */
@@ -558,6 +576,21 @@ export interface ChatMessage {
 
 /** A forced action that must be resolved before normal play resumes. */
 export type ForcedAction =
+  | {
+      kind: "mission45VolunteerWindow";
+      /** The captain controlling manual fallback for the current Number card. */
+      captainId: string;
+    }
+  | {
+      kind: "mission45CaptainChoice";
+      /** The captain who must pick a cutter after no / bad volunteer. */
+      captainId: string;
+    }
+  | {
+      kind: "mission45PenaltyTokenChoice";
+      /** The player who must choose one info token for their stand. */
+      playerId: string;
+    }
   | {
       kind: "chooseNextPlayer";
       /** The player who must resolve this forced action (typically the captain). */

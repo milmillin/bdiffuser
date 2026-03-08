@@ -57,6 +57,10 @@ export type ClientMessage =
       targetTileIndex: number;
     }
   | { type: "revealReds" }
+  | { type: "mission45Snip" }
+  | { type: "mission45StartCaptainFallback" }
+  | { type: "mission45ChooseCaptainTarget"; targetPlayerId: string }
+  | { type: "mission45PenaltyTokenChoice"; value: number }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | {
       type: "useEquipment";

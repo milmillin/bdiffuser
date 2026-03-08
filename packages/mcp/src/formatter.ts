@@ -212,6 +212,12 @@ function formatForcedAction(fa: ForcedAction, state: ClientGameState): string {
       return `FORCED ACTION: ${nameOf(fa.targetPlayerId)} must choose tile from indices [${fa.matchingTileIndices.join(",")}] for ${fa.source} guess ${fa.guessValue}`;
     case "talkiesWalkiesTileChoice":
       return `FORCED ACTION: ${nameOf(fa.targetPlayerId)} must choose a tile to swap (talkies-walkies)`;
+    case "mission45VolunteerWindow":
+      return `FORCED ACTION: Mission 45 volunteer window is open for captain ${nameOf(fa.captainId)}`;
+    case "mission45CaptainChoice":
+      return `FORCED ACTION: ${nameOf(fa.captainId)} must choose who cuts on Mission 45`;
+    case "mission45PenaltyTokenChoice":
+      return `FORCED ACTION: ${nameOf(fa.playerId)} must choose a stand-side info token (Mission 45)`;
     case "mission22TokenPass":
       return `FORCED ACTION: ${nameOf(fa.currentChooserId)} must choose a token to pass (mission 22)`;
     case "mission27TokenDraft":

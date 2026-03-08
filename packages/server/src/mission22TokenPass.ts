@@ -1,13 +1,8 @@
 import {
-  INFO_TOKEN_VALUES,
-  TOTAL_INFO_TOKENS,
-  YELLOW_INFO_TOKENS,
+  getRemainingInfoTokenSupply,
 } from "@bomb-busters/shared";
 import type { ForcedAction, GameState, InfoToken } from "@bomb-busters/shared";
 import { applyMissionInfoTokenVariant } from "./infoTokenRules.js";
-
-const NUMERIC_TOKEN_COPIES =
-  (TOTAL_INFO_TOKENS - YELLOW_INFO_TOKENS) / INFO_TOKEN_VALUES.length;
 
 function normalizeMission22NumericToken(value: number): number | null {
   if (!Number.isInteger(value) || value < 1 || value > 12) return null;
@@ -17,32 +12,7 @@ function normalizeMission22NumericToken(value: number): number | null {
 function collectMission22TokenPassBoardFromPlayers(
   state: GameState,
 ): { numericTokens: number[]; yellowTokens: number } {
-  const usedNumericCounts = new Map<number, number>();
-  let usedYellowTokens = 0;
-
-  for (const player of state.players) {
-    for (const token of player.infoTokens) {
-      if (token.isYellow) {
-        usedYellowTokens += 1;
-      } else {
-        const normalizedValue = normalizeMission22NumericToken(token.value);
-        if (normalizedValue === null) continue;
-        usedNumericCounts.set(
-          normalizedValue,
-          (usedNumericCounts.get(normalizedValue) ?? 0) + 1,
-        );
-      }
-    }
-  }
-
-  const numericTokens = INFO_TOKEN_VALUES.flatMap((value) => {
-    const usedCount = usedNumericCounts.get(value) ?? 0;
-    const availableCount = Math.max(0, NUMERIC_TOKEN_COPIES - usedCount);
-    return Array.from({ length: availableCount }, () => value);
-  });
-  const yellowTokens = Math.max(0, YELLOW_INFO_TOKENS - usedYellowTokens);
-
-  return { numericTokens, yellowTokens };
+  return getRemainingInfoTokenSupply(state.players);
 }
 
 function isBoardValueSafe(value: number): value is number {

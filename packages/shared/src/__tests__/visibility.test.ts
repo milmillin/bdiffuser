@@ -71,6 +71,10 @@ describe("CAMPAIGN_VISIBILITY", () => {
     expect(CAMPAIGN_VISIBILITY.falseInfoTokenMode).toBe("public");
     expect(CAMPAIGN_VISIBILITY.falseTokenMode).toBe("public");
   });
+
+  it("marks mission45Turn as public", () => {
+    expect(CAMPAIGN_VISIBILITY.mission45Turn).toBe("public");
+  });
 });
 
 // ── Redaction helpers ──────────────────────────────────────
@@ -361,5 +365,17 @@ describe("filterCampaignState", () => {
     const campaign = makeCampaignState({ mission29Turn: turn });
     const filtered = filterCampaignState(campaign, "p1");
     expect(filtered.mission29Turn).toEqual(turn);
+  });
+
+  it("passes mission45Turn through unchanged", () => {
+    const turn = {
+      stage: "awaiting_volunteer" as const,
+      captainId: "p1",
+      currentCardId: "num-7",
+      currentValue: 7,
+    };
+    const campaign = makeCampaignState({ mission45Turn: turn });
+    const filtered = filterCampaignState(campaign, "p1");
+    expect(filtered.mission45Turn).toEqual(turn);
   });
 });

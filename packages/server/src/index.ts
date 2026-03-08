@@ -14,6 +14,7 @@ import type {
   MissionAudioState,
 } from "@bomb-busters/shared";
 import {
+  getAvailableInfoTokenChoiceValues,
   MISSION_SCHEMAS,
   isNonCaptainCharacterForbidden,
   hasXMarkedWireTalkiesRestriction,
@@ -75,12 +76,18 @@ import {
   getMission65BotHandoff,
   getMission66BotChoice,
   getMissionTurnSkipError,
+  getMission45CurrentValue,
+  mission45PlayerHasCurrentValue,
+  mission45PlayerHasOnlyRedWires,
   queueMission32ConstraintDecision,
   rotateMission61Constraint,
   getMission32BotDecision,
   resolveMission61AfterConstraintDecision,
   resolveMission61TurnStart,
   resolveMission34StartOfTurn,
+  setMission45CaptainChoicePending,
+  setMission45PenaltyTokenChoicePending,
+  setMission45SelectedCutter,
 } from "./missionHooks.js";
 import {
   createBotPlayer,
@@ -461,6 +468,18 @@ export class BombBustersServer extends Server<Env> {
       case "revealReds":
         this.handleRevealReds(connection);
         break;
+      case "mission45Snip":
+        this.handleMission45Snip(connection);
+        break;
+      case "mission45StartCaptainFallback":
+        this.handleMission45StartCaptainFallback(connection);
+        break;
+      case "mission45ChooseCaptainTarget":
+        this.handleMission45ChooseCaptainTarget(connection, msg.targetPlayerId);
+        break;
+      case "mission45PenaltyTokenChoice":
+        this.handleMission45PenaltyTokenChoice(connection, msg.value);
+        break;
       case "simultaneousRedCut":
         this.handleSimultaneousRedCut(connection, msg.targets);
         break;
@@ -601,7 +620,19 @@ export class BombBustersServer extends Server<Env> {
 
       // Update pendingForcedAction references
       if (gs.pendingForcedAction) {
-        if (gs.pendingForcedAction.kind === "chooseNextPlayer") {
+        if (gs.pendingForcedAction.kind === "mission45VolunteerWindow") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission45CaptainChoice") {
+          if (gs.pendingForcedAction.captainId === oldId) {
+            gs.pendingForcedAction.captainId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission45PenaltyTokenChoice") {
+          if (gs.pendingForcedAction.playerId === oldId) {
+            gs.pendingForcedAction.playerId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "chooseNextPlayer") {
           if (gs.pendingForcedAction.captainId === oldId) {
             gs.pendingForcedAction.captainId = newId;
           }
@@ -679,6 +710,18 @@ export class BombBustersServer extends Server<Env> {
         }
         if (gs.campaign.mission29Turn.chooserId === oldId) {
           gs.campaign.mission29Turn.chooserId = newId;
+        }
+      }
+
+      if (gs.campaign?.mission45Turn) {
+        if (gs.campaign.mission45Turn.captainId === oldId) {
+          gs.campaign.mission45Turn.captainId = newId;
+        }
+        if (gs.campaign.mission45Turn.selectedCutterId === oldId) {
+          gs.campaign.mission45Turn.selectedCutterId = newId;
+        }
+        if (gs.campaign.mission45Turn.penaltyPlayerId === oldId) {
+          gs.campaign.mission45Turn.penaltyPlayerId = newId;
         }
       }
 
@@ -1479,6 +1522,405 @@ export class BombBustersServer extends Server<Env> {
 
     this.saveState();
     this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission45Snip(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot say Snip!: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 45) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 Snip! is only allowed during Mission 45 gameplay.",
+      });
+      return;
+    }
+
+    const mission45Turn = state.campaign?.mission45Turn;
+    const forced = state.pendingForcedAction;
+    if (
+      !mission45Turn ||
+      mission45Turn.stage !== "awaiting_volunteer" ||
+      !forced ||
+      forced.kind !== "mission45VolunteerWindow"
+    ) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 is not currently waiting for a volunteer.",
+      });
+      return;
+    }
+
+    const actorIndex = state.players.findIndex((player) => player.id === conn.id);
+    const actor = actorIndex >= 0 ? state.players[actorIndex] : null;
+    if (!actor || !actor.hand.some((tile) => !tile.cut)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only players with uncut wires can say Snip! on Mission 45.",
+      });
+      return;
+    }
+
+    if (mission45PlayerHasOnlyRedWires(state, conn.id)) {
+      state.pendingForcedAction = undefined;
+      state.currentPlayerIndex = actorIndex;
+
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: conn.id,
+        action: "hookEffect",
+        detail: `mission45:snip_reveal_reds|player=${actor.name}`,
+        timestamp: Date.now(),
+      });
+
+      const previousResult = state.result;
+      const action = executeRevealReds(state, conn.id);
+      this.maybeRecordMissionFailure(previousResult, state);
+      this.saveState();
+      this.broadcastAction(action);
+      this.broadcastGameState();
+      this.scheduleBotTurnIfNeeded();
+      return;
+    }
+
+    const currentValue = getMission45CurrentValue(state);
+    if (currentValue == null) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "No active Number card remains. Only red-wire reveals are allowed now.",
+      });
+      return;
+    }
+
+    if (mission45PlayerHasCurrentValue(state, conn.id)) {
+      if (!setMission45SelectedCutter(state, conn.id)) {
+        this.sendMsg(conn, {
+          type: "error",
+          message: "Mission 45 could not assign the cutter.",
+        });
+        return;
+      }
+
+      state.currentPlayerIndex = actorIndex;
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: conn.id,
+        action: "hookEffect",
+        detail: `mission45:volunteer_selected|player=${actor.name}|value=${currentValue}`,
+        timestamp: Date.now(),
+      });
+
+      this.saveState();
+      this.broadcastGameState();
+      this.scheduleBotTurnIfNeeded();
+      return;
+    }
+
+    const previousResult = state.result;
+    state.board.detonatorPosition += 1;
+    const captainIndex = state.players.findIndex((player) => player.id === mission45Turn.captainId);
+    if (captainIndex >= 0) {
+      state.currentPlayerIndex = captainIndex;
+    }
+    setMission45CaptainChoicePending(state);
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "hookEffect",
+      detail: `mission45:bad_volunteer|player=${actor.name}|value=${currentValue}|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", conn.id);
+      this.maybeRecordMissionFailure(previousResult, state);
+      this.saveState();
+      this.broadcastAction({ type: "gameOver", result: "loss_detonator" });
+      this.broadcastGameState();
+      return;
+    }
+
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission45StartCaptainFallback(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot start Mission 45 fallback: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 45) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 fallback is only allowed during Mission 45 gameplay.",
+      });
+      return;
+    }
+
+    const mission45Turn = state.campaign?.mission45Turn;
+    const forced = state.pendingForcedAction;
+    if (
+      !mission45Turn ||
+      mission45Turn.stage !== "awaiting_volunteer" ||
+      !forced ||
+      forced.kind !== "mission45VolunteerWindow"
+    ) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 is not currently waiting for volunteer fallback.",
+      });
+      return;
+    }
+    if (conn.id !== mission45Turn.captainId) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the captain can start fallback on Mission 45.",
+      });
+      return;
+    }
+
+    if (!setMission45CaptainChoicePending(state)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 could not enter captain fallback mode.",
+      });
+      return;
+    }
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "hookEffect",
+      detail: "mission45:captain_fallback_started",
+      timestamp: Date.now(),
+    });
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission45ChooseCaptainTarget(conn: Connection, targetPlayerId: string) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Mission 45 target: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 45) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 target choice is only allowed during Mission 45 gameplay.",
+      });
+      return;
+    }
+
+    const mission45Turn = state.campaign?.mission45Turn;
+    const forced = state.pendingForcedAction;
+    if (
+      !mission45Turn ||
+      mission45Turn.stage !== "awaiting_captain_choice" ||
+      !forced ||
+      forced.kind !== "mission45CaptainChoice"
+    ) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 is not currently waiting for a captain target.",
+      });
+      return;
+    }
+    if (conn.id !== mission45Turn.captainId || conn.id !== forced.captainId) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the captain can choose the fallback target.",
+      });
+      return;
+    }
+
+    const targetIndex = state.players.findIndex((player) => player.id === targetPlayerId);
+    if (targetIndex < 0) {
+      this.sendMsg(conn, { type: "error", message: "Target player not found" });
+      return;
+    }
+
+    const target = state.players[targetIndex];
+    if (!target.hand.some((tile) => !tile.cut)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Target player has no remaining wires.",
+      });
+      return;
+    }
+
+    const currentValue = getMission45CurrentValue(state);
+    if (currentValue == null) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "No active Number card remains for captain fallback.",
+      });
+      return;
+    }
+
+    if (mission45PlayerHasCurrentValue(state, targetPlayerId)) {
+      if (!setMission45SelectedCutter(state, targetPlayerId)) {
+        this.sendMsg(conn, {
+          type: "error",
+          message: "Mission 45 could not assign the fallback cutter.",
+        });
+        return;
+      }
+
+      state.currentPlayerIndex = targetIndex;
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: conn.id,
+        action: "hookEffect",
+        detail: `mission45:captain_selected|captain=${conn.id}|target=${target.name}|value=${currentValue}`,
+        timestamp: Date.now(),
+      });
+
+      this.saveState();
+      this.broadcastGameState();
+      this.scheduleBotTurnIfNeeded();
+      return;
+    }
+
+    const previousResult = state.result;
+    state.board.detonatorPosition += 1;
+    setMission45PenaltyTokenChoicePending(state, targetPlayerId);
+    state.currentPlayerIndex = targetIndex;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "hookEffect",
+      detail:
+        `mission45:captain_selected_wrong_target|captain=${conn.id}` +
+        `|target=${target.name}|value=${currentValue}|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", conn.id, targetPlayerId);
+      this.maybeRecordMissionFailure(previousResult, state);
+      this.saveState();
+      this.broadcastAction({ type: "gameOver", result: "loss_detonator" });
+      this.broadcastGameState();
+      return;
+    }
+
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission45PenaltyTokenChoice(conn: Connection, value: number) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Mission 45 penalty token: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 45) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 penalty tokens are only allowed during Mission 45 gameplay.",
+      });
+      return;
+    }
+
+    const mission45Turn = state.campaign?.mission45Turn;
+    const forced = state.pendingForcedAction;
+    if (
+      !mission45Turn ||
+      mission45Turn.stage !== "awaiting_penalty_token" ||
+      !forced ||
+      forced.kind !== "mission45PenaltyTokenChoice"
+    ) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 45 is not currently waiting for a penalty token choice.",
+      });
+      return;
+    }
+    if (conn.id !== forced.playerId || conn.id !== mission45Turn.penaltyPlayerId) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the penalized player can choose this info token.",
+      });
+      return;
+    }
+
+    if (!Number.isInteger(value) || value < 0 || value > 12) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Token value must be 0 (yellow) or 1-12.",
+      });
+      return;
+    }
+
+    const availableValues = getAvailableInfoTokenChoiceValues(state.players);
+    if (!availableValues.includes(value)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "That info token is not available.",
+      });
+      return;
+    }
+
+    const player = state.players.find((candidate) => candidate.id === conn.id);
+    if (!player) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Penalized player not found.",
+      });
+      return;
+    }
+
+    pushInfoToken(player, applyMissionInfoTokenVariant(state, {
+      value,
+      position: -1,
+      isYellow: value === 0,
+    }, player));
+
+    state.pendingForcedAction = undefined;
+    delete mission45Turn.penaltyPlayerId;
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "hookEffect",
+      detail: `mission45:penalty_token|player=${player.name}|value=${value === 0 ? "YELLOW" : value}`,
+      timestamp: Date.now(),
+    });
+
+    const previousResult = state.result;
+    advanceTurn(state);
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
     this.broadcastGameState();
     this.scheduleBotTurnIfNeeded();
   }
@@ -3249,6 +3691,8 @@ export class BombBustersServer extends Server<Env> {
         state.phase === "playing" &&
         (
           !forced
+          || forced.kind === "mission45VolunteerWindow"
+          || forced.kind === "mission45CaptainChoice"
           || forced.kind === "chooseNextPlayer"
           || forced.kind === "designateCutter"
           || forced.kind === "mission66BunkerChoice"
@@ -3257,11 +3701,25 @@ export class BombBustersServer extends Server<Env> {
         )
       ) {
         const currentPlayer = state.players[state.currentPlayerIndex];
+        const mission45VolunteerBot = forced?.kind === "mission45VolunteerWindow"
+          ? (() => {
+            const currentValue = getMission45CurrentValue(state);
+            const captainId = state.campaign?.mission45Turn?.captainId;
+            return state.players.some((player) => {
+              if (!player.isBot || !player.hand.some((tile) => !tile.cut)) return false;
+              if (mission45PlayerHasCurrentValue(state, player.id)) return true;
+              if (mission45PlayerHasOnlyRedWires(state, player.id)) return true;
+              return captainId != null && player.id === captainId;
+            });
+          })()
+          : false;
         const forcedCaptain = forced?.kind === "mission32ConstraintDecision"
           ? state.players.find((player) => player.id === forced.captainId)
           : null;
         const shouldScheduleBot =
-          forced?.kind === "mission32ConstraintDecision"
+          forced?.kind === "mission45VolunteerWindow"
+            ? mission45VolunteerBot
+          : forced?.kind === "mission32ConstraintDecision"
             ? forcedCaptain?.isBot === true
             : currentPlayer?.isBot === true;
         if (shouldScheduleBot) {
@@ -3285,6 +3743,12 @@ export class BombBustersServer extends Server<Env> {
         }
       } else if (forced?.kind === "mission65CardHandoff") {
         const actor = state.players.find((p) => p.id === forced.actorId);
+        if (actor?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
+      } else if (forced?.kind === "mission45PenaltyTokenChoice") {
+        const actor = state.players.find((p) => p.id === forced.playerId);
         if (actor?.isBot) {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
@@ -3396,6 +3860,183 @@ export class BombBustersServer extends Server<Env> {
   async executeBotTurn() {
     const state = this.room.gameState;
     if (!state || state.phase !== "playing") return;
+
+    const mission45PenaltyForced = state.pendingForcedAction;
+    if (mission45PenaltyForced?.kind === "mission45PenaltyTokenChoice") {
+      const actor = state.players.find((player) => player.id === mission45PenaltyForced.playerId);
+      if (actor?.isBot) {
+        const availableValues = getAvailableInfoTokenChoiceValues(state.players);
+        const value = availableValues[0];
+        if (value == null) {
+          state.pendingForcedAction = undefined;
+        } else {
+          pushInfoToken(actor, applyMissionInfoTokenVariant(state, {
+            value,
+            position: -1,
+            isYellow: value === 0,
+          }, actor));
+          if (state.campaign?.mission45Turn) {
+            delete state.campaign.mission45Turn.penaltyPlayerId;
+          }
+          state.pendingForcedAction = undefined;
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: actor.id,
+            action: "hookEffect",
+            detail: `mission45:penalty_token|player=${actor.name}|value=${value === 0 ? "YELLOW" : value}`,
+            timestamp: Date.now(),
+          });
+          advanceTurn(state);
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
+
+    const mission45Turn = state.campaign?.mission45Turn;
+    const mission45Forced = state.pendingForcedAction;
+    if (
+      mission45Forced?.kind === "mission45VolunteerWindow" &&
+      mission45Turn?.stage === "awaiting_volunteer"
+    ) {
+      const captain = state.players.find((player) => player.id === mission45Turn.captainId);
+      const matchingBotVolunteer = state.players.find((player) =>
+        player.isBot &&
+        player.hand.some((tile) => !tile.cut) &&
+        mission45PlayerHasCurrentValue(state, player.id),
+      );
+      if (matchingBotVolunteer) {
+        if (setMission45SelectedCutter(state, matchingBotVolunteer.id)) {
+          state.currentPlayerIndex = state.players.findIndex(
+            (player) => player.id === matchingBotVolunteer.id,
+          );
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: matchingBotVolunteer.id,
+            action: "hookEffect",
+            detail:
+              `mission45:volunteer_selected|player=${matchingBotVolunteer.name}` +
+              `|value=${getMission45CurrentValue(state) ?? "none"}`,
+            timestamp: Date.now(),
+          });
+        }
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+
+      const redOnlyBotVolunteer = state.players.find((player) =>
+        player.isBot &&
+        player.hand.some((tile) => !tile.cut) &&
+        mission45PlayerHasOnlyRedWires(state, player.id),
+      );
+      if (redOnlyBotVolunteer) {
+        const volunteerIndex = state.players.findIndex((player) => player.id === redOnlyBotVolunteer.id);
+        if (volunteerIndex >= 0) {
+          state.pendingForcedAction = undefined;
+          state.currentPlayerIndex = volunteerIndex;
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: redOnlyBotVolunteer.id,
+            action: "hookEffect",
+            detail: `mission45:snip_reveal_reds|player=${redOnlyBotVolunteer.name}`,
+            timestamp: Date.now(),
+          });
+          const action = executeRevealReds(state, redOnlyBotVolunteer.id);
+          this.saveState();
+          this.broadcastAction(action);
+          this.broadcastGameState();
+          this.scheduleBotTurnIfNeeded();
+          return;
+        }
+      }
+
+      if (captain?.isBot) {
+        setMission45CaptainChoicePending(state);
+        pushGameLog(state, {
+          turn: state.turnNumber,
+          playerId: captain.id,
+          action: "hookEffect",
+          detail: "mission45:captain_fallback_started",
+          timestamp: Date.now(),
+        });
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
+
+    if (
+      mission45Forced?.kind === "mission45CaptainChoice" &&
+      mission45Turn?.stage === "awaiting_captain_choice"
+    ) {
+      const captain = state.players.find((player) => player.id === mission45Turn.captainId);
+      if (captain?.isBot) {
+        const target =
+          state.players.find((player) =>
+            player.hand.some((tile) => !tile.cut) && mission45PlayerHasCurrentValue(state, player.id),
+          ) ?? state.players.find((player) => player.hand.some((tile) => !tile.cut));
+
+        if (!target) {
+          state.pendingForcedAction = undefined;
+          this.saveState();
+          this.broadcastGameState();
+          return;
+        }
+
+        const previousResult = state.result;
+        if (mission45PlayerHasCurrentValue(state, target.id)) {
+          if (setMission45SelectedCutter(state, target.id)) {
+            state.currentPlayerIndex = state.players.findIndex((player) => player.id === target.id);
+            pushGameLog(state, {
+              turn: state.turnNumber,
+              playerId: captain.id,
+              action: "hookEffect",
+              detail: `mission45:captain_selected|captain=${captain.id}|target=${target.name}|value=${getMission45CurrentValue(state) ?? "none"}`,
+              timestamp: Date.now(),
+            });
+          }
+        } else {
+          state.board.detonatorPosition += 1;
+          setMission45PenaltyTokenChoicePending(state, target.id);
+          state.currentPlayerIndex = state.players.findIndex((player) => player.id === target.id);
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: captain.id,
+            action: "hookEffect",
+            detail:
+              `mission45:captain_selected_wrong_target|captain=${captain.id}` +
+              `|target=${target.name}|value=${getMission45CurrentValue(state) ?? "none"}` +
+              `|detonator=${state.board.detonatorPosition}`,
+            timestamp: Date.now(),
+          });
+
+          if (state.board.detonatorPosition >= state.board.detonatorMax) {
+            state.result = "loss_detonator";
+            state.phase = "finished";
+            emitMissionFailureTelemetry(state, "loss_detonator", captain.id, target.id);
+            this.maybeRecordMissionFailure(previousResult, state);
+            this.saveState();
+            this.broadcastAction({ type: "gameOver", result: "loss_detonator" });
+            this.broadcastGameState();
+            return;
+          }
+        }
+
+        this.maybeRecordMissionFailure(previousResult, state);
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+      return;
+    }
 
     const mission32Forced = state.pendingForcedAction;
     if (mission32Forced?.kind === "mission32ConstraintDecision") {

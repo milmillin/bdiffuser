@@ -6,7 +6,10 @@ import type {
   PlayerCount,
   WireValue,
 } from "@bomb-busters/shared";
-import { MISSION_SCHEMAS } from "@bomb-busters/shared";
+import {
+  getAvailableInfoTokenChoiceValues,
+  MISSION_SCHEMAS,
+} from "@bomb-busters/shared";
 import { makeGameState, makePlayer, makeTile, withSeededRandom } from "@bomb-busters/shared/testing";
 import {
   executeDualCut,
@@ -35,8 +38,13 @@ import {
   getMission65BotHandoff,
   getMission66BotChoice,
   getMission32BotDecision,
+  mission45PlayerHasCurrentValue,
+  mission45PlayerHasOnlyRedWires,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
+  setMission45CaptainChoicePending,
+  setMission45PenaltyTokenChoicePending,
+  setMission45SelectedCutter,
 } from "../missionHooks";
 import { buildSimultaneousFourCutTargets } from "../simultaneousFourCutTargets";
 import { setupGame } from "../setup";
@@ -635,6 +643,83 @@ function resolveForcedAction(state: GameState): boolean {
     rotateMission61Constraint(state, "clockwise");
     state.pendingForcedAction = undefined;
     resolveMission61AfterConstraintDecision(state, forced.previousPlayerId);
+    return true;
+  }
+
+  if (forced.kind === "mission45VolunteerWindow") {
+    const matchingVolunteer = state.players.find((player) =>
+      player.hand.some((tile) => !tile.cut) &&
+      mission45PlayerHasCurrentValue(state, player.id),
+    );
+    if (matchingVolunteer) {
+      if (!setMission45SelectedCutter(state, matchingVolunteer.id)) {
+        return false;
+      }
+      state.currentPlayerIndex = state.players.findIndex((player) => player.id === matchingVolunteer.id);
+      return true;
+    }
+
+    const redOnlyVolunteer = state.players.find((player) =>
+      player.hand.some((tile) => !tile.cut) &&
+      mission45PlayerHasOnlyRedWires(state, player.id),
+    );
+    if (redOnlyVolunteer) {
+      executeRevealReds(state, redOnlyVolunteer.id);
+      return true;
+    }
+
+    return setMission45CaptainChoicePending(state);
+  }
+
+  if (forced.kind === "mission45CaptainChoice") {
+    const target =
+      state.players.find((player) =>
+        player.hand.some((tile) => !tile.cut) &&
+        mission45PlayerHasCurrentValue(state, player.id),
+      ) ?? state.players.find((player) => player.hand.some((tile) => !tile.cut));
+    if (!target) return false;
+
+    if (mission45PlayerHasCurrentValue(state, target.id)) {
+      if (!setMission45SelectedCutter(state, target.id)) {
+        return false;
+      }
+      state.currentPlayerIndex = state.players.findIndex((player) => player.id === target.id);
+      return true;
+    }
+
+    state.board.detonatorPosition += 1;
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    if (!setMission45PenaltyTokenChoicePending(state, target.id)) {
+      return false;
+    }
+    state.currentPlayerIndex = state.players.findIndex((player) => player.id === target.id);
+    return true;
+  }
+
+  if (forced.kind === "mission45PenaltyTokenChoice") {
+    const actor = state.players.find((player) => player.id === forced.playerId);
+    if (!actor) return false;
+
+    const availableValues = getAvailableInfoTokenChoiceValues(state.players);
+    const value = availableValues[0];
+    if (value == null) return false;
+
+    actor.infoTokens.push(applyMissionInfoTokenVariant(state, {
+      value,
+      position: -1,
+      isYellow: value === 0,
+    }, actor));
+    if (state.campaign?.mission45Turn) {
+      delete state.campaign.mission45Turn.penaltyPlayerId;
+    }
+    state.pendingForcedAction = undefined;
+    advanceTurn(state);
     return true;
   }
 

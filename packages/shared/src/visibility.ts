@@ -82,6 +82,8 @@ export interface CampaignVisibilityModel {
   mission22TokenPassBoard: "public";
   /** Mission 27 token-draft line supply: visible to all players. */
   mission27TokenDraftBoard: "public";
+  /** Mission 45 volunteer/fallback turn state: visible to all players. */
+  mission45Turn: "public";
   /** Mission 34 hidden weakest-link state: only your own dealt constraint is visible. */
   mission34Hidden: "owner_only";
   /** Mission 61 ring slots are public; replacement pool is filtered separately. */
@@ -129,6 +131,7 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   specialMarkers: "public",
   mission22TokenPassBoard: "public",
   mission27TokenDraftBoard: "public",
+  mission45Turn: "public",
   mission34Hidden: "owner_only",
   mission61Ring: "public",
   mission66Bunker: "public",
@@ -262,6 +265,9 @@ export function filterCampaignState(
       : {}),
     ...(campaign.mission27TokenDraftBoard
       ? { mission27TokenDraftBoard: campaign.mission27TokenDraftBoard }
+      : {}),
+    ...(campaign.mission45Turn
+      ? { mission45Turn: campaign.mission45Turn }
       : {}),
     ...(campaign.mission34Hidden
       ? { mission34Hidden: filterMission34Hidden(campaign.mission34Hidden, playerId) }

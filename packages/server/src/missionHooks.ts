@@ -8050,19 +8050,294 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
   },
 });
 
+function getMission45Captain(state: Readonly<GameState>): Player | null {
+  return state.players.find((player) => player.isCaptain) ?? state.players[0] ?? null;
+}
+
+function playerHasOnlyRedWires(player: Readonly<Player>): boolean {
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  return uncutTiles.length > 0 && uncutTiles.every((tile) => tile.color === "red");
+}
+
+function getMission45Turn(state: Readonly<GameState>) {
+  return state.campaign?.mission45Turn;
+}
+
+export function getMission45CurrentValue(state: Readonly<GameState>): number | null {
+  const currentValue = getMission45Turn(state)?.currentValue;
+  return typeof currentValue === "number" ? currentValue : null;
+}
+
+export function mission45PlayerHasOnlyRedWires(
+  state: Readonly<GameState>,
+  playerId: string,
+): boolean {
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  return player != null && playerHasOnlyRedWires(player);
+}
+
+export function mission45PlayerHasCurrentValue(
+  state: Readonly<GameState>,
+  playerId: string,
+): boolean {
+  const currentValue = getMission45CurrentValue(state);
+  if (currentValue == null) return false;
+
+  const player = state.players.find((candidate) => candidate.id === playerId);
+  if (!player) return false;
+
+  return player.hand.some(
+    (tile) => !tile.cut && typeof tile.gameValue === "number" && tile.gameValue === currentValue,
+  );
+}
+
+function discardMission45CurrentCardIfCompleted(
+  state: GameState,
+  actorId: string,
+): void {
+  const mission45Turn = state.campaign?.mission45Turn;
+  const numberCards = state.campaign?.numberCards;
+  if (!mission45Turn || !numberCards) return;
+
+  const currentCardId = mission45Turn.currentCardId;
+  const currentValue = mission45Turn.currentValue;
+  if (!currentCardId || typeof currentValue !== "number") return;
+  if (getCutCountForValue(state, currentValue) < 4) return;
+
+  const visibleIndex = numberCards.visible.findIndex((card) => card.id === currentCardId);
+  if (visibleIndex < 0) return;
+
+  const completedCard = numberCards.visible.splice(visibleIndex, 1)[0]!;
+  numberCards.discard.push({
+    ...completedCard,
+    faceUp: true,
+  });
+
+  delete mission45Turn.currentCardId;
+  delete mission45Turn.currentValue;
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: `mission45:number_completed|value=${completedCard.value}|remaining_visible=${numberCards.visible.length}`,
+    timestamp: Date.now(),
+  });
+}
+
+function reshuffleMission45VisibleCardsIntoDeck(state: GameState): boolean {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards || numberCards.deck.length > 0 || numberCards.visible.length === 0) {
+    return false;
+  }
+
+  const reshuffledCards = shuffle(
+    numberCards.visible.map((card) => ({
+      ...card,
+      faceUp: false,
+    })),
+  );
+  numberCards.deck = reshuffledCards;
+  numberCards.visible = [];
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: "system",
+    action: "hookEffect",
+    detail: `mission45:number_reshuffle|count=${reshuffledCards.length}`,
+    timestamp: Date.now(),
+  });
+
+  return true;
+}
+
+function revealMission45NextCard(state: GameState): void {
+  const mission45Turn = state.campaign?.mission45Turn;
+  const numberCards = state.campaign?.numberCards;
+  const captain = getMission45Captain(state);
+  if (!mission45Turn || !numberCards || !captain) return;
+
+  reshuffleMission45VisibleCardsIntoDeck(state);
+
+  const nextCard = numberCards.deck.shift();
+  if (!nextCard) {
+    delete mission45Turn.currentCardId;
+    delete mission45Turn.currentValue;
+    return;
+  }
+
+  const visibleCard = {
+    ...nextCard,
+    faceUp: true,
+  };
+  numberCards.visible.push(visibleCard);
+  mission45Turn.currentCardId = visibleCard.id;
+  mission45Turn.currentValue = visibleCard.value;
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: captain.id,
+    action: "hookEffect",
+    detail: `mission45:number_revealed|value=${visibleCard.value}|visible=${numberCards.visible.map((card) => card.value).join(",")}`,
+    timestamp: Date.now(),
+  });
+}
+
+function resetMission45TurnForVolunteerWindow(state: GameState): void {
+  const mission45Turn = state.campaign?.mission45Turn;
+  const captain = getMission45Captain(state);
+  if (!mission45Turn || !captain) return;
+
+  mission45Turn.captainId = captain.id;
+  mission45Turn.stage = "awaiting_volunteer";
+  delete mission45Turn.selectedCutterId;
+  delete mission45Turn.penaltyPlayerId;
+  state.pendingForcedAction = {
+    kind: "mission45VolunteerWindow",
+    captainId: captain.id,
+  };
+}
+
+export function setMission45CaptainChoicePending(state: GameState): boolean {
+  const mission45Turn = state.campaign?.mission45Turn;
+  const captain = getMission45Captain(state);
+  if (!mission45Turn || !captain) return false;
+
+  mission45Turn.captainId = captain.id;
+  mission45Turn.stage = "awaiting_captain_choice";
+  delete mission45Turn.selectedCutterId;
+  delete mission45Turn.penaltyPlayerId;
+  state.pendingForcedAction = {
+    kind: "mission45CaptainChoice",
+    captainId: captain.id,
+  };
+  return true;
+}
+
+export function setMission45SelectedCutter(
+  state: GameState,
+  playerId: string,
+): boolean {
+  const mission45Turn = state.campaign?.mission45Turn;
+  if (!mission45Turn) return false;
+
+  mission45Turn.stage = "awaiting_cut";
+  mission45Turn.selectedCutterId = playerId;
+  delete mission45Turn.penaltyPlayerId;
+  state.pendingForcedAction = undefined;
+  return true;
+}
+
+export function setMission45PenaltyTokenChoicePending(
+  state: GameState,
+  playerId: string,
+): boolean {
+  const mission45Turn = state.campaign?.mission45Turn;
+  if (!mission45Turn) return false;
+
+  mission45Turn.stage = "awaiting_penalty_token";
+  delete mission45Turn.selectedCutterId;
+  mission45Turn.penaltyPlayerId = playerId;
+  state.pendingForcedAction = {
+    kind: "mission45PenaltyTokenChoice",
+    playerId,
+  };
+  return true;
+}
+
 /**
  * Mission 45: Squeak number challenge.
  * Players challenge a number and must cut it before someone else does.
  */
 registerHookHandler<"squeak_number_challenge">("squeak_number_challenge", {
   setup(_rule: SqueakNumberChallengeRuleDef, ctx: SetupHookContext): void {
+    const captain = getMission45Captain(ctx.state);
+    if (!captain) return;
+    const captainIndex = ctx.state.players.findIndex((player) => player.id === captain.id);
+
+    const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = {
+      deck: deckValues.map((value, idx) => ({
+        id: `m45-deck-${idx}-${value}`,
+        value,
+        faceUp: false,
+      })),
+      discard: [],
+      visible: [],
+      playerHands: {},
+    };
+    ctx.state.campaign.mission45Turn = {
+      stage: "awaiting_volunteer",
+      captainId: captain.id,
+    };
+    revealMission45NextCard(ctx.state);
+    resetMission45TurnForVolunteerWindow(ctx.state);
+    if (captainIndex >= 0) {
+      ctx.state.currentPlayerIndex = captainIndex;
+    }
+
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: "squeak_number_challenge:active",
+      detail: "squeak_number_challenge:init",
       timestamp: Date.now(),
     });
+  },
+
+  validate(_rule: SqueakNumberChallengeRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.state.phase === "finished" || ctx.state.mission !== 45) return;
+
+    const mission45Turn = ctx.state.campaign?.mission45Turn;
+    if (!mission45Turn || mission45Turn.stage !== "awaiting_cut") return;
+
+    if (ctx.action.actorId !== mission45Turn.selectedCutterId) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 45: only the selected cutter may act now",
+      };
+    }
+
+    if (
+      ctx.action.type !== "dualCut" &&
+      ctx.action.type !== "dualCutDoubleDetector" &&
+      ctx.action.type !== "soloCut"
+    ) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 45: the selected cutter must cut the current Number card value",
+      };
+    }
+
+    const attemptedValue =
+      ctx.action.type === "soloCut" ? ctx.action.value : ctx.action.guessValue;
+    if (attemptedValue !== mission45Turn.currentValue) {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError:
+          `Mission 45: the selected cutter must target value ${mission45Turn.currentValue}`,
+      };
+    }
+  },
+
+  endTurn(_rule: SqueakNumberChallengeRuleDef, ctx: EndTurnHookContext): HookResult | void {
+    if (ctx.state.phase === "finished" || ctx.state.mission !== 45) return;
+
+    discardMission45CurrentCardIfCompleted(
+      ctx.state,
+      ctx.previousPlayerId ?? "system",
+    );
+    revealMission45NextCard(ctx.state);
+    resetMission45TurnForVolunteerWindow(ctx.state);
+
+    const captain = getMission45Captain(ctx.state);
+    const captainIndex = captain
+      ? ctx.state.players.findIndex((player) => player.id === captain.id)
+      : -1;
+    if (captainIndex < 0) return;
+
+    return { nextPlayerIndex: captainIndex };
   },
 });
 
