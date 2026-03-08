@@ -511,7 +511,11 @@ function CampaignObjectsHint({
   const displayVisibleCards = displayVisibleCardEntries.map((entry) => entry.card);
   const deckCount = campaign.numberCards?.deck.length ?? 0;
   const discardCount = campaign.numberCards?.discard.length ?? 0;
-  const showNumberDeck = gameState.mission !== 36;
+  const hideNumberDeckAndDiscard =
+    gameState.mission === 36 ||
+    gameState.mission === 29 ||
+    gameState.mission === 65;
+  const showNumberDeck = !hideNumberDeckAndDiscard;
   const showDeckCard = showNumberDeck && deckCount > 0;
   const mission36RightEdge = Math.max(0, displayVisibleCards.length - 1);
   const mission36CutterPlacement =
@@ -628,7 +632,7 @@ function CampaignObjectsHint({
     (!hideNumberCards &&
       (displayVisibleCards.length > 0 ||
         showDeckCard ||
-        discardCount > 0 ||
+        (!hideNumberDeckAndDiscard && discardCount > 0) ||
         numberCardHandsByPlayer.length > 0));
   const usesNanoNumberStrip =
     gameState.mission === 43 || gameState.mission === 53 || gameState.mission === 59;
@@ -656,7 +660,7 @@ function CampaignObjectsHint({
       <div className="space-y-3">
         {hasNumberCardContent && (
           <SectionShell>
-            {(hasCutterCard || displayVisibleCards.length > 0 || showDeckCard || discardCount > 0) && (
+            {(hasCutterCard || displayVisibleCards.length > 0 || showDeckCard || (!hideNumberDeckAndDiscard && discardCount > 0)) && (
               showPairedNumberConstraintRows ? (
                 <CampaignRow>
                   <div
@@ -864,7 +868,7 @@ function CampaignObjectsHint({
                       }
                     />
                   )}
-                  {discardCount > 0 && (
+                  {!hideNumberDeckAndDiscard && discardCount > 0 && (
                     <CampaignObjectCard
                       image={NUMBER_CARD_BACK}
                       borderClassName="border-black/75"
