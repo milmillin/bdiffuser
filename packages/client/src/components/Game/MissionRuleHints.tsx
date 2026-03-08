@@ -889,7 +889,8 @@ function CampaignObjectsHint({
               <CampaignRow>
                 {numberCardHandsByPlayer.flatMap((entry) =>
                   entry.cards.map((card, idx) => {
-                    const image = card.faceUp
+                    const isKnown = card.faceUp || card.value > 0;
+                    const image = isKnown
                       ? getNumberCardImage(card.value)
                       : NUMBER_CARD_BACK;
                     return (
@@ -897,19 +898,19 @@ function CampaignObjectsHint({
                       key={`${entry.playerId}-${card.id}-${idx}`}
                       image={image}
                       borderClassName={
-                        card.faceUp ? "border-sky-500" : "border-black/75"
+                        isKnown ? "border-sky-500" : "border-black/75"
                       }
                         sizeClassName={numberThumbnailSizeClass}
                         testId={`mission-hint-thumb-number-hand-${entry.playerId}-${card.id}-${idx}`}
-                        dimmed={!card.faceUp}
-                        overlayLabel={card.faceUp ? undefined : "Down"}
+                        dimmed={!isKnown}
+                        overlayLabel={isKnown ? undefined : "Down"}
                         onClick={() =>
                           setPreviewCard({
-                            name: card.faceUp
+                            name: isKnown
                               ? `${entry.playerName}: Number ${card.value}`
                               : `${entry.playerName}: Number Card (face down)`,
                             previewImage: image,
-                            detailSubtitle: card.faceUp
+                            detailSubtitle: isKnown
                               ? `Value: ${card.value}`
                               : "This card is face down.",
                           })
