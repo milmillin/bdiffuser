@@ -245,15 +245,9 @@ function normalizeMission29Turn(
   if (typeof raw.actorId !== "string" || raw.actorId.length === 0) return undefined;
   if (typeof raw.chooserId !== "string" || raw.chooserId.length === 0) return undefined;
 
-  const selectedCard =
-    hasOwn(raw, "selectedCard")
-      ? normalizeNumberCard(raw.selectedCard)
-      : null;
-
   return {
     actorId: raw.actorId,
     chooserId: raw.chooserId,
-    ...(selectedCard ? { selectedCard } : {}),
     ...(typeof raw.matchedCut === "boolean" ? { matchedCut: raw.matchedCut } : {}),
     ...(typeof raw.skipReveal === "boolean" ? { skipReveal: raw.skipReveal } : {}),
   };

@@ -995,11 +995,6 @@ describe("normalizeRoomState", () => {
     expect(normalized.gameState!.campaign?.mission29Turn).toEqual({
       actorId: "actor",
       chooserId: "chooser",
-      selectedCard: {
-        id: "m29-selected",
-        value: 8,
-        faceUp: false,
-      },
       matchedCut: true,
     });
   });

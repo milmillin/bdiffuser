@@ -337,8 +337,6 @@ export interface Mission29TurnState {
   actorId: string;
   /** Player to the actor's right who must choose the hidden card. */
   chooserId: string;
-  /** Hidden Number card selected for this turn (if already chosen). */
-  selectedCard?: NumberCard;
   /** Whether the actor successfully cut the selected value this turn. */
   matchedCut?: boolean;
   /** Whether reveal/penalty is skipped this turn (Coffee Mug FAQ). */

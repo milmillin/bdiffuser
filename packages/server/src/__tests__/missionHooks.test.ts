@@ -420,14 +420,14 @@ describe("missionHooks dispatcher", () => {
       expect(numberCards?.discard).toHaveLength(0);
 
       expect(numberCards?.playerHands.captain).toHaveLength(2);
-      expect(numberCards?.playerHands.p2).toHaveLength(3);
-      expect(numberCards?.playerHands.p3).toHaveLength(2);
+      expect(numberCards?.playerHands.p2).toHaveLength(2);
+      expect(numberCards?.playerHands.p3).toHaveLength(3);
       expect(numberCards?.deck).toHaveLength(5);
 
       expect(state.pendingForcedAction).toEqual({
         kind: "mission29HiddenNumberCard",
         actorId: "captain",
-        chooserId: "p2",
+        chooserId: "p3",
       });
     });
 
@@ -1040,7 +1040,7 @@ describe("missionHooks dispatcher", () => {
         players: [actor, teammate, chooser],
         campaign: {
           numberCards: {
-            visible: [],
+            visible: [{ id: "m29-selected-5", value: 5, faceUp: false }],
             deck: [
               { id: "m29-deck-5", value: 5, faceUp: false },
               { id: "m29-deck-8", value: 8, faceUp: false },
@@ -1055,7 +1055,6 @@ describe("missionHooks dispatcher", () => {
           mission29Turn: {
             actorId: "actor",
             chooserId: "chooser",
-            selectedCard: { id: "m29-selected-5", value: 5, faceUp: false },
             matchedCut: false,
             skipReveal: false,
           },
@@ -2183,7 +2182,7 @@ describe("missionHooks dispatcher", () => {
         board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
         campaign: {
           numberCards: {
-            visible: [],
+            visible: [{ id: "m29-selected-6", value: 6, faceUp: false }],
             deck: [{ id: "m29-deck-2", value: 2, faceUp: false }],
             discard: [],
             playerHands: {
@@ -2195,7 +2194,6 @@ describe("missionHooks dispatcher", () => {
           mission29Turn: {
             actorId: "p1",
             chooserId: "p2",
-            selectedCard: { id: "m29-selected-6", value: 6, faceUp: false },
             matchedCut: true,
             skipReveal: false,
           },
@@ -2212,10 +2210,10 @@ describe("missionHooks dispatcher", () => {
       expect(state.pendingForcedAction).toEqual({
         kind: "mission29HiddenNumberCard",
         actorId: "p2",
-        chooserId: "p3",
+        chooserId: "p1",
       });
       expect(state.campaign?.mission29Turn?.actorId).toBe("p2");
-      expect(state.campaign?.mission29Turn?.chooserId).toBe("p3");
+      expect(state.campaign?.mission29Turn?.chooserId).toBe("p1");
     });
 
     it("mission 29: skip-reveal turn does not advance detonator and keeps transferred card face down", () => {
@@ -2235,7 +2233,7 @@ describe("missionHooks dispatcher", () => {
         board: makeBoardState({ detonatorPosition: 1, detonatorMax: 4 }),
         campaign: {
           numberCards: {
-            visible: [],
+            visible: [{ id: "m29-selected-6", value: 6, faceUp: false }],
             deck: [{ id: "m29-deck-8", value: 8, faceUp: false }],
             discard: [],
             playerHands: {
@@ -2246,7 +2244,6 @@ describe("missionHooks dispatcher", () => {
           mission29Turn: {
             actorId: "p1",
             chooserId: "p2",
-            selectedCard: { id: "m29-selected-6", value: 6, faceUp: false },
             matchedCut: true,
             skipReveal: false,
           },
@@ -2307,7 +2304,7 @@ describe("missionHooks dispatcher", () => {
       expect(result).toEqual({ ok: true });
       expect(state.pendingForcedAction).toBeUndefined();
       expect(state.campaign?.numberCards?.playerHands.chooser.map((card) => card.value)).toEqual([5, 8]);
-      expect(state.campaign?.mission29Turn?.selectedCard?.value).toBe(9);
+      expect(state.campaign?.numberCards?.visible?.[0]?.value).toBe(9);
       expect(state.campaign?.mission29Turn?.matchedCut).toBe(false);
     });
 

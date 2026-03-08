@@ -5969,7 +5969,7 @@ function findMission29ChooserIndex(
   const playerCount = state.players.length;
   const playerHands = state.campaign?.numberCards?.playerHands ?? {};
   for (let offset = 1; offset < playerCount; offset += 1) {
-    const candidateIndex = (actorIndex + offset) % playerCount;
+    const candidateIndex = (actorIndex - offset + playerCount) % playerCount;
     const candidate = state.players[candidateIndex];
     const hand = playerHands[candidate.id] ?? [];
     if (hand.length > 0) return candidateIndex;
@@ -6108,14 +6108,11 @@ function discardMission29LastRemainingValueCard(state: GameState): void {
   const [lastValue] = [...remainingValues];
   const removedFromPiles = discardMission29CardsForValues(state, new Set([lastValue]));
 
-  const turn = state.campaign?.mission29Turn;
   const numberCards = state.campaign?.numberCards;
-  if (turn?.selectedCard?.value === lastValue && numberCards) {
-    numberCards.discard.push({
-      ...turn.selectedCard,
-      faceUp: true,
-    });
-    turn.selectedCard = undefined;
+  const tableCard = numberCards?.visible?.[0];
+  if (tableCard?.value === lastValue && numberCards) {
+    numberCards.discard.push({ ...tableCard, faceUp: true });
+    numberCards.visible.splice(0, 1);
   }
 
   if (removedFromPiles > 0) {
@@ -6176,9 +6173,9 @@ function finalizeMission29Turn(state: GameState): void {
   const campaign = state.campaign;
   const numberCards = campaign?.numberCards;
   const turn = campaign?.mission29Turn;
-  if (!campaign || !numberCards || !turn || !turn.selectedCard) return;
+  if (!campaign || !numberCards || !turn || numberCards.visible.length === 0) return;
 
-  const selectedCard = turn.selectedCard;
+  const selectedCard = numberCards.visible[0];
   const shouldReveal = !turn.skipReveal;
   if (shouldReveal) {
     selectedCard.faceUp = true;
@@ -6200,7 +6197,7 @@ function finalizeMission29Turn(state: GameState): void {
     if (state.board.detonatorPosition >= state.board.detonatorMax) {
       state.phase = "finished";
       state.result = "loss_detonator";
-      turn.selectedCard = undefined;
+      numberCards.visible.length = 0;
       return;
     }
   }
@@ -6220,7 +6217,7 @@ function finalizeMission29Turn(state: GameState): void {
     numberCards.playerHands[turn.actorId] = actorHand;
   }
 
-  turn.selectedCard = undefined;
+  numberCards.visible.splice(0, 1);
   turn.matchedCut = false;
   turn.skipReveal = false;
 }
@@ -6258,12 +6255,12 @@ export function applyMission29HiddenNumberCardChoice(
 
   const selectedCard = chooserHand.splice(cardIndex, 1)[0];
   selectedCard.faceUp = false;
+  numberCards.visible.push(selectedCard);
 
   state.campaign ??= {};
   state.campaign.mission29Turn = {
     actorId: forced.actorId,
     chooserId: forced.chooserId,
-    selectedCard,
     matchedCut: false,
     skipReveal: false,
   };
@@ -6309,7 +6306,7 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
       0,
       ctx.state.players.findIndex((player) => player.isCaptain),
     );
-    const rightOfCaptainIndex = playerCount === 0 ? 0 : (captainIndex + 1) % playerCount;
+    const rightOfCaptainIndex = playerCount === 0 ? 0 : (captainIndex - 1 + playerCount) % playerCount;
 
     ctx.state.campaign ??= {};
     const playerHands: Record<string, { id: string; value: number; faceUp: boolean }[]> = {};
@@ -6354,7 +6351,8 @@ registerHookHandler<"hidden_number_card_penalty">("hidden_number_card_penalty", 
     const turn = ctx.state.campaign?.mission29Turn;
     if (!turn || turn.actorId !== ctx.action.actorId) return;
 
-    if (turn.selectedCard && turn.selectedCard.value === ctx.cutValue) {
+    const visibleCard = ctx.state.campaign?.numberCards?.visible?.[0];
+    if (visibleCard && visibleCard.value === ctx.cutValue) {
       turn.matchedCut = true;
     }
 

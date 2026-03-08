@@ -175,7 +175,10 @@ export function filterNumberCards(
       );
     }
   }
-  return { deck, discard: state.discard, visible: state.visible, playerHands };
+  const visible = state.visible.map((card, index) =>
+    card.faceUp ? card : redactNumberCard(card, `hidden_number_visible_${index}`),
+  );
+  return { deck, discard: state.discard, visible, playerHands };
 }
 
 /**
@@ -231,5 +234,6 @@ export function filterCampaignState(
     ...(campaign.mission43NanoWireCount !== undefined
       ? { mission43NanoWireCount: campaign.mission43NanoWireCount }
       : {}),
+    ...(campaign.mission29Turn ? { mission29Turn: campaign.mission29Turn } : {}),
   };
 }

@@ -138,13 +138,25 @@ describe("filterNumberCards", () => {
     expect(filtered.deck[1]).toEqual({ id: "hidden_number_deck_1", value: 0, faceUp: false });
   });
 
-  it("passes through discard and visible unchanged", () => {
+  it("passes through discard unchanged and maps visible face-up cards with same values", () => {
     const discard = [makeNumberCard({ id: "dis1", value: 4, faceUp: true })];
     const visible = [makeNumberCard({ id: "vis1", value: 9, faceUp: true })];
     const state = makeNumberCardState({ discard, visible });
     const filtered = filterNumberCards(state, "p1");
     expect(filtered.discard).toBe(discard);
-    expect(filtered.visible).toBe(visible);
+    expect(filtered.visible).toEqual(visible);
+  });
+
+  it("redacts face-down visible cards", () => {
+    const visible = [makeNumberCard({ id: "vis1", value: 7, faceUp: false })];
+    const state = makeNumberCardState({ visible });
+    const filtered = filterNumberCards(state, "p1");
+    expect(filtered.visible).toHaveLength(1);
+    expect(filtered.visible[0]).toEqual({
+      id: "hidden_number_visible_0",
+      value: 0,
+      faceUp: false,
+    });
   });
 
   it("passes through own player hand unchanged", () => {
@@ -326,5 +338,12 @@ describe("filterCampaignState", () => {
     const filtered = filterCampaignState(campaign, "p1");
     expect(filtered.falseInfoTokenMode).toBe(true);
     expect(filtered.falseTokenMode).toBe(true);
+  });
+
+  it("passes mission29Turn through unchanged", () => {
+    const turn = { actorId: "p1", chooserId: "p2", matchedCut: false, skipReveal: false };
+    const campaign = makeCampaignState({ mission29Turn: turn });
+    const filtered = filterCampaignState(campaign, "p1");
+    expect(filtered.mission29Turn).toEqual(turn);
   });
 });
