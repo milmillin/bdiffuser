@@ -4326,7 +4326,34 @@ function canPlayerPlayMission37(
     return true;
   }
 
-  return hasAnyDualCutTarget(state, player.id);
+  const canDeclareLegalDualCutValue = uncutTiles.some((tile) => {
+    const gameValue = tile.gameValue;
+    if (gameValue === "RED") return false;
+    if (gameValue === "YELLOW") return true;
+    if (typeof gameValue !== "number") return false;
+
+    return activeConstraintIds.every((id) =>
+      ["A", "B", "C", "D", "E", "F"].includes(id)
+        ? valuePassesConstraint(gameValue, id)
+        : true,
+    );
+  });
+  if (!canDeclareLegalDualCutValue) {
+    return false;
+  }
+
+  for (const targetPlayer of state.players) {
+    if (targetPlayer.id === player.id) continue;
+    for (let i = 0; i < targetPlayer.hand.length; i += 1) {
+      const tile = targetPlayer.hand[i];
+      if (tile.cut) continue;
+      if (isDualCutTargetTileAllowed(targetPlayer, i, [...activeConstraintIds])) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**

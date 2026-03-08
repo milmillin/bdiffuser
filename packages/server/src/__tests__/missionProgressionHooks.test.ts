@@ -1356,6 +1356,46 @@ describe("mission progression hooks", () => {
     )).toBe(true);
   });
 
+  it("mission 37 auto-skips a player who has no legal announced value under the constraint", () => {
+    const state = makeGameState({
+      mission: 37,
+      log: [],
+      currentPlayerIndex: 0,
+      turnNumber: 6,
+      board: makeBoardState({ detonatorPosition: 1, detonatorMax: 5 }),
+      players: [
+        makePlayer({ id: "p1", name: "P1", hand: [makeTile({ id: "p1-1", gameValue: 2 })] }),
+        makePlayer({ id: "p2", name: "P2", hand: [makeTile({ id: "p2-1", gameValue: 3 })] }),
+      ],
+      campaign: {
+        constraints: {
+          global: [
+            makeConstraintCard({ id: "B", name: "B", description: "B", active: true }),
+          ],
+          perPlayer: {},
+          deck: [makeConstraintCard({ id: "A", name: "A", description: "A" })],
+        },
+      },
+    });
+
+    dispatchHooks(37, {
+      point: "endTurn",
+      state,
+      previousPlayerId: "p2",
+    });
+
+    expect(state.currentPlayerIndex).toBe(1);
+    expect(state.turnNumber).toBe(7);
+    expect(state.board.detonatorPosition).toBe(1);
+    expect(
+      state.log.some(
+        (entry) =>
+          entry.action === "hookEffect"
+          && renderLogDetail(entry.detail) === "mission37:auto_skip|player=P1",
+      ),
+    ).toBe(true);
+  });
+
   it("mission 37 auto-skips an entire locked round and replaces the constraint", () => {
     const state = makeGameState({
       mission: 37,
