@@ -26,6 +26,7 @@ import {
   getMission27TokenDraftAvailableValues,
 } from "../mission27TokenDraft";
 import {
+  applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
@@ -779,6 +780,13 @@ function runMissionSimulation(missionId: MissionId, playerCount: PlayerCount): G
           }
           advanceTurn(state);
           continue;
+        }
+
+        if (missionId === 61) {
+          const replaced = applyMission61ConstraintReplacement(state, actor.id);
+          if (replaced.ok) {
+            continue;
+          }
         }
 
         throw new Error(

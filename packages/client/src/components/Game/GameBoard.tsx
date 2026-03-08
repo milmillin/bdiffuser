@@ -35,9 +35,11 @@ import {
   getMission27DraftMatchingIndices as _getMission27DraftMatchingIndices,
 } from "./Actions/Mission27TokenDraftPanel.js";
 import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberCardPanel.js";
+import { Mission34GuessPanel } from "./Actions/Mission34GuessPanel.js";
 import { Mission32ConstraintDecisionPanel } from "./Actions/Mission32ConstraintDecisionPanel.js";
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
+import { Mission61ReplaceConstraintPanel } from "./Actions/Mission61ReplaceConstraintPanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
 import { ConstraintSelectionPanel } from "./Actions/ConstraintSelectionPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
@@ -517,6 +519,15 @@ export function GameBoard({
     return gameState.players.find((p) => p.id === fa.lastPlayerId)?.name;
   })();
   const pendingForcedAction = gameState.pendingForcedAction;
+  const mission34HiddenActive = gameState.mission === 34 && !!gameState.campaign?.mission34Hidden;
+  const mission34OwnHiddenConstraint =
+    gameState.campaign?.mission34Hidden?.constraintsByPlayerId?.[playerId]?.[0];
+  const mission61MyConstraintSlot =
+    gameState.mission === 61
+      ? gameState.campaign?.mission61Ring?.slots.find(
+          (slot) => slot.kind === "player" && slot.playerId === playerId,
+        )
+      : undefined;
   const unknownForcedAction = getUnknownForcedAction(gameState);
   const mission27ForcedForMe =
     gameState.phase === "playing" &&
@@ -599,6 +610,12 @@ export function GameBoard({
     gameState.campaign?.constraints?.global?.filter(
       (constraint) => constraint.active,
     ) ?? [];
+  const mission61TurnConstraint =
+    gameState.mission === 61 && currentPlayer
+      ? gameState.campaign?.mission61Ring?.slots.find(
+          (slot) => slot.kind === "player" && slot.playerId === currentPlayer.id,
+        )?.card ?? null
+      : null;
   const activeTurnPlayerConstraints = currentPlayer
     ? (
         gameState.campaign?.constraints?.perPlayer?.[currentPlayer.id] ?? []
@@ -606,7 +623,8 @@ export function GameBoard({
     : [];
   const showTurnConstraintReminder =
     (gameState.phase === "playing" || gameState.phase === "finished") &&
-    (activeGlobalConstraints.length > 0 ||
+    (mission61TurnConstraint != null ||
+      activeGlobalConstraints.length > 0 ||
       activeTurnPlayerConstraints.length > 0);
   const turnConstraintPlayerLabel =
     currentPlayer?.id === playerId
@@ -1179,6 +1197,7 @@ export function GameBoard({
 
   const canUseSkillFromCardStrip =
     !!me?.character &&
+    !mission34HiddenActive &&
     gameState.phase === "playing" &&
     canStagePersonalSkillFromCardStrip(gameState, playerId, {
       revealRedsForcedForActor: revealRedsForced,
@@ -1788,6 +1807,12 @@ export function GameBoard({
                     <div className="font-bold uppercase tracking-wide text-amber-200">
                       Mission Constraints
                     </div>
+                    {mission61TurnConstraint && (
+                      <div className="text-amber-100/90">
+                        {turnConstraintPlayerLabel}:{" "}
+                        {mission61TurnConstraint.name || mission61TurnConstraint.id}
+                      </div>
+                    )}
                     {activeGlobalConstraints.length > 0 && (
                       <div className="text-amber-100/90">
                         Global:{" "}
@@ -1804,6 +1829,37 @@ export function GameBoard({
                           .join(", ")}
                       </div>
                     )}
+                  </div>
+                )}
+                {gameState.phase === "playing" &&
+                  mission61MyConstraintSlot &&
+                  me && (
+                    <Mission61ReplaceConstraintPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+                {mission34HiddenActive && mission34OwnHiddenConstraint && me && (
+                  <div
+                    className="rounded-lg border border-indigo-500/50 bg-indigo-950/25 px-3 py-2 text-xs text-indigo-100"
+                    data-testid="mission34-hidden-info-panel"
+                  >
+                    <div className="font-bold uppercase tracking-wide text-indigo-200">
+                      Mission 34 — Hidden Cards
+                    </div>
+                    <div className="text-indigo-100/90">
+                      {me.character === "double_detector"
+                        ? "You are the weakest link. Apply your hidden constraint every turn."
+                        : "Your hidden character stays secret. You may spend your turn guessing the weakest link and their constraint."}
+                    </div>
+                    <div className="mt-1 text-indigo-100">
+                      <span className="font-semibold">
+                        {mission34OwnHiddenConstraint.name || `Constraint ${mission34OwnHiddenConstraint.id}`}
+                      </span>
+                      :{" "}
+                      {mission34OwnHiddenConstraint.description}
+                    </div>
                   </div>
                 )}
                 {/* Playing phase: forced action (captain chooses next player) */}
@@ -1935,6 +1991,23 @@ export function GameBoard({
                     onConfirm={confirmMission46SevensCut}
                   />
                 )}
+
+                {gameState.phase === "playing" &&
+                  mission34HiddenActive &&
+                  isMyTurn &&
+                  !gameState.pendingForcedAction &&
+                  !pendingAction &&
+                  !equipmentMode &&
+                  !missionSpecialMode &&
+                  !missionFourCutMode &&
+                  me?.character !== "double_detector" &&
+                  me && (
+                    <Mission34GuessPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
 
                 {gameState.phase === "playing" &&
                   canStartMissionFourCut &&
@@ -2657,7 +2730,7 @@ function getStatusContent(
           forcedText = "Choose your swap wire.";
           break;
         case FORCED_ACTION_MISSION61_CONSTRAINT_ROTATE:
-          forcedText = "Choose the Mission 61 constraint rotation.";
+          forcedText = "Choose the Mission 61 constraint ring rotation.";
           break;
         case FORCED_ACTION_MISSION32_CONSTRAINT_DECISION:
           forcedText = "Choose whether to keep or replace the Mission 32 constraint.";

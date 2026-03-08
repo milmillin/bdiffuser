@@ -36,7 +36,7 @@ export function Mission61ConstraintRotatePanel({
       data-testid="mission61-constraint-rotate-panel"
     >
       <div className={PANEL_FORCED_TITLE_CLASS}>Mission 61 — Rotate Constraints</div>
-      <p className={PANEL_FORCED_TEXT_CLASS}>Choose how to rotate the global constraints.</p>
+      <p className={PANEL_FORCED_TEXT_CLASS}>Choose how to rotate the table constraint ring.</p>
       <p className={PANEL_FORCED_SUBTEXT_CLASS}>
         Current decision: {decisionText}.
       </p>

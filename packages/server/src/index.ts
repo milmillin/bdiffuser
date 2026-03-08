@@ -62,6 +62,8 @@ import {
   resolveTalkiesWalkiesTileChoice,
 } from "./equipment.js";
 import {
+  applyMission34WeakestLinkGuess,
+  applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
@@ -71,6 +73,8 @@ import {
   rotateMission61Constraint,
   getMission32BotDecision,
   resolveMission61AfterConstraintDecision,
+  resolveMission61TurnStart,
+  resolveMission34StartOfTurn,
 } from "./missionHooks.js";
 import {
   createBotPlayer,
@@ -484,6 +488,12 @@ export class BombBustersServer extends Server<Env> {
       case "mission29HiddenNumberCardChoice":
         this.handleMission29HiddenNumberCardChoice(connection, msg.cardIndex);
         break;
+      case "mission34GuessWeakestLink":
+        this.handleMission34GuessWeakestLink(connection, msg.targetPlayerId, msg.constraintId);
+        break;
+      case "mission61ReplaceOwnConstraint":
+        this.handleMission61ReplaceOwnConstraint(connection);
+        break;
       case "detectorTileChoice":
         this.handleDetectorTileChoice(connection, msg.tileIndex, msg.infoTokenTileIndex);
         break;
@@ -646,6 +656,28 @@ export class BombBustersServer extends Server<Env> {
         }
         if (gs.campaign.mission29Turn.chooserId === oldId) {
           gs.campaign.mission29Turn.chooserId = newId;
+        }
+      }
+
+      if (gs.campaign?.mission34Hidden) {
+        if (gs.campaign.mission34Hidden.weakestLinkPlayerId === oldId) {
+          gs.campaign.mission34Hidden.weakestLinkPlayerId = newId;
+        }
+        const hiddenConstraints = gs.campaign.mission34Hidden.constraintsByPlayerId[oldId];
+        if (hiddenConstraints) {
+          gs.campaign.mission34Hidden.constraintsByPlayerId[newId] = hiddenConstraints;
+          delete gs.campaign.mission34Hidden.constraintsByPlayerId[oldId];
+        }
+      }
+
+      if (gs.campaign?.mission61Ring) {
+        for (const slot of gs.campaign.mission61Ring.slots) {
+          if (slot.playerId === oldId) {
+            slot.playerId = newId;
+            if (slot.kind === "player") {
+              slot.id = `mission61-player-${newId}`;
+            }
+          }
         }
       }
 
@@ -1060,6 +1092,14 @@ export class BombBustersServer extends Server<Env> {
 
       if (state.mission === 32) {
         queueMission32ConstraintDecision(state);
+      }
+
+      if (state.mission === 34) {
+        resolveMission34StartOfTurn(state);
+      }
+
+      if (state.mission === 61) {
+        resolveMission61TurnStart(state);
       }
 
       if (state.mission === 36) {
@@ -2489,6 +2529,92 @@ export class BombBustersServer extends Server<Env> {
     });
 
     advanceTurn(state);
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission34GuessWeakestLink(
+    conn: Connection,
+    targetPlayerId: string,
+    constraintId: string,
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot guess the weakest link: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 34 guesses are only allowed during the playing phase.",
+      });
+      return;
+    }
+    if (state.pendingForcedAction) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "A forced action must be resolved before you can act.",
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const result = applyMission34WeakestLinkGuess(
+      state,
+      conn.id,
+      targetPlayerId,
+      constraintId,
+    );
+    if (!result.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: result.message ?? "Mission 34 guess could not be completed.",
+      });
+      return;
+    }
+
+    if (state.result == null) {
+      advanceTurn(state);
+    }
+
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission61ReplaceOwnConstraint(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot replace a Mission 61 constraint: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 61 constraint replacement is only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const result = applyMission61ConstraintReplacement(state, conn.id);
+    if (!result.ok) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: result.message ?? "Mission 61 constraint replacement could not be completed.",
+      });
+      return;
+    }
+
     this.maybeRecordMissionFailure(previousResult, state);
     this.saveState();
     this.broadcastGameState();

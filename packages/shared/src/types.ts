@@ -349,6 +349,36 @@ export interface Mission29TurnState {
   skipReveal?: boolean;
 }
 
+/** Mission 34: hidden weakest-link role and hidden personal constraints. */
+export interface Mission34HiddenState {
+  /** Server-only hidden weakest-link identity; omitted in filtered client views. */
+  weakestLinkPlayerId?: string;
+  /** Hidden dealt constraints. Clients only receive their own entry while hidden. */
+  constraintsByPlayerId: Record<string, ConstraintCard[]>;
+}
+
+/** Mission 61: one public constraint slot per seat, plus public extra table slots. */
+export interface Mission61ConstraintRingSlot {
+  /** Stable slot key in clockwise order starting at the Captain's seat. */
+  id: string;
+  /** Whether this slot belongs to a player seat or an extra table position. */
+  kind: "player" | "extra";
+  /** Player owning this seat slot, if any. */
+  playerId?: string;
+  /** Public label for extra slots such as Captain's Left / Right. */
+  label?: string;
+  /** Constraint card currently in front of this slot. */
+  card: ConstraintCard;
+}
+
+/** Mission 61: public ring plus server-only replacement pool. */
+export interface Mission61ConstraintRingState {
+  /** Clockwise ring order, starting at the Captain's seat. */
+  slots: Mission61ConstraintRingSlot[];
+  /** Replacement F-L cards not currently on the table; omitted from client views. */
+  replacementPool?: ConstraintCard[];
+}
+
 /**
  * All campaign-specific state, attached optionally to GameState.
  * Each sub-object is present only when the active mission uses that mechanic.
@@ -385,6 +415,10 @@ export interface CampaignState {
   mission59Nano?: Mission59NanoState;
   /** Mission 29: hidden Number-card turn state. */
   mission29Turn?: Mission29TurnState;
+  /** Mission 34: hidden weakest-link role and hidden dealt constraints. */
+  mission34Hidden?: Mission34HiddenState;
+  /** Mission 61: public rotating constraint ring. */
+  mission61Ring?: Mission61ConstraintRingState;
   /** Mission 31: constraint card selection state (active during select_constraints phase). */
   constraintSelection?: ConstraintSelectionState;
   /** Mission 43: hidden wires currently held by Nano. */

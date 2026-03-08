@@ -26,8 +26,7 @@ interface StateWithConstraintOptions {
   targetHandValues?: Array<number | "YELLOW">;
 }
 
-// Mission 61 uses the generic global constraint_enforcement hook path.
-// Mission 31 also has constraint_enforcement (per-player scope).
+// Mission 31 still uses the generic constraint_enforcement hook path.
 function stateWithConstraint(
   constraintId: string,
   opts?: StateWithConstraintOptions,
@@ -478,10 +477,11 @@ describe("constraint enforcement validation", () => {
 
   it("auto-flips Constraint K when active value constraints make no legal dual-cut guess", () => {
     const state = stateWithConstraint("K", {
+      scope: "perPlayer",
       actorHandValues: [2, 3],
       targetHandValues: [4],
     });
-    state.campaign!.constraints!.global = [
+    state.campaign!.constraints!.perPlayer["player-1"] = [
       makeConstraintCard({ id: "A", name: "Constraint A", active: true }),
       makeConstraintCard({ id: "B", name: "Constraint B", active: true }),
       makeConstraintCard({ id: "K", name: "Constraint K", active: true }),
@@ -491,15 +491,18 @@ describe("constraint enforcement validation", () => {
     expect(
       state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
     ).toBe(true);
-    expect(state.campaign?.constraints?.global.find((c) => c.id === "K")?.active).toBe(false);
+    expect(
+      state.campaign?.constraints?.perPlayer["player-1"]?.find((c) => c.id === "K")?.active,
+    ).toBe(false);
   });
 
   it("auto-flips Constraint K when all remaining dual-cut targets are blocked by Constraint H", () => {
     const state = stateWithConstraint("K", {
+      scope: "perPlayer",
       actorHandValues: [11],
       targetHandValues: [2],
     });
-    state.campaign!.constraints!.global = [
+    state.campaign!.constraints!.perPlayer["player-1"] = [
       makeConstraintCard({ id: "H", name: "Constraint H", active: true }),
       makeConstraintCard({ id: "K", name: "Constraint K", active: true }),
     ];
@@ -514,7 +517,7 @@ describe("constraint enforcement validation", () => {
       state.log.some((entry) => renderLogDetail(entry.detail) === "constraint_auto_flip:K:stuck"),
     ).toBe(true);
     expect(
-      state.campaign?.constraints?.global.find((constraint) => constraint.id === "K")?.active,
+      state.campaign?.constraints?.perPlayer["player-1"]?.find((constraint) => constraint.id === "K")?.active,
     ).toBe(false);
   });
 

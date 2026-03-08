@@ -37,6 +37,7 @@ import type {
   Player,
   MissionId,
   Mission32ConstraintStackRuleDef,
+  Mission61ConstraintRingRuleDef,
   NumberCardState,
   Mission57ConstraintPerValidatedValueRuleDef,
   Mission59NanoState,
@@ -680,6 +681,10 @@ export function getMissionTurnSkipError(
     return "Mission 30: player must skip your turn";
   }
 
+  if (state.mission === 34 && isMission34WeakestLink(state, actor.id) && !canPlayerPlayMission34(state, actor)) {
+    return "Mission 34: weakest link must skip their turn";
+  }
+
   if (state.mission === 35 && !canCurrentPlayerPlayMission35(state, actor)) {
     return "Mission 35: player must skip their turn";
   }
@@ -783,6 +788,7 @@ import type {
   BossDesignatesValueRuleDef,
   NoInfoUnlimitedDDRuleDef,
   Mission43NanoRobotRuleDef,
+  Mission34HiddenWeakLinkRuleDef,
   RandomSetupInfoTokensRuleDef,
   IberianYellowModeRuleDef,
 } from "@bomb-busters/shared";
@@ -3862,6 +3868,15 @@ function getActiveConstraints(
   state: Readonly<GameState>,
   playerId: string,
 ): string[] {
+  if (state.mission === 61) {
+    const mission61Slot = state.campaign?.mission61Ring?.slots.find(
+      (slot) => slot.kind === "player" && slot.playerId === playerId,
+    );
+    if (mission61Slot) {
+      return mission61Slot.card.active ? [mission61Slot.card.id] : [];
+    }
+  }
+
   const constraints = state.campaign?.constraints;
   if (!constraints) return [];
 
@@ -3984,6 +3999,26 @@ function canPlayerPlayMission37SoloCut(
   });
 
   return hasAllowedSolo;
+}
+
+function canPlayerDeclareLegalConstrainedValue(
+  player: Readonly<Player>,
+  activeConstraintIds: readonly string[],
+): boolean {
+  return player.hand.some((tile) => {
+    if (tile.cut) return false;
+
+    const gameValue = tile.gameValue;
+    if (gameValue === "RED") return false;
+    if (gameValue === "YELLOW") return true;
+    if (typeof gameValue !== "number") return false;
+
+    return activeConstraintIds.every((id) =>
+      ["A", "B", "C", "D", "E", "F"].includes(id)
+        ? valuePassesConstraint(gameValue, id)
+        : true,
+    );
+  });
 }
 
 /**
@@ -4223,6 +4258,23 @@ export function rotateMission61Constraint(
   state: GameState,
   direction: "clockwise" | "counter_clockwise",
 ): boolean {
+  const ring = state.campaign?.mission61Ring;
+  if (ring?.slots && ring.slots.length > 1) {
+    const cards = ring.slots.map((slot) => ({ ...slot.card, active: true }));
+    if (direction === "clockwise") {
+      for (let i = ring.slots.length - 1; i >= 0; i -= 1) {
+        const fromIndex = i === 0 ? ring.slots.length - 1 : i - 1;
+        ring.slots[i].card = { ...cards[fromIndex], active: true };
+      }
+    } else {
+      for (let i = 0; i < ring.slots.length; i += 1) {
+        const fromIndex = i === ring.slots.length - 1 ? 0 : i + 1;
+        ring.slots[i].card = { ...cards[fromIndex], active: true };
+      }
+    }
+    return true;
+  }
+
   const constraints = state.campaign?.constraints;
   if (!constraints) return false;
 
@@ -4307,6 +4359,31 @@ export function resolveMission61AfterConstraintDecision(
   }
 }
 
+export function resolveMission61TurnStart(
+  state: GameState,
+  previousPlayerId?: string,
+): void {
+  if (state.mission !== 61 || state.phase === "finished") return;
+
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return;
+
+  if (currentPlayer.isCaptain) {
+    if (!state.pendingForcedAction) {
+      state.pendingForcedAction = {
+        kind: "mission61ConstraintRotate",
+        captainId: currentPlayer.id,
+        direction: "clockwise",
+        ...(previousPlayerId ? { previousPlayerId } : {}),
+      };
+    }
+    return;
+  }
+
+  if (state.pendingForcedAction) return;
+  resolveMission61AfterConstraintDecision(state, previousPlayerId);
+}
+
 function canPlayerPlayMission37(
   state: Readonly<GameState>,
   player: Readonly<Player>,
@@ -4326,19 +4403,66 @@ function canPlayerPlayMission37(
     return true;
   }
 
-  const canDeclareLegalDualCutValue = uncutTiles.some((tile) => {
-    const gameValue = tile.gameValue;
-    if (gameValue === "RED") return false;
-    if (gameValue === "YELLOW") return true;
-    if (typeof gameValue !== "number") return false;
-
-    return activeConstraintIds.every((id) =>
-      ["A", "B", "C", "D", "E", "F"].includes(id)
-        ? valuePassesConstraint(gameValue, id)
-        : true,
-    );
-  });
+  const canDeclareLegalDualCutValue = canPlayerDeclareLegalConstrainedValue(
+    player,
+    activeConstraintIds,
+  );
   if (!canDeclareLegalDualCutValue) {
+    return false;
+  }
+
+  for (const targetPlayer of state.players) {
+    if (targetPlayer.id === player.id) continue;
+    for (let i = 0; i < targetPlayer.hand.length; i += 1) {
+      const tile = targetPlayer.hand[i];
+      if (tile.cut) continue;
+      if (isDualCutTargetTileAllowed(targetPlayer, i, [...activeConstraintIds])) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function isMission34WeakestLink(
+  state: Readonly<GameState>,
+  playerId: string,
+): boolean {
+  return state.mission === 34 && state.campaign?.mission34Hidden?.weakestLinkPlayerId === playerId;
+}
+
+function getMission34HiddenConstraintIds(
+  state: Readonly<GameState>,
+  playerId: string,
+): string[] {
+  if (!isMission34WeakestLink(state, playerId)) return [];
+
+  return (state.campaign?.mission34Hidden?.constraintsByPlayerId[playerId] ?? [])
+    .filter((constraint) => constraint.active)
+    .map((constraint) => constraint.id);
+}
+
+function canPlayerPlayMission34(
+  state: Readonly<GameState>,
+  player: Readonly<Player>,
+): boolean {
+  if (state.mission !== 34 || !state.campaign?.mission34Hidden) return true;
+  if (!isMission34WeakestLink(state, player.id)) return true;
+
+  const uncutTiles = player.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  if (uncutTiles.every((tile) => tile.gameValue === "RED")) {
+    return true;
+  }
+
+  const activeConstraintIds = getMission34HiddenConstraintIds(state, player.id);
+  if (canPlayerPlayMission37SoloCut(player, activeConstraintIds)) {
+    return true;
+  }
+
+  if (!canPlayerDeclareLegalConstrainedValue(player, activeConstraintIds)) {
     return false;
   }
 
@@ -4380,8 +4504,8 @@ function canPlayerPlayMission57(
 }
 
 /**
- * Mission 61 uses a single global constraint. Reveal Reds is still allowed only
- * when all remaining wires are red.
+ * Mission 61 uses the card currently in front of the player's seat. Reveal Reds
+ * is still allowed when all remaining wires are red.
  */
 function canPlayerPlayMission61(
   state: Readonly<GameState>,
@@ -4743,6 +4867,319 @@ function resolveConstraintLFailurePenalty(ctx: ResolveHookContext): HookResult |
 
 function getMission32ActiveConstraint(state: Readonly<GameState>): Readonly<ConstraintCard> | undefined {
   return state.campaign?.constraints?.global.find((constraint) => constraint.active);
+}
+
+function buildConstraintCardPool(
+  constraintIds: readonly string[],
+): ConstraintCard[] {
+  return constraintIds
+    .map((id) => {
+      const def = CONSTRAINT_CARD_DEFS.find((card) => card.id === id);
+      return def
+        ? {
+            id: def.id,
+            name: def.name,
+            description: def.description,
+            active: true,
+          }
+        : null;
+    })
+    .filter((card): card is ConstraintCard => card != null);
+}
+
+function isMission61ReplacementConstraintId(constraintId: string): boolean {
+  return constraintId >= "F" && constraintId <= "L";
+}
+
+function setupMission61ConstraintRing(
+  state: GameState,
+  initialConstraintIds: readonly string[],
+  replacementConstraintIds: readonly string[],
+): void {
+  state.campaign ??= {};
+
+  const initialPool = buildConstraintCardPool(initialConstraintIds);
+  shuffle(initialPool);
+  const replacementPool = buildConstraintCardPool(replacementConstraintIds);
+  shuffle(replacementPool);
+
+  const captainIndex = state.players.findIndex((player) => player.isCaptain);
+  const orderedPlayers = captainIndex >= 0
+    ? state.players.map((_, offset) => state.players[(captainIndex + offset) % state.players.length])
+    : [...state.players];
+  const drawInitialCard = () => initialPool.shift();
+
+  const slots: Array<{
+    id: string;
+    kind: "player" | "extra";
+    playerId?: string;
+    label?: string;
+    card: ConstraintCard;
+  }> = [];
+  const captain = orderedPlayers[0];
+  if (!captain) return;
+
+  const captainCard = drawInitialCard();
+  if (!captainCard) return;
+  slots.push({
+    id: `mission61-player-${captain.id}`,
+    kind: "player",
+    playerId: captain.id,
+    card: { ...captainCard, active: true },
+  });
+
+  if (orderedPlayers.length === 2 || orderedPlayers.length === 3) {
+    const extraLeftCard = drawInitialCard();
+    if (extraLeftCard) {
+      slots.push({
+        id: "mission61-extra-left",
+        kind: "extra",
+        label: "Captain's Left",
+        card: { ...extraLeftCard, active: true },
+      });
+    }
+  }
+
+  for (let i = 1; i < orderedPlayers.length; i += 1) {
+    const player = orderedPlayers[i];
+    const card = drawInitialCard();
+    if (!player || !card) continue;
+    slots.push({
+      id: `mission61-player-${player.id}`,
+      kind: "player",
+      playerId: player.id,
+      card: { ...card, active: true },
+    });
+  }
+
+  if (orderedPlayers.length === 2) {
+    const extraRightCard = drawInitialCard();
+    if (extraRightCard) {
+      slots.push({
+        id: "mission61-extra-right",
+        kind: "extra",
+        label: "Captain's Right",
+        card: { ...extraRightCard, active: true },
+      });
+    }
+  }
+
+  state.campaign.mission61Ring = {
+    slots,
+    replacementPool,
+  };
+}
+
+export function applyMission61ConstraintReplacement(
+  state: GameState,
+  actorId: string,
+): { ok: true } | { ok: false; message: string } {
+  if (state.mission !== 61) {
+    return { ok: false, message: "Mission 61 replacement is not active." };
+  }
+  if (state.phase !== "playing" || state.result != null) {
+    return { ok: false, message: "Mission 61 replacement is only allowed during active play." };
+  }
+
+  const ring = state.campaign?.mission61Ring;
+  if (!ring) {
+    return { ok: false, message: "Mission 61 constraint ring is not available." };
+  }
+
+  const slot = ring.slots.find((entry) => entry.kind === "player" && entry.playerId === actorId);
+  if (!slot) {
+    return { ok: false, message: "You do not have a Mission 61 constraint slot to replace." };
+  }
+
+  const pool = ring.replacementPool ?? (ring.replacementPool = []);
+  const previousCard = { ...slot.card, active: true };
+  if (
+    isMission61ReplacementConstraintId(previousCard.id)
+    && !pool.some((card) => card.id === previousCard.id)
+  ) {
+    pool.push(previousCard);
+  }
+
+  if (pool.length === 0) {
+    return { ok: false, message: "No Mission 61 replacement constraints remain." };
+  }
+
+  const actor = state.players.find((player) => player.id === actorId);
+  const actorLabel = actor ? getLogPlayerLabel(actor) : actorId;
+
+  state.board.detonatorPosition += 1;
+  if (state.board.detonatorPosition >= state.board.detonatorMax) {
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail: `mission61:constraint_replaced|player=${actorLabel}|from=${previousCard.id}|to=none|detonator=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+    state.pendingForcedAction = undefined;
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+    return { ok: true };
+  }
+
+  const drawIndex = Math.floor(Math.random() * pool.length);
+  const [nextCard] = pool.splice(drawIndex, 1);
+  if (!nextCard) {
+    return { ok: false, message: "Mission 61 replacement draw failed." };
+  }
+
+  slot.card = { ...nextCard, active: true };
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: `mission61:constraint_replaced|player=${actorLabel}|from=${previousCard.id}|to=${nextCard.id}|detonator=${state.board.detonatorPosition}`,
+    timestamp: Date.now(),
+  });
+
+  return { ok: true };
+}
+
+function clearMission34HiddenState(state: GameState, discardCharacters: boolean): void {
+  if (!state.campaign?.mission34Hidden) return;
+
+  if (discardCharacters) {
+    for (const player of state.players) {
+      player.character = null;
+      player.characterUsed = false;
+    }
+  }
+
+  delete state.campaign.mission34Hidden;
+}
+
+export function resolveMission34StartOfTurn(state: GameState): void {
+  if (state.mission !== 34 || state.phase === "finished" || !state.campaign?.mission34Hidden) {
+    return;
+  }
+
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  if (!currentPlayer) return;
+  if (!isMission34WeakestLink(state, currentPlayer.id)) return;
+  if (canPlayerPlayMission34(state, currentPlayer)) return;
+
+  state.board.detonatorPosition += 2;
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: currentPlayer.id,
+    action: "hookEffect",
+    detail:
+      `mission34:weakest_link_stuck|player=${getLogPlayerLabel(currentPlayer)}` +
+      `|detonator=${state.board.detonatorPosition}|hidden_cards=discarded`,
+    timestamp: Date.now(),
+  });
+
+  clearMission34HiddenState(state, true);
+
+  if (state.board.detonatorPosition >= state.board.detonatorMax) {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", currentPlayer.id, null);
+    return;
+  }
+
+  const nextPlayerIndex = findNextUncutPlayerIndex(state, state.currentPlayerIndex);
+  if (nextPlayerIndex == null) return;
+
+  state.currentPlayerIndex = nextPlayerIndex;
+  state.turnNumber += 1;
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: currentPlayer.id,
+    action: "hookEffect",
+    detail: `mission34:auto_skip|player=${getLogPlayerLabel(currentPlayer)}`,
+    timestamp: Date.now(),
+  });
+}
+
+export function applyMission34WeakestLinkGuess(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  constraintId: string,
+): { ok: boolean; correct?: boolean; message?: string } {
+  if (state.mission !== 34) {
+    return { ok: false, message: "Mission 34 guess is not active" };
+  }
+  if (state.phase !== "playing") {
+    return { ok: false, message: "Mission 34 guesses are only allowed during the playing phase" };
+  }
+  if (state.result != null) {
+    return { ok: false, message: "The mission has already ended" };
+  }
+
+  const hidden = state.campaign?.mission34Hidden;
+  if (!hidden) {
+    return { ok: false, message: "Mission 34 hidden cards are no longer active" };
+  }
+
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor) {
+    return { ok: false, message: "Actor not found" };
+  }
+  if (state.players[state.currentPlayerIndex]?.id !== actorId) {
+    return { ok: false, message: "It is not your turn" };
+  }
+  if (isMission34WeakestLink(state, actorId)) {
+    return { ok: false, message: "The weakest link cannot guess their own identity" };
+  }
+
+  const target = state.players.find((player) => player.id === targetPlayerId);
+  if (!target) {
+    return { ok: false, message: "Invalid weakest-link target" };
+  }
+
+  const normalizedConstraintId = constraintId.trim().toUpperCase();
+  if (!["A", "B", "C", "D", "E"].includes(normalizedConstraintId)) {
+    return { ok: false, message: "Invalid Mission 34 constraint guess" };
+  }
+
+  const targetConstraint = hidden.constraintsByPlayerId[targetPlayerId]?.[0];
+  const correct =
+    hidden.weakestLinkPlayerId === targetPlayerId &&
+    targetConstraint?.id === normalizedConstraintId;
+
+  if (correct) {
+    clearMission34HiddenState(state, false);
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: actorId,
+      action: "hookEffect",
+      detail:
+        `mission34:guess|actor=${getLogPlayerLabelById(state, actorId)}` +
+        `|target=${getLogPlayerLabelById(state, targetPlayerId)}` +
+        `|constraint=${normalizedConstraintId}|result=correct|hidden_cards=revealed`,
+      timestamp: Date.now(),
+    });
+    return { ok: true, correct: true };
+  }
+
+  state.board.detonatorPosition += 1;
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail:
+      `mission34:guess|actor=${getLogPlayerLabelById(state, actorId)}` +
+      `|target=${getLogPlayerLabelById(state, targetPlayerId)}` +
+      `|constraint=${normalizedConstraintId}|result=wrong|detonator=${state.board.detonatorPosition}`,
+    timestamp: Date.now(),
+  });
+
+  if (state.board.detonatorPosition >= state.board.detonatorMax) {
+    state.result = "loss_detonator";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_detonator", actorId, null);
+  }
+
+  return { ok: true, correct: false };
 }
 
 function soloCutValuePassesMission32Constraint(
@@ -5124,33 +5561,6 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
       }
     }
 
-    if (ctx.state.mission === 61 && ctx.state.phase !== "finished") {
-      const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
-      if (!currentPlayer) return;
-
-      if (
-        currentPlayer.isCaptain &&
-        (!ctx.state.pendingForcedAction ||
-          ctx.state.pendingForcedAction.kind !== "mission61ConstraintRotate")
-      ) {
-        ctx.state.pendingForcedAction = {
-          kind: "mission61ConstraintRotate",
-          captainId: currentPlayer.id,
-          direction: "clockwise",
-          ...(ctx.previousPlayerId ? { previousPlayerId: ctx.previousPlayerId } : {}),
-        };
-        return;
-      }
-
-      if (ctx.state.pendingForcedAction?.kind === "mission61ConstraintRotate") {
-        return;
-      }
-
-      resolveMission61AfterConstraintDecision(ctx.state, ctx.previousPlayerId);
-
-      return;
-    }
-
     if (ctx.state.mission !== 37 || ctx.state.phase === "finished") return;
 
     const playerCount = ctx.state.players.length;
@@ -5204,6 +5614,98 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         emitMissionFailureTelemetry(ctx.state, "loss_detonator", previousPlayerId ?? "system", null);
       }
     }
+  },
+});
+
+registerHookHandler<"mission_61_constraint_ring">("mission_61_constraint_ring", {
+  setup(rule: Mission61ConstraintRingRuleDef, ctx: SetupHookContext): void {
+    setupMission61ConstraintRing(
+      ctx.state,
+      rule.initialConstraintIds,
+      rule.replacementConstraintIds,
+    );
+
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `mission61:ring_setup|slots=${ctx.state.campaign?.mission61Ring?.slots.length ?? 0}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: Mission61ConstraintRingRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (ctx.action.type === "revealReds") return;
+
+    const active = getActiveConstraints(ctx.state, ctx.action.actorId);
+    if (active.length === 0) return;
+    return validateConstraintAction(ctx, ctx.action.actorId, active);
+  },
+
+  resolve(_rule: Mission61ConstraintRingRuleDef, ctx: ResolveHookContext): HookResult | void {
+    return resolveConstraintLFailurePenalty(ctx);
+  },
+
+  endTurn(_rule: Mission61ConstraintRingRuleDef, ctx: EndTurnHookContext): void {
+    resolveMission61TurnStart(ctx.state, ctx.previousPlayerId);
+  },
+});
+
+registerHookHandler<"mission_34_hidden_weak_link">("mission_34_hidden_weak_link", {
+  setup(rule: Mission34HiddenWeakLinkRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+
+    const hiddenCharacters: NonNullable<Player["character"]>[] = [];
+    for (const player of ctx.state.players) {
+      if (player.character != null) {
+        hiddenCharacters.push(player.character);
+      }
+    }
+    shuffle(hiddenCharacters);
+
+    const hiddenConstraints = buildConstraintCards(rule.constraintIds).slice(0, ctx.state.players.length);
+    const constraintsByPlayerId: Record<string, ConstraintCard[]> = {};
+    let weakestLinkPlayerId: string | undefined;
+
+    ctx.state.players.forEach((player, index) => {
+      player.character = hiddenCharacters[index] ?? null;
+      player.characterUsed = false;
+      if (player.character === "double_detector") {
+        weakestLinkPlayerId = player.id;
+      }
+
+      const dealtConstraint = hiddenConstraints[index];
+      constraintsByPlayerId[player.id] = dealtConstraint
+        ? [{ ...dealtConstraint, active: true }]
+        : [];
+    });
+
+    ctx.state.campaign.mission34Hidden = {
+      ...(weakestLinkPlayerId ? { weakestLinkPlayerId } : {}),
+      constraintsByPlayerId,
+    };
+
+    pushGameLog(ctx.state, {
+      turn: 0,
+      playerId: "system",
+      action: "hookSetup",
+      detail: `mission34:hidden_cards_dealt|players=${ctx.state.players.length}`,
+      timestamp: Date.now(),
+    });
+  },
+
+  validate(_rule: Mission34HiddenWeakLinkRuleDef, ctx: ValidateHookContext): HookResult | void {
+    if (!ctx.state.campaign?.mission34Hidden) return;
+    if (ctx.action.type === "revealReds") return;
+
+    const active = getMission34HiddenConstraintIds(ctx.state, ctx.action.actorId);
+    if (active.length === 0) return;
+
+    return validateConstraintAction(ctx, ctx.action.actorId, active);
+  },
+
+  endTurn(_rule: Mission34HiddenWeakLinkRuleDef, ctx: EndTurnHookContext): void {
+    resolveMission34StartOfTurn(ctx.state);
   },
 });
 

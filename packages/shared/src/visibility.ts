@@ -4,6 +4,8 @@ import type {
   NumberCardState,
   ChallengeCard,
   ChallengeCardState,
+  Mission34HiddenState,
+  Mission61ConstraintRingState,
 } from "./types.js";
 
 // ── Visibility Levels ──────────────────────────────────────
@@ -80,6 +82,10 @@ export interface CampaignVisibilityModel {
   mission22TokenPassBoard: "public";
   /** Mission 27 token-draft line supply: visible to all players. */
   mission27TokenDraftBoard: "public";
+  /** Mission 34 hidden weakest-link state: only your own dealt constraint is visible. */
+  mission34Hidden: "owner_only";
+  /** Mission 61 ring slots are public; replacement pool is filtered separately. */
+  mission61Ring: "public";
   /** Mission 17 captain false setup token mode: visible to all players. */
   falseInfoTokenMode: "public";
   /** Mission 52 all-false setup token mode: visible to all players. */
@@ -121,6 +127,8 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   specialMarkers: "public",
   mission22TokenPassBoard: "public",
   mission27TokenDraftBoard: "public",
+  mission34Hidden: "owner_only",
+  mission61Ring: "public",
   falseInfoTokenMode: "public",
   falseTokenMode: "public",
   mission43NanoWires: "hidden",
@@ -195,6 +203,33 @@ export function filterChallenges(
   return { deck, active: state.active, completed: state.completed };
 }
 
+export function filterMission34Hidden(
+  state: Mission34HiddenState,
+  playerId: string,
+): Mission34HiddenState {
+  if (playerId === "__spectator__") {
+    return { constraintsByPlayerId: {} };
+  }
+
+  const ownConstraints = state.constraintsByPlayerId[playerId];
+  return {
+    constraintsByPlayerId: ownConstraints
+      ? { [playerId]: ownConstraints }
+      : {},
+  };
+}
+
+export function filterMission61Ring(
+  state: Mission61ConstraintRingState,
+): Mission61ConstraintRingState {
+  return {
+    slots: state.slots.map((slot) => ({
+      ...slot,
+      card: { ...slot.card },
+    })),
+  };
+}
+
 /**
  * Apply visibility rules to campaign state for a specific player.
  * Returns a filtered copy safe to send to the client.
@@ -224,6 +259,12 @@ export function filterCampaignState(
       : {}),
     ...(campaign.mission27TokenDraftBoard
       ? { mission27TokenDraftBoard: campaign.mission27TokenDraftBoard }
+      : {}),
+    ...(campaign.mission34Hidden
+      ? { mission34Hidden: filterMission34Hidden(campaign.mission34Hidden, playerId) }
+      : {}),
+    ...(campaign.mission61Ring
+      ? { mission61Ring: filterMission61Ring(campaign.mission61Ring) }
       : {}),
     ...(campaign.falseInfoTokenMode !== undefined
       ? { falseInfoTokenMode: campaign.falseInfoTokenMode }

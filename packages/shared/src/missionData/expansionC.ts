@@ -64,7 +64,11 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     },
     overrides: { 2: { red: exact(2) } },
     behaviorHooks: ["mission_61_rotating_constraints"],
-    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], scope: "global" }],
+    hookRules: [{
+      kind: "mission_61_constraint_ring",
+      initialConstraintIds: ["A", "B", "C", "D", "E"],
+      replacementConstraintIds: ["F", "G", "H", "I", "J", "K", "L"],
+    }],
   });
 
   setMission(62, {

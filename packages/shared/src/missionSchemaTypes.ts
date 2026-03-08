@@ -299,6 +299,26 @@ export interface Mission32ConstraintStackRuleDef {
 }
 
 /**
+ * Mission 34 — hidden weakest-link role plus hidden per-player constraints.
+ */
+export interface Mission34HiddenWeakLinkRuleDef {
+  kind: "mission_34_hidden_weak_link";
+  /** Which hidden constraint cards are dealt this mission. */
+  constraintIds: readonly string[];
+}
+
+/**
+ * Mission 61 — public rotating constraint ring around the table.
+ */
+export interface Mission61ConstraintRingRuleDef {
+  kind: "mission_61_constraint_ring";
+  /** Initial public constraint cards dealt onto the table ring. */
+  initialConstraintIds: readonly string[];
+  /** Replacement constraint cards available for the paid redraw action. */
+  replacementConstraintIds: readonly string[];
+}
+
+/**
  * Mission 57: constrain valid cut actions to the constraint attached to the most
  * recently validated number card.
  */
@@ -547,6 +567,8 @@ export type MissionHookRuleDef =
   | YellowTriggerTokenPassRuleDef
   | ConstraintEnforcementRuleDef
   | Mission32ConstraintStackRuleDef
+  | Mission34HiddenWeakLinkRuleDef
+  | Mission61ConstraintRingRuleDef
   | Mission57ConstraintPerValidatedValueRuleDef
   | AudioPromptRuleDef
   | NoSpokenNumbersRuleDef

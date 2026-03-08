@@ -562,6 +562,67 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     }
   }
 
+  if (hasOwn(raw, "mission34Hidden")) {
+    const mission34Hidden = isObject(raw.mission34Hidden) ? raw.mission34Hidden : {};
+    const constraintsByPlayerId = normalizeConstraintPerPlayer(
+      mission34Hidden.constraintsByPlayerId,
+    );
+    const weakestLinkPlayerId =
+      typeof mission34Hidden.weakestLinkPlayerId === "string" &&
+      mission34Hidden.weakestLinkPlayerId
+        ? mission34Hidden.weakestLinkPlayerId
+        : undefined;
+    if (weakestLinkPlayerId || Object.keys(constraintsByPlayerId).length > 0) {
+      campaign.mission34Hidden = {
+        ...(weakestLinkPlayerId ? { weakestLinkPlayerId } : {}),
+        constraintsByPlayerId,
+      };
+    }
+  }
+
+  if (hasOwn(raw, "mission61Ring")) {
+    const mission61Ring = isObject(raw.mission61Ring) ? raw.mission61Ring : {};
+    const rawSlots = Array.isArray(mission61Ring.slots) ? mission61Ring.slots : [];
+    const slots: NonNullable<CampaignState["mission61Ring"]>["slots"] = rawSlots.flatMap((rawSlot, index) => {
+      if (!isObject(rawSlot) || !isObject(rawSlot.card)) return [];
+
+      const cards = normalizeConstraintCardArray([rawSlot.card]);
+      const card = cards[0];
+      if (!card) return [];
+
+      const kind: "player" | "extra" = rawSlot.kind === "extra" ? "extra" : "player";
+      const playerId =
+        typeof rawSlot.playerId === "string" && rawSlot.playerId
+          ? rawSlot.playerId
+          : undefined;
+      if (kind === "player" && !playerId) return [];
+
+      const id =
+        typeof rawSlot.id === "string" && rawSlot.id
+          ? rawSlot.id
+          : `mission61-slot-${index + 1}`;
+      const label =
+        typeof rawSlot.label === "string" && rawSlot.label
+          ? rawSlot.label
+          : undefined;
+
+      return [{
+        id,
+        kind,
+        ...(playerId ? { playerId } : {}),
+        ...(label ? { label } : {}),
+        card,
+      }];
+    });
+    const replacementPool = normalizeConstraintCardArray(mission61Ring.replacementPool);
+    if (slots.length > 0 || replacementPool.length > 0) {
+      campaign.mission61Ring = {
+        slots,
+        ...(replacementPool.length > 0 ? { replacementPool } : {}),
+      };
+    }
+  }
+
   if (hasOwn(raw, "mission43NanoWires")) {
     const nanoWires = normalizeMission43NanoWires(raw.mission43NanoWires);
     if (nanoWires.length > 0) {

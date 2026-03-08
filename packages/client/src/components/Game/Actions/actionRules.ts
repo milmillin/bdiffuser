@@ -60,6 +60,15 @@ function valuePassesConstraint(value: number, constraintId: string): boolean {
 }
 
 function getActiveConstraintIds(state: ClientGameState, playerId: string): string[] {
+  if (state.mission === 61) {
+    const mission61Slot = state.campaign?.mission61Ring?.slots.find(
+      (slot) => slot.kind === "player" && slot.playerId === playerId,
+    );
+    if (mission61Slot) {
+      return mission61Slot.card.active ? [mission61Slot.card.id] : [];
+    }
+  }
+
   const constraints = state.campaign?.constraints;
   if (!constraints) return [];
 

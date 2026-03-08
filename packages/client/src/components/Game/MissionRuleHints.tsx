@@ -582,6 +582,8 @@ function CampaignObjectsHint({
           { label: "Action", card: mission66ActionConstraint, slotIndex: null },
         ]
       : [];
+  const mission61RingSlots =
+    gameState.mission === 61 ? (campaign.mission61Ring?.slots ?? []) : [];
   const perPlayerConstraints: { playerId: string; playerName: string; cards: typeof globalConstraints }[] = [];
   for (const [playerId, cards] of Object.entries(campaign.constraints?.perPlayer ?? {})) {
     const activeCards = cards.filter((constraint) => constraint.active);
@@ -599,6 +601,7 @@ function CampaignObjectsHint({
     !showPairedNumberConstraintRows &&
     gameState.mission !== 66 &&
     (globalConstraints.length > 0 || perPlayerConstraints.length > 0 || mission66ActionConstraint != null);
+  const showMission61ConstraintRing = mission61RingSlots.length > 0;
 
   const activeChallenges = campaign.challenges?.active ?? [];
   const completedChallenges = campaign.challenges?.completed ?? [];
@@ -930,6 +933,47 @@ function CampaignObjectsHint({
           </SectionShell>
         )}
 
+        {showMission61ConstraintRing && (
+          <SectionShell>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-rose-200">
+              Constraint Ring
+            </div>
+            <CampaignRow>
+              {mission61RingSlots.map((slot) => {
+                const image = getConstraintCardImage(slot.card.id);
+                const ownerLabel =
+                  slot.kind === "player"
+                    ? (gameState.players.find((player) => player.id === slot.playerId)?.name ?? slot.playerId ?? "Seat")
+                    : (slot.label ?? "Extra");
+                return (
+                  <div
+                    key={slot.id}
+                    className="flex shrink-0 flex-col items-center"
+                  >
+                    <CampaignObjectCard
+                      image={image}
+                      borderClassName={slot.kind === "player" ? "border-rose-500" : "border-slate-500"}
+                      sizeClassName={constraintThumbnailSizeClass}
+                      testId={`mission-hint-thumb-mission61-${slot.id}`}
+                      onClick={() =>
+                        setPreviewCard({
+                          name: `Constraint ${slot.card.id}`,
+                          previewImage: image,
+                          previewScale: 1.5,
+                          detailSubtitle: slot.card.name || slot.card.id,
+                          detailEffect: slot.card.description,
+                        })
+                      }
+                    />
+                    <div className="mt-1 max-w-full truncate px-1 text-[10px] text-amber-200/90 text-center">
+                      {ownerLabel}
+                    </div>
+                  </div>
+                );
+              })}
+            </CampaignRow>
+          </SectionShell>
+        )}
         {showStandaloneConstraints && (
           <SectionShell>
             <div className="text-[10px] font-bold uppercase tracking-wide text-rose-200">

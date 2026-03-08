@@ -30,6 +30,8 @@ export type {
   CaptainLazyConstraintsRuleDef,
   ConstraintEnforcementRuleDef,
   CountTokensRuleDef,
+  Mission34HiddenWeakLinkRuleDef,
+  Mission61ConstraintRingRuleDef,
   Mission57ConstraintPerValidatedValueRuleDef,
   DynamicTurnOrderRuleDef,
   EquipmentDoubleLockRuleDef,
