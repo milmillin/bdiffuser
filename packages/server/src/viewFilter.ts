@@ -28,7 +28,7 @@ export function filterStateForPlayer(
     playerId,
     players: state.phase === "finished"
       ? state.players.map(filterPlayerFullyVisible)
-      : state.players.map((p) => filterPlayer(p, playerId)),
+      : state.players.map((p) => filterPlayer(state, p, playerId)),
     board: filterBoard(state.board),
     currentPlayerIndex: state.currentPlayerIndex,
     turnNumber: state.turnNumber,
@@ -213,7 +213,7 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
     isSpectator: true,
     players: state.phase === "finished"
       ? state.players.map(filterPlayerFullyVisible)
-      : state.players.map(filterPlayerForSpectator),
+      : state.players.map((player) => filterPlayerForSpectator(state, player)),
     board: filterBoard(state.board),
     currentPlayerIndex: state.currentPlayerIndex,
     turnNumber: state.turnNumber,
@@ -243,12 +243,28 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
   };
 }
 
-function filterPlayerForSpectator(player: Player): ClientPlayer {
+function getVisibleCharacterForViewer(
+  state: GameState,
+  player: Player,
+  viewerId: string,
+): Player["character"] {
+  if (
+    state.phase !== "finished" &&
+    state.mission === 34 &&
+    state.campaign?.mission34Hidden
+  ) {
+    return player.id === viewerId ? player.character : null;
+  }
+
+  return player.character;
+}
+
+function filterPlayerForSpectator(state: GameState, player: Player): ClientPlayer {
   const standSizes = getNormalizedStandSizes(player);
   return {
     id: player.id,
     name: player.name,
-    character: player.character,
+    character: getVisibleCharacterForViewer(state, player, "__spectator__"),
     isCaptain: player.isCaptain,
     standSizes,
     hand: player.hand.map((tile) => filterTileForSpectator(tile)),
@@ -286,13 +302,13 @@ function filterPlayerFullyVisible(player: Player): ClientPlayer {
   };
 }
 
-function filterPlayer(player: Player, viewerId: string): ClientPlayer {
+function filterPlayer(state: GameState, player: Player, viewerId: string): ClientPlayer {
   const isOwn = player.id === viewerId;
   const standSizes = getNormalizedStandSizes(player);
   return {
     id: player.id,
     name: player.name,
-    character: player.character,
+    character: getVisibleCharacterForViewer(state, player, viewerId),
     isCaptain: player.isCaptain,
     standSizes,
     hand: player.hand.map((tile) => filterTile(tile, isOwn)),

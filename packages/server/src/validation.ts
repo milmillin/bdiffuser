@@ -428,6 +428,12 @@ export function validateDualCutDoubleDetectorLegality(
       "Captain Lazy cannot use personal equipment in mission 28",
     );
   }
+  if (state.mission === 34 && state.campaign?.mission34Hidden) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 34: personal equipment is unavailable while character cards are hidden",
+    );
+  }
 
   if (!actor.character || !DOUBLE_DETECTOR_CHARACTERS.has(actor.character)) {
     return legalityError(

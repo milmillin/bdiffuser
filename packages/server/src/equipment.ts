@@ -1939,6 +1939,12 @@ export function validateCharacterAbility(
       "Captain Lazy cannot use personal equipment in mission 28",
     );
   }
+  if (state.mission === 34 && state.campaign?.mission34Hidden) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Mission 34: personal equipment is unavailable while character cards are hidden",
+    );
+  }
 
   // Timing: general_radar and talkies_walkies are "anytime",
   // triple_detector and x_or_y_ray are "in_turn" (require your turn)

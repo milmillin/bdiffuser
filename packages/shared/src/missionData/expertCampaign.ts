@@ -24,7 +24,7 @@ export function registerExpertCampaignMissions(setMission: MissionSetter): void 
     },
     allowedPlayerCounts: [3, 4, 5],
     behaviorHooks: ["mission_34_hidden_weak_link_and_constraints"],
-    hookRules: [{ kind: "constraint_enforcement", constraintIds: ["A", "B", "C", "D", "E"], scope: "per_player" }],
+    hookRules: [{ kind: "mission_34_hidden_weak_link", constraintIds: ["A", "B", "C", "D", "E"] }],
   });
 
   setMission(35, {
