@@ -653,6 +653,8 @@ function CampaignObjectsHint({
     specialMarkers.length > 0 ||
     gameState.mission >= 9;
 
+  const showPerPlayerConstraintOwners = gameState.mission === 31;
+
   if (!hasAnyContent) return null;
 
   return (
@@ -959,22 +961,31 @@ function CampaignObjectsHint({
                 entry.cards.map((constraint) => {
                   const image = getConstraintCardImage(constraint.id);
                   return (
-                    <CampaignObjectCard
+                    <div
                       key={`${entry.playerName}-${constraint.id}`}
-                      image={image}
-                      borderClassName="border-amber-500"
-                      sizeClassName={constraintThumbnailSizeClass}
-                      testId={`mission-hint-thumb-constraint-player-${constraint.id}-${entry.playerId}`}
-                      onClick={() =>
-                        setPreviewCard({
-                          name: `Constraint ${constraint.id}`,
-                          previewImage: image,
-                          previewScale: 1.5,
-                          detailSubtitle: constraint.name || constraint.id,
-                          detailEffect: constraint.description,
-                        })
-                      }
-                    />
+                      className="flex shrink-0 flex-col items-center"
+                    >
+                      <CampaignObjectCard
+                        image={image}
+                        borderClassName="border-amber-500"
+                        sizeClassName={constraintThumbnailSizeClass}
+                        testId={`mission-hint-thumb-constraint-player-${constraint.id}-${entry.playerId}`}
+                        onClick={() =>
+                          setPreviewCard({
+                            name: `Constraint ${constraint.id}`,
+                            previewImage: image,
+                            previewScale: 1.5,
+                            detailSubtitle: constraint.name || constraint.id,
+                            detailEffect: constraint.description,
+                          })
+                        }
+                      />
+                      {showPerPlayerConstraintOwners ? (
+                        <div className="mt-1 max-w-full truncate px-1 text-[10px] text-amber-200/90 text-center">
+                          {entry.playerName}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 }),
               )}
