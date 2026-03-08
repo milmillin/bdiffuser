@@ -117,7 +117,9 @@ describe("debug endpoints", () => {
       playerName: "Alice",
       omniscience: false,
     });
-    expect((body as { state: unknown }).state).toEqual(filterStateForPlayer(state, "p1"));
+    expect((body as { state: unknown }).state).toEqual(
+      filterStateForPlayer(state, "p1", "p1"),
+    );
   });
 
   it("returns 404 for invalid or unoccupied uid", async () => {
