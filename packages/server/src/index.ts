@@ -50,6 +50,7 @@ import {
   executeRevealReds,
   executeSimultaneousRedCut,
   executeSimultaneousFourCut,
+  advanceTurn,
   getBotDoubleDetectorNoMatchInfoTokenIndex,
   resolveDetectorTileChoice,
 } from "./gameLogic.js";
@@ -64,6 +65,7 @@ import {
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
   emitMissionFailureTelemetry,
+  getMissionTurnSkipError,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
 } from "./missionHooks.js";
@@ -500,6 +502,12 @@ export class BombBustersServer extends Server<Env> {
           msg.volume,
           msg.muted,
         );
+        break;
+      case "mission30ManualDetonatorAdvance":
+        this.handleMission30ManualDetonatorAdvance(connection);
+        break;
+      case "mission30ManualSkipTurn":
+        this.handleMission30ManualSkipTurn(connection);
         break;
       case "selectConstraintCard":
         this.handleSelectConstraintCard(connection, msg.constraintId);
@@ -2298,6 +2306,142 @@ export class BombBustersServer extends Server<Env> {
 
     this.saveState();
     this.broadcastGameState();
+  }
+
+  handleMission30ManualDetonatorAdvance(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot advance detonator manually: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Manual detonator advance is only allowed during the playing phase.",
+      });
+      return;
+    }
+    if (state.mission !== 30) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Manual detonator advance is only available in Mission 30.",
+      });
+      return;
+    }
+    if (!state.players.some((player) => player.id === conn.id)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only players in the game can trigger manual detonator advancement.",
+      });
+      return;
+    }
+    if (state.result != null) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot advance the detonator after the game has ended.",
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const previousPosition = state.board.detonatorPosition;
+    state.board.detonatorPosition = Math.min(
+      previousPosition + 1,
+      state.board.detonatorMax,
+    );
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "mission30ManualDetonatorAdvance",
+      detail: `mission30:manual_detonator_advance|before=${previousPosition}|after=${state.board.detonatorPosition}`,
+      timestamp: Date.now(),
+    });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.phase = "finished";
+      state.result = "loss_detonator";
+      emitMissionFailureTelemetry(state, "loss_detonator", conn.id, null);
+    }
+
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission30ManualSkipTurn(conn: Connection) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot skip turn manually: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Manual turn skip is only allowed during the playing phase.",
+      });
+      return;
+    }
+    if (state.mission !== 30) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Manual turn skip is only available in Mission 30.",
+      });
+      return;
+    }
+    const actor = state.players.find((player) => player.id === conn.id);
+    if (!actor || actor.isBot) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only human players in the game can skip a mission turn.",
+      });
+      return;
+    }
+    if (state.result != null) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot skip turn after the game has ended.",
+      });
+      return;
+    }
+    if (state.players[state.currentPlayerIndex]?.id !== conn.id) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "You cannot skip another player's turn.",
+      });
+      return;
+    }
+
+    const missionTurnSkipError = getMissionTurnSkipError(state, actor);
+    if (missionTurnSkipError !== "Mission 30: player must skip your turn") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Manual skip is only allowed when mission rules require you to skip your turn.",
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: conn.id,
+      action: "mission30ManualSkipTurn",
+      detail: "mission30:manual_skip_turn|reason=mission_rule_skip",
+      timestamp: Date.now(),
+    });
+
+    advanceTurn(state);
+    this.maybeRecordMissionFailure(previousResult, state);
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
   }
 
   handleSurrenderVote(conn: Connection, vote: boolean) {

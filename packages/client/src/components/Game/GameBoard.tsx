@@ -332,6 +332,34 @@ export function GameBoard({
     if (!canConfirmSurrender) return;
     send({ type: "confirmSurrender" });
   }, [canConfirmSurrender, send]);
+  const mission30CanManualDetonatorAdvance =
+    !isFinished &&
+    gameState.phase === "playing" &&
+    gameState.mission === 30 &&
+    gameState.result == null &&
+    !!me &&
+    !gameState.isSpectator &&
+    !me.isBot &&
+    me.id === playerId;
+  const mission30CanManualDetonatorAdvanceStep =
+    gameState.board.detonatorPosition < gameState.board.detonatorMax;
+  const sendMission30ManualDetonatorAdvance = useCallback(() => {
+    if (!mission30CanManualDetonatorAdvance) return;
+    send({ type: "mission30ManualDetonatorAdvance" });
+  }, [mission30CanManualDetonatorAdvance, send]);
+  const mission30CanManualSkipTurn =
+    !isFinished &&
+    gameState.phase === "playing" &&
+    gameState.mission === 30 &&
+    gameState.result == null &&
+    !!me &&
+    !gameState.isSpectator &&
+    !me.isBot &&
+    isMyTurn;
+  const sendMission30ManualSkipTurn = useCallback(() => {
+    if (!mission30CanManualSkipTurn) return;
+    send({ type: "mission30ManualSkipTurn" });
+  }, [mission30CanManualSkipTurn, send]);
   const opponentsWithOrder = gameState.players
     .map((p, i) => ({ player: p, turnOrder: i + 1 }))
     .filter((entry) => entry.player.id !== playerId);
@@ -1699,11 +1727,43 @@ export function GameBoard({
                 <MissionRuleHints gameState={gameState} />
 
                 {gameState.phase !== "finished" && (
-                  <MissionAudioPlayer
-                    gameState={gameState}
-                    send={send}
-                    serverClockOffsetMs={serverClockOffsetMs}
-                  />
+                  <>
+                    <MissionAudioPlayer
+                      gameState={gameState}
+                      send={send}
+                      serverClockOffsetMs={serverClockOffsetMs}
+                    />
+                    {mission30CanManualDetonatorAdvance && (
+                      <div className="rounded-lg border border-emerald-600/60 bg-emerald-950/25 px-3 py-2 text-xs text-emerald-100">
+                        <div className="font-bold uppercase tracking-wide text-emerald-200">
+                          Mission 30 — Flip Equipment Card
+                        </div>
+                        <p className="text-emerald-100/90 mb-2">
+                          Use this when the audio indicates the equipment card should be flipped
+                          face-down.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={sendMission30ManualDetonatorAdvance}
+                          className={BUTTON_PRIMARY_CLASS}
+                          disabled={!mission30CanManualDetonatorAdvanceStep}
+                          data-testid="mission30-manual-advance-button"
+                        >
+                          Flip Equipment Card Down
+                        </button>
+                      </div>
+                    )}
+                    {mission30CanManualSkipTurn && (
+                      <button
+                        type="button"
+                        onClick={sendMission30ManualSkipTurn}
+                        className={BUTTON_SECONDARY_CLASS}
+                        data-testid="mission30-manual-skip-button"
+                      >
+                        Skip Turn (Mission 30)
+                      </button>
+                    )}
+                  </>
                 )}
 
               </div>

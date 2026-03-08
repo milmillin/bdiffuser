@@ -102,6 +102,8 @@ export type ClientMessage =
       positionMs?: number;
       durationMs?: number;
     }
+  | { type: "mission30ManualDetonatorAdvance" }
+  | { type: "mission30ManualSkipTurn" }
   | { type: "selectConstraintCard"; constraintId: string }
   | { type: "setCaptainMode"; mode: CaptainMode }
   | { type: "selectCaptain"; playerId: string }
