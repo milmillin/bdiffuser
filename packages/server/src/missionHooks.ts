@@ -5790,6 +5790,8 @@ registerHookHandler<"mission_57_constraint_per_validated_value">(
     },
 
     validate(_rule: Mission57ConstraintPerValidatedValueRuleDef, ctx: ValidateHookContext): HookResult | void {
+      if (ctx.action.type === "revealReds") return;
+
       const activeConstraint = getMission57AnyActiveConstraint(ctx.state);
       if (!activeConstraint) return;
 

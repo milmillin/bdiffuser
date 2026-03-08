@@ -650,4 +650,17 @@ describe("constraint enforcement validation", () => {
     const allowed = validateDualCut(state, allowedValue, 0);
     expect(allowed.validationError).toBeUndefined();
   });
+
+  it("Mission 57 allows revealReds without applying the active constraint", () => {
+    const state = stateWithMission57({
+      actorHandValues: [4, 4, 4, 4],
+      targetHandValues: [1, 3],
+    });
+
+    const setupCut = executeSoloCut(state, "player-1", 4);
+    expect(setupCut.type).toBe("soloCutResult");
+
+    const result = validateRevealReds(state);
+    expect(result.validationError).toBeUndefined();
+  });
 });
