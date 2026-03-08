@@ -4740,6 +4740,14 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
   },
 
   endTurn(_rule: ConstraintEnforcementRuleDef, ctx: EndTurnHookContext): void {
+    // Auto-flip stuck per-player constraints at the start of each new turn.
+    // Per game rules: "at the start of their turn, they flip the card facedown."
+    if (_rule.scope === "per_player" && ctx.state.phase !== "finished") {
+      for (const player of ctx.state.players) {
+        autoFlipStuckConstraints(ctx.state as GameState, player.id);
+      }
+    }
+
     if (ctx.state.mission === 61 && ctx.state.phase !== "finished") {
       const currentPlayer = ctx.state.players[ctx.state.currentPlayerIndex];
       if (!currentPlayer) return;
