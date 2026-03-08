@@ -26,10 +26,12 @@ import {
   getMission27TokenDraftAvailableValues,
 } from "../mission27TokenDraft";
 import {
+  applyMission66BunkerChoice,
   applyMission61ConstraintReplacement,
   applyMission32ConstraintDecision,
   applyMission29HiddenNumberCardChoice,
   dispatchHooks,
+  getMission66BotChoice,
   getMission32BotDecision,
   rotateMission61Constraint,
   resolveMission61AfterConstraintDecision,
@@ -621,6 +623,27 @@ function resolveForcedAction(state: GameState): boolean {
         `Mission ${state.mission}: mission32ConstraintDecision failed ` +
         `for ${forced.captainId}: ${result.message ?? "unknown error"}`,
       );
+    }
+    return true;
+  }
+
+  if (forced.kind === "mission66BunkerChoice") {
+    const choice = getMission66BotChoice(state);
+    if (!choice) {
+      throw new Error(
+        `Mission ${state.mission}: mission66BunkerChoice had no legal option ` +
+        `for ${forced.actorId}`,
+      );
+    }
+    const result = applyMission66BunkerChoice(state, forced.actorId, choice);
+    if (!result.ok) {
+      throw new Error(
+        `Mission ${state.mission}: mission66BunkerChoice failed ` +
+        `for ${forced.actorId}: ${result.message ?? "unknown error"}`,
+      );
+    }
+    if (state.result == null && !state.pendingForcedAction) {
+      advanceTurn(state);
     }
     return true;
   }
