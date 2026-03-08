@@ -78,6 +78,10 @@ export interface CampaignVisibilityModel {
   bunkerTracker: "public";
   /** Special markers (X, sequence/action pointers): visible to all (board-level). */
   specialMarkers: "public";
+  /** Mission 18 designated-cutter sub-turn marker. */
+  mission18DesignatorIndex: "public";
+  /** Mission 51 Sir/Ma'am designated-cutter sub-turn marker. */
+  mission51SirIndex: "public";
   /** Mission 22 token-pass board supply: visible to all players. */
   mission22TokenPassBoard: "public";
   /** Mission 27 token-draft line supply: visible to all players. */
@@ -129,6 +133,8 @@ export const CAMPAIGN_VISIBILITY: CampaignVisibilityModel = {
   nanoTracker: "public",
   bunkerTracker: "public",
   specialMarkers: "public",
+  mission18DesignatorIndex: "public",
+  mission51SirIndex: "public",
   mission22TokenPassBoard: "public",
   mission27TokenDraftBoard: "public",
   mission45Turn: "public",
@@ -259,6 +265,12 @@ export function filterCampaignState(
     ...(campaign.bunkerTracker ? { bunkerTracker: campaign.bunkerTracker } : {}),
     ...(campaign.specialMarkers
       ? { specialMarkers: campaign.specialMarkers }
+      : {}),
+    ...(campaign.mission18DesignatorIndex != null
+      ? { mission18DesignatorIndex: campaign.mission18DesignatorIndex }
+      : {}),
+    ...(campaign.mission51SirIndex != null
+      ? { mission51SirIndex: campaign.mission51SirIndex }
       : {}),
     ...(campaign.mission22TokenPassBoard
       ? { mission22TokenPassBoard: campaign.mission22TokenPassBoard }

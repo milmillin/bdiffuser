@@ -189,7 +189,10 @@ export function isRevealRedsForced(
 
   // Mission 18: during cutter sub-turn, the designated cutter is not
   // forced to reveal reds — the designator chose them to cut.
-  if (state.campaign?.mission18DesignatorIndex != null) {
+  if (
+    state.campaign?.mission18DesignatorIndex != null
+    || state.campaign?.mission51SirIndex != null
+  ) {
     return false;
   }
 

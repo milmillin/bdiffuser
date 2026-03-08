@@ -1282,4 +1282,57 @@ describe("isRevealRedsForced", () => {
 
     expect(isRevealRedsForced(state, "me")).toBe(false);
   });
+
+  it("filters solo-cut choices to the visible Mission 51 Number during a designated cut", () => {
+    const state = makeGameState({
+      mission: 51,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [
+            makeTile({ id: "b5a", color: "blue", gameValue: 5 }),
+            makeTile({ id: "b5b", color: "blue", gameValue: 5 }),
+            makeTile({ id: "b7a", color: "blue", gameValue: 7 }),
+            makeTile({ id: "b7b", color: "blue", gameValue: 7 }),
+          ],
+        }),
+        makePlayer({
+          id: "sir",
+          hand: [
+            makeTile({ id: "sir-7a", color: "blue", gameValue: 7, cut: true }),
+            makeTile({ id: "sir-7b", color: "blue", gameValue: 7, cut: true }),
+            makeTile({ id: "sir-9", color: "blue", gameValue: 9 }),
+          ],
+        }),
+      ],
+      campaign: {
+        mission51SirIndex: 1,
+        numberCards: {
+          visible: [{ id: "m51-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    }) as unknown as ClientGameState;
+
+    expect(getSoloCutValues(state, "me")).toEqual([7]);
+  });
+
+  it("returns false in mission 51 when the Sir/Ma'am designated cut is active", () => {
+    const state = makeGameState({
+      mission: 51,
+      players: [
+        makePlayer({
+          id: "me",
+          hand: [makeRedTile({ id: "r1" })],
+        }),
+      ],
+      campaign: {
+        mission51SirIndex: 0,
+      },
+    }) as unknown as ClientGameState;
+
+    expect(isRevealRedsForced(state, "me")).toBe(false);
+  });
 });

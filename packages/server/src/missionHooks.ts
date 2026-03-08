@@ -9410,6 +9410,111 @@ function updateMission46SevensPendingAction(state: GameState): void {
   }
 }
 
+function buildMission51NumberCards(): NumberCardState {
+  const deckValues = shuffle([...MISSION_NUMBER_VALUES]);
+  return {
+    deck: deckValues.map((value, idx) => ({
+      id: `m51-deck-${idx}-${value}`,
+      value,
+      faceUp: false,
+    })),
+    discard: [],
+    visible: [],
+    playerHands: {},
+  };
+}
+
+export function getMission51CurrentValue(state: Readonly<GameState>): number | null {
+  const value = state.campaign?.numberCards?.visible?.[0]?.value;
+  return typeof value === "number" ? value : null;
+}
+
+function discardMission51VisibleCard(state: GameState): number | null {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return null;
+
+  const currentCard = numberCards.visible.shift();
+  if (!currentCard) return null;
+
+  currentCard.faceUp = false;
+  numberCards.discard.push(currentCard);
+  return currentCard.value;
+}
+
+function reshuffleMission51DiscardIntoDeck(state: GameState): void {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards || numberCards.discard.length === 0) return;
+
+  numberCards.deck = shuffle(
+    numberCards.discard.map((card) => ({
+      ...card,
+      faceUp: false,
+    })),
+  );
+  numberCards.discard = [];
+}
+
+function ensureMission51VisibleCard(state: GameState): number | null {
+  const numberCards = state.campaign?.numberCards;
+  if (!numberCards) return null;
+
+  if (numberCards.visible.length > 0) {
+    const currentValue = numberCards.visible[0]?.value;
+    if (typeof currentValue === "number" && !isValueFullyCut(state, currentValue)) {
+      return currentValue;
+    }
+    discardMission51VisibleCard(state);
+  }
+
+  while (true) {
+    if (numberCards.deck.length === 0) {
+      if (numberCards.discard.length === 0) {
+        return null;
+      }
+      reshuffleMission51DiscardIntoDeck(state);
+    }
+
+    const nextCard = numberCards.deck.shift();
+    if (!nextCard) return null;
+
+    nextCard.faceUp = true;
+    numberCards.visible = [nextCard];
+    if (!isValueFullyCut(state, nextCard.value)) {
+      return nextCard.value;
+    }
+
+    discardMission51VisibleCard(state);
+  }
+}
+
+function discardMission51CompletedValue(state: GameState): void {
+  const currentValue = getMission51CurrentValue(state);
+  if (currentValue == null) return;
+  if (!isValueFullyCut(state, currentValue)) return;
+  discardMission51VisibleCard(state);
+}
+
+function queueMission51TurnStartForIndex(state: GameState, playerIndex: number): void {
+  if (state.mission !== 51 || state.phase !== "playing") return;
+
+  const player = state.players[playerIndex];
+  if (!player || !player.hand.some((tile) => !tile.cut)) return;
+  if (playerHasOnlyReds(player)) return;
+
+  const value = ensureMission51VisibleCard(state);
+  if (value == null) return;
+
+  state.pendingForcedAction = {
+    kind: "mission51DesignateCutter",
+    sirId: player.id,
+    value,
+  };
+}
+
+export function queueMission51TurnStart(state: GameState): void {
+  queueMission51TurnStartForIndex(state, state.currentPlayerIndex);
+}
+
 registerHookHandler<"sevens_last">("sevens_last", {
   validate(_rule: SevensLastRuleDef, ctx: ValidateHookContext): HookResult | void {
     if (!actionAttemptsSevenCut(ctx.state, ctx.action)) return;
@@ -9444,10 +9549,15 @@ registerHookHandler<"sevens_last">("sevens_last", {
 
 /**
  * Mission 51: Boss designates value.
- * The designated player announces a value and a teammate must cut it.
+ * Sir/Ma'am reveals a Number card, designates who must cut it,
+ * and wrong designations give that player a stand-side token plus detonator.
  */
 registerHookHandler<"boss_designates_value">("boss_designates_value", {
   setup(_rule: BossDesignatesValueRuleDef, ctx: SetupHookContext): void {
+    ctx.state.campaign ??= {};
+    ctx.state.campaign.numberCards = buildMission51NumberCards();
+    ctx.state.board.detonatorMax += 1;
+
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
@@ -9455,6 +9565,67 @@ registerHookHandler<"boss_designates_value">("boss_designates_value", {
       detail: "boss_designates_value:active",
       timestamp: Date.now(),
     });
+  },
+
+  validate(_rule: BossDesignatesValueRuleDef, ctx: ValidateHookContext): HookResult | void {
+    const { state, action } = ctx;
+
+    if (state.campaign?.mission51SirIndex == null) return;
+
+    const requiredValue = getMission51CurrentValue(state);
+    if (typeof requiredValue !== "number") {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 51: missing active Number card value for designated cut",
+      };
+    }
+
+    if (
+      action.type === "dualCut"
+      || action.type === "soloCut"
+      || action.type === "dualCutDoubleDetector"
+    ) {
+      const attemptedValue =
+        action.type === "soloCut" ? action.value : action.guessValue;
+      if (attemptedValue !== requiredValue) {
+        return {
+          validationCode: "MISSION_RULE_VIOLATION",
+          validationError: `Mission 51: designated cut must target value ${requiredValue}`,
+        };
+      }
+      return;
+    }
+
+    if (action.type === "revealReds") {
+      return {
+        validationCode: "MISSION_RULE_VIOLATION",
+        validationError: "Mission 51: the designated player must perform a cut action",
+      };
+    }
+
+    return {
+      validationCode: "MISSION_RULE_VIOLATION",
+      validationError: `Mission 51: only cut actions for value ${requiredValue} are allowed`,
+    };
+  },
+
+  endTurn(_rule: BossDesignatesValueRuleDef, ctx: EndTurnHookContext): HookResult | void {
+    const { state } = ctx;
+    if (state.phase === "finished") return;
+
+    const sirIndex = state.campaign?.mission51SirIndex;
+    if (sirIndex != null) {
+      discardMission51CompletedValue(state);
+      state.campaign!.mission51SirIndex = undefined;
+
+      const nextIndex = findNextUncutPlayerIndex(state, sirIndex);
+      if (nextIndex == null) return;
+
+      queueMission51TurnStartForIndex(state, nextIndex);
+      return { nextPlayerIndex: nextIndex };
+    }
+
+    queueMission51TurnStart(state);
   },
 });
 

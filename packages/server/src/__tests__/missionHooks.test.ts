@@ -23,6 +23,7 @@ import {
   emitMissionFailureTelemetry,
   applyMission65CardHandoff,
   applyMission29HiddenNumberCardChoice,
+  queueMission51TurnStart,
   setMission29SkipRevealForCurrentTurn,
   UnknownHookError,
 } from "../missionHooks";
@@ -826,6 +827,93 @@ describe("missionHooks dispatcher", () => {
 
       expect(state.board.markers).toHaveLength(0);
       expect((state.campaign as Record<string, unknown>).noMarkersMemoryMode).toBe(true);
+    });
+
+    it("mission 51: initializes a Number deck and increases detonator capacity by 1", () => {
+      const state = makeGameState({
+        mission: 51,
+        board: makeBoardState({
+          detonatorPosition: 0,
+          detonatorMax: 3,
+        }),
+        log: [],
+      });
+
+      dispatchHooks(51, { point: "setup", state });
+
+      expect(state.campaign?.numberCards?.deck).toHaveLength(12);
+      expect(state.campaign?.numberCards?.visible).toEqual([]);
+      expect(state.board.detonatorMax).toBe(4);
+    });
+
+    it("mission 51: queues a Sir/Ma'am designation and reveals the top Number card", () => {
+      const state = makeGameState({
+        mission: 51,
+        phase: "playing",
+        players: [
+          makePlayer({
+            id: "sir",
+            isCaptain: true,
+            hand: [makeTile({ id: "sir-6", gameValue: 6 })],
+          }),
+          makePlayer({
+            id: "teammate",
+            hand: [makeTile({ id: "mate-4", gameValue: 4 })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            deck: [makeNumberCard({ id: "m51-6", value: 6, faceUp: false })],
+            discard: [],
+            visible: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      queueMission51TurnStart(state);
+
+      expect(state.campaign?.numberCards?.visible).toEqual([
+        makeNumberCard({ id: "m51-6", value: 6, faceUp: true }),
+      ]);
+      expect(state.pendingForcedAction).toEqual({
+        kind: "mission51DesignateCutter",
+        sirId: "sir",
+        value: 6,
+      });
+    });
+
+    it("mission 51: leaves red-only players to Reveal Reds instead of forcing a designation", () => {
+      const state = makeGameState({
+        mission: 51,
+        phase: "playing",
+        players: [
+          makePlayer({
+            id: "sir",
+            isCaptain: true,
+            hand: [makeTile({ id: "sir-red", color: "red", gameValue: "RED", sortValue: 4.5 })],
+          }),
+          makePlayer({
+            id: "teammate",
+            hand: [makeTile({ id: "mate-4", gameValue: 4 })],
+          }),
+        ],
+        currentPlayerIndex: 0,
+        campaign: {
+          numberCards: {
+            deck: [makeNumberCard({ id: "m51-6", value: 6, faceUp: false })],
+            discard: [],
+            visible: [],
+            playerHands: {},
+          },
+        },
+      });
+
+      queueMission51TurnStart(state);
+
+      expect(state.pendingForcedAction).toBeUndefined();
+      expect(state.campaign?.numberCards?.visible).toEqual([]);
     });
   });
 

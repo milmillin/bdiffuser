@@ -490,6 +490,8 @@ export interface CampaignState {
   specialMarkers?: SpecialMarker[];
   /** Mission 18: index of the designator (active player) during a cutter sub-turn. */
   mission18DesignatorIndex?: number;
+  /** Mission 51: index of the active Sir/Ma'am during a designated-cut sub-turn. */
+  mission51SirIndex?: number;
   /** Mission 22: whether the yellow-trigger token pass has been triggered. */
   mission22TokenPassTriggered?: boolean;
   /** Mission 22: remaining board supply for the token pass action. */
@@ -606,7 +608,23 @@ export type ForcedAction =
       value: number;
       /** General Radar results: per-player boolean (true = has at least one uncut wire of this value). */
       radarResults: Record<string, boolean>;
-  }
+    }
+  | {
+      kind: "mission51DesignateCutter";
+      /** The active Sir/Ma'am who must designate who cuts this Number value. */
+      sirId: string;
+      /** The shared visible Number card value. */
+      value: number;
+    }
+  | {
+      kind: "mission51PenaltyTokenChoice";
+      /** The player who must choose a stand-side penalty token. */
+      targetPlayerId: string;
+      /** The Sir/Ma'am whose turn caused the penalty. */
+      sirId: string;
+      /** The currently active Mission 51 Number card value. */
+      value: number;
+    }
   | {
       kind: "mission22TokenPass";
       /** Index of the player who currently must choose a token value to pass. */

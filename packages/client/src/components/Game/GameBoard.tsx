@@ -30,6 +30,7 @@ import {
 import { Mission45VolunteerPanel } from "./Actions/Mission45VolunteerPanel.js";
 import { Mission45CaptainChoicePanel } from "./Actions/Mission45CaptainChoicePanel.js";
 import { Mission45PenaltyTokenPanel } from "./Actions/Mission45PenaltyTokenPanel.js";
+import { Mission51PenaltyTokenPanel } from "./Actions/Mission51PenaltyTokenPanel.js";
 import { Mission22TokenPassPanel } from "./Actions/Mission22TokenPassPanel.js";
 import {
   Mission27TokenDraftPanel,
@@ -118,10 +119,12 @@ type UnknownForcedAction = {
 
 const FORCED_ACTION_CHOOSE_NEXT_PLAYER = "chooseNextPlayer";
 const FORCED_ACTION_DESIGNATE_CUTTER = "designateCutter";
+const FORCED_ACTION_MISSION51_DESIGNATE_CUTTER = "mission51DesignateCutter";
 const FORCED_ACTION_DETECTOR_TILE_CHOICE = "detectorTileChoice";
 const FORCED_ACTION_MISSION45_VOLUNTEER_WINDOW = "mission45VolunteerWindow";
 const FORCED_ACTION_MISSION45_CAPTAIN_CHOICE = "mission45CaptainChoice";
 const FORCED_ACTION_MISSION45_PENALTY_TOKEN = "mission45PenaltyTokenChoice";
+const FORCED_ACTION_MISSION51_PENALTY_TOKEN = "mission51PenaltyTokenChoice";
 const FORCED_ACTION_MISSION22_TOKEN_PASS = "mission22TokenPass";
 const FORCED_ACTION_MISSION27_TOKEN_DRAFT = "mission27TokenDraft";
 const FORCED_ACTION_MISSION29_HIDDEN_CARD = "mission29HiddenNumberCard";
@@ -135,10 +138,12 @@ const FORCED_ACTION_MISSION36_SEQUENCE_POSITION = "mission36SequencePosition";
 const HANDLED_FORCED_ACTION_KINDS = new Set<string>([
   FORCED_ACTION_CHOOSE_NEXT_PLAYER,
   FORCED_ACTION_DESIGNATE_CUTTER,
+  FORCED_ACTION_MISSION51_DESIGNATE_CUTTER,
   FORCED_ACTION_DETECTOR_TILE_CHOICE,
   FORCED_ACTION_MISSION45_VOLUNTEER_WINDOW,
   FORCED_ACTION_MISSION45_CAPTAIN_CHOICE,
   FORCED_ACTION_MISSION45_PENALTY_TOKEN,
+  FORCED_ACTION_MISSION51_PENALTY_TOKEN,
   FORCED_ACTION_MISSION22_TOKEN_PASS,
   FORCED_ACTION_MISSION27_TOKEN_DRAFT,
   FORCED_ACTION_MISSION29_HIDDEN_CARD,
@@ -567,12 +572,16 @@ export function GameBoard({
       ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === "designateCutter"
         ? pendingForcedAction.designatorId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION51_DESIGNATE_CUTTER
+        ? pendingForcedAction.sirId
       : pendingForcedAction?.kind === "detectorTileChoice"
         ? pendingForcedAction.targetPlayerId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION45_CAPTAIN_CHOICE
         ? pendingForcedAction.captainId
       : pendingForcedAction?.kind === FORCED_ACTION_MISSION45_PENALTY_TOKEN
         ? pendingForcedAction.playerId
+      : pendingForcedAction?.kind === FORCED_ACTION_MISSION51_PENALTY_TOKEN
+        ? pendingForcedAction.targetPlayerId
       : pendingForcedAction?.kind === "mission22TokenPass"
         ? pendingForcedAction.currentChooserId
       : pendingForcedAction?.kind === "mission27TokenDraft"
@@ -1931,6 +1940,18 @@ export function GameBoard({
 
                 {gameState.phase === "playing" &&
                   gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_MISSION51_PENALTY_TOKEN &&
+                  gameState.pendingForcedAction.targetPlayerId === playerId &&
+                  me && (
+                    <Mission51PenaltyTokenPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+
+                {gameState.phase === "playing" &&
+                  gameState.pendingForcedAction?.kind ===
                     FORCED_ACTION_CHOOSE_NEXT_PLAYER &&
                   gameState.pendingForcedAction.captainId === playerId &&
                   me && (
@@ -1941,11 +1962,18 @@ export function GameBoard({
                     />
                   )}
 
-                {/* Playing phase: forced action (designate cutter - mission 18) */}
+                {/* Playing phase: forced action (designate cutter - missions 18/51) */}
                 {gameState.phase === "playing" &&
-                  gameState.pendingForcedAction?.kind ===
+                  (gameState.pendingForcedAction?.kind ===
+                    FORCED_ACTION_DESIGNATE_CUTTER
+                    || gameState.pendingForcedAction?.kind ===
+                      FORCED_ACTION_MISSION51_DESIGNATE_CUTTER) &&
+                  ((gameState.pendingForcedAction.kind ===
                     FORCED_ACTION_DESIGNATE_CUTTER &&
-                  gameState.pendingForcedAction.designatorId === playerId &&
+                    gameState.pendingForcedAction.designatorId === playerId)
+                    || (gameState.pendingForcedAction.kind ===
+                      FORCED_ACTION_MISSION51_DESIGNATE_CUTTER &&
+                      gameState.pendingForcedAction.sirId === playerId)) &&
                   me && (
                     <DesignateCutterPanel
                       gameState={gameState}
@@ -2812,6 +2840,9 @@ function getStatusContent(
         case "designateCutter":
           forcedText = "Designate who cuts.";
           break;
+        case FORCED_ACTION_MISSION51_DESIGNATE_CUTTER:
+          forcedText = "Choose who must cut the visible Number.";
+          break;
         case "mission22TokenPass":
           forcedText = `Choose a token to pass${progressText}.`;
           break;
@@ -2835,6 +2866,9 @@ function getStatusContent(
           break;
         case FORCED_ACTION_MISSION45_PENALTY_TOKEN:
           forcedText = "Choose a stand-side info token penalty.";
+          break;
+        case FORCED_ACTION_MISSION51_PENALTY_TOKEN:
+          forcedText = "Choose your Mission 51 stand-side penalty token.";
           break;
         case "talkiesWalkiesTileChoice":
           forcedText = "Choose your swap wire.";
@@ -2890,6 +2924,9 @@ function getStatusContent(
         case "designateCutter":
           waitingText = "to designate who cuts";
           break;
+        case FORCED_ACTION_MISSION51_DESIGNATE_CUTTER:
+          waitingText = "to choose who must cut the visible Number";
+          break;
         case "mission22TokenPass":
           waitingText = `to choose a token value to pass${progressText}`;
           break;
@@ -2913,6 +2950,9 @@ function getStatusContent(
           break;
         case FORCED_ACTION_MISSION45_PENALTY_TOKEN:
           waitingText = "to choose a Mission 45 penalty token";
+          break;
+        case FORCED_ACTION_MISSION51_PENALTY_TOKEN:
+          waitingText = "to choose a Mission 51 penalty token";
           break;
         case "talkiesWalkiesTileChoice":
           waitingText = "to choose a wire for Walkie-Talkies";

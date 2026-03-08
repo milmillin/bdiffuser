@@ -63,12 +63,16 @@ function getPendingForcedMetadata(
       return { kind: forced.kind, actorId: asString(forced.captainId) };
     case "designateCutter":
       return { kind: forced.kind, actorId: asString(forced.designatorId) };
+    case "mission51DesignateCutter":
+      return { kind: forced.kind, actorId: asString(forced.sirId) };
     case "mission45VolunteerWindow":
       return { kind: forced.kind };
     case "mission45CaptainChoice":
       return { kind: forced.kind, actorId: asString(forced.captainId) };
     case "mission45PenaltyTokenChoice":
       return { kind: forced.kind, actorId: asString(forced.playerId) };
+    case "mission51PenaltyTokenChoice":
+      return { kind: forced.kind, actorId: asString(forced.targetPlayerId) };
     case "mission22TokenPass": {
       const total = asArrayLength(forced.passingOrder);
       const completedCount = asNumber(forced.completedCount) ?? 0;

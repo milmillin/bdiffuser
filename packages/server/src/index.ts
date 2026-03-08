@@ -1,5 +1,6 @@
 import { Server, type Connection, routePartykitRequest } from "partyserver";
 import type {
+  ActionLegalityCode,
   AnyEquipmentId,
   ClientGameState,
   ClientMessage,
@@ -85,6 +86,7 @@ import {
   resolveMission61AfterConstraintDecision,
   resolveMission61TurnStart,
   resolveMission34StartOfTurn,
+  queueMission51TurnStart,
   setMission45CaptainChoicePending,
   setMission45PenaltyTokenChoicePending,
   setMission45SelectedCutter,
@@ -480,6 +482,9 @@ export class BombBustersServer extends Server<Env> {
       case "mission45PenaltyTokenChoice":
         this.handleMission45PenaltyTokenChoice(connection, msg.value);
         break;
+      case "mission51PenaltyTokenChoice":
+        this.handleMission51PenaltyTokenChoice(connection, msg.value);
+        break;
       case "simultaneousRedCut":
         this.handleSimultaneousRedCut(connection, msg.targets);
         break;
@@ -642,6 +647,17 @@ export class BombBustersServer extends Server<Env> {
         } else if (gs.pendingForcedAction.kind === "designateCutter") {
           if (gs.pendingForcedAction.designatorId === oldId) {
             gs.pendingForcedAction.designatorId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission51DesignateCutter") {
+          if (gs.pendingForcedAction.sirId === oldId) {
+            gs.pendingForcedAction.sirId = newId;
+          }
+        } else if (gs.pendingForcedAction.kind === "mission51PenaltyTokenChoice") {
+          if (gs.pendingForcedAction.targetPlayerId === oldId) {
+            gs.pendingForcedAction.targetPlayerId = newId;
+          }
+          if (gs.pendingForcedAction.sirId === oldId) {
+            gs.pendingForcedAction.sirId = newId;
           }
         } else if (gs.pendingForcedAction.kind === "mission22TokenPass") {
           if (gs.pendingForcedAction.currentChooserId === oldId) {
@@ -1187,6 +1203,10 @@ export class BombBustersServer extends Server<Env> {
             reason: "initial",
           };
         }
+      }
+
+      if (state.mission === 51) {
+        queueMission51TurnStart(state);
       }
     }
   }
@@ -2159,6 +2179,128 @@ export class BombBustersServer extends Server<Env> {
     this.scheduleBotTurnIfNeeded();
   }
 
+  private resolveDesignateCutterSelection(
+    state: GameState,
+    targetPlayerId: string,
+  ): { ok: true; gameOverResult?: GameResult } | {
+    ok: false;
+    message: string;
+    code?: ActionLegalityCode;
+  } {
+    const forced = state.pendingForcedAction;
+    if (
+      !forced
+      || (forced.kind !== "designateCutter" && forced.kind !== "mission51DesignateCutter")
+    ) {
+      return { ok: false, message: "No pending designate-cutter action" };
+    }
+
+    const targetIndex = state.players.findIndex((p) => p.id === targetPlayerId);
+    if (targetIndex === -1) {
+      return { ok: false, message: "Target player not found" };
+    }
+
+    const target = state.players[targetIndex];
+    const uncutCount = target.hand.filter((t) => !t.cut).length;
+    if (uncutCount === 0) {
+      return { ok: false, message: "Target player has no remaining tiles" };
+    }
+
+    const designatorId =
+      forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+    const designatorIndex = state.players.findIndex((p) => p.id === designatorId);
+    if (designatorIndex === -1) {
+      return { ok: false, message: "Designating player not found" };
+    }
+
+    if (forced.kind === "designateCutter") {
+      const mission18TargetError = validateMission18DesignatedCutterTarget(
+        forced.value,
+        targetPlayerId,
+        forced.radarResults,
+      );
+      if (mission18TargetError) {
+        return {
+          ok: false,
+          message: mission18TargetError.message,
+          code: mission18TargetError.code,
+        };
+      }
+    }
+
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: designatorId,
+      action: "designateCutter",
+      detail: logTemplate("designate_cutter.selected", {
+        targetPlayerName: target.name,
+      }),
+      timestamp: Date.now(),
+    });
+
+    state.campaign ??= {};
+    if (forced.kind === "designateCutter") {
+      state.campaign.mission18DesignatorIndex = designatorIndex;
+      state.currentPlayerIndex = targetIndex;
+      state.pendingForcedAction = undefined;
+      return { ok: true };
+    }
+
+    const currentValue = forced.value;
+    const targetHasValue = target.hand.some(
+      (tile) =>
+        !tile.cut
+        && typeof tile.gameValue === "number"
+        && tile.gameValue === currentValue,
+    );
+
+    if (targetHasValue) {
+      state.campaign.mission51SirIndex = designatorIndex;
+      state.currentPlayerIndex = targetIndex;
+      state.pendingForcedAction = undefined;
+      return { ok: true };
+    }
+
+    state.pendingForcedAction = undefined;
+    const targetUncutTiles = target.hand.filter((tile) => !tile.cut);
+    const targetHasOnlyReds =
+      targetUncutTiles.length > 0 && targetUncutTiles.every((tile) => tile.color === "red");
+    if (targetHasOnlyReds) {
+      const previousResult = state.result;
+      state.result = "loss_red_wire";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_red_wire", designatorId, targetPlayerId);
+      pushGameLog(state, {
+        turn: state.turnNumber,
+        playerId: "system",
+        action: "hookEffect",
+        detail:
+          `mission51:bad_designation_red_only|sir=${designatorId}` +
+          `|target=${target.name}|value=${currentValue}`,
+        timestamp: Date.now(),
+      });
+      this.maybeRecordMissionFailure(previousResult, state);
+      return { ok: true, gameOverResult: "loss_red_wire" };
+    }
+
+    state.pendingForcedAction = {
+      kind: "mission51PenaltyTokenChoice",
+      targetPlayerId,
+      sirId: designatorId,
+      value: currentValue,
+    };
+    pushGameLog(state, {
+      turn: state.turnNumber,
+      playerId: "system",
+      action: "hookEffect",
+      detail:
+        `mission51:bad_designation_penalty_pending|sir=${designatorId}` +
+        `|target=${target.name}|value=${currentValue}`,
+      timestamp: Date.now(),
+    });
+    return { ok: true };
+  }
+
   handleDesignateCutter(conn: Connection, targetPlayerId: string) {
     const state = this.room.gameState;
     if (!state) {
@@ -2177,61 +2319,135 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const forced = state.pendingForcedAction;
-    if (!forced || forced.kind !== "designateCutter") {
+    if (
+      !forced
+      || (forced.kind !== "designateCutter" && forced.kind !== "mission51DesignateCutter")
+    ) {
       this.sendMsg(conn, { type: "error", message: "No pending designate-cutter action" });
       return;
     }
 
-    if (conn.id !== forced.designatorId) {
+    const designatorId =
+      forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+    if (conn.id !== designatorId) {
       this.sendMsg(conn, { type: "error", message: "Only the active player can designate who cuts" });
       return;
     }
 
-    const targetIndex = state.players.findIndex((p) => p.id === targetPlayerId);
-    if (targetIndex === -1) {
-      this.sendMsg(conn, { type: "error", message: "Target player not found" });
-      return;
-    }
-
-    const target = state.players[targetIndex];
-    const uncutCount = target.hand.filter((t) => !t.cut).length;
-    if (uncutCount === 0) {
-      this.sendMsg(conn, { type: "error", message: "Target player has no remaining tiles" });
-      return;
-    }
-
-    const mission18TargetError = validateMission18DesignatedCutterTarget(
-      forced.value,
-      targetPlayerId,
-      forced.radarResults,
-    );
-    if (mission18TargetError) {
+    const resolution = this.resolveDesignateCutterSelection(state, targetPlayerId);
+    if (!resolution.ok) {
       this.sendMsg(conn, {
         type: "error",
-        message: mission18TargetError.message,
-        code: mission18TargetError.code,
+        message: resolution.message,
+        ...(resolution.code ? { code: resolution.code } : {}),
       });
       return;
     }
 
-    // Store the designator's index for turn advancement after the cut
-    const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
-    state.campaign ??= {};
-    state.campaign.mission18DesignatorIndex = designatorIndex;
+    this.saveState();
+    if (resolution.gameOverResult) {
+      this.broadcastAction({ type: "gameOver", result: resolution.gameOverResult });
+      this.broadcastGameState();
+      return;
+    }
 
-    // Hand control to the designated cutter
-    state.currentPlayerIndex = targetIndex;
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleMission51PenaltyTokenChoice(conn: Connection, value: number) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot choose Mission 51 penalty token: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing" || state.mission !== 51) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 51 penalty tokens are only allowed during Mission 51 gameplay.",
+      });
+      return;
+    }
+
+    const forced = state.pendingForcedAction;
+    if (!forced || forced.kind !== "mission51PenaltyTokenChoice") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Mission 51 is not currently waiting for a penalty token choice.",
+      });
+      return;
+    }
+    if (conn.id !== forced.targetPlayerId) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Only the penalized player can choose this info token.",
+      });
+      return;
+    }
+    if (!Number.isInteger(value) || value < 1 || value > 12) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Token value must be 1-12.",
+      });
+      return;
+    }
+
+    const availableValues = getAvailableInfoTokenChoiceValues(state.players).filter(
+      (candidate) => candidate >= 1 && candidate <= 12,
+    );
+    if (!availableValues.includes(value)) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "That info token is not available.",
+      });
+      return;
+    }
+
+    const player = state.players.find((candidate) => candidate.id === conn.id);
+    if (!player) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Penalized player not found.",
+      });
+      return;
+    }
+
+    pushInfoToken(player, applyMissionInfoTokenVariant(state, {
+      value,
+      position: -1,
+      isYellow: false,
+    }, player));
+
+    const previousResult = state.result;
     state.pendingForcedAction = undefined;
+    state.board.detonatorPosition += 1;
 
     pushGameLog(state, {
       turn: state.turnNumber,
-      playerId: forced.designatorId,
-      action: "designateCutter",
-      detail: logTemplate("designate_cutter.selected", {
-        targetPlayerName: target.name,
-      }),
+      playerId: conn.id,
+      action: "hookEffect",
+      detail:
+        `mission51:penalty_token|player=${player.name}|value=${value}` +
+        `|detonator=${state.board.detonatorPosition}`,
       timestamp: Date.now(),
     });
+
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      emitMissionFailureTelemetry(state, "loss_detonator", forced.sirId, conn.id);
+      this.maybeRecordMissionFailure(previousResult, state);
+      this.saveState();
+      this.broadcastAction({ type: "gameOver", result: "loss_detonator" });
+      this.broadcastGameState();
+      return;
+    }
+
+    advanceTurn(state);
+    this.maybeRecordMissionFailure(previousResult, state);
 
     this.saveState();
     this.broadcastGameState();
@@ -3695,6 +3911,7 @@ export class BombBustersServer extends Server<Env> {
           || forced.kind === "mission45CaptainChoice"
           || forced.kind === "chooseNextPlayer"
           || forced.kind === "designateCutter"
+          || forced.kind === "mission51DesignateCutter"
           || forced.kind === "mission66BunkerChoice"
           || forced.kind === "mission61ConstraintRotate"
           || forced.kind === "mission32ConstraintDecision"
@@ -3749,6 +3966,12 @@ export class BombBustersServer extends Server<Env> {
         }
       } else if (forced?.kind === "mission45PenaltyTokenChoice") {
         const actor = state.players.find((p) => p.id === forced.playerId);
+        if (actor?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
+      } else if (forced?.kind === "mission51PenaltyTokenChoice") {
+        const actor = state.players.find((p) => p.id === forced.targetPlayerId);
         if (actor?.isBot) {
           const botMs = Date.now() + 1500;
           nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
@@ -4133,6 +4356,64 @@ export class BombBustersServer extends Server<Env> {
       }
     }
 
+    const mission51PenaltyForced = state.pendingForcedAction;
+    if (mission51PenaltyForced?.kind === "mission51PenaltyTokenChoice") {
+      const actor = state.players.find(
+        (player) => player.id === mission51PenaltyForced.targetPlayerId,
+      );
+      if (actor?.isBot) {
+        const availableValues = getAvailableInfoTokenChoiceValues(state.players).filter(
+          (value) => value >= 1 && value <= 12,
+        );
+        const value =
+          availableValues.includes(mission51PenaltyForced.value)
+            ? mission51PenaltyForced.value
+            : availableValues[0];
+
+        if (value == null) {
+          state.pendingForcedAction = undefined;
+        } else {
+          pushInfoToken(actor, applyMissionInfoTokenVariant(state, {
+            value,
+            position: -1,
+            isYellow: false,
+          }, actor));
+
+          const previousResult = state.result;
+          state.pendingForcedAction = undefined;
+          state.board.detonatorPosition += 1;
+          pushGameLog(state, {
+            turn: state.turnNumber,
+            playerId: actor.id,
+            action: "hookEffect",
+            detail:
+              `mission51:penalty_token|player=${actor.name}|value=${value}` +
+              `|detonator=${state.board.detonatorPosition}`,
+            timestamp: Date.now(),
+          });
+
+          if (state.board.detonatorPosition >= state.board.detonatorMax) {
+            state.result = "loss_detonator";
+            state.phase = "finished";
+            emitMissionFailureTelemetry(state, "loss_detonator", mission51PenaltyForced.sirId, actor.id);
+            this.maybeRecordMissionFailure(previousResult, state);
+            this.saveState();
+            this.broadcastAction({ type: "gameOver", result: "loss_detonator" });
+            this.broadcastGameState();
+            return;
+          }
+
+          advanceTurn(state);
+          this.maybeRecordMissionFailure(previousResult, state);
+        }
+
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleBotTurnIfNeeded();
+        return;
+      }
+    }
+
     // Detector tile choice: if a bot is the target, auto-resolve
     const detectorForced = state.pendingForcedAction;
     if (detectorForced?.kind === "detectorTileChoice") {
@@ -4307,46 +4588,37 @@ export class BombBustersServer extends Server<Env> {
     switch (botAction.action) {
       case "designateCutter": {
         const forced = state.pendingForcedAction;
-        if (!forced || forced.kind !== "designateCutter") {
+        if (
+          !forced
+          || (forced.kind !== "designateCutter" && forced.kind !== "mission51DesignateCutter")
+        ) {
           console.log(`Bot ${botId} designateCutter ignored: no pending forced action`);
           return;
         }
-        if (forced.designatorId !== botId) {
+        const designatorId =
+          forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+        if (designatorId !== botId) {
           console.log(`Bot ${botId} designateCutter rejected: bot is not designator`);
           return;
         }
 
-        const targetIndex = state.players.findIndex(
-          (p) => p.id === botAction.targetPlayerId,
+        const resolution = this.resolveDesignateCutterSelection(
+          state,
+          botAction.targetPlayerId,
         );
-        if (targetIndex === -1) {
-          console.log(`Bot ${botId} designateCutter rejected: target not found`);
+        if (!resolution.ok) {
+          console.log(
+            `Bot ${botId} designateCutter rejected: ${resolution.message}`,
+          );
           return;
         }
-
-        const target = state.players[targetIndex];
-        if (!target.hand.some((t) => !t.cut)) {
-          console.log(`Bot ${botId} designateCutter rejected: target has no remaining tiles`);
-          return;
-        }
-
-        const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
-        state.campaign ??= {};
-        state.campaign.mission18DesignatorIndex = designatorIndex;
-        state.currentPlayerIndex = targetIndex;
-        state.pendingForcedAction = undefined;
-
-        pushGameLog(state, {
-          turn: state.turnNumber,
-          playerId: forced.designatorId,
-          action: "designateCutter",
-          detail: logTemplate("designate_cutter.selected", {
-            targetPlayerName: target.name,
-          }),
-          timestamp: Date.now(),
-        });
 
         this.saveState();
+        if (resolution.gameOverResult) {
+          this.broadcastAction({ type: "gameOver", result: resolution.gameOverResult });
+          this.broadcastGameState();
+          return;
+        }
         this.broadcastGameState();
         this.scheduleBotTurnIfNeeded();
         return;

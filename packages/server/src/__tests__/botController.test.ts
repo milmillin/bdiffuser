@@ -450,4 +450,45 @@ describe("getBotAction fallback", () => {
     });
     expect(mockedCallLLM).not.toHaveBeenCalled();
   });
+
+  it("returns a Mission 51 designate-cutter action for a bot Sir/Ma'am without calling LLM", async () => {
+    const bot = makePlayer({
+      id: "sir",
+      isBot: true,
+      isCaptain: true,
+      hand: [makeTile({ id: "sir-6", color: "blue", gameValue: 6, sortValue: 6, cut: false })],
+    });
+    const holder = makePlayer({
+      id: "holder",
+      hand: [makeTile({ id: "holder-6", color: "blue", gameValue: 6, sortValue: 6, cut: false })],
+    });
+    const other = makePlayer({
+      id: "other",
+      hand: [makeTile({ id: "other-4", color: "blue", gameValue: 4, sortValue: 4, cut: false })],
+    });
+
+    const state = makeGameState({
+      mission: 51,
+      phase: "playing",
+      players: [bot, holder, other],
+      currentPlayerIndex: 0,
+      campaign: makeCampaignState({
+        numberCards: makeNumberCardState({
+          visible: [makeNumberCard({ id: "m51-card", value: 6, faceUp: true })],
+        }),
+      }),
+      pendingForcedAction: {
+        kind: "mission51DesignateCutter",
+        sirId: "sir",
+        value: 6,
+      },
+    });
+
+    const result = await getBotAction(state, "sir", "", "");
+    expect(result.action).toEqual({
+      action: "designateCutter",
+      targetPlayerId: "sir",
+    });
+    expect(mockedCallLLM).not.toHaveBeenCalled();
+  });
 });

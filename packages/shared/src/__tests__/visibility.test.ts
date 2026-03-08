@@ -329,6 +329,16 @@ describe("filterCampaignState", () => {
     expect(filtered.mission66Bunker).toEqual(campaign.mission66Bunker);
   });
 
+  it("passes mission designated-cut markers through unchanged", () => {
+    const campaign = makeCampaignState({
+      mission18DesignatorIndex: 1,
+      mission51SirIndex: 2,
+    });
+    const filtered = filterCampaignState(campaign, "p1");
+    expect(filtered.mission18DesignatorIndex).toBe(1);
+    expect(filtered.mission51SirIndex).toBe(2);
+  });
+
   it("passes specialMarkers through unchanged", () => {
     const markers = [makeSpecialMarker({ kind: "x", value: 5 })];
     const campaign = makeCampaignState({ specialMarkers: markers });

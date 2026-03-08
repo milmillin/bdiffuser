@@ -488,10 +488,15 @@ function validateBotAction(
     }
     case "designateCutter": {
       const forced = state.pendingForcedAction;
-      if (!forced || forced.kind !== "designateCutter") {
+      if (
+        !forced
+        || (forced.kind !== "designateCutter" && forced.kind !== "mission51DesignateCutter")
+      ) {
         return "No pending designate-cutter action";
       }
-      if (forced.designatorId !== botId) {
+      const designatorId =
+        forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+      if (designatorId !== botId) {
         return "Only the active player can designate who cuts";
       }
 
@@ -499,6 +504,12 @@ function validateBotAction(
       if (!target) return "Target player not found";
       if (!target.hand.some((t) => !t.cut)) {
         return "Target player has no remaining tiles";
+      }
+      if (
+        forced.kind === "designateCutter"
+        && !forced.radarResults[action.targetPlayerId]
+      ) {
+        return "Mission 18 target must have the drawn Number-card value";
       }
       return null;
     }
@@ -530,25 +541,45 @@ function getForcedDesignateCutterAction(
   botId: string,
 ): BotAction | null {
   const forced = state.pendingForcedAction;
-  if (!forced || forced.kind !== "designateCutter") return null;
-  if (forced.designatorId !== botId) return null;
+  if (
+    !forced
+    || (forced.kind !== "designateCutter" && forced.kind !== "mission51DesignateCutter")
+  ) {
+    return null;
+  }
+  const designatorId =
+    forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+  if (designatorId !== botId) return null;
 
-  // Prefer players with radar "yes" (has uncut wire of the drawn value)
+  const targetValue = forced.value;
   const designatorIndex = state.players.findIndex((p) => p.id === botId);
+  if (designatorIndex === -1) return null;
   const playerCount = state.players.length;
 
-  // First pass: find clockwise player with radar yes and uncut tiles
-  for (let i = 1; i <= playerCount; i++) {
+  const playerHasTargetValue = (player: GameState["players"][number]): boolean =>
+    player.hand.some(
+      (tile) =>
+        !tile.cut
+        && typeof tile.gameValue === "number"
+        && tile.gameValue === targetValue,
+    );
+
+  // First pass: prefer players who actually hold the target value.
+  for (let i = 0; i < playerCount; i++) {
     const idx = (designatorIndex + i) % playerCount;
     const player = state.players[idx];
     if (!player.hand.some((t) => !t.cut)) continue;
-    if (forced.radarResults[player.id]) {
+    if (
+      (forced.kind === "designateCutter" && forced.radarResults[player.id])
+      || forced.kind === "mission51DesignateCutter"
+    ) {
+      if (!playerHasTargetValue(player)) continue;
       return { action: "designateCutter", targetPlayerId: player.id };
     }
   }
 
-  // Second pass: any clockwise player with uncut tiles
-  for (let i = 1; i <= playerCount; i++) {
+  // Second pass: any clockwise player with uncut tiles.
+  for (let i = 0; i < playerCount; i++) {
     const idx = (designatorIndex + i) % playerCount;
     const player = state.players[idx];
     if (!player.hand.some((t) => !t.cut)) continue;

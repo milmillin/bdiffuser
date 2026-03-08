@@ -460,18 +460,30 @@ function resolveForcedAction(state: GameState): boolean {
   const forced = state.pendingForcedAction;
   if (!forced) return false;
 
-  if (forced.kind === "designateCutter") {
-    // Pick a target: prefer players with radar "yes", then any with uncut tiles
-    const designatorIndex = state.players.findIndex((p) => p.id === forced.designatorId);
+  if (forced.kind === "designateCutter" || forced.kind === "mission51DesignateCutter") {
+    const designatorId =
+      forced.kind === "designateCutter" ? forced.designatorId : forced.sirId;
+    const designatorIndex = state.players.findIndex((p) => p.id === designatorId);
     const playerCount = state.players.length;
     let targetIndex: number | null = null;
+    const playerHasTargetValue = (player: GameState["players"][number]): boolean =>
+      player.hand.some(
+        (tile) =>
+          !tile.cut
+          && typeof tile.gameValue === "number"
+          && tile.gameValue === forced.value,
+      );
 
-    // First pass: player with radar yes
-    for (let i = 1; i <= playerCount; i++) {
+    // First pass: player who actually has the required value.
+    for (let i = 0; i < playerCount; i++) {
       const idx = (designatorIndex + i) % playerCount;
       const player = state.players[idx];
       if (!player.hand.some((t) => !t.cut)) continue;
-      if (forced.radarResults[player.id]) {
+      if (
+        (forced.kind === "designateCutter" && forced.radarResults[player.id])
+        || forced.kind === "mission51DesignateCutter"
+      ) {
+        if (!playerHasTargetValue(player)) continue;
         targetIndex = idx;
         break;
       }
@@ -479,7 +491,7 @@ function resolveForcedAction(state: GameState): boolean {
 
     // Second pass: any player with uncut tiles
     if (targetIndex === null) {
-      for (let i = 1; i <= playerCount; i++) {
+      for (let i = 0; i < playerCount; i++) {
         const idx = (designatorIndex + i) % playerCount;
         const player = state.players[idx];
         if (!player.hand.some((t) => !t.cut)) continue;
@@ -494,10 +506,68 @@ function resolveForcedAction(state: GameState): boolean {
       );
     }
 
-    state.campaign ??= {};
-    state.campaign.mission18DesignatorIndex = designatorIndex;
-    state.currentPlayerIndex = targetIndex;
+    const target = state.players[targetIndex];
+    if (forced.kind === "designateCutter") {
+      state.campaign ??= {};
+      state.campaign.mission18DesignatorIndex = designatorIndex;
+      state.currentPlayerIndex = targetIndex;
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    const targetHasValue = playerHasTargetValue(target);
+    if (targetHasValue) {
+      state.campaign ??= {};
+      state.campaign.mission51SirIndex = designatorIndex;
+      state.currentPlayerIndex = targetIndex;
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    const targetUncutTiles = target.hand.filter((tile) => !tile.cut);
+    if (
+      targetUncutTiles.length > 0
+      && targetUncutTiles.every((tile) => tile.color === "red")
+    ) {
+      state.result = "loss_red_wire";
+      state.phase = "finished";
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    state.pendingForcedAction = {
+      kind: "mission51PenaltyTokenChoice",
+      targetPlayerId: target.id,
+      sirId: designatorId,
+      value: forced.value,
+    };
+    return true;
+  }
+
+  if (forced.kind === "mission51PenaltyTokenChoice") {
+    const player = state.players.find((candidate) => candidate.id === forced.targetPlayerId);
+    if (!player) return false;
+
+    const availableValues = getAvailableInfoTokenChoiceValues(state.players).filter(
+      (value) => value >= 1 && value <= 12,
+    );
+    const value =
+      availableValues.includes(forced.value) ? forced.value : availableValues[0];
+    if (value == null) {
+      state.pendingForcedAction = undefined;
+      return true;
+    }
+
+    player.infoTokens.push({ value, position: -1, isYellow: false });
     state.pendingForcedAction = undefined;
+    state.board.detonatorPosition += 1;
+    if (state.board.detonatorPosition >= state.board.detonatorMax) {
+      state.result = "loss_detonator";
+      state.phase = "finished";
+      return true;
+    }
+
+    advanceTurn(state);
     return true;
   }
 

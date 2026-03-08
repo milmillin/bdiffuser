@@ -87,6 +87,43 @@ describe("deriveActionAttentionState", () => {
     expect(attention.forcedActorId).toBe("chooser");
   });
 
+  it("maps mission51 penalty-token choice to the penalized player", () => {
+    const state = makeGameState({
+      mission: 51,
+      phase: "playing",
+      players: [
+        makePlayer({
+          id: "sir",
+          name: "Sir",
+          hand: [makeTile({ id: "s1", gameValue: 6 })],
+        }),
+        makePlayer({
+          id: "target",
+          name: "Target",
+          hand: [makeTile({ id: "t1", gameValue: 4 })],
+        }),
+      ],
+      currentPlayerIndex: 0,
+      pendingForcedAction: {
+        kind: "mission51PenaltyTokenChoice",
+        targetPlayerId: "target",
+        sirId: "sir",
+        value: 6,
+      },
+    });
+    const clientState = toClientGameState(state, "target");
+
+    const attention = deriveActionAttentionState({
+      gameState: clientState,
+      playerId: "target",
+      revealRedsForcedNow: false,
+    });
+
+    expect(attention.state).toBe("forced_actor");
+    expect(attention.forcedKind).toBe("mission51PenaltyTokenChoice");
+    expect(attention.forcedActorId).toBe("target");
+  });
+
   it("returns normal_waiting when reveal-reds condition exists but player cannot act now", () => {
     const state = makeGameState({
       mission: 1,

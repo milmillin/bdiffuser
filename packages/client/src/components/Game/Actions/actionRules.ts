@@ -55,6 +55,20 @@ function getMission45RequiredCutValue(
     : null;
 }
 
+function getMission51RequiredCutValue(
+  state: Pick<ClientGameState, "mission" | "campaign" | "players" | "currentPlayerIndex">,
+  playerId?: string,
+): number | null {
+  if (state.mission !== 51) return null;
+  if (state.campaign?.mission51SirIndex == null) return null;
+
+  const currentPlayerId = state.players[state.currentPlayerIndex]?.id;
+  if (playerId != null && currentPlayerId !== playerId) return null;
+
+  const value = state.campaign?.numberCards?.visible?.[0]?.value;
+  return typeof value === "number" ? value : null;
+}
+
 function valuePassesConstraint(value: number, constraintId: string): boolean {
   switch (constraintId) {
     case "A":
@@ -158,8 +172,14 @@ export function canStageEquipmentCardFromCardStrip(
   if (hasActiveConstraint(state, actorId, "G")) return false;
   if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
   if (state.mission === 18 && equipmentId === "general_radar") return false;
-  if (state.campaign?.mission18DesignatorIndex != null) return false;
+  if (
+    state.campaign?.mission18DesignatorIndex != null
+    || state.campaign?.mission51SirIndex != null
+  ) {
+    return false;
+  }
   if (getMission45RequiredCutValue(state, actorId) != null) return false;
+  if (getMission51RequiredCutValue(state, actorId) != null) return false;
 
   const equipment = state.board.equipment.find((card) => card.id === equipmentId);
   if (!equipment) return false;
@@ -187,6 +207,7 @@ export function canStagePersonalSkillFromCardStrip(
   if ((state.mission === 17 || state.mission === 28) && actor.isCaptain) return false;
   if (actor.characterUsed && state.mission !== 58) return false;
   if (getMission45RequiredCutValue(state, actorId) != null) return false;
+  if (getMission51RequiredCutValue(state, actorId) != null) return false;
 
   return true;
 }
@@ -319,6 +340,7 @@ export function getSoloCutValues(
   const me = state.players.find((p) => p.id === playerId);
   if (!me) return [];
   const mission45RequiredValue = getMission45RequiredCutValue(state, playerId);
+  const mission51RequiredValue = getMission51RequiredCutValue(state, playerId);
   const activeValueConstraintIds = getActiveConstraintIds(state, playerId).filter((id) =>
     VALUE_CONSTRAINT_IDS.has(id),
   );
@@ -436,7 +458,10 @@ export function getSoloCutValues(
   });
 
   if (mission45RequiredValue == null) {
-    return filteredValues;
+    if (mission51RequiredValue == null) {
+      return filteredValues;
+    }
+    return filteredValues.filter((value) => value === mission51RequiredValue);
   }
 
   return filteredValues.filter((value) => value === mission45RequiredValue);
@@ -537,6 +562,10 @@ export function canRevealReds(
     return false;
   }
 
+  if (getMission51RequiredCutValue(state, playerId) != null) {
+    return false;
+  }
+
   const allRed = uncutTiles.every((t) => t.color === "red");
   if (!allRed) return false;
 
@@ -556,7 +585,10 @@ export function isRevealRedsForced(
   const uncutTiles = me.hand.filter((tile) => !tile.cut);
   if (uncutTiles.length === 0) return false;
 
-  if (state.campaign?.mission18DesignatorIndex != null) {
+  if (
+    state.campaign?.mission18DesignatorIndex != null
+    || state.campaign?.mission51SirIndex != null
+  ) {
     return false;
   }
 

@@ -346,6 +346,60 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("preserves Mission 51 Sir/Ma'am state across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "sir",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+          {
+            id: "target",
+            name: "Bob",
+            isCaptain: false,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 4,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 5,
+        mission: 51,
+        result: null,
+        campaign: {
+          mission51SirIndex: 0,
+        },
+        pendingForcedAction: {
+          kind: "mission51PenaltyTokenChoice",
+          targetPlayerId: "target",
+          sirId: "sir",
+          value: 6,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-f51");
+    expect(normalized.gameState).not.toBeNull();
+    expect(normalized.gameState!.campaign?.mission51SirIndex).toBe(0);
+    expect(normalized.gameState!.pendingForcedAction).toEqual({
+      kind: "mission51PenaltyTokenChoice",
+      targetPlayerId: "target",
+      sirId: "sir",
+      value: 6,
+    });
+  });
+
   it("normalizes campaign equipment reserve cards when present", () => {
     const legacy = {
       gameState: {

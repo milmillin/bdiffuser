@@ -61,6 +61,7 @@ export type ClientMessage =
   | { type: "mission45StartCaptainFallback" }
   | { type: "mission45ChooseCaptainTarget"; targetPlayerId: string }
   | { type: "mission45PenaltyTokenChoice"; value: number }
+  | { type: "mission51PenaltyTokenChoice"; value: number }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | {
       type: "useEquipment";

@@ -208,6 +208,10 @@ function formatForcedAction(fa: ForcedAction, state: ClientGameState): string {
       return `FORCED ACTION: ${nameOf(fa.captainId)} must choose next player`;
     case "designateCutter":
       return `FORCED ACTION: ${nameOf(fa.designatorId)} must designate a cutter for value ${fa.value}`;
+    case "mission51DesignateCutter":
+      return `FORCED ACTION: ${nameOf(fa.sirId)} must choose who cuts visible Number ${fa.value}`;
+    case "mission51PenaltyTokenChoice":
+      return `FORCED ACTION: ${nameOf(fa.targetPlayerId)} must choose a Mission 51 penalty token for value ${fa.value}`;
     case "detectorTileChoice":
       return `FORCED ACTION: ${nameOf(fa.targetPlayerId)} must choose tile from indices [${fa.matchingTileIndices.join(",")}] for ${fa.source} guess ${fa.guessValue}`;
     case "talkiesWalkiesTileChoice":

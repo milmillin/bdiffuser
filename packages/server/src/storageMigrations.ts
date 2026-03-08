@@ -828,6 +828,10 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     campaign.mission18DesignatorIndex = raw.mission18DesignatorIndex;
   }
 
+  if (hasOwn(raw, "mission51SirIndex") && typeof raw.mission51SirIndex === "number") {
+    campaign.mission51SirIndex = raw.mission51SirIndex;
+  }
+
   return Object.keys(campaign).length > 0 ? campaign : undefined;
 }
 
@@ -947,6 +951,33 @@ function normalizeGameState(
         designatorId: obj.pendingForcedAction.designatorId,
         value: obj.pendingForcedAction.value,
         radarResults: obj.pendingForcedAction.radarResults as Record<string, boolean>,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission51DesignateCutter"
+      && typeof obj.pendingForcedAction.sirId === "string"
+      && obj.pendingForcedAction.sirId
+      && typeof obj.pendingForcedAction.value === "number"
+      && Number.isFinite(obj.pendingForcedAction.value)
+    ) {
+      pendingForcedAction = {
+        kind: "mission51DesignateCutter" as const,
+        sirId: obj.pendingForcedAction.sirId,
+        value: obj.pendingForcedAction.value,
+      };
+    } else if (
+      obj.pendingForcedAction.kind === "mission51PenaltyTokenChoice"
+      && typeof obj.pendingForcedAction.targetPlayerId === "string"
+      && obj.pendingForcedAction.targetPlayerId
+      && typeof obj.pendingForcedAction.sirId === "string"
+      && obj.pendingForcedAction.sirId
+      && typeof obj.pendingForcedAction.value === "number"
+      && Number.isFinite(obj.pendingForcedAction.value)
+    ) {
+      pendingForcedAction = {
+        kind: "mission51PenaltyTokenChoice" as const,
+        targetPlayerId: obj.pendingForcedAction.targetPlayerId,
+        sirId: obj.pendingForcedAction.sirId,
+        value: obj.pendingForcedAction.value,
       };
     } else if (
       obj.pendingForcedAction.kind === "mission22TokenPass"

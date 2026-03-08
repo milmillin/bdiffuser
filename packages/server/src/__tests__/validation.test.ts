@@ -1259,6 +1259,88 @@ describe("mission 18 designated cut value enforcement", () => {
   });
 });
 
+describe("mission 51 designated cut value enforcement", () => {
+  it("rejects dual cut guesses that do not match the visible Number card", () => {
+    const cutter = makePlayer({
+      id: "cutter",
+      hand: [
+        makeTile({ id: "c1", gameValue: 5 }),
+        makeTile({ id: "c2", gameValue: 7 }),
+      ],
+    });
+    const target = makePlayer({
+      id: "target",
+      hand: [makeTile({ id: "t1", gameValue: 3 })],
+    });
+    const sir = makePlayer({
+      id: "sir",
+      isCaptain: true,
+      hand: [makeTile({ id: "s1", gameValue: 9 })],
+    });
+    const state = makeGameState({
+      mission: 51,
+      players: [cutter, target, sir],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission51SirIndex: 2,
+        numberCards: {
+          visible: [{ id: "m51-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "cutter",
+      targetPlayerId: "target",
+      targetTileIndex: 0,
+      guessValue: 5,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("value 7");
+  });
+
+  it("rejects Reveal Reds during the designated cut sub-turn", () => {
+    const cutter = makePlayer({
+      id: "cutter",
+      hand: [makeRedTile({ id: "r1" })],
+    });
+    const sir = makePlayer({
+      id: "sir",
+      isCaptain: true,
+      hand: [makeTile({ id: "s1", gameValue: 9 })],
+    });
+    const state = makeGameState({
+      mission: 51,
+      players: [cutter, sir],
+      currentPlayerIndex: 0,
+      campaign: {
+        mission51SirIndex: 1,
+        numberCards: {
+          visible: [{ id: "m51-card", value: 7, faceUp: true }],
+          deck: [],
+          discard: [],
+          playerHands: {},
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "revealReds",
+      actorId: "cutter",
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toContain("must perform a cut action");
+  });
+});
+
 describe("mission 9 sequence-priority validation", () => {
   it("rejects blocked sequence value in mission 9", () => {
     const actor = makePlayer({

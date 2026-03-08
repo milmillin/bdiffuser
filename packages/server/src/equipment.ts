@@ -433,7 +433,10 @@ export function validateUseEquipment(
   }
 
   // Mission 18: during cutter sub-turn, no equipment can be used.
-  if (state.campaign?.mission18DesignatorIndex != null) {
+  if (
+    state.campaign?.mission18DesignatorIndex != null
+    || state.campaign?.mission51SirIndex != null
+  ) {
     return legalityError(
       "MISSION_RULE_VIOLATION",
       "Equipment cannot be used during the designated cut action",
