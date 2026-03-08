@@ -28,7 +28,7 @@ function getEffectiveMissionAudioVolume(missionAudio: MissionAudioState): number
 
 function maybeSeek(audio: HTMLAudioElement, positionMs: number): void {
   const targetSeconds = Math.max(0, positionMs) / 1000;
-  if (Math.abs(audio.currentTime - targetSeconds) < 0.25) return;
+  if (!audio.ended && Math.abs(audio.currentTime - targetSeconds) < 0.25) return;
 
   try {
     audio.currentTime = targetSeconds;

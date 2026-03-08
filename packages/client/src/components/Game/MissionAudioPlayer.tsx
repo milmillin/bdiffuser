@@ -84,6 +84,7 @@ export function MissionAudioPlayer({
   const sliderInputRef = useRef<HTMLInputElement | null>(null);
   const sliderDragActiveRef = useRef(false);
   const statusAtDragStartRef = useRef<"playing" | "paused" | null>(null);
+  const seekCommitTimeRef = useRef(0);
 
   const clearSliderDragState = useCallback(() => {
     sliderDragActiveRef.current = false;
@@ -128,6 +129,7 @@ export function MissionAudioPlayer({
   useEffect(() => {
     if (!missionAudio) return;
     if (sliderDragActiveRef.current) return;
+    if (Date.now() - seekCommitTimeRef.current < 500) return;
     syncMissionAudioState(missionAudio, canonicalPositionMs);
     const durationMs = getMissionAudioDurationMs();
     if (durationMs != null) {
@@ -146,6 +148,7 @@ export function MissionAudioPlayer({
     if (!missionAudio) return;
     return onMissionAudioEnded(() => {
       if (sliderDragActiveRef.current) return;
+      if (Date.now() - seekCommitTimeRef.current < 500) return;
       const durationMs =
         getMissionAudioDurationMs() ??
         missionAudio.durationMs ??
@@ -247,6 +250,7 @@ export function MissionAudioPlayer({
       } else {
         sendAudioControl("seek", clampedMs);
       }
+      seekCommitTimeRef.current = Date.now();
       clearSliderDragState();
       lastSeekSentAtRef.current = Date.now();
     },
