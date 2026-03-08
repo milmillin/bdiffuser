@@ -870,10 +870,6 @@ export interface MissionAudioState {
   loopSegment?: boolean;
   /** Whether timeline seeking is disabled by mission rules. */
   transportLocked?: boolean;
-  /** Shared output volume in the range 0..1 (global for the room). */
-  volume?: number;
-  /** Shared mute flag (global for the room). */
-  muted?: boolean;
 }
 
 export interface GameState {
@@ -942,6 +938,7 @@ export interface ClientGameState {
   phase: GamePhase;
   roomId: string;
   playerId: string;
+  isHost: boolean;
   isSpectator?: boolean;
   players: ClientPlayer[];
   board: BoardState;

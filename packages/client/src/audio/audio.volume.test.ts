@@ -1,13 +1,21 @@
+// @vitest-environment jsdom
+
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MissionAudioState } from "@bomb-busters/shared";
 import {
+  getMissionAudioOutputPreferences,
+  isMissionAudioAutoplayBlocked,
+  onMissionAudioAutoplayBlockedChange,
   playMissionAudio,
+  setMissionAudioMuted,
+  setMissionAudioVolume,
   stopMissionAudio,
   syncMissionAudioState,
 } from "./audio.js";
 
 class FakeAudio {
   static instances: FakeAudio[] = [];
+  static rejectPlay = false;
 
   src: string;
   preload = "";
@@ -22,6 +30,11 @@ class FakeAudio {
   }
 
   play(): Promise<void> {
+    if (FakeAudio.rejectPlay) {
+      this.paused = true;
+      return Promise.reject(new Error("Autoplay blocked"));
+    }
+
     this.paused = false;
     return Promise.resolve();
   }
@@ -47,7 +60,9 @@ function makeMissionAudioState(
   };
 }
 
-describe("mission audio shared volume output", () => {
+const MISSION_AUDIO_OUTPUT_STORAGE_KEY = "bomb-busters:mission-audio-output:v1";
+
+describe("mission audio local output", () => {
   beforeAll(() => {
     vi.stubGlobal("Audio", FakeAudio as unknown as typeof Audio);
   });
@@ -58,14 +73,18 @@ describe("mission audio shared volume output", () => {
 
   beforeEach(() => {
     FakeAudio.instances = [];
+    FakeAudio.rejectPlay = false;
+    window.localStorage.clear();
     stopMissionAudio();
+    setMissionAudioVolume(1);
+    setMissionAudioMuted(false);
   });
 
   afterEach(() => {
     stopMissionAudio();
   });
 
-  it("defaults to full volume when shared volume fields are absent", () => {
+  it("defaults to full local volume when no saved preference exists", () => {
     syncMissionAudioState(makeMissionAudioState(), 0);
     const audio = FakeAudio.instances[0];
     expect(audio).toBeDefined();
@@ -75,53 +94,35 @@ describe("mission audio shared volume output", () => {
     expect(audio.volume).toBe(1);
   });
 
-  it("applies shared room volume from mission audio state", () => {
-    syncMissionAudioState(
-      makeMissionAudioState({
-        volume: 0.38,
-      }),
-      0,
-    );
+  it("applies persisted local volume and mute preferences to mission audio", () => {
+    setMissionAudioVolume(0.38);
+    setMissionAudioMuted(true);
+
+    syncMissionAudioState(makeMissionAudioState(), 0);
     const audio = FakeAudio.instances[0];
     expect(audio).toBeDefined();
     if (!audio) {
       throw new Error("Expected mission audio instance");
     }
+    expect(audio.volume).toBe(0);
+
+    setMissionAudioMuted(false);
     expect(audio.volume).toBeCloseTo(0.38, 8);
   });
 
-  it("applies shared mute over shared volume", () => {
-    syncMissionAudioState(
-      makeMissionAudioState({
-        volume: 0.52,
-        muted: true,
-      }),
-      0,
-    );
-    const audio = FakeAudio.instances[0];
-    expect(audio).toBeDefined();
-    if (!audio) {
-      throw new Error("Expected mission audio instance");
-    }
-    expect(audio.volume).toBe(0);
+  it("persists local output preferences in localStorage", () => {
+    setMissionAudioVolume(0.45);
+    setMissionAudioMuted(true);
 
-    syncMissionAudioState(
-      makeMissionAudioState({
-        volume: 0.52,
-        muted: false,
-      }),
-      0,
+    expect(window.localStorage.getItem(MISSION_AUDIO_OUTPUT_STORAGE_KEY)).toBe(
+      JSON.stringify({ volume: 0.45, muted: true }),
     );
-    expect(audio.volume).toBeCloseTo(0.52, 8);
+    expect(getMissionAudioOutputPreferences()).toEqual({ volume: 0.45, muted: true });
   });
 
-  it("clamps out-of-range shared volume values", () => {
-    syncMissionAudioState(
-      makeMissionAudioState({
-        volume: -2,
-      }),
-      0,
-    );
+  it("clamps out-of-range local volume values", () => {
+    setMissionAudioVolume(-2);
+    playMissionAudio("mission_19");
     const audio = FakeAudio.instances[0];
     expect(audio).toBeDefined();
     if (!audio) {
@@ -129,15 +130,35 @@ describe("mission audio shared volume output", () => {
     }
     expect(audio.volume).toBe(0);
 
+    setMissionAudioVolume(99);
+    expect(audio.volume).toBe(1);
+  });
+
+  it("tracks autoplay blocking and clears it after playback succeeds", async () => {
+    const autoplayUpdates: boolean[] = [];
+    const unsubscribe = onMissionAudioAutoplayBlockedChange((blocked) => {
+      autoplayUpdates.push(blocked);
+    });
+
+    FakeAudio.rejectPlay = true;
     syncMissionAudioState(
       makeMissionAudioState({
-        volume: 99,
+        status: "playing",
       }),
       0,
     );
-    expect(audio.volume).toBe(1);
+    await Promise.resolve();
 
+    expect(isMissionAudioAutoplayBlocked()).toBe(true);
+    expect(autoplayUpdates).toContain(true);
+
+    FakeAudio.rejectPlay = false;
     playMissionAudio("mission_19");
-    expect(audio.volume).toBe(1);
+    await Promise.resolve();
+
+    expect(isMissionAudioAutoplayBlocked()).toBe(false);
+    expect(autoplayUpdates).toContain(false);
+
+    unsubscribe();
   });
 });

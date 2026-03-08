@@ -527,11 +527,6 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
     raw.durationMs >= 0
       ? Math.round(raw.durationMs)
       : undefined;
-  const volume =
-    typeof raw.volume === "number" && Number.isFinite(raw.volume)
-      ? Math.min(1, Math.max(0, raw.volume))
-      : 1;
-  const muted = typeof raw.muted === "boolean" ? raw.muted : false;
   const clipId = typeof raw.clipId === "string" && raw.clipId ? raw.clipId : undefined;
   const segmentStartMs =
     typeof raw.segmentStartMs === "number" &&
@@ -568,8 +563,6 @@ function normalizeMissionAudio(raw: unknown): MissionAudioState | undefined {
     ...(segmentEndMs != null ? { segmentEndMs } : {}),
     ...(loopSegment !== undefined ? { loopSegment } : {}),
     ...(transportLocked !== undefined ? { transportLocked } : {}),
-    volume,
-    muted,
     ...(durationMs != null ? { durationMs } : {}),
   };
 }

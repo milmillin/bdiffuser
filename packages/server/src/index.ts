@@ -140,6 +140,7 @@ import {
   isMission30Scripted,
   pauseMission30,
   resumeMission30,
+  seekMission30,
   startMission30Gameplay,
 } from "./mission30.js";
 import {
@@ -344,8 +345,6 @@ export class BombBustersServer extends Server<Env> {
       status: "paused",
       positionMs: 0,
       syncedAtMs: Date.now(),
-      volume: 1,
-      muted: false,
     };
 
     if (isMission30Scripted(state)) {
@@ -572,8 +571,6 @@ export class BombBustersServer extends Server<Env> {
           msg.command,
           msg.positionMs,
           msg.durationMs,
-          msg.volume,
-          msg.muted,
         );
         break;
       case "mission30ManualDetonatorAdvance":
@@ -3143,29 +3140,16 @@ export class BombBustersServer extends Server<Env> {
     command: MissionAudioControlCommand,
     positionMs?: number,
     durationMs?: number,
-    volume?: number,
-    muted?: boolean,
   ) {
     const state = this.room.gameState;
     if (!state || state.phase === "finished") return;
     if (!state.missionAudio) return;
-    if (
-      command !== "play" &&
-      command !== "pause" &&
-      command !== "seek" &&
-      command !== "setVolume"
-    ) {
+    if (command !== "play" && command !== "pause" && command !== "seek") {
       this.sendMsg(conn, { type: "error", message: "Invalid mission audio command" });
       return;
     }
 
     const missionAudio = state.missionAudio;
-    if (missionAudio.volume === undefined) {
-      missionAudio.volume = 1;
-    }
-    if (missionAudio.muted === undefined) {
-      missionAudio.muted = false;
-    }
 
     if (durationMs !== undefined) {
       if (!Number.isFinite(durationMs) || durationMs < 0) {
@@ -3177,21 +3161,6 @@ export class BombBustersServer extends Server<Env> {
         missionAudio,
         missionAudio.positionMs,
       );
-    }
-
-    const parsedVolume =
-      typeof volume === "number" && Number.isFinite(volume)
-        ? Math.min(1, Math.max(0, volume))
-        : undefined;
-
-    if (volume !== undefined && parsedVolume === undefined) {
-      this.sendMsg(conn, { type: "error", message: "Invalid mission audio volume" });
-      return;
-    }
-
-    if (muted !== undefined && typeof muted !== "boolean") {
-      this.sendMsg(conn, { type: "error", message: "Invalid mission audio mute state" });
-      return;
     }
 
     const parsedPosition =
@@ -3209,41 +3178,22 @@ export class BombBustersServer extends Server<Env> {
       return;
     }
 
-    if (command === "setVolume" && parsedVolume === undefined) {
-      this.sendMsg(conn, { type: "error", message: "setVolume requires a volume value" });
-      return;
-    }
-
     const nowMs = Date.now();
     if (isMission30Scripted(state)) {
-      if (command === "seek") {
+      if (conn.id !== this.room.hostId) {
         this.sendMsg(conn, {
           type: "error",
-          message: "Mission 30 audio seeking is disabled once the scripted mission begins.",
+          message: "Only the host can control Mission 30 audio.",
         });
         return;
-      }
-      if ((command === "play" || command === "pause") && conn.id !== this.room.hostId) {
-        this.sendMsg(conn, {
-          type: "error",
-          message: "Only the host can pause or resume Mission 30 audio.",
-        });
-        return;
-      }
-
-      if (parsedVolume !== undefined) {
-        missionAudio.volume = parsedVolume;
-      }
-      if (muted !== undefined) {
-        missionAudio.muted = muted;
       }
 
       if (command === "pause") {
         pauseMission30(state, nowMs);
       } else if (command === "play") {
         resumeMission30(state, nowMs);
-      } else {
-        missionAudio.syncedAtMs = nowMs;
+      } else if (parsedPosition !== undefined) {
+        seekMission30(state, parsedPosition, nowMs);
       }
 
       this.saveState();
@@ -3260,13 +3210,6 @@ export class BombBustersServer extends Server<Env> {
       missionAudio,
       parsedPosition ?? currentPosition,
     );
-
-    if (parsedVolume !== undefined) {
-      missionAudio.volume = parsedVolume;
-    }
-    if (muted !== undefined) {
-      missionAudio.muted = muted;
-    }
 
     if (command === "play") {
       missionAudio.status = "playing";
@@ -5149,7 +5092,7 @@ export class BombBustersServer extends Server<Env> {
         playerId: seatPlayer.id,
         playerName: seatPlayer.name,
         omniscience: false,
-        state: filterStateForPlayer(this.room.gameState, seatPlayer.id),
+        state: filterStateForPlayer(this.room.gameState, seatPlayer.id, this.room.hostId),
       });
     }
 
@@ -5234,7 +5177,7 @@ export class BombBustersServer extends Server<Env> {
 
     for (const conn of this.getConnections()) {
       if (playerIds.has(conn.id)) {
-        const filtered = filterStateForPlayer(state, conn.id);
+        const filtered = filterStateForPlayer(state, conn.id, this.room.hostId);
         this.sendGameState(conn, filtered, serverNowMs);
       } else {
         // Spectator — compute once, reuse for all spectator connections

@@ -1,13 +1,19 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientGameState, GameState } from "@bomb-busters/shared";
 import { makeGameState, makePlayer } from "@bomb-busters/shared/testing";
+import { setMissionAudioMuted, setMissionAudioVolume, stopMissionAudio } from "../../audio/audio.js";
 import { MissionAudioPlayer } from "./MissionAudioPlayer.js";
 
-function toClientGameState(state: GameState, playerId: string): ClientGameState {
+function toClientGameState(
+  state: GameState,
+  playerId: string,
+  isHost = false,
+): ClientGameState {
   return {
     ...state,
     playerId,
+    isHost,
     players: state.players.map((player) => ({
       ...player,
       remainingTiles: player.hand.filter((tile) => !tile.cut).length,
@@ -18,6 +24,7 @@ function toClientGameState(state: GameState, playerId: string): ClientGameState 
 function makeStateWithMissionAudio(
   playerId = "me",
   missionAudioOverrides: Partial<NonNullable<GameState["missionAudio"]>> = {},
+  isHost = false,
 ): ClientGameState {
   const gameState = makeGameState({
     mission: 19,
@@ -36,7 +43,7 @@ function makeStateWithMissionAudio(
     },
   });
 
-  return toClientGameState(gameState, playerId);
+  return toClientGameState(gameState, playerId, isHost);
 }
 
 function renderMissionAudioPlayer(gameState: ClientGameState): string {
@@ -46,7 +53,19 @@ function renderMissionAudioPlayer(gameState: ClientGameState): string {
 }
 
 describe("MissionAudioPlayer", () => {
-  it("renders transport, timeline, and shared volume controls", () => {
+  beforeEach(() => {
+    stopMissionAudio();
+    setMissionAudioVolume(1);
+    setMissionAudioMuted(false);
+  });
+
+  afterEach(() => {
+    stopMissionAudio();
+    setMissionAudioVolume(1);
+    setMissionAudioMuted(false);
+  });
+
+  it("renders transport, timeline, and local volume controls", () => {
     const html = renderMissionAudioPlayer(makeStateWithMissionAudio());
 
     expect(html).toContain("data-testid=\"mission-audio-controller\"");
@@ -58,17 +77,15 @@ describe("MissionAudioPlayer", () => {
     expect(html).toContain(">Mute<");
   });
 
-  it("renders unmute label when shared mission audio is muted", () => {
-    const html = renderMissionAudioPlayer(
-      makeStateWithMissionAudio("me", { muted: true }),
-    );
+  it("renders unmute label when local mission audio is muted", () => {
+    setMissionAudioMuted(true);
+    const html = renderMissionAudioPlayer(makeStateWithMissionAudio());
     expect(html).toContain(">Unmute<");
   });
 
-  it("renders current shared volume value", () => {
-    const html = renderMissionAudioPlayer(
-      makeStateWithMissionAudio("me", { volume: 0.45 }),
-    );
+  it("renders current local volume value", () => {
+    setMissionAudioVolume(0.45);
+    const html = renderMissionAudioPlayer(makeStateWithMissionAudio());
     expect(html).toContain("value=\"45\"");
   });
 
@@ -80,13 +97,14 @@ describe("MissionAudioPlayer", () => {
         players: [makePlayer({ id: "me" }), makePlayer({ id: "p2" })],
       }),
       "me",
+      false,
     );
 
     const html = renderMissionAudioPlayer(state);
     expect(html).toBe("");
   });
 
-  it("renders locked transport copy instead of seek/play controls for scripted audio", () => {
+  it("renders host-controlled shared transport messaging for non-host Mission 30 players", () => {
     const html = renderMissionAudioPlayer(
       makeStateWithMissionAudio("me", {
         audioFile: "mission_30",
@@ -97,10 +115,33 @@ describe("MissionAudioPlayer", () => {
       }),
     );
 
-    expect(html).toContain("data-testid=\"mission-audio-locked\"");
-    expect(html).not.toContain("data-testid=\"mission-audio-slider\"");
-    expect(html).not.toContain("data-testid=\"mission-audio-play\"");
-    expect(html).not.toContain("data-testid=\"mission-audio-pause\"");
+    expect(html).toContain("data-testid=\"mission-audio-slider\"");
+    expect(html).toContain("data-testid=\"mission-audio-play\"");
+    expect(html).toContain("data-testid=\"mission-audio-pause\"");
+    expect(html).toContain("data-testid=\"mission-audio-transport-note\"");
+    expect(html).toContain("Only the host can play, pause, or seek.");
+    expect(html).toContain("disabled");
+    expect(html).toContain("data-testid=\"mission-audio-volume-slider\"");
+  });
+
+  it("renders active shared transport messaging for the Mission 30 host", () => {
+    const html = renderMissionAudioPlayer(
+      makeStateWithMissionAudio(
+        "me",
+        {
+          audioFile: "mission_30",
+          transportLocked: true,
+          clipId: "briefing",
+          segmentStartMs: 2_630,
+          segmentEndMs: 54_320,
+        },
+        true,
+      ),
+    );
+
+    expect(html).toContain("data-testid=\"mission-audio-transport-note\"");
+    expect(html).toContain("Host transport changes affect everyone.");
+    expect(html).not.toContain("Only the host can play, pause, or seek.");
     expect(html).toContain("data-testid=\"mission-audio-volume-slider\"");
   });
 });

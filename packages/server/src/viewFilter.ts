@@ -21,11 +21,13 @@ type PendingForcedAction = NonNullable<GameState["pendingForcedAction"]>;
 export function filterStateForPlayer(
   state: GameState,
   playerId: string,
+  hostId: string | null = null,
 ): ClientGameState {
   return {
     phase: state.phase,
     roomId: state.roomId,
     playerId,
+    isHost: hostId != null && playerId === hostId,
     players: state.phase === "finished"
       ? state.players.map(filterPlayerFullyVisible)
       : state.players.map((p) => filterPlayer(state, p, playerId)),
@@ -210,6 +212,7 @@ export function filterStateForSpectator(state: GameState): ClientGameState {
     phase: state.phase,
     roomId: state.roomId,
     playerId: "__spectator__",
+    isHost: false,
     isSpectator: true,
     players: state.phase === "finished"
       ? state.players.map(filterPlayerFullyVisible)

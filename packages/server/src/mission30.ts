@@ -293,6 +293,17 @@ function pauseMission30Transport(state: GameState, nowMs: number): void {
   missionAudio.status = "paused";
 }
 
+function syncMission30PausedTiming(state: GameState, nowMs: number): void {
+  const mission30 = getMission30StateInternal(state);
+  if (!mission30 || mission30.mode !== "paused" || mission30.pausedAtMs == null) return;
+
+  const deltaMs = Math.max(0, nowMs - mission30.pausedAtMs);
+  if (mission30.cueEndsAtMs != null) mission30.cueEndsAtMs += deltaMs;
+  if (mission30.visibleDeadlineMs != null) mission30.visibleDeadlineMs += deltaMs;
+  if (mission30.hardDeadlineMs != null) mission30.hardDeadlineMs += deltaMs;
+  mission30.pausedAtMs = nowMs;
+}
+
 function pauseMission30Audio(state: GameState, nowMs: number): void {
   const mission30 = getMission30StateInternal(state);
   if (!mission30) return;
@@ -531,6 +542,40 @@ export function pauseMission30(state: GameState, nowMs: number): void {
 export function resumeMission30(state: GameState, nowMs: number): void {
   if (!isMission30Scripted(state)) return;
   resumeMission30Audio(state, nowMs);
+}
+
+export function seekMission30(state: GameState, positionMs: number, nowMs: number): void {
+  const mission30 = getMission30StateInternal(state);
+  const missionAudio = state.missionAudio;
+  if (!mission30 || !missionAudio) return;
+
+  syncMission30PausedTiming(state, nowMs);
+
+  const segmentStartMs = Math.max(0, missionAudio.segmentStartMs ?? 0);
+  const segmentEndMs = missionAudio.segmentEndMs;
+  const clampedPositionMs = Math.max(segmentStartMs, Math.round(positionMs));
+  const nextPositionMs =
+    segmentEndMs != null
+      ? Math.min(clampedPositionMs, segmentEndMs)
+      : clampedPositionMs;
+
+  missionAudio.positionMs = nextPositionMs;
+  missionAudio.syncedAtMs = nowMs;
+
+  if (segmentEndMs == null) return;
+
+  if (mission30.cueEndsAtMs != null) {
+    mission30.cueEndsAtMs = nowMs + Math.max(0, segmentEndMs - nextPositionMs);
+    return;
+  }
+
+  if (
+    mission30.visibleDeadlineMs == null &&
+    mission30.hardDeadlineMs != null &&
+    missionAudio.loopSegment !== true
+  ) {
+    mission30.hardDeadlineMs = nowMs + Math.max(0, segmentEndMs - nextPositionMs);
+  }
 }
 
 function isRoundObjectiveMet(state: GameState, phase: Mission30State["phase"]): boolean {

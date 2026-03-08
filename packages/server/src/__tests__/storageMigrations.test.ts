@@ -997,6 +997,58 @@ describe("normalizeRoomState", () => {
     });
   });
 
+  it("drops legacy shared mission-audio volume and mute fields across restore", () => {
+    const legacy = {
+      gameState: {
+        phase: "playing",
+        players: [
+          {
+            id: "p1",
+            name: "Alice",
+            isCaptain: true,
+            hand: [],
+            infoTokens: [],
+          },
+        ],
+        board: {
+          detonatorPosition: 0,
+          detonatorMax: 3,
+          validationTrack: {},
+          markers: [],
+          equipment: [],
+        },
+        currentPlayerIndex: 0,
+        turnNumber: 3,
+        mission: 30,
+        result: null,
+        missionAudio: {
+          audioFile: "mission_30",
+          status: "playing",
+          positionMs: 12_000,
+          syncedAtMs: 5_000,
+          durationMs: 769_080,
+          segmentStartMs: 2_630,
+          segmentEndMs: 54_320,
+          transportLocked: true,
+          volume: 0.2,
+          muted: true,
+        },
+      },
+    };
+
+    const normalized = normalizeRoomState(legacy, "room-g-audio");
+    expect(normalized.gameState?.missionAudio).toEqual({
+      audioFile: "mission_30",
+      status: "playing",
+      positionMs: 12_000,
+      syncedAtMs: 5_000,
+      durationMs: 769_080,
+      segmentStartMs: 2_630,
+      segmentEndMs: 54_320,
+      transportLocked: true,
+    });
+  });
+
   it("normalizes campaign mission29 turn state across restore", () => {
     const legacy = {
       gameState: {

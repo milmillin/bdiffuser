@@ -16,9 +16,15 @@ import type {
   MissionAudioState,
 } from "@bomb-busters/shared";
 import {
+  getMissionAudioOutputPreferences,
   getMissionAudioDurationMs,
   getMissionAudioPositionMs,
+  isMissionAudioAutoplayBlocked,
+  onMissionAudioAutoplayBlockedChange,
   onMissionAudioEnded,
+  retryMissionAudioPlayback,
+  setMissionAudioMuted,
+  setMissionAudioVolume,
   stopMissionAudio,
   syncMissionAudioState,
 } from "../../audio/audio.js";
@@ -56,17 +62,6 @@ function formatAudioTime(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function resolveMissionAudioVolume(missionAudio: MissionAudioState): number {
-  if (typeof missionAudio.volume !== "number" || !Number.isFinite(missionAudio.volume)) {
-    return 1;
-  }
-  return Math.min(1, Math.max(0, missionAudio.volume));
-}
-
-function resolveMissionAudioMuted(missionAudio: MissionAudioState): boolean {
-  return missionAudio.muted === true;
-}
-
 export function MissionAudioPlayer({
   gameState,
   send,
@@ -84,14 +79,15 @@ export function MissionAudioPlayer({
   const [localDurationMs, setLocalDurationMs] = useState<number | undefined>(
     undefined,
   );
-  const [volumePercent, setVolumePercent] = useState(() =>
-    missionAudio ? Math.round(resolveMissionAudioVolume(missionAudio) * 100) : 100,
-  );
-  const [muted, setMuted] = useState(() =>
-    missionAudio ? resolveMissionAudioMuted(missionAudio) : false,
+  const [volumePercent, setVolumePercent] = useState(() => {
+    const preferences = getMissionAudioOutputPreferences();
+    return Math.round(preferences.volume * 100);
+  });
+  const [muted, setMuted] = useState(() => getMissionAudioOutputPreferences().muted);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(() =>
+    isMissionAudioAutoplayBlocked(),
   );
   const lastSeekSentAtRef = useRef(0);
-  const lastVolumeSentAtRef = useRef(0);
   const sliderInputRef = useRef<HTMLInputElement | null>(null);
   const sliderDragActiveRef = useRef(false);
   const statusAtDragStartRef = useRef<"playing" | "paused" | null>(null);
@@ -112,14 +108,10 @@ export function MissionAudioPlayer({
   }, [clearSliderDragState, missionAudio]);
 
   useEffect(() => {
-    if (!missionAudio) {
-      setVolumePercent(100);
-      setMuted(false);
-      return;
-    }
-    setVolumePercent(Math.round(resolveMissionAudioVolume(missionAudio) * 100));
-    setMuted(resolveMissionAudioMuted(missionAudio));
-  }, [missionAudio?.audioFile, missionAudio?.volume, missionAudio?.muted]);
+    return onMissionAudioAutoplayBlockedChange((blocked) => {
+      setAutoplayBlocked(blocked);
+    });
+  }, []);
 
   useEffect(() => {
     if (!missionAudio) return;
@@ -157,6 +149,9 @@ export function MissionAudioPlayer({
 
   useEffect(() => {
     if (!missionAudio) return;
+    if (missionAudio.transportLocked && (!gameState.isHost || gameState.isSpectator)) {
+      return () => {};
+    }
     return onMissionAudioEnded(() => {
       if (sliderDragActiveRef.current) return;
       if (Date.now() - seekCommitTimeRef.current < 500) return;
@@ -172,27 +167,17 @@ export function MissionAudioPlayer({
         ...(durationMs != null ? { durationMs } : {}),
       });
     });
-  }, [missionAudio?.audioFile, missionAudio?.durationMs, send]);
+  }, [
+    gameState.isHost,
+    gameState.isSpectator,
+    missionAudio?.audioFile,
+    missionAudio?.durationMs,
+    missionAudio?.transportLocked,
+    send,
+  ]);
 
   const sendAudioControl = useCallback(
-    (
-      command: "play" | "pause" | "seek" | "setVolume",
-      positionMs: number | undefined,
-      forceDurationMs?: number,
-      volume?: number,
-      mutedValue?: boolean,
-    ) => {
-      if (command === "setVolume") {
-        if (volume == null || !Number.isFinite(volume)) return;
-        send({
-          type: "missionAudioControl",
-          command,
-          volume: Math.min(1, Math.max(0, volume)),
-          ...(typeof mutedValue === "boolean" ? { muted: mutedValue } : {}),
-        });
-        return;
-      }
-
+    (command: "play" | "pause" | "seek", positionMs: number | undefined, forceDurationMs?: number) => {
       const durationMs =
         forceDurationMs ??
         getMissionAudioDurationMs() ??
@@ -221,6 +206,8 @@ export function MissionAudioPlayer({
 
   const isPlaying = missionAudio?.status === "playing";
   const transportLocked = missionAudio?.transportLocked === true;
+  const canControlSharedTransport =
+    !transportLocked || (gameState.isHost && !gameState.isSpectator);
   const segmentStartMs = Math.max(0, missionAudio?.segmentStartMs ?? 0);
   const absoluteDurationMs =
     missionAudio?.durationMs ?? localDurationMs ?? Math.max(canonicalPositionMs, 1);
@@ -245,13 +232,21 @@ export function MissionAudioPlayer({
     [sliderMaxMs],
   );
 
+  const toAbsoluteSliderPositionMs = useCallback(
+    (sliderPositionMs: number): number => {
+      if (!transportLocked) return sliderPositionMs;
+      return Math.min(segmentStartMs + sliderPositionMs, segmentStartMs + sliderMaxMs);
+    },
+    [segmentStartMs, sliderMaxMs, transportLocked],
+  );
+
   const commitSliderSeek = useCallback(
     (rawValue: string | number) => {
       if (!missionAudio) {
         clearSliderDragState();
         return;
       }
-      if (transportLocked) {
+      if (!canControlSharedTransport) {
         clearSliderDragState();
         return;
       }
@@ -260,18 +255,19 @@ export function MissionAudioPlayer({
         clearSliderDragState();
         return;
       }
+      const absolutePositionMs = toAbsoluteSliderPositionMs(clampedMs);
       syncMissionAudioState(
         {
           ...missionAudio,
-          positionMs: clampedMs,
+          positionMs: absolutePositionMs,
           syncedAtMs: getServerSyncedNowMs(serverClockOffsetMs),
         },
-        clampedMs,
+        absolutePositionMs,
       );
       if (statusAtDragStartRef.current === "playing") {
-        sendAudioControl("play", clampedMs);
+        sendAudioControl("play", absolutePositionMs);
       } else {
-        sendAudioControl("seek", clampedMs);
+        sendAudioControl("seek", absolutePositionMs);
       }
       seekCommitTimeRef.current = Date.now();
       clearSliderDragState();
@@ -279,11 +275,12 @@ export function MissionAudioPlayer({
     },
     [
       clearSliderDragState,
+      canControlSharedTransport,
       missionAudio,
       parseClampedSliderMs,
       sendAudioControl,
       serverClockOffsetMs,
-      transportLocked,
+      toAbsoluteSliderPositionMs,
     ],
   );
 
@@ -321,7 +318,7 @@ export function MissionAudioPlayer({
   }, [clearSliderDragState, commitSliderSeek]);
 
   const handlePlay = useCallback(() => {
-    if (!missionAudio || transportLocked) return;
+    if (!missionAudio || !canControlSharedTransport) return;
     const nowMs = getServerSyncedNowMs(serverClockOffsetMs);
     // Prime local playback in direct response to user input to avoid
     // autoplay-policy failures after a page refresh.
@@ -329,18 +326,24 @@ export function MissionAudioPlayer({
       {
         ...missionAudio,
         status: "playing",
-        positionMs: displayPositionMs,
+        positionMs: absoluteDisplayPositionMs,
         syncedAtMs: nowMs,
       },
-      displayPositionMs,
+      absoluteDisplayPositionMs,
     );
-    sendAudioControl("play", displayPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs, transportLocked]);
+    sendAudioControl("play", absoluteDisplayPositionMs);
+  }, [
+    absoluteDisplayPositionMs,
+    canControlSharedTransport,
+    missionAudio,
+    sendAudioControl,
+    serverClockOffsetMs,
+  ]);
 
   const handlePause = useCallback(() => {
-    if (!missionAudio || transportLocked) return;
+    if (!missionAudio || !canControlSharedTransport) return;
     const currentPositionMs = Math.max(
-      displayPositionMs,
+      absoluteDisplayPositionMs,
       getMissionAudioPositionMs(),
     );
     syncMissionAudioState(
@@ -353,7 +356,13 @@ export function MissionAudioPlayer({
       currentPositionMs,
     );
     sendAudioControl("pause", currentPositionMs);
-  }, [displayPositionMs, missionAudio, sendAudioControl, serverClockOffsetMs, transportLocked]);
+  }, [
+    absoluteDisplayPositionMs,
+    canControlSharedTransport,
+    missionAudio,
+    sendAudioControl,
+    serverClockOffsetMs,
+  ]);
 
   const handleSliderDragStart = useCallback(
     (
@@ -362,125 +371,70 @@ export function MissionAudioPlayer({
         | TouchEvent<HTMLInputElement>
         | PointerEvent<HTMLInputElement>,
     ) => {
-      if (transportLocked) return;
+      if (!canControlSharedTransport) return;
       sliderDragActiveRef.current = true;
       statusAtDragStartRef.current = missionAudio?.status ?? null;
     },
-    [missionAudio?.status, transportLocked],
+    [canControlSharedTransport, missionAudio?.status],
   );
 
   const handleSliderChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      if (!missionAudio || transportLocked) return;
+      if (!missionAudio || !canControlSharedTransport) return;
       const clampedMs = parseClampedSliderMs(event.target.value);
       if (clampedMs == null) return;
+      const absolutePositionMs = toAbsoluteSliderPositionMs(clampedMs);
       if (sliderDragActiveRef.current) {
-        setSliderDragMs(clampedMs);
+        setSliderDragMs(absolutePositionMs);
       }
 
       const nowMs = Date.now();
       if (nowMs - lastSeekSentAtRef.current >= 80) {
-        sendAudioControl("seek", clampedMs);
+        sendAudioControl("seek", absolutePositionMs);
         lastSeekSentAtRef.current = nowMs;
       }
     },
-    [missionAudio, parseClampedSliderMs, sendAudioControl, transportLocked],
+    [
+      canControlSharedTransport,
+      missionAudio,
+      parseClampedSliderMs,
+      sendAudioControl,
+      toAbsoluteSliderPositionMs,
+    ],
   );
 
   const handleSliderBlur = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
-      if (transportLocked) return;
+      if (!canControlSharedTransport) return;
       commitSliderSeek(event.currentTarget.value);
     },
-    [commitSliderSeek, transportLocked],
+    [canControlSharedTransport, commitSliderSeek],
   );
 
   const handleVolumeChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
       const nextPercent = Number(event.target.value);
       if (!Number.isFinite(nextPercent)) return;
       const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
-      const nextMuted = muted && clampedPercent > 0 ? false : muted;
       setVolumePercent(clampedPercent);
+      setMissionAudioVolume(clampedPercent / 100);
       if (muted && clampedPercent > 0) {
         setMuted(false);
-      }
-
-      const nowMs = Date.now();
-      if (nowMs - lastVolumeSentAtRef.current >= 80) {
-        sendAudioControl(
-          "setVolume",
-          undefined,
-          undefined,
-          clampedPercent / 100,
-          nextMuted,
-        );
-        lastVolumeSentAtRef.current = nowMs;
+        setMissionAudioMuted(false);
       }
     },
-    [missionAudio, muted, sendAudioControl],
-  );
-
-  const handleVolumeCommit = useCallback(
-    (event: MouseEvent<HTMLInputElement> | TouchEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
-      const nextPercent = Number(event.currentTarget.value);
-      if (!Number.isFinite(nextPercent)) return;
-      const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
-      const nextMuted = muted && clampedPercent > 0 ? false : muted;
-      setVolumePercent(clampedPercent);
-      if (muted && clampedPercent > 0) {
-        setMuted(false);
-      }
-      sendAudioControl(
-        "setVolume",
-        undefined,
-        undefined,
-        clampedPercent / 100,
-        nextMuted,
-      );
-      lastVolumeSentAtRef.current = Date.now();
-    },
-    [missionAudio, muted, sendAudioControl],
-  );
-
-  const handleVolumeBlur = useCallback(
-    (event: FocusEvent<HTMLInputElement>) => {
-      if (!missionAudio) return;
-      const nextPercent = Number(event.currentTarget.value);
-      if (!Number.isFinite(nextPercent)) return;
-      const clampedPercent = Math.min(100, Math.max(0, Math.round(nextPercent)));
-      const nextMuted = muted && clampedPercent > 0 ? false : muted;
-      setVolumePercent(clampedPercent);
-      if (muted && clampedPercent > 0) {
-        setMuted(false);
-      }
-      sendAudioControl(
-        "setVolume",
-        undefined,
-        undefined,
-        clampedPercent / 100,
-        nextMuted,
-      );
-      lastVolumeSentAtRef.current = Date.now();
-    },
-    [missionAudio, muted, sendAudioControl],
+    [muted],
   );
 
   const handleMuteToggle = useCallback(() => {
-    if (!missionAudio) return;
     const nextMuted = !muted;
     setMuted(nextMuted);
-    sendAudioControl(
-      "setVolume",
-      undefined,
-      undefined,
-      volumePercent / 100,
-      nextMuted,
-    );
-    lastVolumeSentAtRef.current = Date.now();
-  }, [missionAudio, muted, sendAudioControl, volumePercent]);
+    setMissionAudioMuted(nextMuted);
+  }, [muted]);
+
+  const handleRetryAudio = useCallback(() => {
+    void retryMissionAudioPlayback();
+  }, []);
 
   if (!missionAudio) return null;
 
@@ -496,51 +450,68 @@ export function MissionAudioPlayer({
         </span>
       </div>
 
-      {transportLocked ? (
-        <div
-          className="rounded-md border border-amber-500/40 bg-amber-950/20 px-2 py-2 text-xs text-amber-100/90"
-          data-testid="mission-audio-locked"
-        >
-          Mission 30 controls playback from the server. Volume and mute stay shared.
-        </div>
-      ) : (
-        <>
-          <input
-            ref={sliderInputRef}
-            type="range"
-            min={0}
-            max={sliderMaxMs}
-            value={displayPositionMs}
-            onPointerDown={handleSliderDragStart}
-            onMouseDown={handleSliderDragStart}
-            onTouchStart={handleSliderDragStart}
-            onChange={handleSliderChange}
-            onBlur={handleSliderBlur}
-            className="h-2 w-full cursor-pointer accent-amber-400"
-            data-testid="mission-audio-slider"
-          />
+      <input
+        ref={sliderInputRef}
+        type="range"
+        min={0}
+        max={sliderMaxMs}
+        value={displayPositionMs}
+        onPointerDown={handleSliderDragStart}
+        onMouseDown={handleSliderDragStart}
+        onTouchStart={handleSliderDragStart}
+        onChange={handleSliderChange}
+        onBlur={handleSliderBlur}
+        disabled={!canControlSharedTransport}
+        className={`h-2 w-full accent-amber-400 ${
+          canControlSharedTransport ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+        }`}
+        data-testid="mission-audio-slider"
+      />
 
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePlay}
-              disabled={isPlaying}
-              className="rounded-md border border-emerald-500/60 bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-200 transition-colors enabled:hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-50"
-              data-testid="mission-audio-play"
-            >
-              Play
-            </button>
-            <button
-              type="button"
-              onClick={handlePause}
-              disabled={!isPlaying}
-              className="rounded-md border border-amber-500/60 bg-amber-950/35 px-2 py-1 text-xs font-semibold text-amber-200 transition-colors enabled:hover:bg-amber-950/55 disabled:cursor-not-allowed disabled:opacity-50"
-              data-testid="mission-audio-pause"
-            >
-              Pause
-            </button>
-          </div>
-        </>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handlePlay}
+          disabled={isPlaying || !canControlSharedTransport}
+          className="rounded-md border border-emerald-500/60 bg-emerald-900/30 px-2 py-1 text-xs font-semibold text-emerald-200 transition-colors enabled:hover:bg-emerald-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+          data-testid="mission-audio-play"
+        >
+          Play
+        </button>
+        <button
+          type="button"
+          onClick={handlePause}
+          disabled={!isPlaying || !canControlSharedTransport}
+          className="rounded-md border border-amber-500/60 bg-amber-950/35 px-2 py-1 text-xs font-semibold text-amber-200 transition-colors enabled:hover:bg-amber-950/55 disabled:cursor-not-allowed disabled:opacity-50"
+          data-testid="mission-audio-pause"
+        >
+          Pause
+        </button>
+      </div>
+
+      {transportLocked && (
+        <div
+          className="mt-2 rounded-md border border-amber-500/40 bg-amber-950/20 px-2 py-2 text-xs text-amber-100/90"
+          data-testid="mission-audio-transport-note"
+        >
+          {canControlSharedTransport
+            ? "Mission 30 playback is shared. Host transport changes affect everyone."
+            : "Mission 30 playback is shared. Only the host can play, pause, or seek."}
+        </div>
+      )}
+
+      {autoplayBlocked && missionAudio.status === "playing" && (
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-rose-500/40 bg-rose-950/20 px-2 py-2 text-xs text-rose-100/90">
+          <span>Audio playback was blocked by the browser on this device.</span>
+          <button
+            type="button"
+            onClick={handleRetryAudio}
+            className="rounded-md border border-rose-400/60 bg-rose-900/30 px-2 py-1 font-semibold text-rose-100 transition-colors hover:bg-rose-900/50"
+            data-testid="mission-audio-retry"
+          >
+            Resume Audio
+          </button>
+        </div>
       )}
 
       <div className="mt-2 flex items-center gap-2">
@@ -554,9 +525,6 @@ export function MissionAudioPlayer({
           step={1}
           value={volumePercent}
           onChange={handleVolumeChange}
-          onMouseUp={handleVolumeCommit}
-          onTouchEnd={handleVolumeCommit}
-          onBlur={handleVolumeBlur}
           className="h-2 w-full cursor-pointer accent-sky-400"
           data-testid="mission-audio-volume-slider"
         />

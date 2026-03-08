@@ -20,6 +20,16 @@ import {
 import { filterStateForPlayer, filterStateForSpectator } from "../viewFilter";
 
 describe("filterStateForPlayer – campaign state", () => {
+  it("marks the host in the filtered client game state", () => {
+    const state = makeGameState({
+      players: [makePlayer({ id: "host" }), makePlayer({ id: "p2" })],
+    });
+
+    expect(filterStateForPlayer(state, "host", "host").isHost).toBe(true);
+    expect(filterStateForPlayer(state, "p2", "host").isHost).toBe(false);
+    expect(filterStateForSpectator(state).isHost).toBe(false);
+  });
+
   it("omits campaign when GameState has no campaign", () => {
     const state = makeGameState();
     const filtered = filterStateForPlayer(state, "player-1");
