@@ -38,6 +38,7 @@ import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberC
 import { Mission65CardHandoffPanel } from "./Actions/Mission65CardHandoffPanel.js";
 import { Mission34GuessPanel } from "./Actions/Mission34GuessPanel.js";
 import { Mission66BunkerChoicePanel } from "./Actions/Mission66BunkerChoicePanel.js";
+import { MissionChallengeRedCutPanel } from "./Actions/MissionChallengeRedCutPanel.js";
 import { Mission32ConstraintDecisionPanel } from "./Actions/Mission32ConstraintDecisionPanel.js";
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
@@ -1845,6 +1846,21 @@ export function GameBoard({
                   mission61MyConstraintSlot &&
                   me && (
                     <Mission61ReplaceConstraintPanel
+                      gameState={gameState}
+                      send={send}
+                      playerId={playerId}
+                    />
+                  )}
+                {gameState.phase === "playing" &&
+                  isMyTurn &&
+                  !gameState.pendingForcedAction &&
+                  !pendingAction &&
+                  !equipmentMode &&
+                  !missionSpecialMode &&
+                  !missionFourCutMode &&
+                  gameState.campaign?.challenges?.active.some((challenge) => challenge.id === "1") &&
+                  me && (
+                    <MissionChallengeRedCutPanel
                       gameState={gameState}
                       send={send}
                       playerId={playerId}

@@ -1037,6 +1037,9 @@ function CampaignObjectsHint({
             <CampaignRow>
               {sortedActiveChallenges.map((challenge) => {
                 const image = getChallengeCardImage(challenge.id);
+                const detailEffect = challenge.targetValues?.length
+                  ? `${challenge.description} Targets: ${challenge.targetValues.join(", ")}`
+                  : challenge.description;
                 return (
                   <CampaignObjectCard
                     key={`active-${challenge.id}`}
@@ -1049,7 +1052,7 @@ function CampaignObjectsHint({
                         previewImage: image,
                         previewAspectRatio: "1037/736",
                         detailSubtitle: challenge.name,
-                        detailEffect: challenge.description,
+                        detailEffect,
                       })
                     }
                   />
@@ -1057,6 +1060,9 @@ function CampaignObjectsHint({
               })}
               {sortedCompletedChallenges.map((challenge) => {
                 const image = getChallengeCardImage(challenge.id);
+                const detailEffect = challenge.targetValues?.length
+                  ? `${challenge.description} Targets: ${challenge.targetValues.join(", ")}`
+                  : challenge.description;
                 return (
                   <CampaignObjectCard
                     key={`done-${challenge.id}`}
@@ -1071,7 +1077,7 @@ function CampaignObjectsHint({
                         previewImage: image,
                         previewAspectRatio: "1037/736",
                         detailSubtitle: challenge.name,
-                        detailEffect: challenge.description,
+                        detailEffect,
                       })
                     }
                   />

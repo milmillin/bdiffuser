@@ -32,8 +32,11 @@
 
 import type {
   ActionLegalityCode,
+  ChallengeCard,
   ConstraintCard,
   GameState,
+  MissionChallengeProgressState,
+  MissionChallengeTurnEvent,
   Mission66BunkerActivationTarget,
   Mission66BunkerBoardRuleDef,
   Mission66BunkerChoiceOption,
@@ -50,7 +53,9 @@ import type {
   WireTile,
 } from "@bomb-busters/shared";
 import {
+  CHALLENGE_CARD_DEFS,
   EQUIPMENT_DEFS,
+  getChallengeCardDef,
   getWireImage,
   getMission66BunkerCell,
   getNumberCardDef,
@@ -239,6 +244,7 @@ export interface ValidateHookContext {
       | "dualCutDoubleDetector"
       | "simultaneousCut"
       | "soloCut"
+      | "challengeRedCut"
       | "revealReds"
       | "simultaneousRedCut"
       | "simultaneousFourCut";
@@ -757,7 +763,7 @@ export function getMissionTurnSkipError(
 
 import type {
   AudioPromptRuleDef,
-  ChallengeRewardsRuleDef,
+  ChallengeCardsRuleDef,
   ConstraintEnforcementRuleDef,
   ForcedGeneralRadarFlowRuleDef,
   InternFailureExplodesRuleDef,
@@ -852,14 +858,6 @@ function clearSequencePointer(state: GameState): void {
 
 function getMission36CaptainId(state: Readonly<GameState>): string | null {
   return state.players.find((player) => player.isCaptain)?.id ?? null;
-}
-
-function parseTargetValueFromChallengeId(id: string): number | null {
-  const match = /challenge-value-(\d+)/.exec(id);
-  if (!match) return null;
-  const value = Number.parseInt(match[1] ?? "", 10);
-  if (!Number.isFinite(value)) return null;
-  return value;
 }
 
 function clampProgress(value: number, max: number): number {
@@ -1667,37 +1665,280 @@ function getAvailableOxygen(state: Readonly<GameState>, playerId: string): numbe
   return Math.max(0, owned + reserve);
 }
 
-function buildChallengeDeck(totalCount: number) {
-  const count = Math.max(1, Math.floor(totalCount));
-  const values = [...MISSION_NUMBER_VALUES];
-  const cards: { id: string; name: string; description: string; completed: boolean }[] = [];
-
-  let index = 0;
-  while (cards.length < count) {
-    if (index % values.length === 0) {
-      shuffle(values);
-    }
-    const value = values[index % values.length];
-    cards.push({
-      id: `challenge-value-${value}-${cards.length}`,
-      name: `Challenge ${value}`,
-      description: `Complete by successfully cutting value ${value}.`,
-      completed: false,
-    });
-    index++;
-  }
-
-  return cards;
+function isChallengeMission(state: Readonly<GameState>): boolean {
+  return state.mission === 55 || state.mission === 60;
 }
 
-function getDesiredChallengeActiveCount(
-  rule: ChallengeRewardsRuleDef,
-  playerCount: number,
-): number {
-  if (rule.activeCountMode === "per_player") {
-    return Math.max(1, Math.floor(playerCount));
+function createChallengeCard(id: number): ChallengeCard {
+  const def = getChallengeCardDef(id);
+  if (!def) {
+    throw new Error(`Unknown challenge card id: ${id}`);
   }
-  return Math.max(1, Math.floor(rule.activeCount));
+
+  const card: ChallengeCard = {
+    id: String(def.id),
+    name: def.name,
+    description: def.description,
+    completed: false,
+    startingDetonatorDistanceFromLoss: def.startingDetonatorDistanceFromLoss,
+  };
+
+  if (def.id === 8) {
+    const values = [...MISSION_NUMBER_VALUES];
+    shuffle(values);
+    card.targetValues = values.slice(0, 2);
+  }
+
+  return card;
+}
+
+function buildChallengeDeck(): ChallengeCard[] {
+  const ids = CHALLENGE_CARD_DEFS.map((card) => card.id);
+  shuffle(ids);
+  return ids.map((id) => createChallengeCard(id));
+}
+
+function getChallengeProgress(
+  state: GameState,
+): MissionChallengeProgressState {
+  initializeCampaignProgressState(state);
+  const existing = state.campaign?.challengeProgress;
+  if (existing) return existing;
+
+  const created: MissionChallengeProgressState = {
+    recentTurnEvents: [],
+    validationSequence: [],
+  };
+  state.campaign!.challengeProgress = created;
+  return created;
+}
+
+function getChallengeNumberId(challenge: Readonly<ChallengeCard>): number {
+  const parsed = Number.parseInt(challenge.id, 10);
+  return Number.isFinite(parsed) ? parsed : -1;
+}
+
+function appendChallengeTurnEvent(
+  state: GameState,
+  event: MissionChallengeTurnEvent,
+): void {
+  if (!isChallengeMission(state)) return;
+
+  const progress = getChallengeProgress(state);
+  progress.recentTurnEvents.push(event);
+  if (progress.recentTurnEvents.length > 4) {
+    progress.recentTurnEvents = progress.recentTurnEvents.slice(-4);
+  }
+}
+
+export function recordMissionChallengeValidation(
+  state: GameState,
+  value: number,
+  previousCount: number,
+  nextCount: number,
+): void {
+  if (!isChallengeMission(state)) return;
+  if (previousCount >= 4 || nextCount < 4) return;
+
+  const progress = getChallengeProgress(state);
+  if (progress.validationSequence.length < 3) {
+    progress.validationSequence.push(value);
+  }
+}
+
+function getPlayerStandSlices(
+  player: Readonly<Player>,
+): WireTile[][] {
+  const standSizes = getHookStandSizes(player);
+  return standSizes.map((_, standIndex) => {
+    const range = resolveHookStandRange(player, standIndex);
+    return range ? player.hand.slice(range.start, range.endExclusive) : [];
+  });
+}
+
+function hasChallengeTwoWirePairs(state: Readonly<GameState>): boolean {
+  return state.players.some((player) =>
+    getPlayerStandSlices(player).some((stand) => {
+      let currentRun = 0;
+      const runs: number[] = [];
+      for (const tile of stand) {
+        if (!tile.cut) {
+          currentRun++;
+          continue;
+        }
+        if (currentRun > 0) {
+          runs.push(currentRun);
+          currentRun = 0;
+        }
+      }
+      if (currentRun > 0) runs.push(currentRun);
+      return runs.length > 0 && runs.every((run) => run === 2);
+    })
+  );
+}
+
+function hasChallengeFiveIsolatedWires(state: Readonly<GameState>): boolean {
+  return state.players.some((player) =>
+    getPlayerStandSlices(player).some((stand) => {
+      let isolated = 0;
+      for (let index = 1; index < stand.length - 1; index++) {
+        if (
+          !stand[index]?.cut &&
+          stand[index - 1]?.cut &&
+          stand[index + 1]?.cut
+        ) {
+          isolated++;
+        }
+      }
+      return isolated >= 5;
+    })
+  );
+}
+
+function hasChallengeAllOddStand(state: Readonly<GameState>): boolean {
+  return state.players.some((player) =>
+    getPlayerStandSlices(player).some((stand) => {
+      const blueUncut = stand.filter((tile) =>
+        !tile.cut && tile.color === "blue" && typeof tile.gameValue === "number"
+      );
+      return (
+        blueUncut.length >= 6 &&
+        blueUncut.every((tile) => typeof tile.gameValue === "number" && tile.gameValue % 2 !== 0)
+      );
+    })
+  );
+}
+
+function hasChallengeSevenCutEndsUncut(state: Readonly<GameState>): boolean {
+  return state.players.some((player) =>
+    getPlayerStandSlices(player).some((stand) => {
+      if (stand.length < 2) return false;
+      const cutCount = stand.filter((tile) => tile.cut).length;
+      return (
+        cutCount >= 7 &&
+        !stand[0]?.cut &&
+        !stand[stand.length - 1]?.cut
+      );
+    })
+  );
+}
+
+function challengeCardCompleted(
+  state: Readonly<GameState>,
+  challenge: Readonly<ChallengeCard>,
+): boolean {
+  const progress = state.campaign?.challengeProgress;
+  const id = getChallengeNumberId(challenge);
+
+  switch (id) {
+    case 1:
+      return progress != null &&
+        progress.recentTurnEvents.length > 0 &&
+        progress.recentTurnEvents[progress.recentTurnEvents.length - 1]?.actionType === "challengeRedCut";
+    case 2: {
+      const events = progress?.recentTurnEvents.slice(-4) ?? [];
+      return events.length === 4 && events.every((event) =>
+        typeof event.cutValue === "number" && event.cutValue % 2 === 0
+      );
+    }
+    case 3:
+      return hasChallengeTwoWirePairs(state);
+    case 4: {
+      const sequence = progress?.validationSequence ?? [];
+      return sequence.length >= 3 && (sequence[0] + sequence[1] + sequence[2] === 18);
+    }
+    case 5: {
+      const events = progress?.recentTurnEvents.slice(-2) ?? [];
+      return events.length === 2 && events.every((event) => event.actionType === "soloCut");
+    }
+    case 6:
+      return hasChallengeFiveIsolatedWires(state);
+    case 7: {
+      const events = progress?.recentTurnEvents.slice(-3) ?? [];
+      if (
+        events.length !== 3 ||
+        events.some((event) => typeof event.cutValue !== "number")
+      ) {
+        return false;
+      }
+      const [first, second, third] = events.map((event) => event.cutValue as number);
+      return (
+        (second === first + 1 && third === second + 1) ||
+        (second === first - 1 && third === second - 1)
+      );
+    }
+    case 8: {
+      const sequence = progress?.validationSequence ?? [];
+      const targets = challenge.targetValues ?? [];
+      return (
+        targets.length === 2 &&
+        sequence.length >= 2 &&
+        sequence[0] === targets[0] &&
+        sequence[1] === targets[1]
+      );
+    }
+    case 9:
+      return hasChallengeAllOddStand(state);
+    case 10:
+      return hasChallengeSevenCutEndsUncut(state);
+    default:
+      return false;
+  }
+}
+
+function resolveCompletedChallenges(
+  state: GameState,
+  actorId: string,
+): string[] {
+  const challenges = state.campaign?.challenges;
+  if (!challenges) return [];
+
+  const completedIds: string[] = [];
+  const stillActive: ChallengeCard[] = [];
+
+  for (const challenge of challenges.active) {
+    if (!challengeCardCompleted(state, challenge)) {
+      stillActive.push(challenge);
+      continue;
+    }
+    challenge.completed = true;
+    challenges.completed.push(challenge);
+    completedIds.push(challenge.id);
+  }
+
+  if (completedIds.length === 0) {
+    return completedIds;
+  }
+
+  challenges.active = stillActive;
+  state.board.detonatorPosition = Math.max(
+    0,
+    state.board.detonatorPosition - completedIds.length,
+  );
+
+  pushGameLog(state, {
+    turn: state.turnNumber,
+    playerId: actorId,
+    action: "hookEffect",
+    detail: [
+      `challenge_cards:completed=${completedIds.join(",")}`,
+      `detonator_reduction=${completedIds.length}`,
+      `active=${challenges.active.map((card) => card.id).join(",") || "none"}`,
+    ].join("|"),
+    timestamp: Date.now(),
+  });
+
+  return completedIds;
+}
+
+export function applyMissionChallengeTurnEvent(
+  state: GameState,
+  actorId: string,
+  event: MissionChallengeTurnEvent,
+): void {
+  if (!isChallengeMission(state)) return;
+  appendChallengeTurnEvent(state, event);
+  resolveCompletedChallenges(state, actorId);
 }
 
 function getCutCountForValue(state: Readonly<GameState>, value: number): number {
@@ -3122,80 +3363,43 @@ registerHookHandler<"oxygen_progression">("oxygen_progression", {
 });
 
 /**
- * Challenge progression missions (e.g. 55/60).
- *
- * Completing active challenge values reduces the detonator and draws replacements.
+ * Challenge-card missions (55/60).
  */
-registerHookHandler<"challenge_rewards">("challenge_rewards", {
-  setup(rule: ChallengeRewardsRuleDef, ctx: SetupHookContext): void {
+registerHookHandler<"challenge_cards">("challenge_cards", {
+  setup(_rule: ChallengeCardsRuleDef, ctx: SetupHookContext): void {
     initializeCampaignProgressState(ctx.state);
-
-    const activeCount = getDesiredChallengeActiveCount(rule, ctx.state.players.length);
-    const deck = buildChallengeDeck(Math.max(8, activeCount + 6));
-    const active = deck.splice(0, activeCount);
+    const deck = buildChallengeDeck();
+    const active = deck.splice(0, ctx.state.players.length);
     ctx.state.campaign!.challenges = {
       deck,
       active,
       completed: [],
     };
+    ctx.state.campaign!.challengeProgress = {
+      recentTurnEvents: [],
+      validationSequence: [],
+    };
+
+    const startDistances = new Set(
+      active.map((card) => card.startingDetonatorDistanceFromLoss ?? 1),
+    );
+    if (startDistances.size > 1) {
+      throw new Error("Challenge card setup metadata disagrees on starting detonator distance.");
+    }
+    const startDistance = active[0]?.startingDetonatorDistanceFromLoss ?? 1;
+    ctx.state.board.detonatorPosition = Math.max(
+      0,
+      ctx.state.board.detonatorMax - startDistance,
+    );
+    resolveCompletedChallenges(ctx.state, "system");
 
     pushGameLog(ctx.state, {
       turn: 0,
       playerId: "system",
       action: "hookSetup",
-      detail: `challenge_rewards:active=${active.map((card) => card.id).join(",")}`,
-      timestamp: Date.now(),
-    });
-  },
-
-  resolve(rule: ChallengeRewardsRuleDef, ctx: ResolveHookContext): void {
-    if (!ctx.cutSuccess) return;
-    if (typeof ctx.cutValue !== "number") return;
-
-    const challenges = ctx.state.campaign?.challenges;
-    if (!challenges) return;
-
-    const completedTargets: number[] = [];
-    const stillActive = [] as typeof challenges.active;
-    for (const challenge of challenges.active) {
-      const targetValue = parseTargetValueFromChallengeId(challenge.id);
-      if (targetValue == null || targetValue !== ctx.cutValue) {
-        stillActive.push(challenge);
-        continue;
-      }
-      challenge.completed = true;
-      challenges.completed.push(challenge);
-      completedTargets.push(targetValue);
-    }
-
-    if (completedTargets.length === 0) return;
-
-    challenges.active = stillActive;
-
-    const desiredActiveCount = getDesiredChallengeActiveCount(rule, ctx.state.players.length);
-    while (challenges.active.length < desiredActiveCount && challenges.deck.length > 0) {
-      const next = challenges.deck.shift()!;
-      next.completed = false;
-      challenges.active.push(next);
-    }
-
-    const reductionPerCompletion = Math.max(0, Math.floor(rule.rewardDetonatorReduction));
-    const totalReduction = reductionPerCompletion * completedTargets.length;
-    if (totalReduction > 0) {
-      ctx.state.board.detonatorPosition = Math.max(
-        0,
-        ctx.state.board.detonatorPosition - totalReduction,
-      );
-    }
-
-    pushGameLog(ctx.state, {
-      turn: ctx.state.turnNumber,
-      playerId: ctx.action.actorId,
-      action: "hookEffect",
       detail: [
-        `challenge_rewards:completed=${completedTargets.join(",")}`,
-        `detonator_reduction=${totalReduction}`,
-        `active=${challenges.active.map((card) => card.id).join(",") || "none"}`,
+        `challenge_cards:active=${active.map((card) => card.id).join(",")}`,
+        `detonator=${ctx.state.board.detonatorPosition}`,
       ].join("|"),
       timestamp: Date.now(),
     });

@@ -152,6 +152,17 @@ function normalizeChallengeCard(raw: unknown): ChallengeCard | null {
     name: raw.name,
     description: raw.description,
     completed: toBool(raw.completed, false),
+    ...(typeof raw.startingDetonatorDistanceFromLoss === "number"
+      && Number.isFinite(raw.startingDetonatorDistanceFromLoss)
+      ? { startingDetonatorDistanceFromLoss: raw.startingDetonatorDistanceFromLoss }
+      : {}),
+    ...(Array.isArray(raw.targetValues)
+      ? {
+          targetValues: raw.targetValues.filter(
+            (value): value is number => typeof value === "number" && Number.isFinite(value),
+          ),
+        }
+      : {}),
   };
 }
 
@@ -160,6 +171,46 @@ function normalizeChallengeCardArray(raw: unknown): ChallengeCard[] {
   return raw
     .map((entry) => normalizeChallengeCard(entry))
     .filter((entry): entry is ChallengeCard => entry !== null);
+}
+
+function normalizeMissionChallengeProgress(
+  raw: unknown,
+): import("@bomb-busters/shared").MissionChallengeProgressState {
+  if (!isObject(raw)) {
+    return { recentTurnEvents: [], validationSequence: [] };
+  }
+
+  const recentTurnEvents = Array.isArray(raw.recentTurnEvents)
+    ? raw.recentTurnEvents.flatMap((event) => {
+        if (!isObject(event)) return [];
+        if (
+          event.actionType !== "dualCut" &&
+          event.actionType !== "soloCut" &&
+          event.actionType !== "equipmentCut" &&
+          event.actionType !== "revealReds" &&
+          event.actionType !== "challengeRedCut" &&
+          event.actionType !== "failedCut"
+        ) {
+          return [];
+        }
+        const actionType: import("@bomb-busters/shared").MissionChallengeTurnEvent["actionType"] =
+          event.actionType;
+        return [{
+          actionType,
+          ...(typeof event.cutValue === "number" && Number.isFinite(event.cutValue)
+            ? { cutValue: event.cutValue }
+            : {}),
+        }];
+      })
+    : [];
+
+  const validationSequence = Array.isArray(raw.validationSequence)
+    ? raw.validationSequence.filter(
+        (value): value is number => typeof value === "number" && Number.isFinite(value),
+      )
+    : [];
+
+  return { recentTurnEvents, validationSequence };
 }
 
 function normalizeSpecialMarker(raw: unknown): SpecialMarker | null {
@@ -503,6 +554,10 @@ function normalizeCampaign(raw: unknown): CampaignState | undefined {
     };
   }
 
+  if (hasOwn(raw, "challengeProgress")) {
+    campaign.challengeProgress = normalizeMissionChallengeProgress(raw.challengeProgress);
+  }
+
   if (hasOwn(raw, "oxygen")) {
     const oxygen = isObject(raw.oxygen) ? raw.oxygen : {};
     campaign.oxygen = {
@@ -764,6 +819,16 @@ function normalizeGameState(
 
   const mission = toMissionId(obj.mission, fallbackMission);
   const campaign = normalizeCampaign(obj.campaign);
+  if (
+    (mission === 55 || mission === 60) &&
+    campaign?.challenges &&
+    [...campaign.challenges.deck, ...campaign.challenges.active, ...campaign.challenges.completed]
+      .some((challenge) => /^challenge-value-/.test(challenge.id))
+  ) {
+    throw new Error(
+      `Legacy Mission ${mission} challenge saves using challenge-value ids are not supported.`,
+    );
+  }
   const missionAudio = normalizeMissionAudio(obj.missionAudio);
   const surrenderVote = normalizeSurrenderVote(obj.surrenderVote);
   // Forced-action migration: supports all persisted forced-action kinds.

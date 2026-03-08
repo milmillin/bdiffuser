@@ -48,10 +48,7 @@ export function registerExpansionCMissions(setMission: MissionSetter): void {
     behaviorHooks: ["mission_60_challenge_cards_reduce_detonator"],
     hookRules: [
       {
-        kind: "challenge_rewards",
-        activeCount: 1,
-        activeCountMode: "per_player",
-        rewardDetonatorReduction: 1,
+        kind: "challenge_cards",
       },
     ],
   });

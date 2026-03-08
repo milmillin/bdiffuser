@@ -889,6 +889,12 @@ export type ValidatableAction =
       targetPlayerId?: string;
     }
   | {
+      type: "challengeRedCut";
+      actorId: string;
+      targetPlayerId: string;
+      targetTileIndex: number;
+    }
+  | {
       type: "revealReds";
       actorId: string;
     }
@@ -902,6 +908,49 @@ export type ValidatableAction =
       actorId: string;
       targets: Array<{ playerId: string; tileIndex: number }>;
     };
+
+function validateChallengeRedCutLegality(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+): ActionLegalityError | null {
+  if (!isPlayersTurn(state, actorId)) {
+    return legalityError("NOT_YOUR_TURN", "It is not your turn");
+  }
+
+  const actor = state.players.find((player) => player.id === actorId);
+  if (!actor) {
+    return legalityError("ACTOR_NOT_FOUND", "Actor not found");
+  }
+
+  if (!state.campaign?.challenges?.active.some((challenge) => challenge.id === "1")) {
+    return legalityError(
+      "MISSION_RULE_VIOLATION",
+      "Challenge 1 is not active",
+    );
+  }
+
+  if (targetPlayerId === actorId) {
+    return legalityError("CANNOT_TARGET_SELF", "You must target a teammate");
+  }
+
+  const target = state.players.find((player) => player.id === targetPlayerId);
+  if (!target) {
+    return legalityError("TARGET_PLAYER_NOT_FOUND", "Target player not found");
+  }
+
+  if (!Number.isInteger(targetTileIndex) || targetTileIndex < 0 || targetTileIndex >= target.hand.length) {
+    return legalityError("INVALID_TILE_INDEX", "Invalid tile index");
+  }
+
+  const tile = target.hand[targetTileIndex];
+  if (!tile || tile.cut) {
+    return legalityError("TILE_ALREADY_CUT", "That wire has already been cut");
+  }
+
+  return null;
+}
 
 /** Validate an action with both base rules and mission hook validation. */
 export function validateActionWithHooks(
@@ -1003,6 +1052,16 @@ export function validateActionWithHooks(
       if (baseError) return baseError;
       break;
     }
+    case "challengeRedCut": {
+      const baseError = validateChallengeRedCutLegality(
+        state,
+        action.actorId,
+        action.targetPlayerId,
+        action.targetTileIndex,
+      );
+      if (baseError) return baseError;
+      break;
+    }
     case "revealReds": {
       const baseError = validateRevealRedsLegality(state, action.actorId);
       if (baseError) return baseError;
@@ -1080,6 +1139,20 @@ export function validateRevealRedsWithHooks(
   actorId: string,
 ): ActionLegalityError | null {
   return validateActionWithHooks(state, { type: "revealReds", actorId });
+}
+
+export function validateChallengeRedCutWithHooks(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+): ActionLegalityError | null {
+  return validateActionWithHooks(state, {
+    type: "challengeRedCut",
+    actorId,
+    targetPlayerId,
+    targetTileIndex,
+  });
 }
 
 export function validateDualCutDoubleDetectorWithHooks(

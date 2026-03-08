@@ -181,7 +181,7 @@ export function makeChallengeCard(
   overrides: Partial<ChallengeCard> = {},
 ): ChallengeCard {
   return {
-    id: "challenge-1",
+    id: "1",
     name: "Test Challenge",
     description: "A test challenge",
     completed: false,

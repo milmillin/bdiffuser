@@ -41,6 +41,7 @@ import {
   executeDualCut,
 } from "./gameLogic.js";
 import {
+  applyMissionChallengeTurnEvent,
   canMissionResolveWin,
   dispatchHooks,
   getHookRules,
@@ -48,6 +49,7 @@ import {
   hasMission43RemainingNanoWires,
   emitMissionFailureTelemetry,
   getMissionTurnSkipError,
+  recordMissionChallengeValidation,
   setMission29SkipRevealForCurrentTurn,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
@@ -996,6 +998,7 @@ function updateValidationTrack(state: GameState, value: number): void {
   }
   const previousCount = Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
   state.board.validationTrack[value] = cutCount;
+  recordMissionChallengeValidation(state, value, previousCount, cutCount);
   if (state.mission === 54 && previousCount < 4 && cutCount >= 4) {
     awardMission54ValidationOxygenBonus(state);
   }
@@ -1665,6 +1668,10 @@ export function executeUseEquipment(
         "useEquipment",
         `used Fast Pass — solo cut ${toCut.length} wire(s) of value ${payload.value}`,
       );
+      applyMissionChallengeTurnEvent(state, actorId, {
+        actionType: "equipmentCut",
+        cutValue: payload.value,
+      });
 
       if (checkWin(state) && canMissionResolveWin(state)) {
         state.result = "win";
@@ -1772,6 +1779,10 @@ export function executeUseEquipment(
         "useEquipment",
         `used Disintegrator — drew value ${drawnValue}, cut ${totalCut} wire(s)`,
       );
+      applyMissionChallengeTurnEvent(state, actorId, {
+        actionType: "equipmentCut",
+        cutValue: drawnValue,
+      });
 
       if (checkWin(state) && canMissionResolveWin(state)) {
         state.result = "win";

@@ -172,20 +172,11 @@ export interface OxygenProgressionRuleDef {
 }
 
 /**
- * Campaign challenge-card missions: complete active challenges for rewards.
+ * Campaign challenge-card missions: real challenge cards with mission-specific
+ * evaluators and setup metadata.
  */
-export interface ChallengeRewardsRuleDef {
-  kind: "challenge_rewards";
-  /** Number of simultaneously active challenge cards. */
-  activeCount: number;
-  /**
-   * How active challenge count is derived:
-   * - fixed: use `activeCount`
-   * - per_player: keep one active challenge per bomb disposal expert
-   */
-  activeCountMode?: "fixed" | "per_player";
-  /** Detonator reduction applied when a challenge is completed. */
-  rewardDetonatorReduction: number;
+export interface ChallengeCardsRuleDef {
+  kind: "challenge_cards";
 }
 
 /**
@@ -550,7 +541,7 @@ export type MissionHookRuleDef =
   | HiddenEquipmentPileRuleDef
   | NanoProgressionRuleDef
   | OxygenProgressionRuleDef
-  | ChallengeRewardsRuleDef
+  | ChallengeCardsRuleDef
   | Mission66BunkerBoardRuleDef
   | SequencePriorityRuleDef
   | SequenceCardRepositionRuleDef

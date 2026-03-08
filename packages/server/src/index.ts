@@ -35,6 +35,7 @@ import {
   filterLog,
 } from "./viewFilter.js";
 import {
+  validateChallengeRedCutWithHooks,
   validateDualCutWithHooks,
   validateDualCutDoubleDetectorWithHooks,
   validateSoloCutWithHooks,
@@ -45,6 +46,7 @@ import {
 } from "./validation.js";
 import {
   executeDualCut,
+  executeChallengeRedCut,
   executeDualCutDoubleDetector,
   executeSoloCut,
   executeRevealReds,
@@ -452,6 +454,9 @@ export class BombBustersServer extends Server<Env> {
           msg.mission59RotateNano,
           msg.mission43NanoStandIndex,
         );
+        break;
+      case "challengeRedCut":
+        this.handleChallengeRedCut(connection, msg.targetPlayerId, msg.targetTileIndex);
         break;
       case "revealReds":
         this.handleRevealReds(connection);
@@ -1387,6 +1392,57 @@ export class BombBustersServer extends Server<Env> {
       targetPlayerId,
       mission59RotateNano,
       mission43NanoStandIndex,
+    );
+    this.maybeRecordMissionFailure(previousResult, state);
+
+    this.saveState();
+    this.broadcastAction(action);
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  handleChallengeRedCut(
+    conn: Connection,
+    targetPlayerId: string,
+    targetTileIndex: number,
+  ) {
+    const state = this.room.gameState;
+    if (!state) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Cannot perform Challenge 1 red cut: no active game in progress.",
+      });
+      return;
+    }
+    if (state.phase !== "playing") {
+      this.sendMsg(conn, {
+        type: "error",
+        message: "Challenge 1 red cut is only allowed during the playing phase.",
+      });
+      return;
+    }
+
+    const error = validateChallengeRedCutWithHooks(
+      state,
+      conn.id,
+      targetPlayerId,
+      targetTileIndex,
+    );
+    if (error) {
+      this.sendMsg(conn, {
+        type: "error",
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    const previousResult = state.result;
+    const action = executeChallengeRedCut(
+      state,
+      conn.id,
+      targetPlayerId,
+      targetTileIndex,
     );
     this.maybeRecordMissionFailure(previousResult, state);
 

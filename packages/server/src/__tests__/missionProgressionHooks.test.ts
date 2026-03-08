@@ -20,13 +20,6 @@ import {
 // Side-effect import registers built-in handlers.
 import "../missionHooks";
 
-function parseChallengeValue(id: string): number | null {
-  const match = /challenge-value-(\d+)/.exec(id);
-  if (!match) return null;
-  const value = Number.parseInt(match[1] ?? "", 10);
-  return Number.isFinite(value) ? value : null;
-}
-
 function setMission66TestConstraints(
   state: ReturnType<typeof makeGameState>,
   ids: {
@@ -1699,34 +1692,25 @@ describe("mission progression hooks", () => {
     ).toBe(true);
   });
 
-  it("mission 55 challenge completion reduces detonator and refills active challenge", () => {
+  it("mission 55 setup creates unique active challenges and starts one step from loss", () => {
     const state = makeGameState({
       mission: 55,
       log: [],
       players: [makePlayer({ id: "p1" }), makePlayer({ id: "p2" }), makePlayer({ id: "p3" })],
-      board: makeBoardState({ detonatorPosition: 2, detonatorMax: 4 }),
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 4 }),
     });
     dispatchHooks(55, { point: "setup", state });
 
     const active = state.campaign?.challenges?.active ?? [];
+    const deck = state.campaign?.challenges?.deck ?? [];
+
     expect(active.length).toBe(3);
-    const target = parseChallengeValue(active[0]?.id ?? "");
-    expect(target).not.toBeNull();
-
-    dispatchHooks(55, {
-      point: "resolve",
-      state,
-      action: { type: "soloCut", actorId: "p1", value: target! },
-      cutValue: target!,
-      cutSuccess: true,
-    });
-
-    expect(state.campaign?.challenges?.completed.length).toBe(1);
-    expect(state.campaign?.challenges?.active.length).toBe(3);
-    expect(state.board.detonatorPosition).toBe(1);
+    expect(deck.length).toBe(7);
+    expect(new Set([...active, ...deck].map((card) => card.id)).size).toBe(10);
+    expect(state.board.detonatorPosition).toBe(3);
   });
 
-  it("mission 60 setup creates one active challenge per player", () => {
+  it("mission 60 setup creates one active challenge per player and starts one step from loss", () => {
     const state = makeGameState({
       mission: 60,
       log: [],
@@ -1736,11 +1720,18 @@ describe("mission progression hooks", () => {
         makePlayer({ id: "p3" }),
         makePlayer({ id: "p4" }),
       ],
+      board: makeBoardState({ detonatorPosition: 0, detonatorMax: 5 }),
     });
 
     dispatchHooks(60, { point: "setup", state });
 
-    expect(state.campaign?.challenges?.active.length).toBe(4);
+    const active = state.campaign?.challenges?.active ?? [];
+    const deck = state.campaign?.challenges?.deck ?? [];
+
+    expect(active.length).toBe(4);
+    expect(deck.length).toBe(6);
+    expect(new Set([...active, ...deck].map((card) => card.id)).size).toBe(10);
+    expect(state.board.detonatorPosition).toBe(4);
   });
 
   it("mission 62 setup reveals one Number card per player", () => {

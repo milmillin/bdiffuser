@@ -290,6 +290,17 @@ export interface ChallengeCard {
   description: string;
   /** Whether this challenge has been completed. */
   completed: boolean;
+  /**
+   * Mission 55/60 setup metadata: how many spaces before explosion the
+   * detonator starts when this card is drawn.
+   */
+  startingDetonatorDistanceFromLoss?: number;
+  /**
+   * Mission 55/60 runtime metadata for Challenge 8.
+   * The challenge completes when the first 2 validation placements match these
+   * face-up values in order.
+   */
+  targetValues?: number[];
 }
 
 /** Tracks drawn/available/completed challenge cards. */
@@ -300,6 +311,22 @@ export interface ChallengeCardState {
   active: ChallengeCard[];
   /** Completed/discarded challenges. */
   completed: ChallengeCard[];
+}
+
+export interface MissionChallengeTurnEvent {
+  actionType:
+    | "dualCut"
+    | "soloCut"
+    | "equipmentCut"
+    | "revealReds"
+    | "challengeRedCut"
+    | "failedCut";
+  cutValue?: number;
+}
+
+export interface MissionChallengeProgressState {
+  recentTurnEvents: MissionChallengeTurnEvent[];
+  validationSequence: number[];
 }
 
 /** Tracks the oxygen economy for missions that use it. */
@@ -440,6 +467,7 @@ export interface CampaignState {
   numberCards?: NumberCardState;
   constraints?: ConstraintCardState;
   challenges?: ChallengeCardState;
+  challengeProgress?: MissionChallengeProgressState;
   oxygen?: OxygenState;
   nanoTracker?: ProgressTracker;
   bunkerTracker?: ProgressTracker;

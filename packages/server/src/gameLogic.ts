@@ -15,6 +15,7 @@ import {
   getTileByFlatIndex,
 } from "./validation.js";
 import {
+  applyMissionChallengeTurnEvent,
   canMissionResolveWin,
   dispatchHooks,
   emitMissionFailureTelemetry,
@@ -22,6 +23,7 @@ import {
   getHookRules,
   hasMission43RemainingNanoWires,
   hasActiveConstraint,
+  recordMissionChallengeValidation,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
 import { pushGameLog } from "./gameLog.js";
@@ -146,6 +148,7 @@ function checkValidation(state: GameState, value: number): boolean {
 
   const previousCount = Math.max(0, Math.floor(state.board.validationTrack[value] ?? 0));
   state.board.validationTrack[value] = cutCount;
+  recordMissionChallengeValidation(state, value, previousCount, cutCount);
   if (state.mission === 54 && previousCount < 4 && cutCount >= 4) {
     awardMission54ValidationOxygenBonus(state);
   }
@@ -507,6 +510,10 @@ export function executeDualCut(
     }
 
     addLog(state, actorId, "dualCut", `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✓`);
+    applyMissionChallengeTurnEvent(state, actorId, {
+      actionType: "dualCut",
+      ...(typeof guessValue === "number" ? { cutValue: guessValue } : {}),
+    });
 
     // Check win
     if (checkWin(state) && canMissionResolveWin(state)) {
@@ -574,6 +581,7 @@ export function executeDualCut(
           "dualCut",
           `guessed ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} to be ${displayGuess} ✗ (Stabilizer prevented explosion)`,
         );
+        applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
 
         advanceTurn(state);
 
@@ -739,6 +747,7 @@ export function executeDualCut(
         `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
         `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
     );
+    applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
 
     // Check detonator loss
     if (!stabilizerActive && checkDetonatorLoss(state)) {
@@ -910,6 +919,10 @@ export function executeSoloCut(
   updateMarkerConfirmations(state);
 
   addLog(state, actorId, "soloCut", `solo cut ${matchingTiles.length} wire(s) of value ${value}`);
+  applyMissionChallengeTurnEvent(state, actorId, {
+    actionType: "soloCut",
+    ...(typeof value === "number" ? { cutValue: value } : {}),
+  });
 
   if (checkWin(state) && canMissionResolveWin(state)) {
     state.result = "win";
@@ -933,6 +946,68 @@ export function executeSoloCut(
     actorId,
     value,
     tilesCut: matchingTiles.length,
+  };
+}
+
+export function executeChallengeRedCut(
+  state: GameState,
+  actorId: string,
+  targetPlayerId: string,
+  targetTileIndex: number,
+): GameAction {
+  const target = state.players.find((p) => p.id === targetPlayerId)!;
+  const targetTile = getTileByFlatIndex(target, targetTileIndex)!;
+
+  targetTile.cut = true;
+  updateMarkerConfirmations(state);
+
+  if (targetTile.color !== "red") {
+    state.result = "loss_red_wire";
+    state.phase = "finished";
+    emitMissionFailureTelemetry(state, "loss_red_wire", actorId, targetPlayerId);
+    addLog(
+      state,
+      actorId,
+      "dualCut",
+      `attempted Challenge 1 on ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} — it was not RED. BOOM!`,
+    );
+
+    return {
+      type: "challengeRedCutResult",
+      actorId,
+      targetId: targetPlayerId,
+      targetTileIndex,
+      success: false,
+      revealedColor: targetTile.color,
+      revealedValue: targetTile.gameValue,
+      explosion: true,
+    };
+  }
+
+  addLog(
+    state,
+    actorId,
+    "dualCut",
+    `used Challenge 1 on ${target.name}'s wire ${wireLabelOf(target, targetTileIndex)} — it was RED.`,
+  );
+  applyMissionChallengeTurnEvent(state, actorId, { actionType: "challengeRedCut" });
+
+  if (checkWin(state) && canMissionResolveWin(state)) {
+    state.result = "win";
+    state.phase = "finished";
+    return { type: "gameOver", result: "win" };
+  }
+
+  advanceTurn(state);
+
+  return {
+    type: "challengeRedCutResult",
+    actorId,
+    targetId: targetPlayerId,
+    targetTileIndex,
+    success: true,
+    revealedColor: "red",
+    revealedValue: targetTile.gameValue,
   };
 }
 
@@ -1319,6 +1394,7 @@ export function executeRevealReds(
   } else {
     addLog(state, actorId, "revealReds", `revealed ${revealed} red wire(s)`);
   }
+  applyMissionChallengeTurnEvent(state, actorId, { actionType: "revealReds" });
 
   if (checkWin(state) && canMissionResolveWin(state)) {
     state.result = "win";
@@ -1566,6 +1642,10 @@ export function resolveDetectorTileChoice(
     logAction,
     `${target.name} confirmed wire ${wireLabelOf(target, effectiveTileIndex)} to cut ✓`,
   );
+  applyMissionChallengeTurnEvent(state, actorId, {
+    actionType: source === "doubleDetector" ? "dualCut" : "equipmentCut",
+    ...(typeof guessValue === "number" ? { cutValue: guessValue } : {}),
+  });
 
   // Check win
   if (checkWin(state)) {
@@ -1752,6 +1832,7 @@ function resolveDoubleDetectorNoMatch(
       `${stabilizerActive ? " (Stabilizer prevented detonator advance)" : ""}` +
       `${suppressInfoTokens ? " (mission rule: no info token placed)" : ""}`,
   );
+  applyMissionChallengeTurnEvent(state, actorId, { actionType: "failedCut" });
 
   if (checkDetonatorLoss(state)) {
     state.result = "loss_detonator";

@@ -36,7 +36,7 @@ export type {
   DynamicTurnOrderRuleDef,
   EquipmentDoubleLockRuleDef,
   EvenOddTokensRuleDef,
-  ChallengeRewardsRuleDef,
+  ChallengeCardsRuleDef,
   FalseInfoTokensRuleDef,
   FalseTokensRuleDef,
   ForcedGeneralRadarFlowRuleDef,

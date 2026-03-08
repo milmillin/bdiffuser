@@ -51,6 +51,11 @@ export type ClientMessage =
       mission59RotateNano?: boolean;
       mission43NanoStandIndex?: number;
     }
+  | {
+      type: "challengeRedCut";
+      targetPlayerId: string;
+      targetTileIndex: number;
+    }
   | { type: "revealReds" }
   | { type: "simultaneousRedCut"; targets: Array<{ playerId: string; tileIndex: number }> }
   | {
@@ -156,6 +161,16 @@ export type GameAction =
       actorId: string;
       value: number | "YELLOW";
       tilesCut: number;
+    }
+  | {
+      type: "challengeRedCutResult";
+      actorId: string;
+      targetId: string;
+      targetTileIndex: number;
+      success: boolean;
+      revealedColor?: string;
+      revealedValue?: number | "YELLOW" | "RED";
+      explosion?: boolean;
     }
   | {
       type: "revealRedsResult";
