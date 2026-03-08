@@ -260,6 +260,12 @@ export interface ConstraintCard {
   active: boolean;
 }
 
+/** State for the constraint card selection phase (e.g. mission 31). */
+export interface ConstraintSelectionState {
+  /** Card IDs still available for selection. */
+  availableCardIds: string[];
+}
+
 /** Tracks global constraints and per-player constraints. */
 export interface ConstraintCardState {
   /** Constraints applying to all players. */
@@ -379,6 +385,8 @@ export interface CampaignState {
   mission59Nano?: Mission59NanoState;
   /** Mission 29: hidden Number-card turn state. */
   mission29Turn?: Mission29TurnState;
+  /** Mission 31: constraint card selection state (active during select_constraints phase). */
+  constraintSelection?: ConstraintSelectionState;
   /** Mission 43: hidden wires currently held by Nano. */
   mission43NanoWires?: Mission43NanoWire[];
   /** Mission 43: Nano movement direction on the 1-12 strip. */
@@ -595,7 +603,7 @@ export interface ActionLegalityError {
 
 // ── Game State ──────────────────────────────────────────────
 
-export type GamePhase = "lobby" | "setup_info_tokens" | "playing" | "finished";
+export type GamePhase = "lobby" | "select_constraints" | "setup_info_tokens" | "playing" | "finished";
 export type GameResult =
   | "win"
   | "loss_red_wire"

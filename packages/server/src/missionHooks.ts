@@ -605,6 +605,141 @@ export function getBlueAsRedValue(state: Readonly<GameState>): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+function getMissionOxygenProgressionRule(
+  state: Readonly<GameState>,
+): OxygenProgressionRuleDef | null {
+  const rules = getHookRules(state.mission);
+  for (const rule of rules) {
+    if (rule.kind === "oxygen_progression") {
+      return rule as OxygenProgressionRuleDef;
+    }
+  }
+
+  return null;
+}
+
+function canCurrentPlayerPlayMission65(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+): boolean {
+  const uncutTiles = actor.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return true;
+
+  const hasUncutNonRed = uncutTiles.some((tile) => tile.gameValue !== "RED");
+  if (!hasUncutNonRed) return true;
+
+  const actorCards = state.campaign?.numberCards?.playerHands?.[actor.id];
+  if (!actorCards || actorCards.length === 0) return false;
+
+  const faceUpValues = new Set(
+    actorCards.filter((card) => card.faceUp).map((card) => card.value),
+  );
+
+  return uncutTiles.some(
+    (tile) => typeof tile.gameValue === "number" && faceUpValues.has(tile.gameValue),
+  );
+}
+
+/**
+ * Mission 30 has no special card-driven rule on cut values, but players can only
+ * skip their turn here when their remaining moves are effectively blocked under
+ * normal cut legality (and all remaining wires are not reveal-only reds).
+ */
+function canCurrentPlayerPlayMission30(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+): boolean {
+  const uncutTiles = actor.hand.filter((tile) => !tile.cut);
+  if (uncutTiles.length === 0) return false;
+
+  const hasNonRedUncut = uncutTiles.some((tile) => tile.gameValue !== "RED");
+  if (!hasNonRedUncut) return true;
+
+  return hasAnyDualCutTarget(state, actor.id);
+}
+
+/**
+ * Return a mission-specific skip-the-turn error when the actor has no legal
+ * non-red action path available in their mission's turn-skipping rules.
+ */
+export function getMissionTurnSkipError(
+  state: Readonly<GameState>,
+  actor: Readonly<Player>,
+): string | null {
+  const actorUncutTiles = actor.hand.filter((tile) => !tile.cut);
+  if (actorUncutTiles.length === 0) return null;
+
+  if (state.mission === 26) {
+    return canPlayerActWithMission26Card(state, actor.id)
+      ? null
+      : "Mission 26: player must skip their turn";
+  }
+
+  if (state.mission === 30 && !canCurrentPlayerPlayMission30(state, actor)) {
+    return "Mission 30: player must skip your turn";
+  }
+
+  if (state.mission === 35 && !canCurrentPlayerPlayMission35(state, actor)) {
+    return "Mission 35: player must skip their turn";
+  }
+
+  if (state.mission === 37 && !canPlayerPlayMission37(state, actor)) {
+    return "Mission 37: player must skip their turn";
+  }
+
+  if (state.mission === 38) {
+    const flipped = getMission38CaptainFlippedWire(state);
+    if (!flipped) return null;
+    return shouldAutoSkipMission38Turn(
+      state,
+      actor,
+      flipped.captainId,
+      flipped.flippedTileIndex,
+    )
+      ? "Mission 38: player must skip their turn"
+      : null;
+  }
+
+  if (state.mission === 41 && isMission41PlayerSkippingTurn(state, actor)) {
+    return "Mission 41: player must skip their turn";
+  }
+
+  if (state.mission === 47 && !canCurrentPlayerPlayMission47(state, actor.id)) {
+    return "Mission 47: player must skip their turn";
+  }
+
+  if (state.mission === 57 && !canPlayerPlayMission57(state, actor)) {
+    return "Mission 57: player must skip their turn";
+  }
+
+  if (state.mission === 59 && !canPlayerPlayMission59(state, actor)) {
+    return "Mission 59: you must skip your turn";
+  }
+
+  if (state.mission === 61 && !canPlayerPlayMission61(state, actor)) {
+    return "Mission 61: player must skip their turn";
+  }
+
+  if (
+    (state.mission === 44 || state.mission === 49 || state.mission === 54 || state.mission === 63)
+  ) {
+    const oxygenRule = getMissionOxygenProgressionRule(state);
+    if (!oxygenRule) {
+      return null;
+    }
+
+    return actorCanAffordAnyMission44Cut(state, actor, oxygenRule)
+      ? null
+      : `Mission ${state.mission}: player must skip your turn`;
+  }
+
+  if (state.mission === 65 && !canCurrentPlayerPlayMission65(state, actor)) {
+    return "Mission 65: player must skip their turn";
+  }
+
+  return null;
+}
+
 // ── Built-in Hook Handlers (Missions 9/10/11/12/14/15/23/43+/66) ──────
 
 import type {
@@ -4270,21 +4405,19 @@ registerHookHandler<"constraint_enforcement">("constraint_enforcement", {
         deck: allCards,
       };
     } else {
-      // Per-player: deal ONE constraint per player, rest are unused deck.
+      // Per-player: set up constraint selection phase so players choose their own card.
+      // Initialize empty perPlayer maps and populate availableCardIds for the selection phase.
       const perPlayer: Record<string, typeof allCards> = {};
       for (const player of ctx.state.players) {
-        const card = allCards.shift();
-        if (card) {
-          card.active = true;
-          perPlayer[player.id] = [card];
-        } else {
-          perPlayer[player.id] = [];
-        }
+        perPlayer[player.id] = [];
       }
       ctx.state.campaign.constraints = {
         global: [],
         perPlayer,
-        deck: allCards,
+        deck: [],
+      };
+      ctx.state.campaign.constraintSelection = {
+        availableCardIds: allCards.map((c) => c.id),
       };
     }
 

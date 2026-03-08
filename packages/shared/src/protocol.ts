@@ -102,6 +102,7 @@ export type ClientMessage =
       positionMs?: number;
       durationMs?: number;
     }
+  | { type: "selectConstraintCard"; constraintId: string }
   | { type: "setCaptainMode"; mode: CaptainMode }
   | { type: "selectCaptain"; playerId: string }
   | { type: "addBot" }

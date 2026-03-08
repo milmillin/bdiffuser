@@ -731,6 +731,15 @@ describe("mission 48 simultaneous yellow validation", () => {
 });
 
 describe("mission 49 oxygen recipient validation helper", () => {
+  const mission49WithOxygen = {
+    campaign: {
+      oxygen: {
+        pool: 0,
+        playerOxygen: { actor: 10 },
+      },
+    },
+  };
+
   it("rejects soloCut when recipient is the acting player", () => {
     const actor = makePlayer({
       id: "actor",
@@ -747,6 +756,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateSoloCutWithHooks(state, "actor", 4, "actor");
@@ -772,6 +782,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateSoloCutWithHooks(state, "actor", 4, "teammate");
@@ -792,6 +803,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateDualCutWithHooks(
@@ -821,6 +833,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateDualCutWithHooks(
@@ -855,6 +868,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateDualCutDoubleDetectorWithHooks(
@@ -892,6 +906,7 @@ describe("mission 49 oxygen recipient validation helper", () => {
       mission: 49,
       players: [actor, teammate],
       currentPlayerIndex: 0,
+      ...mission49WithOxygen,
     });
 
     const error = validateDualCutDoubleDetectorWithHooks(
@@ -1043,6 +1058,73 @@ describe("mission 41 Iberian yellow mode validation", () => {
     expect(error).not.toBeNull();
     expect(error!.code).toBe("MISSION_RULE_VIOLATION");
     expect(error!.message).toContain("skip");
+  });
+
+  it("blocks mission 37 action from players who should skip their turn", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 2, color: "blue" })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4, color: "blue" })],
+    });
+    const state = makeGameState({
+      mission: 37,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+      campaign: {
+        constraints: {
+          global: [
+            { id: "A", name: "Constraint A", description: "No odd", active: true },
+            { id: "B", name: "Constraint B", description: "No even", active: true },
+            { id: "K", name: "Constraint K", description: "No solo", active: true },
+          ],
+          perPlayer: {},
+          deck: [],
+        },
+      },
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      targetTileIndex: 0,
+      guessValue: 2,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 37: player must skip their turn");
+  });
+
+  it("blocks mission 30 action when no dual-cut target is available", () => {
+    const actor = makePlayer({
+      id: "actor",
+      hand: [makeTile({ id: "a1", gameValue: 2, color: "blue" })],
+    });
+    const teammate = makePlayer({
+      id: "teammate",
+      hand: [makeTile({ id: "t1", gameValue: 4, color: "blue", cut: true })],
+    });
+    const state = makeGameState({
+      mission: 30,
+      players: [actor, teammate],
+      currentPlayerIndex: 0,
+    });
+
+    const error = validateActionWithHooks(state, {
+      type: "dualCut",
+      actorId: "actor",
+      targetPlayerId: "teammate",
+      targetTileIndex: 0,
+      guessValue: 2,
+    });
+
+    expect(error).not.toBeNull();
+    expect(error!.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error!.message).toBe("Mission 30: player must skip your turn");
   });
 });
 
@@ -1843,7 +1925,10 @@ describe("mission 38 captain flipped-wire validation", () => {
     });
     const actor = makePlayer({
       id: "actor",
-      hand: [makeTile({ id: "a1", gameValue: 2 })],
+      hand: [
+        makeTile({ id: "a1", gameValue: 2 }),
+        makeTile({ id: "a2", gameValue: 1 }),
+      ],
       character: "character_3",
     });
     const state = makeGameState({
@@ -1881,7 +1966,10 @@ describe("mission 38 captain flipped-wire validation", () => {
     });
     const actor = makePlayer({
       id: "actor",
-      hand: [makeTile({ id: "a1", color: "blue", gameValue: 2 })],
+      hand: [
+        makeTile({ id: "a1", color: "blue", gameValue: 2 }),
+        makeTile({ id: "a2", gameValue: 1 }),
+      ],
       character: "double_detector",
       characterUsed: false,
     });
@@ -2032,7 +2120,11 @@ describe("forced reveal reds state", () => {
   it("does not force revealReds checks in mission 59 when all remaining wires are red", () => {
     const actor = makePlayer({
       id: "actor",
-      hand: [makeTile({ id: "a1", color: "red", gameValue: "RED" })],
+      hand: [
+        makeTile({ id: "a1", color: "red", gameValue: "RED" }),
+        makeTile({ id: "a2", gameValue: 9 }),
+        makeTile({ id: "a3", gameValue: 9 }),
+      ],
     });
     const target = makePlayer({
       id: "target",
@@ -2096,7 +2188,7 @@ describe("forced reveal reds state", () => {
       currentPlayerIndex: 0,
       campaign: {
         numberCards: {
-          visible: [{ id: "m26-visible-1", value: 1, faceUp: true }],
+          visible: [],
           deck: [],
           discard: [],
           playerHands: {},

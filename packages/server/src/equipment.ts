@@ -30,7 +30,6 @@ import {
   getTileByFlatIndex,
   getUncutTiles,
   getAllTiles,
-  isMission41PlayerSkippingTurn,
   isRevealRedsForced,
   isPlayersTurn,
   validateDualCutWithHooks,
@@ -47,6 +46,7 @@ import {
   hasActiveConstraint,
   hasMission43RemainingNanoWires,
   emitMissionFailureTelemetry,
+  getMissionTurnSkipError,
   setMission29SkipRevealForCurrentTurn,
 } from "./missionHooks.js";
 import { applyMissionInfoTokenVariant, pushInfoToken } from "./infoTokenRules.js";
@@ -376,8 +376,11 @@ export function validateUseEquipment(
     );
   }
 
-  if (isMission41PlayerSkippingTurn(state, actor)) {
-    return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
+  if (isPlayersTurn(state, actorId)) {
+    const missionTurnSkipError = getMissionTurnSkipError(state, actor);
+    if (missionTurnSkipError) {
+      return legalityError("MISSION_RULE_VIOLATION", missionTurnSkipError);
+    }
   }
 
   if (isPlayersTurn(state, actorId) && isRevealRedsForced(state, actor)) {
@@ -1877,8 +1880,11 @@ export function validateCharacterAbility(
     );
   }
 
-  if (isMission41PlayerSkippingTurn(state, actor)) {
-    return legalityError("MISSION_RULE_VIOLATION", "Mission 41: player must skip their turn");
+  if (isPlayersTurn(state, actorId)) {
+    const missionTurnSkipError = getMissionTurnSkipError(state, actor);
+    if (missionTurnSkipError) {
+      return legalityError("MISSION_RULE_VIOLATION", missionTurnSkipError);
+    }
   }
 
   if (isPlayersTurn(state, actorId) && isRevealRedsForced(state, actor)) {

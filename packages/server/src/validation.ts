@@ -13,6 +13,7 @@ import {
   dispatchHooks,
   getBlueAsRedValue,
   hasActiveConstraint,
+  getMissionTurnSkipError,
 } from "./missionHooks.js";
 import { isMission41PlayerSkippingTurn } from "./missionGuards.js";
 
@@ -932,6 +933,11 @@ export function validateActionWithHooks(
       "MISSION_RULE_VIOLATION",
       MISSION_46_PENDING_SEVENS_MESSAGE,
     );
+  }
+
+  const missionTurnSkipError = getMissionTurnSkipError(state, actor);
+  if (isPlayersTurn(state, action.actorId) && missionTurnSkipError) {
+    return legalityError("MISSION_RULE_VIOLATION", missionTurnSkipError);
   }
 
   const allowsSimultaneousInsteadOfReveal =

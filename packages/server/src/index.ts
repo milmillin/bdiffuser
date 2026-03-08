@@ -17,6 +17,7 @@ import {
   MISSION_SCHEMAS,
   isNonCaptainCharacterForbidden,
   hasXMarkedWireTalkiesRestriction,
+  getConstraintCardDef,
   logTemplate,
   wireLabel,
   wireLabelOf,
@@ -500,6 +501,9 @@ export class BombBustersServer extends Server<Env> {
           msg.muted,
         );
         break;
+      case "selectConstraintCard":
+        this.handleSelectConstraintCard(connection, msg.constraintId);
+        break;
       case "setCaptainMode":
         this.handleSetCaptainMode(connection, msg.mode);
         break;
@@ -839,6 +843,13 @@ export class BombBustersServer extends Server<Env> {
     }
 
     player.character = characterId;
+
+    // Auto-assign captain when Double Detector 2000 is selected
+    if (characterId === "double_detector") {
+      this.room.captainMode = "selection";
+      this.room.selectedCaptainId = player.id;
+    }
+
     this.saveState();
     this.broadcastLobby();
   }
@@ -983,6 +994,17 @@ export class BombBustersServer extends Server<Env> {
       state: this.room.gameState,
     });
     this.initializeMissionAudioState(this.room.gameState);
+
+    // If constraint selection is required, enter select_constraints phase first
+    if (this.room.gameState.campaign?.constraintSelection) {
+      this.room.gameState.phase = "select_constraints";
+      this.room.gameState.currentPlayerIndex = captainIndex;
+      this.handleBotConstraintSelections();
+      this.saveState();
+      this.broadcastGameState();
+      this.scheduleBotTurnIfNeeded();
+      return;
+    }
 
     const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(this.room.gameState);
     for (const placement of autoPlacements) {
@@ -2287,7 +2309,7 @@ export class BombBustersServer extends Server<Env> {
       });
       return;
     }
-    if (state.phase !== "setup_info_tokens" && state.phase !== "playing") {
+    if (state.phase !== "select_constraints" && state.phase !== "setup_info_tokens" && state.phase !== "playing") {
       this.sendMsg(conn, {
         type: "error",
         message: "Surrender voting is only allowed during active gameplay.",
@@ -2589,6 +2611,132 @@ export class BombBustersServer extends Server<Env> {
     this.advanceSetupTurnAndMaybeStart(state);
   }
 
+  /** Handle a player selecting a constraint card during select_constraints phase. */
+  handleSelectConstraintCard(conn: Connection, constraintId: string) {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "select_constraints") {
+      this.sendMsg(conn, { type: "error", message: "Not in constraint selection phase" });
+      return;
+    }
+    const playerId = conn.id;
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer || currentPlayer.id !== playerId) {
+      this.sendMsg(conn, { type: "error", message: "Not your turn to select a constraint" });
+      return;
+    }
+    const selection = state.campaign?.constraintSelection;
+    if (!selection || !selection.availableCardIds.includes(constraintId)) {
+      this.sendMsg(conn, { type: "error", message: "Invalid constraint card selection" });
+      return;
+    }
+
+    this.assignConstraintCard(state, playerId, constraintId);
+    this.advanceConstraintSelectionOrTransition(state);
+
+    this.saveState();
+    this.broadcastGameState();
+    this.scheduleBotTurnIfNeeded();
+  }
+
+  /** Assign a constraint card to a player and remove it from the available pool. */
+  private assignConstraintCard(state: GameState, playerId: string, constraintId: string) {
+    const selection = state.campaign!.constraintSelection!;
+    const def = getConstraintCardDef(constraintId);
+    if (!def) return;
+    const card = { id: def.id, name: def.name, description: def.description, active: true };
+    state.campaign!.constraints!.perPlayer[playerId] = [card];
+    selection.availableCardIds = selection.availableCardIds.filter((id) => id !== constraintId);
+
+    pushGameLog(state, {
+      turn: 0,
+      playerId,
+      action: "hookSetup",
+      detail: `constraint_selected:${constraintId}`,
+      timestamp: Date.now(),
+    });
+  }
+
+  /** Advance to next player for constraint selection, or transition to setup_info_tokens. */
+  private advanceConstraintSelectionOrTransition(state: GameState) {
+    const selection = state.campaign?.constraintSelection;
+    if (!selection) return;
+
+    // Check if all players have selected
+    const allSelected = state.players.every(
+      (p) => (state.campaign?.constraints?.perPlayer[p.id]?.length ?? 0) > 0,
+    );
+
+    if (allSelected) {
+      // Clean up selection state and transition to setup_info_tokens
+      delete state.campaign!.constraintSelection;
+      state.phase = "setup_info_tokens";
+      state.currentPlayerIndex = state.players.findIndex((p) => p.isCaptain);
+
+      const autoPlacements = autoPlaceMission13RandomSetupInfoTokens(state);
+      for (const placement of autoPlacements) {
+        const placementPlayer = state.players.find((p) => p.id === placement.playerId);
+        pushGameLog(state, {
+          turn: 0,
+          playerId: placement.playerId,
+          action: "placeInfoToken",
+          detail: `placed random info token ${describeInfoToken(placement.token)} on ${describeInfoTokenLocation(placement.token.position, placementPlayer)}`,
+          timestamp: Date.now(),
+        });
+      }
+
+      this.advanceSetupTurnAndMaybeStart(state);
+      this.handleBotInfoTokens();
+    } else {
+      // Advance to next player (clockwise)
+      const playerCount = state.players.length;
+      let nextIndex = (state.currentPlayerIndex + 1) % playerCount;
+      // Skip players who already selected (shouldn't happen but safe)
+      for (let i = 0; i < playerCount; i++) {
+        const nextPlayer = state.players[nextIndex];
+        if (nextPlayer && (state.campaign?.constraints?.perPlayer[nextPlayer.id]?.length ?? 0) === 0) {
+          break;
+        }
+        nextIndex = (nextIndex + 1) % playerCount;
+      }
+      state.currentPlayerIndex = nextIndex;
+
+      // Handle bot selections for the new current player
+      this.handleBotConstraintSelections();
+    }
+  }
+
+  /** Auto-select constraint cards for all consecutive bots starting from current player. */
+  handleBotConstraintSelections() {
+    const state = this.room.gameState;
+    if (!state || state.phase !== "select_constraints") return;
+    const selection = state.campaign?.constraintSelection;
+    if (!selection) return;
+
+    while (true) {
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      if (!currentPlayer?.isBot) break;
+      if (selection.availableCardIds.length === 0) break;
+      if ((state.campaign?.constraints?.perPlayer[currentPlayer.id]?.length ?? 0) > 0) break;
+
+      // Bot randomly picks from available cards
+      const randomIndex = Math.floor(Math.random() * selection.availableCardIds.length);
+      const cardId = selection.availableCardIds[randomIndex];
+      this.assignConstraintCard(state, currentPlayer.id, cardId);
+
+      // Check if all are done
+      const allSelected = state.players.every(
+        (p) => (state.campaign?.constraints?.perPlayer[p.id]?.length ?? 0) > 0,
+      );
+      if (allSelected) {
+        this.advanceConstraintSelectionOrTransition(state);
+        return;
+      }
+
+      // Advance to next player
+      state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    }
+  }
+
   /** Schedule the next alarm: picks the earliest of cleanup, bot turn, and timer deadlines. */
   scheduleNextAlarm() {
     const state = this.room.gameState;
@@ -2600,8 +2748,16 @@ export class BombBustersServer extends Server<Env> {
     if (
       state &&
       state.phase !== "finished" &&
-      (state.phase === "playing" || state.phase === "setup_info_tokens")
+      (state.phase === "playing" || state.phase === "setup_info_tokens" || state.phase === "select_constraints")
     ) {
+      // Bot constraint selection alarm
+      if (state.phase === "select_constraints") {
+        const currentPlayer = state.players[state.currentPlayerIndex];
+        if (currentPlayer?.isBot) {
+          const botMs = Date.now() + 1500;
+          nextAlarmMs = this.pickEarlierAlarm(nextAlarmMs, botMs);
+        }
+      }
       const forced = state.pendingForcedAction;
 
       // Bot turn alarm: 1.5s if it's a bot's turn (playing phase only).
@@ -2694,12 +2850,21 @@ export class BombBustersServer extends Server<Env> {
     }
 
     const state = this.room.gameState;
-    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens")) {
+    if (!state || (state.phase !== "playing" && state.phase !== "setup_info_tokens" && state.phase !== "select_constraints")) {
       this.scheduleNextAlarm();
       return;
     }
 
     try {
+      // Handle bot constraint selection during select_constraints phase
+      if (state.phase === "select_constraints") {
+        this.handleBotConstraintSelections();
+        this.saveState();
+        this.broadcastGameState();
+        this.scheduleNextAlarm();
+        return;
+      }
+
       // Check timer expiry first (takes priority over bot turns)
       if (state.timerDeadline != null && nowMs >= state.timerDeadline) {
         const previousResult = state.result;

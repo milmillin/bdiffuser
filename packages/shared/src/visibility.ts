@@ -235,5 +235,6 @@ export function filterCampaignState(
       ? { mission43NanoWireCount: campaign.mission43NanoWireCount }
       : {}),
     ...(campaign.mission29Turn ? { mission29Turn: campaign.mission29Turn } : {}),
+    ...(campaign.constraintSelection ? { constraintSelection: campaign.constraintSelection } : {}),
   };
 }

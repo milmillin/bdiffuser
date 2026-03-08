@@ -108,7 +108,7 @@ export function deriveActionAttentionState({
   playerId: string;
   revealRedsForcedNow: boolean;
 }): ActionAttention {
-  const forcedMeta = getPendingForcedMetadata(gameState);
+  const forcedMeta = gameState.phase === "playing" ? getPendingForcedMetadata(gameState) : null;
   if (forcedMeta) {
     const forcedActorName = forcedMeta.actorId
       ? gameState.players.find((player) => player.id === forcedMeta.actorId)?.name

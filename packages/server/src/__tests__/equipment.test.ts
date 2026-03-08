@@ -1160,6 +1160,53 @@ describe("equipment validation matrix across shared game states", () => {
     expect(error?.message).toBe("Mission 41: player must skip their turn");
   });
 
+  it("mission 37: rejects equipment when actor must skip their turn", () => {
+    const state = buildStateForEquipmentMatrix("rewinder");
+    state.mission = 37;
+    state.players[0].hand = [makeTile({ id: "a1", gameValue: 2, color: "blue" })];
+    state.players[1].hand = [makeTile({ id: "t1", gameValue: 4, color: "blue" })];
+    state.campaign = {
+      constraints: {
+        global: [
+          { id: "A", name: "Constraint A", description: "No odd", active: true },
+          { id: "B", name: "Constraint B", description: "No even", active: true },
+          { id: "K", name: "Constraint K", description: "No solo", active: true },
+        ],
+        perPlayer: {},
+        deck: [],
+      },
+    };
+
+    const error = validateUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe("Mission 37: player must skip their turn");
+  });
+
+  it("mission 30: rejects equipment when actor must skip their turn", () => {
+    const state = stateWithEquipment(
+      [
+        makePlayer({
+          id: "actor",
+          hand: [makeTile({ id: "a1", gameValue: 2, color: "blue" })],
+        }),
+        makePlayer({
+          id: "teammate",
+          hand: [makeTile({ id: "t1", gameValue: 4, color: "blue", cut: true })],
+        }),
+      ],
+      unlockedEquipmentCard("rewinder", "Rewinder", 4),
+    );
+    state.mission = 30;
+
+    const error = validateUseEquipment(state, "actor", "rewinder", { kind: "rewinder" });
+
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe("MISSION_RULE_VIOLATION");
+    expect(error?.message).toBe("Mission 30: player must skip your turn");
+  });
+
   it.each([41, 48] as const)("mission %i: rejects Grappling Hook when targeting a tripwire", (mission) => {
     const state = stateWithEquipment(
       [

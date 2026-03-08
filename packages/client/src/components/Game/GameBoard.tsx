@@ -38,6 +38,7 @@ import { Mission29HiddenNumberCardPanel } from "./Actions/Mission29HiddenNumberC
 import { Mission36SequencePositionPanel } from "./Actions/Mission36SequencePositionPanel.js";
 import { Mission61ConstraintRotatePanel } from "./Actions/Mission61ConstraintRotatePanel.js";
 import { TalkiesWalkiesChoicePanel } from "./Actions/TalkiesWalkiesChoicePanel.js";
+import { ConstraintSelectionPanel } from "./Actions/ConstraintSelectionPanel.js";
 import { InfoTokenSetup } from "./Actions/InfoTokenSetup.js";
 import { RightPanel, MissionCard } from "./RightPanel.js";
 import { ActionLog } from "./ActionLog.js";
@@ -2101,6 +2102,15 @@ export function GameBoard({
                     />
                   )}
 
+                {/* Constraint selection phase */}
+                {gameState.phase === "select_constraints" && (
+                  <ConstraintSelectionPanel
+                    gameState={gameState}
+                    send={send}
+                    playerId={playerId}
+                  />
+                )}
+
                 {/* Setup phase: info token placement */}
                 {isSetup && isMyTurn && (
                   <InfoTokenSetup
@@ -2494,6 +2504,27 @@ function getStatusContent(
       ? (myIndex - gameState.currentPlayerIndex + gameState.players.length) %
         gameState.players.length
       : 0;
+
+  // --- Constraint selection phase ---
+  if (gameState.phase === "select_constraints") {
+    if (isMyTurn) {
+      return (
+        <span className="inline-flex items-center gap-2">
+          <span className="bg-amber-500 text-black font-black uppercase text-[10px] px-1.5 py-0.5 rounded-full">
+            Your Turn
+          </span>
+          <span className="text-amber-300 font-bold">Select Constraint Card</span>
+        </span>
+      );
+    }
+    return (
+      <span className="text-gray-400">
+        Waiting for{" "}
+        <span className="text-white font-bold">{currentPlayer?.name}</span> to
+        select a constraint card...
+      </span>
+    );
+  }
 
   // --- Setup phase ---
   if (isSetup && isMyTurn) {

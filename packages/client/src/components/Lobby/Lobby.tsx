@@ -537,6 +537,14 @@ function CaptainModeSelector({
         ))}
       </div>
 
+      {lobby.selectedCaptainId && lobby.players.find(
+        (p) => p.id === lobby.selectedCaptainId && p.character === "double_detector"
+      ) && (
+        <p className="text-[10px] text-purple-400">
+          Auto-assigned: Double Detector 2000 holder becomes captain.
+        </p>
+      )}
+
       {/* Player list for selection mode */}
       {mode === "selection" && (
         <div className="space-y-1.5">
