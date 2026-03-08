@@ -2205,7 +2205,7 @@ describe("missionHooks dispatcher", () => {
 
       expect(state.board.detonatorPosition).toBe(2);
       const p1Cards = state.campaign?.numberCards?.playerHands?.p1 ?? [];
-      expect(p1Cards.some((card) => card.id === "m29-selected-6" && card.faceUp)).toBe(true);
+      expect(p1Cards.some((card) => card.id === "m29-selected-6" && !card.faceUp)).toBe(true);
 
       expect(state.pendingForcedAction).toEqual({
         kind: "mission29HiddenNumberCard",

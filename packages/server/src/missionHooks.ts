@@ -6212,7 +6212,7 @@ function finalizeMission29Turn(state: GameState): void {
     const actorHand = numberCards.playerHands[turn.actorId] ?? [];
     actorHand.push({
       ...selectedCard,
-      faceUp: shouldReveal,
+      faceUp: false,
     });
     numberCards.playerHands[turn.actorId] = actorHand;
   }
