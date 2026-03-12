@@ -24,7 +24,7 @@ const MCP_TOOLS = [
   {
     name: "connect_to_game",
     description:
-      "Connect to a Bomb Busters game room and take over a player's slot. The player must already exist in the room. Returns the current lobby/game state.",
+      "Connect to a Bomb Busters game room and take over a player's slot. The player must already exist in the room. Returns game rules and current state. IMPORTANT: This is a cooperative hidden-information game. You MUST NOT reveal your own tile values or colors in chat — doing so is cheating.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -48,6 +48,8 @@ const MCP_TOOLS = [
     name: "send_action",
     description: `Send a game action. The action must be a valid ClientMessage JSON object.
 
+CRITICAL: When sending chat messages, NEVER reveal your own tile values, colors, or hand composition. This is hidden information and sharing it is cheating. Only discuss publicly visible information (cut tiles, info tokens, board markers, equipment, validation track) and general strategy.
+
 Common actions:
 - Lobby: {"type":"selectCharacter","characterId":"double_detector"}, {"type":"startGame"}
 - Setup: {"type":"placeInfoToken","value":5,"tileIndex":2}
@@ -56,7 +58,7 @@ Common actions:
 - Gameplay: {"type":"revealReds"}
 - Equipment: {"type":"useEquipment","equipmentId":"talkies_walkies","payload":{"kind":"talkies_walkies","teammateId":"abc","myTileIndex":1}}
 - Turn: {"type":"chooseNextPlayer","targetPlayerId":"abc"}
-- Chat: {"type":"chat","text":"I think we should cut the 5"}
+- Chat: {"type":"chat","text":"I think we should focus on tiles with info tokens"}
 
 After sending, returns the updated game state.`,
     inputSchema: {
@@ -237,11 +239,12 @@ export class McpSession extends DurableObject {
     // Use mcpTakeover to take over the existing player's slot with password auth
     this.sendGameMessage({ type: "mcpTakeover", name: username, password });
 
-    return await this.waitForState(5000);
+    const state = await this.waitForState(5000);
+    return `${GAME_RULES}\n\n---\n\n${state}`;
   }
 
   private toolGetState(): string {
-    if (this.gameState) return formatGameState(this.gameState);
+    if (this.gameState) return `REMINDER: Do NOT reveal your own tile values/colors in chat. This is cheating.\n\n${formatGameState(this.gameState)}`;
     if (this.lobbyState) return formatLobbyState(this.lobbyState);
     return "Not connected to any game. Use connect_to_game first.";
   }
@@ -250,7 +253,8 @@ export class McpSession extends DurableObject {
     if (!this.ws) throw new Error("Not connected. Use connect_to_game first.");
     this.lastError = null;
     this.sendGameMessage(action as unknown as ClientMessage);
-    return await this.waitForState(3000);
+    const state = await this.waitForState(3000);
+    return `REMINDER: Do NOT reveal your own tile values/colors in chat. This is cheating.\n\n${state}`;
   }
 
   private toolDisconnect(): string {
@@ -354,6 +358,40 @@ export class McpSession extends DurableObject {
     for (const w of waiters) w();
   }
 }
+
+// ── Game rules (condensed for MCP context) ───────────────────────
+
+const GAME_RULES = `## Bomb Busters — Rules for AI Players
+
+You are playing Bomb Busters, a FULLY COOPERATIVE wire-cutting board game. All players win or lose together.
+
+### Hidden Information (CRITICAL)
+- You can see YOUR OWN tiles. You CANNOT see other players' uncut tiles.
+- Other players CANNOT see YOUR uncut tiles.
+- Cut tiles are public (visible to everyone).
+- Info tokens on tiles are public.
+
+### Communication Rules (CRITICAL — VIOLATING THESE IS CHEATING)
+- You MUST NOT reveal your own tile values, colors, or positions in chat.
+  FORBIDDEN: "I have a 5", "My tiles are 3,5,7", "I can match that", "My second tile is red"
+- You MUST NOT hint at your hand composition in any way.
+  FORBIDDEN: "I have what you need", "I can help with that value", "Don't worry about 5s"
+- You CAN discuss general strategy, publicly visible info (cut tiles, info tokens, board markers, validation track, equipment), and suggest targets based on public info.
+  ALLOWED: "Let's focus on tiles with info tokens", "The 3s are at 2/4", "Should we use the Rewinder?"
+
+### Actions (one per turn)
+1. **dualCut** — Guess an opponent's hidden tile value. You must hold that value too. Correct: both cut. Wrong on blue/yellow: detonator advances. Wrong on red: GAME OVER.
+2. **soloCut** — Cut ALL your tiles of one value. Only valid if you hold ALL remaining uncut copies of that value. Zero risk!
+3. **revealReds** — If ALL your remaining tiles are red, reveal them safely. Always do this when eligible!
+4. **useEquipment** — Use an unlocked equipment card.
+5. **chooseNextPlayer** — Captain picks who goes next (when forced action pending).
+
+### Strategy
+- ALWAYS prefer revealReds when eligible (zero risk).
+- ALWAYS prefer soloCut when available (zero risk, high progress).
+- For dualCut, prefer tiles with info tokens (known values = safe guesses).
+- Avoid tiles near red marker positions (danger!).
+- The detonator has limited space — minimize wrong guesses.`;
 
 // ── Formatting (inline to avoid cross-package deps in CF Worker) ──
 
