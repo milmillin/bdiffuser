@@ -290,14 +290,22 @@ describe("filterStateForPlayer – campaign state", () => {
     expect(renderLogDetail(filtered.log[0].detail)).toBe("m15:number_deck:init:[redacted]");
   });
 
-  it("redacts mission-15 completion/next/skipped values in client logs", () => {
+  it("renders mission-15 number_complete template as human-readable text", () => {
     const state = makeGameState({
       log: [
         {
           turn: 2,
           playerId: "p1",
           action: "hookEffect",
-          detail: logText("m15:number_complete:4|revealed_equipment:rewinder|next:7|skipped:9,11"),
+          detail: logTemplate("m15.number_complete", {
+            completedValue: 4,
+            revealedEquipment: "Rewinder",
+            revealedEquipmentId: "rewinder",
+            nextValue: 7,
+            hasNext: true,
+            skipped: "9, 11",
+            hasSkipped: true,
+          }),
           timestamp: 2000,
         },
       ],
@@ -305,7 +313,7 @@ describe("filterStateForPlayer – campaign state", () => {
     const filtered = filterStateForPlayer(state, "player-1");
     expect(filtered.log).toHaveLength(1);
     expect(renderLogDetail(filtered.log[0].detail)).toBe(
-      "m15:number_complete:[redacted]|revealed_equipment:rewinder|next:[redacted]|skipped:[redacted]",
+      "All 4s cut — Rewinder revealed — next number card: 7",
     );
   });
 

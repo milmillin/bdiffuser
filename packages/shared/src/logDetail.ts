@@ -61,5 +61,20 @@ function renderTemplate(
           : resolvedTargetName;
       return `designated ${targetName} to cut`;
     }
+    case "m15.number_complete": {
+      const completedValue = detail.params.completedValue;
+      const equipment = String(detail.params.revealedEquipment ?? "none");
+      const hasNext = detail.params.hasNext === true;
+      const nextValue = detail.params.nextValue;
+      const parts: string[] = [];
+      parts.push(`All ${completedValue}s cut`);
+      if (equipment !== "none") {
+        parts.push(`${equipment} revealed`);
+      }
+      if (hasNext) {
+        parts.push(`next number card: ${nextValue}`);
+      }
+      return parts.join(" — ");
+    }
   }
 }

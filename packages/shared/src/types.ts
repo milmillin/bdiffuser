@@ -909,7 +909,8 @@ export type MissionId = (typeof ALL_MISSION_IDS)[number];
 
 export type LogTemplateKey =
   | "equipment.coffee_mug.pass_turn"
-  | "designate_cutter.selected";
+  | "designate_cutter.selected"
+  | "m15.number_complete";
 
 export interface LogTextDetail {
   type: "text";

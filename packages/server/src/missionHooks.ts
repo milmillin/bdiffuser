@@ -62,6 +62,7 @@ import {
   MISSION66_BUNKER_WALLS,
   MISSION_SCHEMAS,
   isLogTextDetail,
+  logTemplate,
   type MissionHookRuleDef,
 } from "@bomb-busters/shared";
 import { pushGameLog } from "./gameLog.js";
@@ -2737,12 +2738,15 @@ registerHookHandler<"number_deck_equipment_reveal">("number_deck_equipment_revea
       turn: ctx.state.turnNumber,
       playerId: ctx.action.actorId,
       action: "hookEffect",
-      detail: [
-        `m15:number_complete:${completed.value}`,
-        `revealed_equipment:${revealedCard?.id ?? "none"}`,
-        `next:${nextVisibleValue ?? "none"}`,
-        `skipped:${skippedValues.join(",") || "none"}`,
-      ].join("|"),
+      detail: logTemplate("m15.number_complete", {
+        completedValue: completed.value,
+        revealedEquipment: revealedCard?.name ?? "none",
+        revealedEquipmentId: revealedCard?.id ?? "none",
+        nextValue: nextVisibleValue ?? 0,
+        hasNext: nextVisibleValue != null,
+        skipped: skippedValues.join(", ") || "none",
+        hasSkipped: skippedValues.length > 0,
+      }),
       timestamp: Date.now(),
     });
 

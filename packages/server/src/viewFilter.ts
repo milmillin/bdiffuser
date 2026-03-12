@@ -145,28 +145,7 @@ function redactHiddenCardNumbers(action: string, detail: string): string {
     return "m15:number_deck:init:[redacted]";
   }
 
-  if (action === "hookEffect" && detail.startsWith("m15:number_complete:")) {
-    const parts = detail.split("|");
-    return parts.map((part) => redactMission15Part(part)).join("|");
-  }
-
   return detail;
-}
-
-function redactMission15Part(part: string): string {
-  if (part.startsWith("m15:number_complete:")) {
-    const value = part.slice("m15:number_complete:".length);
-    return isNumericList(value) ? "m15:number_complete:[redacted]" : part;
-  }
-  if (part.startsWith("next:")) {
-    const value = part.slice("next:".length);
-    return isNumericList(value) ? "next:[redacted]" : part;
-  }
-  if (part.startsWith("skipped:")) {
-    const value = part.slice("skipped:".length);
-    return isNumericList(value) ? "skipped:[redacted]" : part;
-  }
-  return part;
 }
 
 function isNumericList(value: string): boolean {
