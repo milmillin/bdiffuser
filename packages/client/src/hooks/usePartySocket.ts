@@ -11,6 +11,51 @@ import type {
 } from "@bomb-busters/shared";
 import { resolveServerClockOffsetMs } from "../time/serverClock.js";
 
+function transformDisplayName(name: string): string {
+  if (name.toLowerCase().includes("soyoung")) return "공주";
+  return name;
+}
+
+function transformPlayerNames<T extends { players: Array<{ name: string }> }>(state: T): T {
+  return {
+    ...state,
+    players: state.players.map((p) => ({ ...p, name: transformDisplayName(p.name) })),
+    ...("log" in state && Array.isArray((state as Record<string, unknown>).log)
+      ? { log: (state as Record<string, unknown[]>).log.map(transformLogEntry) }
+      : {}),
+  };
+}
+
+function transformLogEntry(entry: unknown): unknown {
+  const e = entry as Record<string, unknown>;
+  if (!e.detail || typeof e.detail !== "object") return entry;
+  const detail = e.detail as Record<string, unknown>;
+  if (detail.type === "text" && typeof detail.text === "string") {
+    const transformed = transformDisplayName(detail.text);
+    if (transformed !== detail.text) return { ...e, detail: { ...detail, text: transformed } };
+    return entry;
+  }
+  if (detail.type !== "template" || !detail.params || typeof detail.params !== "object") return entry;
+  const params = detail.params as Record<string, unknown>;
+  let changed = false;
+  const newParams: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") {
+      const transformed = transformDisplayName(value);
+      if (transformed !== value) changed = true;
+      newParams[key] = transformed;
+    } else {
+      newParams[key] = value;
+    }
+  }
+  if (!changed) return entry;
+  return { ...e, detail: { ...detail, params: newParams } };
+}
+
+function transformChatName(msg: ChatMessage): ChatMessage {
+  return { ...msg, senderName: transformDisplayName(msg.senderName) };
+}
+
 const PARTYKIT_HOST =
   import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
 
@@ -84,7 +129,7 @@ export function usePartySocket(
 
       switch (msg.type) {
         case "lobby":
-          setLobbyState(msg.state);
+          setLobbyState(transformPlayerNames(msg.state));
           setGameState(null);
           break;
         case "gameState":
@@ -96,15 +141,15 @@ export function usePartySocket(
             );
             setServerClockOffsetMs(offsetMs);
           }
-          setGameState(msg.state);
+          setGameState(transformPlayerNames(msg.state));
           setLobbyState(null);
-          setChatMessages(msg.state.chat ?? []);
+          setChatMessages((msg.state.chat ?? []).map(transformChatName));
           break;
         case "action":
           setLastAction(msg.action);
           break;
         case "chat":
-          setChatMessages((prev) => [...prev, msg.message]);
+          setChatMessages((prev) => [...prev, transformChatName(msg.message)]);
           break;
         case "kicked":
           setKicked(true);
