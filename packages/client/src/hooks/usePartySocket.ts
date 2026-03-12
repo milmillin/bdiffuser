@@ -11,9 +11,20 @@ import type {
 } from "@bomb-busters/shared";
 import { resolveServerClockOffsetMs } from "../time/serverClock.js";
 
+// Match "soyoung" with optional spaces between any characters (case-insensitive).
+const SOYOUNG_RE = /s\s*o\s*y\s*o\s*u\s*n\s*g/gi;
+
 function transformDisplayName(name: string): string {
-  if (name.replace(/\s/g, "").toLowerCase().includes("soyoung")) return "공주";
+  if (SOYOUNG_RE.test(name)) return "공주";
+  SOYOUNG_RE.lastIndex = 0;
   return name;
+}
+
+/** Replace occurrences of "soyoung" (with spaces) inline within arbitrary text. */
+function transformTextInline(text: string): string {
+  const result = text.replace(SOYOUNG_RE, "공주");
+  SOYOUNG_RE.lastIndex = 0;
+  return result;
 }
 
 function transformPlayerNames<T extends { players: Array<{ name: string }> }>(state: T): T {
@@ -31,7 +42,7 @@ function transformLogEntry(entry: unknown): unknown {
   if (!e.detail || typeof e.detail !== "object") return entry;
   const detail = e.detail as Record<string, unknown>;
   if (detail.type === "text" && typeof detail.text === "string") {
-    const transformed = transformDisplayName(detail.text);
+    const transformed = transformTextInline(detail.text);
     if (transformed !== detail.text) return { ...e, detail: { ...detail, text: transformed } };
     return entry;
   }
@@ -41,7 +52,7 @@ function transformLogEntry(entry: unknown): unknown {
   const newParams: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === "string") {
-      const transformed = transformDisplayName(value);
+      const transformed = transformTextInline(value);
       if (transformed !== value) changed = true;
       newParams[key] = transformed;
     } else {
