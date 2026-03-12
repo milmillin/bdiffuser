@@ -3675,6 +3675,14 @@ function Header({
               Surrender
             </button>
           )}
+          <button
+            type="button"
+            onClick={onOpenMcp}
+            className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
+            title="Let AI play for you"
+          >
+            MCP
+          </button>
           {/* Mobile-only: turn + rules in row 1 */}
           <div className="flex md:hidden items-center gap-2">
             <div className="text-xs text-gray-400" data-testid="turn-number-mobile">
@@ -3686,14 +3694,6 @@ function Header({
               className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
             >
               Rules
-            </button>
-            <button
-              type="button"
-              onClick={onOpenMcp}
-              className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
-              title="Let AI play for you"
-            >
-              MCP
             </button>
           </div>
         </div>
@@ -3732,23 +3732,13 @@ function Header({
           Turn{" "}
           <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
-        <div className="hidden md:flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenRules}
-            className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
-          >
-            Rules
-          </button>
-          <button
-            type="button"
-            onClick={onOpenMcp}
-            className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
-            title="Let AI play for you"
-          >
-            MCP
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onOpenRules}
+          className="hidden md:block rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+        >
+          Rules
+        </button>
         <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto" data-testid="player-list">
           {gameState.players.map((p) => {
             const isCurrentTurn = p.id === currentPlayer?.id;
