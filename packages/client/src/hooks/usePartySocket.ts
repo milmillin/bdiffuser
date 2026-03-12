@@ -12,7 +12,7 @@ import type {
 import { resolveServerClockOffsetMs } from "../time/serverClock.js";
 
 function transformDisplayName(name: string): string {
-  if (name.toLowerCase().includes("soyoung")) return "공주";
+  if (name.replace(/\s/g, "").toLowerCase().includes("soyoung")) return "공주";
   return name;
 }
 

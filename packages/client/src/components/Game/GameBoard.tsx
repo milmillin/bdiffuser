@@ -3678,7 +3678,7 @@ function Header({
           <button
             type="button"
             onClick={onOpenMcp}
-            className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
+            className="rounded border border-purple-500 bg-purple-900/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-200 transition-colors hover:bg-purple-800 hover:text-white"
             title="Let AI play for you"
           >
             MCP
