@@ -3732,21 +3732,23 @@ function Header({
           Turn{" "}
           <span className="font-bold text-white">{gameState.turnNumber}</span>
         </div>
-        <button
-          type="button"
-          onClick={onOpenRules}
-          className="hidden md:block rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
-        >
-          Rules
-        </button>
-        <button
-          type="button"
-          onClick={onOpenMcp}
-          className="hidden md:block rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
-          title="Let AI play for you"
-        >
-          MCP
-        </button>
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenRules}
+            className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-amber-400 hover:text-amber-200"
+          >
+            Rules
+          </button>
+          <button
+            type="button"
+            onClick={onOpenMcp}
+            className="rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
+            title="Let AI play for you"
+          >
+            MCP
+          </button>
+        </div>
         <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto" data-testid="player-list">
           {gameState.players.map((p) => {
             const isCurrentTurn = p.id === currentPlayer?.id;
