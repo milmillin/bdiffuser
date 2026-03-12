@@ -387,6 +387,7 @@ export function GameBoard({
     number | null
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
+  const [isMcpPopupOpen, setIsMcpPopupOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
   const [isRightBarHidden, setIsRightBarHidden] = useState(false);
 
@@ -1554,6 +1555,7 @@ export function GameBoard({
             onToggleSurrenderVote={toggleSurrenderVote}
             onConfirmSurrender={confirmSurrender}
             onOpenRules={() => setIsRulesPopupOpen(true)}
+            onOpenMcp={() => setIsMcpPopupOpen(true)}
           />
           <BoardArea
             board={gameState.board}
@@ -2727,6 +2729,14 @@ export function GameBoard({
         gameState={gameState}
       />
 
+      {isMcpPopupOpen && (
+        <McpPopup
+          roomId={gameState.roomId}
+          playerName={me?.name ?? ""}
+          onClose={() => setIsMcpPopupOpen(false)}
+        />
+      )}
+
       {previewCard && (
         <CardPreviewModal card={previewCard} onClose={() => setPreviewCard(null)} />
       )}
@@ -3588,6 +3598,7 @@ function Header({
   onToggleSurrenderVote,
   onConfirmSurrender,
   onOpenRules,
+  onOpenMcp,
 }: {
   gameState: ClientGameState;
   playerId: string;
@@ -3600,6 +3611,7 @@ function Header({
   onToggleSurrenderVote: () => void;
   onConfirmSurrender: () => void;
   onOpenRules: () => void;
+  onOpenMcp: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const me = gameState.players.find((p) => p.id === playerId);
@@ -3675,6 +3687,14 @@ function Header({
             >
               Rules
             </button>
+            <button
+              type="button"
+              onClick={onOpenMcp}
+              className="rounded border border-gray-600 bg-gray-900/85 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
+              title="Let AI play for you"
+            >
+              MCP
+            </button>
           </div>
         </div>
       </div>
@@ -3719,6 +3739,14 @@ function Header({
         >
           Rules
         </button>
+        <button
+          type="button"
+          onClick={onOpenMcp}
+          className="hidden md:block rounded border border-gray-600 bg-gray-900/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-200 transition-colors hover:border-purple-400 hover:text-purple-200"
+          title="Let AI play for you"
+        >
+          MCP
+        </button>
         <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto" data-testid="player-list">
           {gameState.players.map((p) => {
             const isCurrentTurn = p.id === currentPlayer?.id;
@@ -3743,6 +3771,86 @@ function Header({
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const MCP_PARTYKIT_HOST =
+  import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
+
+function McpPopup({
+  roomId,
+  playerName,
+  onClose,
+}: {
+  roomId: string;
+  playerName: string;
+  onClose: () => void;
+}) {
+  const protocol = MCP_PARTYKIT_HOST.startsWith("localhost") || MCP_PARTYKIT_HOST.startsWith("127.") ? "http" : "https";
+  const mcpUrl = `${protocol}://${MCP_PARTYKIT_HOST}/mcp`;
+
+  const configSnippet = `{
+  "mcpServers": {
+    "bomb-busters": {
+      "url": "${mcpUrl}"
+    }
+  }
+}`;
+
+  const prompt = `Connect to Bomb Busters room "${roomId}" as "${playerName}" and play the game for me.`;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[var(--color-bomb-surface)] rounded-xl p-6 max-w-lg w-[calc(100%-2rem)] max-h-[80dvh] overflow-y-auto space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white">Let AI Play for You</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-xl leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-300">
+          Connect Claude (or any MCP-compatible AI) to play Bomb Busters using the remote MCP server.
+        </p>
+
+        <div>
+          <p className="text-xs font-semibold text-gray-200 mb-1">1. Add to your MCP config:</p>
+          <pre className="bg-[var(--color-bomb-dark)] rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-green-400 select-all">
+            {configSnippet}
+          </pre>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-gray-200 mb-1">2. Tell Claude:</p>
+          <pre className="bg-[var(--color-bomb-dark)] rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed font-mono text-blue-300 select-all whitespace-pre-wrap">
+            {prompt}
+          </pre>
+          <p className="text-[10px] text-gray-500 mt-1">
+            The MCP password is shown in the lobby only. Return to lobby to see it.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-gray-200 mb-1">Available tools:</p>
+          <ul className="space-y-1 ml-3 list-disc text-xs text-gray-400">
+            <li><code className="text-gray-200">connect_to_game</code> — Join a room</li>
+            <li><code className="text-gray-200">get_game_state</code> — See game state</li>
+            <li><code className="text-gray-200">send_action</code> — Take any action</li>
+            <li><code className="text-gray-200">disconnect_from_game</code> — Leave</li>
+          </ul>
         </div>
       </div>
     </div>
