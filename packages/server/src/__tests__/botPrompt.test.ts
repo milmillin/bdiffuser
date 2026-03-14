@@ -13,6 +13,7 @@ import {
   makeProgressTracker,
   makeSpecialMarker,
   makeTile,
+  makeRedTile,
   makeEquipmentCard,
 } from "@bomb-busters/shared/testing";
 import { filterStateForPlayer } from "../viewFilter";
@@ -224,7 +225,6 @@ describe("buildUserMessage campaign context", () => {
 
     expect(message).toContain("Challenges deck remaining: 1");
     expect(message).not.toContain("Should Stay Hidden");
-    expect(message).not.toContain("hidden");
   });
 
   it("shows timer and pending choose-next forced action context", () => {
@@ -356,6 +356,170 @@ describe("buildUserMessage campaign context", () => {
     const message = buildUserMessage(filtered);
 
     expect(message).toContain("Equipment secondary locks: Rewinder: 6 (2/2)");
+  });
+});
+
+describe("buildDeductionSummary via buildUserMessage", () => {
+  it("shows value tracker with held/cut/remaining counts", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "p1-3a", color: "blue", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "p1-3b", color: "blue", gameValue: 3, sortValue: 3.01 }),
+        makeTile({ id: "p1-5", color: "blue", gameValue: 5, sortValue: 5 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [
+        makeTile({ id: "p2-3", color: "blue", gameValue: 3, sortValue: 3.02, cut: true }),
+        makeTile({ id: "p2-7", color: "blue", gameValue: 7, sortValue: 7 }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("## Deduction Summary");
+    // Value 3: 1 cut + 2 held = 3 accounted, 1 unknown
+    expect(message).toContain("3: 1/4 cut, you hold 2, 1 in other hands");
+    // Value 5: 0 cut + 1 held, 3 unknown
+    expect(message).toContain("5: 0/4 cut, you hold 1, 3 in other hands");
+    // Value 7: 0 cut + 0 held, 4 unknown
+    expect(message).toContain("7: 0/4 cut, 4 in other hands");
+  });
+
+  it("identifies solo cut candidates", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "p1-3a", color: "blue", gameValue: 3, sortValue: 3 }),
+        makeTile({ id: "p1-3b", color: "blue", gameValue: 3, sortValue: 3.01 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [
+        makeTile({ id: "p2-3a", color: "blue", gameValue: 3, sortValue: 3.02, cut: true }),
+        makeTile({ id: "p2-3b", color: "blue", gameValue: 3, sortValue: 3.03, cut: true }),
+        makeTile({ id: "p2-7", color: "blue", gameValue: 7, sortValue: 7 }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("SAFE Solo Cuts Available: 3 (you hold all 2 remaining)");
+  });
+
+  it("recommends info-token-confirmed dualCut targets", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "p1-5", color: "blue", gameValue: 5, sortValue: 5 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [
+        makeTile({ id: "p2-5", color: "blue", gameValue: 5, sortValue: 5 }),
+      ],
+      infoTokens: [{ value: 5, position: 0, isYellow: false }],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("Recommended DualCut Targets");
+    expect(message).toContain("Bravo[0] = 5 (info token confirms, you hold 1)");
+  });
+
+  it("warns about tiles near red markers", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeTile({ id: "p1-5", color: "blue", gameValue: 5, sortValue: 5 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [
+        makeTile({ id: "p2-3", color: "blue", gameValue: 3, sortValue: 3, cut: true }),
+        makeTile({ id: "p2-hidden", color: "blue", gameValue: 4, sortValue: 3.5 }),
+        makeTile({ id: "p2-5", color: "blue", gameValue: 5, sortValue: 5, cut: true }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+      board: {
+        ...makeGameState().board,
+        markers: [{ value: 3.5, color: "red" as const }],
+      },
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("DANGEROUS Tiles");
+    expect(message).toContain("Bravo[1] near RED@3.5");
+  });
+
+  it("shows revealReds prompt when all remaining tiles are red", () => {
+    const p1 = makePlayer({
+      id: "p1",
+      name: "Alpha",
+      hand: [
+        makeRedTile({ id: "p1-r1" }),
+        makeRedTile({ id: "p1-r2", sortValue: 5.5 }),
+      ],
+    });
+    const p2 = makePlayer({
+      id: "p2",
+      name: "Bravo",
+      hand: [
+        makeTile({ id: "p2-7", color: "blue", gameValue: 7, sortValue: 7 }),
+      ],
+    });
+
+    const state = makeGameState({
+      mission: 1,
+      players: [p1, p2],
+      currentPlayerIndex: 0,
+    });
+
+    const filtered = filterStateForPlayer(state, "p1");
+    const message = buildUserMessage(filtered);
+
+    expect(message).toContain("SAFE Reveal Reds Available!");
   });
 });
 

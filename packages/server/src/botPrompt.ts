@@ -1,5 +1,6 @@
-import type { ClientGameState } from "@bomb-busters/shared";
+import type { ClientGameState, ClientPlayer, VisibleTile } from "@bomb-busters/shared";
 import {
+  BLUE_COPIES_PER_VALUE,
   MISSIONS,
   describeWirePoolSpec,
   renderLogDetail,
@@ -78,32 +79,60 @@ COMMUNICATION RULES (these match the real board game rules):
 - If you have nothing useful to say that follows these rules, set communication to null.
 
 ## Response Format
-You MUST respond with a JSON object. The object has two parts:
-1. "communication": a brief message to your teammates following the rules above, or null if nothing to say.
-2. The action fields for the action you want to take.
+You MUST respond with a JSON object. Always populate the "thinking" field FIRST using the structured steps below, then decide your action.
 
-Choose one of these formats:
+"thinking" is your PRIVATE scratchpad (never shown to other players). Follow these steps IN ORDER:
 
-For dualCut:
-{"communication": "Targeting the tile with the info token", "action": "dualCut", "targetPlayerId": "player-id", "targetTileIndex": 0, "guessValue": 5}
+STEP 1 — SAFE ACTIONS CHECK:
+- Can I revealReds? (All my remaining tiles are red?)
+- Can I soloCut any value? (I hold ALL remaining uncut copies?)
+- If YES to either → do it immediately, skip remaining steps.
 
-For soloCut:
-{"communication": "I can safely solo cut these", "action": "soloCut", "value": 5}
+STEP 2 — INFO TOKEN TARGETS:
+- List each opponent tile that has an info token.
+- For each, do I hold an uncut tile of the matching value?
+- If YES → this is a SAFE dualCut (guaranteed correct). Prefer these.
 
-For revealReds:
-{"communication": "All my remaining tiles are red — revealing them", "action": "revealReds"}
+STEP 3 — DANGER ASSESSMENT:
+- Which opponent tiles are near red marker positions? List them.
+- These are DANGEROUS — a wrong guess on red = instant loss.
+- NEVER guess a tile near a red marker unless an info token confirms its value.
 
-For chooseNextPlayer:
-{"communication": null, "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
+STEP 4 — DETONATOR BUDGET:
+- Current detonator position vs max. How many wrong guesses can we survive?
+- If budget is tight (≤2 remaining), only take guaranteed-safe actions.
+- If budget is comfortable, a calculated risk on a non-dangerous tile is acceptable.
 
-For simultaneousFourCut:
-{"communication": null, "action": "simultaneousFourCut"}
+STEP 5 — BEST DUALCUT PICK (only if no safe actions from Steps 1-2):
+- Among non-dangerous opponent tiles, which value do I hold the most copies of?
+- More copies = higher chance an opponent's tile matches.
+- Prefer tiles far from red markers. Prefer opponents with fewer remaining tiles.
 
-For useEquipment:
-{"communication": "Using the Rewinder to buy us more room", "action": "useEquipment", "equipmentId": "rewinder", "payload": {}}
+STEP 6 — EQUIPMENT CHECK:
+- Any unlocked equipment that would help right now? (Rewinder, Talkies-Walkies, etc.)
 
-For dualCutDoubleDetector:
-{"communication": "Using double detector on two tiles", "action": "dualCutDoubleDetector", "targetPlayerId": "player-id", "tileIndex1": 0, "tileIndex2": 1, "guessValue": 5}
+STEP 7 — DECISION:
+- State which action you chose and why, based on the steps above.
+
+After "thinking", include:
+- "communication": a brief message to teammates (or null). MUST NOT reveal your own tiles.
+- The action fields.
+
+Action formats:
+
+{"thinking": "STEP 1: No reds, no solo cuts. STEP 2: Bravo[2] has info token=5, I hold a 5. Safe match! STEP 3-6: N/A. STEP 7: dualCut Bravo[2] with guess 5.", "communication": "Going for the confirmed tile", "action": "dualCut", "targetPlayerId": "player-id", "targetTileIndex": 2, "guessValue": 5}
+
+{"thinking": "STEP 1: I hold all 3 remaining copies of 8 (1 already cut). Solo cut! STEP 7: soloCut 8.", "communication": null, "action": "soloCut", "value": 8}
+
+{"thinking": "STEP 1: All my tiles are red. RevealReds! STEP 7: revealReds.", "communication": "Clearing my reds", "action": "revealReds"}
+
+{"thinking": "STEP 7: Bravo has the most tiles and an info token target.", "communication": null, "action": "chooseNextPlayer", "targetPlayerId": "player-id"}
+
+{"thinking": "STEP 6: Rewinder unlocked, detonator at 5/7. STEP 7: use Rewinder.", "communication": "Using the Rewinder", "action": "useEquipment", "equipmentId": "rewinder", "payload": {}}
+
+{"thinking": "STEP 7: simultaneous four cut available for value 6.", "communication": null, "action": "simultaneousFourCut"}
+
+{"thinking": "STEP 5: Two adjacent hidden tiles on Bravo. STEP 7: double detector.", "communication": null, "action": "dualCutDoubleDetector", "targetPlayerId": "player-id", "tileIndex1": 0, "tileIndex2": 1, "guessValue": 5}
 
 guessValue can be a number (1-12) or "YELLOW" for yellow wires.
 soloCut value can be a number (1-12) or "YELLOW".`;
@@ -416,6 +445,12 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
     }
   }
 
+  // Deduction summary (computed server-side to aid LLM reasoning)
+  const deduction = buildDeductionSummary(state, me);
+  if (deduction) {
+    lines.push(deduction);
+  }
+
   if (chatContext) {
     lines.push("");
     lines.push("## Recent Chat (since your last turn):");
@@ -423,4 +458,248 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
   }
 
   return lines.join("\n");
+}
+
+// ── Deduction Summary ─────────────────────────────────────────
+
+function buildDeductionSummary(
+  state: ClientGameState,
+  me: ClientPlayer,
+): string | null {
+  const lines: string[] = [];
+  lines.push("## Deduction Summary (computed for you)");
+
+  // 1. Value distribution tracker
+  const myValues = new Map<number, number>(); // value → count of uncut in my hand
+  const myYellowCount = me.hand.filter((t) => !t.cut && t.gameValue === "YELLOW").length;
+  for (const tile of me.hand) {
+    if (tile.cut || typeof tile.gameValue !== "number") continue;
+    myValues.set(tile.gameValue, (myValues.get(tile.gameValue) ?? 0) + 1);
+  }
+
+  // Count all cut tiles across all players (public info)
+  const cutCounts = new Map<number, number>(); // value → total cut
+  let cutRedCount = 0;
+  let cutYellowCount = 0;
+  for (const player of state.players) {
+    for (const tile of player.hand) {
+      if (!tile.cut) continue;
+      if (typeof tile.gameValue === "number") {
+        cutCounts.set(tile.gameValue, (cutCounts.get(tile.gameValue) ?? 0) + 1);
+      } else if (tile.gameValue === "YELLOW") {
+        cutYellowCount++;
+      } else if (tile.color === "red") {
+        cutRedCount++;
+      }
+    }
+  }
+
+  // Resolve mission pool to know how many red/yellow exist
+  let totalRedWires = 0;
+  let totalYellowWires = 0;
+  try {
+    const resolved = resolveMissionSetup(state.mission, state.players.length);
+    const redSpec = resolved.setup.red;
+    if (redSpec.kind === "exact") totalRedWires = redSpec.count;
+    else if (redSpec.kind === "out_of") totalRedWires = redSpec.keep;
+    else if (redSpec.kind === "fixed") totalRedWires = redSpec.values.length;
+    else if (redSpec.kind === "exact_same_value") totalRedWires = redSpec.count;
+    const yellowSpec = resolved.setup.yellow;
+    if (yellowSpec.kind === "exact") totalYellowWires = yellowSpec.count;
+    else if (yellowSpec.kind === "out_of") totalYellowWires = yellowSpec.keep;
+    else if (yellowSpec.kind === "fixed") totalYellowWires = yellowSpec.values.length;
+    else if (yellowSpec.kind === "exact_same_value") totalYellowWires = yellowSpec.count;
+  } catch {
+    // Non-standard mission, skip pool info
+  }
+
+  // Total uncut hidden tiles across opponents
+  const totalHiddenOpponent = state.players
+    .filter((p) => p.id !== state.playerId)
+    .reduce((sum, p) => sum + p.hand.filter((t) => !t.cut && !t.color).length, 0);
+
+  // Value tracker table
+  lines.push("");
+  lines.push("### Value Tracker (blue wires, 4 copies each):");
+  const valueLines: string[] = [];
+  for (let v = 1; v <= 12; v++) {
+    const cut = cutCounts.get(v) ?? 0;
+    const held = myValues.get(v) ?? 0;
+    const accounted = cut + held;
+    const unknown = BLUE_COPIES_PER_VALUE - accounted;
+    if (cut === BLUE_COPIES_PER_VALUE) {
+      valueLines.push(`  ${v}: COMPLETE (4/4 cut)`);
+    } else {
+      const parts = [`${cut}/4 cut`];
+      if (held > 0) parts.push(`you hold ${held}`);
+      if (unknown > 0) parts.push(`${unknown} in other hands`);
+      valueLines.push(`  ${v}: ${parts.join(", ")}`);
+    }
+  }
+  lines.push(...valueLines);
+
+  // Red/yellow wire status
+  const hiddenRedRemaining = totalRedWires - cutRedCount;
+  const hiddenYellowRemaining = totalYellowWires - cutYellowCount - myYellowCount;
+  if (totalRedWires > 0) {
+    lines.push(`  RED: ${cutRedCount}/${totalRedWires} revealed${hiddenRedRemaining > 0 ? ` — ${hiddenRedRemaining} still hidden among ${totalHiddenOpponent} hidden tiles!` : " — all accounted for"}`);
+  }
+  if (totalYellowWires > 0) {
+    const yellowParts = [`${cutYellowCount}/${totalYellowWires} cut`];
+    if (myYellowCount > 0) yellowParts.push(`you hold ${myYellowCount}`);
+    if (hiddenYellowRemaining > 0) yellowParts.push(`${hiddenYellowRemaining} in other hands`);
+    lines.push(`  YELLOW: ${yellowParts.join(", ")}`);
+  }
+
+  // 2. Solo cut candidates
+  const soloCuts: string[] = [];
+  for (const [value, held] of myValues) {
+    const cut = cutCounts.get(value) ?? 0;
+    if (held + cut === BLUE_COPIES_PER_VALUE) {
+      soloCuts.push(`${value} (you hold all ${held} remaining)`);
+    }
+  }
+  if (myYellowCount > 0 && myYellowCount + cutYellowCount === totalYellowWires) {
+    soloCuts.push(`YELLOW (you hold all ${myYellowCount} remaining)`);
+  }
+  if (soloCuts.length > 0) {
+    lines.push("");
+    lines.push(`### SAFE Solo Cuts Available: ${soloCuts.join(", ")}`);
+    lines.push("  → These are RISK-FREE. Always prefer these!");
+  }
+
+  // 3. RevealReds eligibility
+  const myUncutTiles = me.hand.filter((t) => !t.cut);
+  const allRed = myUncutTiles.length > 0 && myUncutTiles.every((t) => t.color === "red");
+  if (allRed) {
+    lines.push("");
+    lines.push("### SAFE Reveal Reds Available!");
+    lines.push("  → All your remaining tiles are red. Use revealReds for RISK-FREE progress!");
+  }
+
+  // 4. Safe dualCut targets (opponent tiles with info tokens matching values you hold)
+  const safeTargets: string[] = [];
+  const riskyTargets: string[] = [];
+  const redMarkerValues = new Set(
+    state.board.markers.filter((m) => m.color === "red").map((m) => m.value),
+  );
+  const yellowMarkerValues = new Set(
+    state.board.markers.filter((m) => m.color === "yellow").map((m) => m.value),
+  );
+
+  for (const opp of state.players) {
+    if (opp.id === state.playerId) continue;
+    for (const token of opp.infoTokens) {
+      const tile = opp.hand[token.position];
+      if (!tile || tile.cut) continue;
+
+      if (token.isYellow) {
+        if (myYellowCount > 0) {
+          safeTargets.push(
+            `${opp.name}[${token.position}] = YELLOW (info token confirms)`,
+          );
+        }
+      } else if (token.parity) {
+        // Parity token — find a matching value
+        const matchingValues = [...myValues.keys()].filter((v) =>
+          token.parity === "even" ? v % 2 === 0 : v % 2 === 1,
+        );
+        if (matchingValues.length > 0) {
+          safeTargets.push(
+            `${opp.name}[${token.position}] = ${token.parity.toUpperCase()} (you hold ${token.parity} values: ${matchingValues.join(",")})`,
+          );
+        }
+      } else if (token.countHint == null && token.value > 0) {
+        if (myValues.has(token.value)) {
+          safeTargets.push(
+            `${opp.name}[${token.position}] = ${token.value} (info token confirms, you hold ${myValues.get(token.value)})`,
+          );
+        }
+      }
+    }
+  }
+
+  // 5. Danger assessment for opponent hidden tiles near red markers
+  if (redMarkerValues.size > 0 || yellowMarkerValues.size > 0) {
+    for (const opp of state.players) {
+      if (opp.id === state.playerId) continue;
+      for (let i = 0; i < opp.hand.length; i++) {
+        const tile = opp.hand[i];
+        if (tile.cut || tile.color != null) continue; // skip visible tiles
+        const dangerMarkers = getDangerMarkersForPosition(
+          opp.hand,
+          i,
+          redMarkerValues,
+          yellowMarkerValues,
+        );
+        if (dangerMarkers.length > 0) {
+          riskyTargets.push(
+            `${opp.name}[${i}] near ${dangerMarkers.join(", ")} marker(s)`,
+          );
+        }
+      }
+    }
+  }
+
+  if (safeTargets.length > 0) {
+    lines.push("");
+    lines.push("### Recommended DualCut Targets (info-token confirmed):");
+    for (const t of safeTargets) lines.push(`  → ${t}`);
+  }
+
+  if (riskyTargets.length > 0) {
+    lines.push("");
+    lines.push("### DANGEROUS Tiles (near red/yellow markers — avoid unless confirmed):");
+    for (const t of riskyTargets) lines.push(`  ⚠ ${t}`);
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Determine which danger markers a hidden tile at `tileIndex` is adjacent to,
+ * based on the sort positions of its neighboring cut/visible tiles.
+ *
+ * Red markers at position X.5 mean the slot between value X and X+1 could hold a red wire.
+ * A hidden tile sitting between two known values that bracket a marker position is "near" it.
+ */
+function getDangerMarkersForPosition(
+  hand: VisibleTile[],
+  tileIndex: number,
+  redMarkerValues: Set<number>,
+  yellowMarkerValues: Set<number>,
+): string[] {
+  // Find the nearest visible sort values to the left and right
+  let leftValue: number | null = null;
+  let rightValue: number | null = null;
+
+  for (let i = tileIndex - 1; i >= 0; i--) {
+    if (hand[i].sortValue != null) {
+      leftValue = hand[i].sortValue!;
+      break;
+    }
+  }
+  for (let i = tileIndex + 1; i < hand.length; i++) {
+    if (hand[i].sortValue != null) {
+      rightValue = hand[i].sortValue!;
+      break;
+    }
+  }
+
+  // Default bounds if no neighbors found
+  const lo = leftValue ?? 0;
+  const hi = rightValue ?? 13;
+
+  const dangers: string[] = [];
+  for (const markerPos of redMarkerValues) {
+    if (markerPos > lo && markerPos < hi) {
+      dangers.push(`RED@${markerPos}`);
+    }
+  }
+  for (const markerPos of yellowMarkerValues) {
+    if (markerPos > lo && markerPos < hi) {
+      dangers.push(`YEL@${markerPos}`);
+    }
+  }
+  return dangers;
 }
