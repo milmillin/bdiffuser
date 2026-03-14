@@ -389,7 +389,8 @@ export function GameBoard({
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [isMcpPopupOpen, setIsMcpPopupOpen] = useState(false);
-  const isScouter = gameState.scouterUsers?.includes(playerId) ?? false;
+  const canUseScouter = gameState.players.find((p) => p.id === playerId)?.name?.toLowerCase() === "varich";
+  const isScouter = canUseScouter && (gameState.scouterUsers?.includes(playerId) ?? false);
   const [scouterSelection, setScouterSelection] = useState<{ playerId: string; tileIndex: number } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
   const [isRightBarHidden, setIsRightBarHidden] = useState(false);
@@ -1559,6 +1560,7 @@ export function GameBoard({
             onConfirmSurrender={confirmSurrender}
             onOpenRules={() => setIsRulesPopupOpen(true)}
             onOpenMcp={() => setIsMcpPopupOpen(true)}
+            canUseScouter={canUseScouter}
             isScouter={isScouter}
             onToggleScouter={() => send({ type: "toggleScouter" })}
           />
@@ -3634,6 +3636,7 @@ function Header({
   onConfirmSurrender,
   onOpenRules,
   onOpenMcp,
+  canUseScouter,
   isScouter,
   onToggleScouter,
 }: {
@@ -3649,6 +3652,7 @@ function Header({
   onConfirmSurrender: () => void;
   onOpenRules: () => void;
   onOpenMcp: () => void;
+  canUseScouter: boolean;
   isScouter: boolean;
   onToggleScouter: () => void;
 }) {
@@ -3722,18 +3726,20 @@ function Header({
           >
             MCP
           </button>
-          <button
-            type="button"
-            onClick={onToggleScouter}
-            className={`rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
-              isScouter
-                ? "border-green-400 bg-green-700/90 text-white hover:bg-green-600"
-                : "border-cyan-600 bg-cyan-900/80 text-cyan-200 hover:bg-cyan-800 hover:text-white"
-            }`}
-            title={isScouter ? "Disable Scouter (probability helper)" : "Enable Scouter (probability helper)"}
-          >
-            Scouter
-          </button>
+          {canUseScouter && (
+            <button
+              type="button"
+              onClick={onToggleScouter}
+              className={`rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                isScouter
+                  ? "border-green-400 bg-green-700/90 text-white hover:bg-green-600"
+                  : "border-cyan-600 bg-cyan-900/80 text-cyan-200 hover:bg-cyan-800 hover:text-white"
+              }`}
+              title={isScouter ? "Disable Scouter (probability helper)" : "Enable Scouter (probability helper)"}
+            >
+              Scouter
+            </button>
+          )}
           {/* Mobile-only: turn + rules in row 1 */}
           <div className="flex md:hidden items-center gap-2">
             <div className="text-xs text-gray-400" data-testid="turn-number-mobile">
