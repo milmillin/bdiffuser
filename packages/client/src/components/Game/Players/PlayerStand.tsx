@@ -26,6 +26,8 @@ export function PlayerStand({
   attentionVariant,
   scouterProbabilities,
   isScouterUser,
+  scouterSelectedTileIndex,
+  onScouterTileClick,
 }: {
   player: ClientPlayer;
   isOpponent: boolean;
@@ -43,6 +45,10 @@ export function PlayerStand({
   scouterProbabilities?: Map<number, TileProbability>;
   /** Whether this player has their own scouter active (shown as badge). */
   isScouterUser?: boolean;
+  /** Index of the tile selected for scouter panel display. */
+  scouterSelectedTileIndex?: number;
+  /** Callback when a hidden tile is clicked for scouter inspection. */
+  onScouterTileClick?: (flatIndex: number) => void;
 }) {
   const resolvedAttention: AttentionVariant =
     attentionVariant ?? (isCurrentTurn ? "turn" : "none");
@@ -213,6 +219,8 @@ export function PlayerStand({
                           testId={`wire-tile-${player.id}-${flatIndex}`}
                           onClick={() => onTileClick?.(flatIndex)}
                           probability={scouterProbabilities?.get(flatIndex)}
+                          isScouterSelected={scouterSelectedTileIndex === flatIndex}
+                          onScouterClick={onScouterTileClick ? () => onScouterTileClick(flatIndex) : undefined}
                         />
                       </div>
                     ))}
@@ -366,6 +374,8 @@ function WireTileView({
   testId,
   onClick,
   probability,
+  isScouterSelected,
+  onScouterClick,
 }: {
   tile: VisibleTile;
   isOpponent: boolean;
@@ -376,26 +386,33 @@ function WireTileView({
   testId: string;
   onClick: () => void;
   probability?: TileProbability;
+  isScouterSelected?: boolean;
+  onScouterClick?: () => void;
 }) {
   const showFront = tile.color != null;
   const isCut = tile.cut;
+  const canScouterClick = !isSelectable && !isCut && !showFront && !!onScouterClick;
 
   return (
     <div className="w-full">
       <button
-        onClick={onClick}
-        disabled={!isSelectable}
+        onClick={isSelectable ? onClick : canScouterClick ? onScouterClick : onClick}
+        disabled={!isSelectable && !canScouterClick}
         data-testid={testId}
         className={`w-full rounded-md overflow-hidden transition-all ${
+          isScouterSelected ? "ring-2 ring-cyan-400 scale-105" : ""
+        } ${
           isSelected ? "ring-2 ring-white scale-105" : ""
         } ${
           isSelectable
             ? "cursor-pointer hover:scale-105 hover:ring-2 hover:ring-white"
-            : isCut
-              ? "opacity-60"
-              : isFilterActive
-                ? "cursor-default opacity-40"
-                : "cursor-default"
+            : canScouterClick
+              ? "cursor-pointer hover:scale-105 hover:ring-2 hover:ring-cyan-400/70"
+              : isCut
+                ? "opacity-60"
+                : isFilterActive
+                  ? "cursor-default opacity-40"
+                  : "cursor-default"
         }`}
       >
         {showFront ? (

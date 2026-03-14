@@ -21,7 +21,7 @@ import {
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
-import { computeOpponentProbabilities } from "./scouter.js";
+import { computeOpponentProbabilities, getTopProbabilities, type TileProbability } from "./scouter.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import {
@@ -390,6 +390,7 @@ export function GameBoard({
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [isMcpPopupOpen, setIsMcpPopupOpen] = useState(false);
   const isScouter = gameState.scouterUsers?.includes(playerId) ?? false;
+  const [scouterSelection, setScouterSelection] = useState<{ playerId: string; tileIndex: number } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
   const [isRightBarHidden, setIsRightBarHidden] = useState(false);
 
@@ -1592,6 +1593,16 @@ export function GameBoard({
                       attentionVariant={standAttentionVariantForPlayer(opp.id)}
                       scouterProbabilities={isScouter ? computeOpponentProbabilities(gameState, opp) : undefined}
                       isScouterUser={gameState.scouterUsers?.includes(opp.id)}
+                      scouterSelectedTileIndex={scouterSelection?.playerId === opp.id ? scouterSelection.tileIndex : undefined}
+                      onScouterTileClick={isScouter ? (tileIndex: number) => {
+                        const tile = opp.hand[tileIndex];
+                        if (!tile || tile.cut || tile.color != null) return;
+                        setScouterSelection((prev) =>
+                          prev?.playerId === opp.id && prev.tileIndex === tileIndex
+                            ? null
+                            : { playerId: opp.id, tileIndex },
+                        );
+                      } : undefined}
                       turnOrder={turnOrder}
                       onCharacterClick={
                         opp.character
@@ -1716,6 +1727,23 @@ export function GameBoard({
                     />
                   ))}
                 </div>
+
+                {isScouter && scouterSelection && (() => {
+                  const targetPlayer = gameState.players.find((p) => p.id === scouterSelection.playerId);
+                  if (!targetPlayer) return null;
+                  const probs = computeOpponentProbabilities(gameState, targetPlayer);
+                  const tileProb = probs.get(scouterSelection.tileIndex);
+                  if (!tileProb) return null;
+                  const tileLabel = wireLabel(scouterSelection.tileIndex);
+                  return (
+                    <ScouterPanel
+                      playerName={targetPlayer.name}
+                      tileLabel={tileLabel}
+                      probability={tileProb}
+                      onClose={() => setScouterSelection(null)}
+                    />
+                  );
+                })()}
 
                 {me && (
                   <div className="w-full flex justify-center">
@@ -3787,6 +3815,72 @@ function Header({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ScouterPanel({
+  playerName,
+  tileLabel,
+  probability,
+  onClose,
+}: {
+  playerName: string;
+  tileLabel: string;
+  probability: TileProbability;
+  onClose: () => void;
+}) {
+  const all = getTopProbabilities(probability, Infinity);
+  if (all.length === 0) return null;
+
+  const maxPct = Math.max(...all.map((e) => e.pct), 1);
+
+  return (
+    <div className="rounded-lg border border-cyan-700/60 bg-gray-900/90 p-3 mx-auto max-w-md w-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-bold text-cyan-300 uppercase tracking-wide">
+          Scouter — {playerName} wire {tileLabel}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-500 hover:text-white text-sm leading-none px-1"
+        >
+          x
+        </button>
+      </div>
+      <div className="grid gap-0.5">
+        {all.map((entry) => (
+          <div key={entry.label} className="flex items-center gap-2">
+            <span
+              className={`w-5 text-right text-xs font-bold ${
+                entry.color === "red"
+                  ? "text-red-400"
+                  : entry.color === "yellow"
+                    ? "text-yellow-400"
+                    : "text-blue-300"
+              }`}
+            >
+              {entry.label}
+            </span>
+            <div className="flex-1 h-3 bg-gray-800 rounded overflow-hidden">
+              <div
+                className={`h-full rounded transition-all ${
+                  entry.color === "red"
+                    ? "bg-red-500"
+                    : entry.color === "yellow"
+                      ? "bg-yellow-500"
+                      : "bg-blue-500"
+                }`}
+                style={{ width: `${(entry.pct / maxPct) * 100}%` }}
+              />
+            </div>
+            <span className="w-8 text-right text-xs text-gray-300 tabular-nums">
+              {entry.pct}%
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
