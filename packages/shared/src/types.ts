@@ -959,6 +959,8 @@ export interface ClientGameState {
   missionAudio?: MissionAudioState;
   /** Unix-ms deadline for mission timer (mission 10). Game is lost when reached. */
   timerDeadline?: number;
+  /** Player IDs who currently have the Scouter cheat-helper active. */
+  scouterUsers?: string[];
 }
 
 export interface ClientPlayer {

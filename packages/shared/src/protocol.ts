@@ -123,7 +123,8 @@ export type ClientMessage =
   | { type: "confirmSurrender" }
   | { type: "chat"; text: string }
   | { type: "playAgain" }
-  | { type: "mcpTakeover"; name: string; password: string };
+  | { type: "mcpTakeover"; name: string; password: string }
+  | { type: "toggleScouter" };
 
 // ── Server → Client Messages ───────────────────────────────
 

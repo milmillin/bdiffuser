@@ -21,6 +21,7 @@ import {
 } from "@bomb-busters/shared";
 import { BoardArea, DetonatorDial } from "./Board/BoardArea.js";
 import { PlayerStand } from "./Players/PlayerStand.js";
+import { computeOpponentProbabilities } from "./scouter.js";
 import { ChooseNextPlayerPanel } from "./Actions/ChooseNextPlayerPanel.js";
 import { DesignateCutterPanel } from "./Actions/DesignateCutterPanel.js";
 import {
@@ -388,6 +389,7 @@ export function GameBoard({
   >(null);
   const [isRulesPopupOpen, setIsRulesPopupOpen] = useState(false);
   const [isMcpPopupOpen, setIsMcpPopupOpen] = useState(false);
+  const isScouter = gameState.scouterUsers?.includes(playerId) ?? false;
   const [mobileTab, setMobileTab] = useState<MobileTab>("game");
   const [isRightBarHidden, setIsRightBarHidden] = useState(false);
 
@@ -1556,6 +1558,8 @@ export function GameBoard({
             onConfirmSurrender={confirmSurrender}
             onOpenRules={() => setIsRulesPopupOpen(true)}
             onOpenMcp={() => setIsMcpPopupOpen(true)}
+            isScouter={isScouter}
+            onToggleScouter={() => send({ type: "toggleScouter" })}
           />
           <BoardArea
             board={gameState.board}
@@ -1586,6 +1590,8 @@ export function GameBoard({
                       isOpponent={true}
                       isCurrentTurn={opp.id === currentPlayer?.id}
                       attentionVariant={standAttentionVariantForPlayer(opp.id)}
+                      scouterProbabilities={isScouter ? computeOpponentProbabilities(gameState, opp) : undefined}
+                      isScouterUser={gameState.scouterUsers?.includes(opp.id)}
                       turnOrder={turnOrder}
                       onCharacterClick={
                         opp.character
@@ -2389,6 +2395,7 @@ export function GameBoard({
                   isOpponent={false}
                   isCurrentTurn={me.id === currentPlayer?.id}
                   attentionVariant={standAttentionVariantForPlayer(me.id)}
+                  isScouterUser={isScouter}
                   turnOrder={myOrder}
                   statusContent={getStatusContent(
                     gameState,
@@ -3599,6 +3606,8 @@ function Header({
   onConfirmSurrender,
   onOpenRules,
   onOpenMcp,
+  isScouter,
+  onToggleScouter,
 }: {
   gameState: ClientGameState;
   playerId: string;
@@ -3612,6 +3621,8 @@ function Header({
   onConfirmSurrender: () => void;
   onOpenRules: () => void;
   onOpenMcp: () => void;
+  isScouter: boolean;
+  onToggleScouter: () => void;
 }) {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const me = gameState.players.find((p) => p.id === playerId);
@@ -3682,6 +3693,18 @@ function Header({
             title="Let AI play for you"
           >
             MCP
+          </button>
+          <button
+            type="button"
+            onClick={onToggleScouter}
+            className={`rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+              isScouter
+                ? "border-green-400 bg-green-700/90 text-white hover:bg-green-600"
+                : "border-cyan-600 bg-cyan-900/80 text-cyan-200 hover:bg-cyan-800 hover:text-white"
+            }`}
+            title={isScouter ? "Disable Scouter (probability helper)" : "Enable Scouter (probability helper)"}
+          >
+            Scouter
           </button>
           {/* Mobile-only: turn + rules in row 1 */}
           <div className="flex md:hidden items-center gap-2">

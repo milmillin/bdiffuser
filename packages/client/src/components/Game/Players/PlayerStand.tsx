@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { ClientPlayer, InfoToken, VisibleTile } from "@bomb-busters/shared";
 import { CHARACTER_IMAGES, WIRE_BACK_IMAGE, wireLabel } from "@bomb-busters/shared";
+import type { TileProbability } from "../scouter.js";
+import { getTopProbabilities } from "../scouter.js";
 import { ScrollableRow } from "../Board/BoardArea";
 import {
   TABLE_WIRE_IMAGE_HEIGHT,
@@ -22,6 +24,8 @@ export function PlayerStand({
   onCharacterClick,
   statusContent,
   attentionVariant,
+  scouterProbabilities,
+  isScouterUser,
 }: {
   player: ClientPlayer;
   isOpponent: boolean;
@@ -35,6 +39,10 @@ export function PlayerStand({
   onCharacterClick?: () => void;
   statusContent?: ReactNode;
   attentionVariant?: AttentionVariant;
+  /** Probability distributions for hidden tiles (scouter mode). */
+  scouterProbabilities?: Map<number, TileProbability>;
+  /** Whether this player has their own scouter active (shown as badge). */
+  isScouterUser?: boolean;
 }) {
   const resolvedAttention: AttentionVariant =
     attentionVariant ?? (isCurrentTurn ? "turn" : "none");
@@ -109,6 +117,13 @@ export function PlayerStand({
             }`}
           >
             Skill {player.characterUsed ? "Used" : "Available"}
+          </span>
+        )}
+        {isScouterUser && (
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded border border-cyan-500 bg-cyan-900/70 text-cyan-200 font-bold uppercase tracking-wide"
+          >
+            Scouter
           </span>
         )}
         {offStandTokens.length > 0 && (
@@ -197,6 +212,7 @@ export function PlayerStand({
                           isFilterActive={!!tileSelectableFilter}
                           testId={`wire-tile-${player.id}-${flatIndex}`}
                           onClick={() => onTileClick?.(flatIndex)}
+                          probability={scouterProbabilities?.get(flatIndex)}
                         />
                       </div>
                     ))}
@@ -349,6 +365,7 @@ function WireTileView({
   isFilterActive,
   testId,
   onClick,
+  probability,
 }: {
   tile: VisibleTile;
   isOpponent: boolean;
@@ -358,6 +375,7 @@ function WireTileView({
   isFilterActive: boolean;
   testId: string;
   onClick: () => void;
+  probability?: TileProbability;
 }) {
   const showFront = tile.color != null;
   const isCut = tile.cut;
@@ -408,15 +426,47 @@ function WireTileView({
             )}
           </div>
         ) : (
-          <img
-            src={`/images/${WIRE_BACK_IMAGE}`}
-            alt="Wire back"
-            width={TABLE_WIRE_IMAGE_WIDTH}
-            height={TABLE_WIRE_IMAGE_HEIGHT}
-            className="w-full h-auto block rounded-sm"
-          />
+          <div className="relative">
+            <img
+              src={`/images/${WIRE_BACK_IMAGE}`}
+              alt="Wire back"
+              width={TABLE_WIRE_IMAGE_WIDTH}
+              height={TABLE_WIRE_IMAGE_HEIGHT}
+              className="w-full h-auto block rounded-sm"
+            />
+            {probability && <ScouterOverlay probability={probability} />}
+          </div>
         )}
       </button>
+    </div>
+  );
+}
+
+function ScouterOverlay({ probability }: { probability: TileProbability }) {
+  const top = getTopProbabilities(probability, 3);
+  if (top.length === 0) return null;
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-sm pointer-events-none">
+      {top.map((entry) => (
+        <div
+          key={entry.label}
+          className="flex items-center gap-0.5 leading-none"
+        >
+          <span
+            className={`text-[9px] font-black ${
+              entry.color === "red"
+                ? "text-red-400"
+                : entry.color === "yellow"
+                  ? "text-yellow-400"
+                  : "text-blue-300"
+            }`}
+          >
+            {entry.label}
+          </span>
+          <span className="text-[8px] text-gray-300">{entry.pct}%</span>
+        </div>
+      ))}
     </div>
   );
 }

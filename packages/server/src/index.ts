@@ -213,6 +213,9 @@ export class BombBustersServer extends Server<Env> {
   /** In-memory stats map used only by the `__stats__` room. */
   private statsMap = new Map<string, { players: number; updatedAt: number }>();
 
+  /** Ephemeral set of player IDs who have the Scouter helper active. */
+  private scouterUsers = new Set<string>();
+
   room: RoomStateSnapshot = {
     gameState: null,
     players: [],
@@ -300,6 +303,7 @@ export class BombBustersServer extends Server<Env> {
       failureCounters: cloneFailureCounters(ZERO_FAILURE_COUNTERS),
       mcpPassword: generateMcpPassword(),
     };
+    this.scouterUsers.clear();
   }
 
   private reportStats() {
@@ -614,6 +618,9 @@ export class BombBustersServer extends Server<Env> {
         break;
       case "mcpTakeover":
         this.handleMcpTakeover(connection, msg.name, msg.password);
+        break;
+      case "toggleScouter":
+        this.handleToggleScouter(connection);
         break;
       default:
         this.sendMsg(connection, { type: "error", message: "Unknown message type" });
@@ -959,6 +966,17 @@ export class BombBustersServer extends Server<Env> {
       this.broadcastGameState();
     } else {
       this.broadcastLobby();
+    }
+  }
+
+  handleToggleScouter(conn: Connection) {
+    if (this.scouterUsers.has(conn.id)) {
+      this.scouterUsers.delete(conn.id);
+    } else {
+      this.scouterUsers.add(conn.id);
+    }
+    if (this.room.gameState) {
+      this.broadcastGameState();
     }
   }
 
@@ -5174,15 +5192,18 @@ export class BombBustersServer extends Server<Env> {
     const playerIds = new Set(this.room.players.map((p) => p.id));
     let spectatorView: ReturnType<typeof filterStateForSpectator> | null = null;
     const serverNowMs = Date.now();
+    const scouterArr = this.scouterUsers.size > 0 ? [...this.scouterUsers] : undefined;
 
     for (const conn of this.getConnections()) {
       if (playerIds.has(conn.id)) {
         const filtered = filterStateForPlayer(state, conn.id, this.room.hostId);
+        if (scouterArr) filtered.scouterUsers = scouterArr;
         this.sendGameState(conn, filtered, serverNowMs);
       } else {
         // Spectator — compute once, reuse for all spectator connections
         if (!spectatorView) {
           spectatorView = filterStateForSpectator(state);
+          if (scouterArr) spectatorView.scouterUsers = scouterArr;
         }
         this.sendGameState(conn, spectatorView, serverNowMs);
       }
