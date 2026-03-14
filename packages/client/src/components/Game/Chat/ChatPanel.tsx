@@ -82,10 +82,16 @@ export function ChatPanel({
 
 function ChatBubble({ msg, isOwn }: { msg: ChatMessage; isOwn: boolean }) {
   if (msg.isBotReasoning) {
+    const stats = msg.llmStats;
+    const statsText = stats
+      ? stats.tokPerSec > 0
+        ? `${stats.totalTokens} tok, ${(stats.durationMs / 1000).toFixed(1)}s, ${stats.tokPerSec} tok/s`
+        : `${(stats.durationMs / 1000).toFixed(1)}s`
+      : null;
     return (
       <div className="flex flex-col">
         <span className="text-[10px] text-purple-400 font-bold">
-          {msg.senderName} <span className="font-normal italic">(thinking)</span>
+          {msg.senderName} <span className="font-normal italic">(thinking{statsText ? ` — ${statsText}` : ""})</span>
         </span>
         <div className="bg-purple-900/40 border border-purple-700/50 rounded px-2 py-1 text-xs text-purple-200 italic">
           {msg.text}

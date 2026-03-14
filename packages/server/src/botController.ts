@@ -5,7 +5,7 @@ import {
 } from "@bomb-busters/shared";
 import { filterStateForPlayer } from "./viewFilter.js";
 import { buildSystemPrompt, buildUserMessage } from "./botPrompt.js";
-import { callLLM } from "./llmClient.js";
+import { callLLM, type LLMUsageStats } from "./llmClient.js";
 import {
   validateDualCutWithHooks,
   validateSoloCutWithHooks,
@@ -217,6 +217,7 @@ export type BotAction =
 export interface BotActionResult {
   action: BotAction;
   communication: string | null;
+  llmStats: LLMUsageStats | null;
 }
 
 const MAX_RETRIES = 2;
@@ -230,27 +231,27 @@ export async function getBotAction(
   // Mission-specific forced actions: handle deterministically and bypass LLM.
   const forcedDesignateCutterAction = getForcedDesignateCutterAction(state, botId);
   if (forcedDesignateCutterAction) {
-    return { action: forcedDesignateCutterAction, communication: null };
+    return { action: forcedDesignateCutterAction, communication: null, llmStats: null };
   }
 
   const forcedChooseAction = getForcedChooseNextAction(state, botId);
   if (forcedChooseAction) {
-    return { action: forcedChooseAction, communication: null };
+    return { action: forcedChooseAction, communication: null, llmStats: null };
   }
 
   const forcedMission46Action = getForcedMission46SevensCutAction(state, botId);
   if (forcedMission46Action) {
-    return { action: forcedMission46Action, communication: null };
+    return { action: forcedMission46Action, communication: null, llmStats: null };
   }
 
   const forcedMission61Action = getForcedMission61ConstraintRotateAction(state, botId);
   if (forcedMission61Action) {
-    return { action: forcedMission61Action, communication: null };
+    return { action: forcedMission61Action, communication: null, llmStats: null };
   }
 
   const forcedMission36Action = getForcedMission36SequencePositionAction(state, botId);
   if (forcedMission36Action) {
-    return { action: forcedMission36Action, communication: null };
+    return { action: forcedMission36Action, communication: null, llmStats: null };
   }
 
   const filtered = filterStateForPlayer(state, botId);
@@ -258,25 +259,29 @@ export async function getBotAction(
   const userMessage = buildUserMessage(filtered, chatContext || undefined);
 
   let lastCommunication: string | null = null;
+  let lastLlmStats: LLMUsageStats | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const result = await callLLM(apiKey, [
+      const llmResult = await callLLM(apiKey, [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
       ]);
 
+      const result = llmResult.parsed;
+      if (llmResult.usage) lastLlmStats = llmResult.usage;
+
       // Extract the communication field (safe to share with all players)
       const communication = typeof result.communication === "string" ? result.communication : null;
       if (communication) lastCommunication = communication;
-      console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, communication: ${communication ? `"${communication.slice(0, 80)}"` : "null"}`);
+      console.log(`Bot ${botId} LLM response keys: ${Object.keys(result).join(", ")}, communication: ${communication ? `"${communication.slice(0, 80)}"` : "null"}${lastLlmStats ? `, ${lastLlmStats.totalTokens}tok in ${lastLlmStats.durationMs}ms (${lastLlmStats.tokPerSec} tok/s)` : ""}`);
 
       // Some models return an array — unwrap to find the action object
       const actionObj = extractActionObject(result);
       const parsed = parseLLMAction(state, actionObj, botId);
       if (parsed) {
         const error = validateBotAction(state, botId, parsed);
-        if (!error) return { action: parsed, communication: lastCommunication };
+        if (!error) return { action: parsed, communication: lastCommunication, llmStats: lastLlmStats };
         console.log(`Bot action validation failed (attempt ${attempt + 1}): ${error}`);
       } else {
         console.log(`Bot action parse failed (attempt ${attempt + 1}):`, JSON.stringify(result));
@@ -287,7 +292,7 @@ export async function getBotAction(
   }
 
   // Fallback heuristic
-  return { action: getFallbackAction(state, botId), communication: lastCommunication };
+  return { action: getFallbackAction(state, botId), communication: lastCommunication, llmStats: lastLlmStats };
 }
 
 /** If the LLM returned an array, find the first element with an `action` key. */

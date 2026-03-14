@@ -6,10 +6,23 @@ interface ChatMessage {
   content: string;
 }
 
+export interface LLMUsageStats {
+  totalTokens: number;
+  durationMs: number;
+  tokPerSec: number;
+}
+
+export interface LLMResult {
+  parsed: Record<string, unknown>;
+  usage: LLMUsageStats | null;
+}
+
 export async function callLLM(
   apiKey: string,
   messages: ChatMessage[],
-): Promise<Record<string, unknown>> {
+): Promise<LLMResult> {
+  const startMs = Date.now();
+
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -33,7 +46,14 @@ export async function callLLM(
     choices: {
       message: { content: string; reasoning_content?: string };
     }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
+
+  const durationMs = Date.now() - startMs;
 
   const message = data.choices?.[0]?.message;
   const content = message?.content;
@@ -49,5 +69,16 @@ export async function callLLM(
   // information if broadcast as chat. Instead, the model provides a separate
   // `communication` field that follows the game's communication rules.
 
-  return parsed;
+  const totalTokens = data.usage?.total_tokens ?? 0;
+  const usage: LLMUsageStats | null = totalTokens > 0
+    ? {
+        totalTokens,
+        durationMs,
+        tokPerSec: Math.round(totalTokens / (durationMs / 1000)),
+      }
+    : durationMs > 0
+      ? { totalTokens: 0, durationMs, tokPerSec: 0 }
+      : null;
+
+  return { parsed, usage };
 }

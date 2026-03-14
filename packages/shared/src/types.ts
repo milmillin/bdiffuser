@@ -616,6 +616,12 @@ export interface ChatMessage {
   timestamp: number;
   isBotReasoning: boolean;
   turnNumber: number;
+  /** LLM performance stats for bot messages. */
+  llmStats?: {
+    totalTokens: number;
+    durationMs: number;
+    tokPerSec: number;
+  };
 }
 
 // ── Forced Actions ───────────────────────────────────────

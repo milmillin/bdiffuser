@@ -4741,6 +4741,7 @@ export class BombBustersServer extends Server<Env> {
         timestamp: Date.now(),
         isBotReasoning: true,
         turnNumber: state.turnNumber,
+        ...(botResult.llmStats ? { llmStats: botResult.llmStats } : {}),
       };
       state.chat.push(chatMsg);
       if (state.chat.length > 200) {
