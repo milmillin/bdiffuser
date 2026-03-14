@@ -402,10 +402,9 @@ export function buildUserMessage(state: ClientGameState, chatContext?: string): 
   lines.push("");
 
   // Recent log
-  const recentLog = state.log.slice(-10);
-  if (recentLog.length > 0) {
-    lines.push("## Recent Actions:");
-    for (const entry of recentLog) {
+  if (state.log.length > 0) {
+    lines.push("## Action Log:");
+    for (const entry of state.log) {
       const playerName =
         state.players.find((p) => p.id === entry.playerId)?.name ??
         entry.playerId;
