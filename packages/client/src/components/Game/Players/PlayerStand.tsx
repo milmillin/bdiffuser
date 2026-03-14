@@ -443,30 +443,50 @@ function WireTileView({
 }
 
 function ScouterOverlay({ probability }: { probability: TileProbability }) {
-  const top = getTopProbabilities(probability, 3);
-  if (top.length === 0) return null;
+  const all = getTopProbabilities(probability, Infinity);
+  if (all.length === 0) return null;
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-sm pointer-events-none">
-      {top.map((entry) => (
-        <div
-          key={entry.label}
-          className="flex items-center gap-0.5 leading-none"
-        >
-          <span
-            className={`text-[9px] font-black ${
-              entry.color === "red"
-                ? "text-red-400"
-                : entry.color === "yellow"
-                  ? "text-yellow-400"
-                  : "text-blue-300"
-            }`}
+    <div className="absolute inset-0 group/scouter">
+      {/* Subtle indicator that scouter data is available */}
+      <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-cyan-400/80 pointer-events-none" />
+      {/* Tooltip on hover */}
+      <div className="absolute left-1/2 bottom-full -translate-x-1/2 mb-1 hidden group-hover/scouter:flex flex-col z-50 bg-gray-900/95 border border-cyan-600/60 rounded px-1.5 py-1 shadow-lg shadow-black/50 min-w-[5rem] pointer-events-none">
+        <div className="text-[8px] text-cyan-400 font-bold uppercase tracking-wider mb-0.5 text-center">Scouter</div>
+        {all.map((entry) => (
+          <div
+            key={entry.label}
+            className="flex items-center justify-between gap-2 leading-tight"
           >
-            {entry.label}
-          </span>
-          <span className="text-[8px] text-gray-300">{entry.pct}%</span>
-        </div>
-      ))}
+            <span
+              className={`text-[10px] font-bold ${
+                entry.color === "red"
+                  ? "text-red-400"
+                  : entry.color === "yellow"
+                    ? "text-yellow-400"
+                    : "text-blue-300"
+              }`}
+            >
+              {entry.label}
+            </span>
+            <div className="flex items-center gap-1 flex-1">
+              <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    entry.color === "red"
+                      ? "bg-red-500"
+                      : entry.color === "yellow"
+                        ? "bg-yellow-500"
+                        : "bg-blue-500"
+                  }`}
+                  style={{ width: `${Math.min(entry.pct, 100)}%` }}
+                />
+              </div>
+              <span className="text-[9px] text-gray-300 tabular-nums w-6 text-right">{entry.pct}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

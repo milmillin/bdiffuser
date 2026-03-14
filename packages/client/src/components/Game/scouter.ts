@@ -2,8 +2,6 @@ import type { ClientGameState, ClientPlayer, VisibleTile, MissionId } from "@bom
 import {
   resolveMissionSetup,
   BLUE_COPIES_PER_VALUE,
-  RED_WIRE_SORT_VALUES,
-  YELLOW_WIRE_SORT_VALUES,
 } from "@bomb-busters/shared";
 
 export interface TileProbability {
