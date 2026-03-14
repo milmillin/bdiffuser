@@ -618,6 +618,8 @@ export interface ChatMessage {
   turnNumber: number;
   /** LLM performance stats for bot messages. */
   llmStats?: {
+    promptTokens: number;
+    completionTokens: number;
     totalTokens: number;
     durationMs: number;
     tokPerSec: number;

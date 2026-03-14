@@ -7,6 +7,8 @@ interface ChatMessage {
 }
 
 export interface LLMUsageStats {
+  promptTokens: number;
+  completionTokens: number;
   totalTokens: number;
   durationMs: number;
   tokPerSec: number;
@@ -50,6 +52,9 @@ export async function callLLM(
       prompt_tokens?: number;
       completion_tokens?: number;
       total_tokens?: number;
+      completion_tokens_details?: {
+        reasoning_tokens?: number;
+      };
     };
   };
 
@@ -69,15 +74,26 @@ export async function callLLM(
   // information if broadcast as chat. Instead, the model provides a separate
   // `communication` field that follows the game's communication rules.
 
+  const promptTokens = data.usage?.prompt_tokens ?? 0;
+  const completionTokens = data.usage?.completion_tokens ?? 0;
   const totalTokens = data.usage?.total_tokens ?? 0;
+  const reasoningTokens = data.usage?.completion_tokens_details?.reasoning_tokens;
+
+  console.log("LLM usage raw:", JSON.stringify(data.usage ?? null));
+  if (reasoningTokens != null) {
+    console.log(`LLM reasoning tokens: ${reasoningTokens} (of ${completionTokens} completion)`);
+  }
+
   const usage: LLMUsageStats | null = totalTokens > 0
     ? {
+        promptTokens,
+        completionTokens,
         totalTokens,
         durationMs,
         tokPerSec: Math.round(totalTokens / (durationMs / 1000)),
       }
     : durationMs > 0
-      ? { totalTokens: 0, durationMs, tokPerSec: 0 }
+      ? { promptTokens: 0, completionTokens: 0, totalTokens: 0, durationMs, tokPerSec: 0 }
       : null;
 
   return { parsed, usage };

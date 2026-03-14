@@ -85,7 +85,7 @@ function ChatBubble({ msg, isOwn }: { msg: ChatMessage; isOwn: boolean }) {
     const stats = msg.llmStats;
     const statsText = stats
       ? stats.tokPerSec > 0
-        ? `${stats.totalTokens} tok, ${(stats.durationMs / 1000).toFixed(1)}s, ${stats.tokPerSec} tok/s`
+        ? `${stats.promptTokens}in ${stats.completionTokens}out, ${(stats.durationMs / 1000).toFixed(1)}s, ${stats.tokPerSec} tok/s`
         : `${(stats.durationMs / 1000).toFixed(1)}s`
       : null;
     return (
