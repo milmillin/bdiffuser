@@ -222,6 +222,7 @@ function LandingScreen({
 }) {
   const [room, setRoom] = useState("");
   const [stats, setStats] = useState<{ rooms: number; players: number } | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
   const { canInstall, isInstalled, showIosInstallHint, install } = usePwaInstallPrompt();
   const [isInstalling, setIsInstalling] = useState(false);
   const [installDismissed, setInstallDismissed] = useState(false);
@@ -231,8 +232,23 @@ function LandingScreen({
     const url = `${protocol}://${PARTYKIT_HOST}/stats`;
     const fetchStats = () => {
       fetch(url)
-        .then((r) => r.json())
-        .then((data) => setStats(data as { rooms: number; players: number }))
+        .then((r) => {
+          if (r.status === 503) {
+            return r.json().then((body: unknown) => {
+              if (
+                body &&
+                typeof body === "object" &&
+                (body as Record<string, unknown>).error === "quota_exceeded"
+              ) {
+                setQuotaExceeded(true);
+              }
+            });
+          }
+          setQuotaExceeded(false);
+          return r.json().then((data) =>
+            setStats(data as { rooms: number; players: number }),
+          );
+        })
         .catch(() => {});
     };
     fetchStats();
@@ -286,6 +302,20 @@ function LandingScreen({
             data-testid="offline-shell-notice"
           >
             Offline mode: app shell is available, but joining and playing rooms requires internet.
+          </div>
+        )}
+
+        {quotaExceeded && (
+          <div
+            className="rounded-xl border border-red-500/40 bg-red-900/20 px-4 py-3 text-sm text-red-200"
+            data-testid="quota-exceeded-notice"
+          >
+            <p className="font-semibold text-red-300">Server Quota Exceeded</p>
+            <p className="mt-1 text-xs">
+              We&rsquo;ve used up today&rsquo;s free server quota.
+              The daily limit resets at midnight UTC.
+              Please contact the admin or try again tomorrow.
+            </p>
           </div>
         )}
 
@@ -452,6 +482,7 @@ function GameRoom({
     chatMessages,
     error,
     kicked,
+    quotaExceeded,
     send,
     playerId,
   } =
@@ -470,6 +501,30 @@ function GameRoom({
   if (connected && !joined) {
     send({ type: "join", name: playerName });
     setJoined(true);
+  }
+
+  if (quotaExceeded) {
+    return (
+      <div className="safe-screen min-h-screen flex items-center justify-center px-4" data-testid="quota-exceeded">
+        <div className="max-w-md w-full bg-[var(--color-bomb-surface)] rounded-xl p-6 space-y-4 text-center">
+          <div className="text-4xl">&#9888;&#65039;</div>
+          <h2 className="text-xl font-bold text-red-400">Server Quota Exceeded</h2>
+          <p className="text-gray-300 text-sm leading-relaxed">
+            We&rsquo;ve used up today&rsquo;s free server quota.
+            The daily limit resets at <span className="font-semibold text-white">midnight UTC</span>.
+          </p>
+          <p className="text-gray-400 text-xs">
+            Please contact the admin or try again tomorrow.
+          </p>
+          <button
+            onClick={onLeave}
+            className={`w-full ${btnSmall} bg-gray-700 border-gray-900 text-white hover:bg-gray-600`}
+          >
+            &larr; Back to Home
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!connected) {

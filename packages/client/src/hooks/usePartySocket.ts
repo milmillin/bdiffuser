@@ -70,6 +70,26 @@ function transformChatName(msg: ChatMessage): ChatMessage {
 const PARTYKIT_HOST =
   import.meta.env.VITE_PARTYKIT_HOST ?? "localhost:1999";
 
+const QUOTA_CHECK_PROTOCOL =
+  PARTYKIT_HOST.startsWith("localhost") ? "http" : "https";
+
+function checkQuotaExceeded(): Promise<boolean> {
+  return fetch(`${QUOTA_CHECK_PROTOCOL}://${PARTYKIT_HOST}/stats`)
+    .then((res) => {
+      if (res.status === 503) {
+        return res.json().then((body: unknown) =>
+          !!(
+            body &&
+            typeof body === "object" &&
+            (body as Record<string, unknown>).error === "quota_exceeded"
+          ),
+        );
+      }
+      return false;
+    })
+    .catch(() => false);
+}
+
 interface UsePartySocketReturn {
   connected: boolean;
   lobbyState: LobbyState | null;
@@ -80,6 +100,7 @@ interface UsePartySocketReturn {
   error: string | null;
   errorCode: ActionLegalityCode | null;
   kicked: boolean;
+  quotaExceeded: boolean;
   send: (msg: ClientMessage) => void;
   playerId: string | null;
 }
@@ -100,6 +121,10 @@ export function usePartySocket(
   const [errorCode, setErrorCode] = useState<ActionLegalityCode | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [kicked, setKicked] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const quotaExceededRef = useRef(false);
+  const quotaCheckInFlight = useRef(false);
+  const hasReceivedMessage = useRef(false);
 
   // Stable refs so the effect doesn't re-run when callbacks change
   const onIdReadyRef = useRef(options?.onIdReady);
@@ -123,6 +148,27 @@ export function usePartySocket(
 
     socket.addEventListener("close", () => {
       setConnected(false);
+
+      // If we've never received a server message, the connection may have
+      // failed because the DO quota is exhausted. Check immediately.
+      if (
+        !hasReceivedMessage.current &&
+        !quotaCheckInFlight.current &&
+        !quotaExceededRef.current
+      ) {
+        quotaCheckInFlight.current = true;
+        checkQuotaExceeded()
+          .then((exceeded) => {
+            if (exceeded) {
+              quotaExceededRef.current = true;
+              setQuotaExceeded(true);
+              socket.close();
+            }
+          })
+          .finally(() => {
+            quotaCheckInFlight.current = false;
+          });
+      }
     });
 
     socket.addEventListener("error", (event) => {
@@ -130,6 +176,8 @@ export function usePartySocket(
     });
 
     socket.addEventListener("message", (event) => {
+      hasReceivedMessage.current = true;
+
       let msg: ServerMessage;
       try {
         msg = JSON.parse(event.data);
@@ -204,6 +252,7 @@ export function usePartySocket(
     error,
     errorCode,
     kicked,
+    quotaExceeded,
     send,
     playerId,
   };

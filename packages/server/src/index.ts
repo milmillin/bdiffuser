@@ -5220,54 +5220,95 @@ export class BombBustersServer extends Server<Env> {
   }
 }
 
+function isDurableObjectQuotaError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  const msg = e.message.toLowerCase();
+  return msg.includes("exceeded") && msg.includes("free tier");
+}
+
+const QUOTA_EXCEEDED_RESPONSE_BODY = JSON.stringify({
+  error: "quota_exceeded",
+  message:
+    "We've used up today's free server quota. The daily limit resets at midnight UTC. Please contact the admin or try again tomorrow.",
+});
+
+function quotaExceededResponse(): Response {
+  return new Response(QUOTA_EXCEEDED_RESPONSE_BODY, {
+    status: 503,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/stats") {
-      // Rewrite to partyserver route so routing headers are set correctly
-      const partyUrl = new URL(request.url);
-      partyUrl.pathname = "/parties/bomb-busters-server/__stats__";
-      const partyReq = new Request(partyUrl.toString(), request);
+
+    // Lightweight quota-check endpoint (no DO access required)
+    if (url.pathname === "/health") {
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    try {
+      if (url.pathname === "/stats") {
+        // Rewrite to partyserver route so routing headers are set correctly
+        const partyUrl = new URL(request.url);
+        partyUrl.pathname = "/parties/bomb-busters-server/__stats__";
+        const partyReq = new Request(partyUrl.toString(), request);
+        return (
+          (await routePartykitRequest(partyReq, env)) ??
+          new Response("Not found", { status: 404 })
+        );
+      }
+
+      // MCP endpoint — route to McpSession Durable Object
+      if (url.pathname === "/mcp") {
+        // Handle CORS preflight
+        if (request.method === "OPTIONS") {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Mcp-Session-Id",
+              "Access-Control-Expose-Headers": "Mcp-Session-Id",
+            },
+          });
+        }
+
+        // Get or create session ID
+        let sessionId = request.headers.get("Mcp-Session-Id");
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+        }
+
+        const doId = env.McpSession.idFromName(sessionId);
+        const stub = env.McpSession.get(doId);
+        const response = await stub.fetch(request);
+
+        // Add session ID header to response
+        const newResponse = new Response(response.body, response);
+        newResponse.headers.set("Mcp-Session-Id", sessionId);
+        return newResponse;
+      }
+
       return (
-        (await routePartykitRequest(partyReq, env)) ??
+        (await routePartykitRequest(request, env)) ??
         new Response("Not found", { status: 404 })
       );
-    }
-
-    // MCP endpoint — route to McpSession Durable Object
-    if (url.pathname === "/mcp") {
-      // Handle CORS preflight
-      if (request.method === "OPTIONS") {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Mcp-Session-Id",
-            "Access-Control-Expose-Headers": "Mcp-Session-Id",
-          },
-        });
+    } catch (e) {
+      if (isDurableObjectQuotaError(e)) {
+        console.error("Durable Object free tier quota exceeded:", e);
+        return quotaExceededResponse();
       }
-
-      // Get or create session ID
-      let sessionId = request.headers.get("Mcp-Session-Id");
-      if (!sessionId) {
-        sessionId = crypto.randomUUID();
-      }
-
-      const doId = env.McpSession.idFromName(sessionId);
-      const stub = env.McpSession.get(doId);
-      const response = await stub.fetch(request);
-
-      // Add session ID header to response
-      const newResponse = new Response(response.body, response);
-      newResponse.headers.set("Mcp-Session-Id", sessionId);
-      return newResponse;
+      throw e;
     }
-
-    return (
-      (await routePartykitRequest(request, env)) ??
-      new Response("Not found", { status: 404 })
-    );
   },
 } satisfies ExportedHandler<Env>;
