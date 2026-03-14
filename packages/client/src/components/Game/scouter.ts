@@ -25,18 +25,34 @@ export interface PositionBounds {
  * Bounds come from the nearest visible tiles (those with known sortValues)
  * above and below, since tiles are sorted ascending by sortValue.
  */
-export function getPositionBounds(hand: VisibleTile[], index: number): PositionBounds {
+export function getPositionBounds(hand: VisibleTile[], index: number, standSizes?: number[]): PositionBounds {
+  // Determine the stand boundaries for the given index
+  let standStart = 0;
+  let standEnd = hand.length;
+
+  if (standSizes) {
+    let offset = 0;
+    for (const size of standSizes) {
+      if (index < offset + size) {
+        standStart = offset;
+        standEnd = offset + size;
+        break;
+      }
+      offset += size;
+    }
+  }
+
   let lower = -Infinity;
   let upper = Infinity;
 
-  for (let j = index - 1; j >= 0; j--) {
+  for (let j = index - 1; j >= standStart; j--) {
     if (hand[j].sortValue != null) {
       lower = hand[j].sortValue!;
       break;
     }
   }
 
-  for (let j = index + 1; j < hand.length; j++) {
+  for (let j = index + 1; j < standEnd; j++) {
     if (hand[j].sortValue != null) {
       upper = hand[j].sortValue!;
       break;
@@ -128,7 +144,7 @@ export function computeOpponentProbabilities(
     const tile = opponent.hand[i];
     if (tile.cut || tile.color != null) continue; // visible or cut — skip
 
-    const bounds = getPositionBounds(opponent.hand, i);
+    const bounds = getPositionBounds(opponent.hand, i, opponent.standSizes);
 
     const probs: TileProbability = {
       blues: new Map(),
